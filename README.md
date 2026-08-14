@@ -1,14 +1,3 @@
-我已經確認你目前的 GitHub 帳號下 **`breakout-rl-engineering` 還不存在**。但這次 GitHub App 提供給我的權限介面只有「對既有 Repository 建檔、改檔、Issue、PR」等操作，**沒有建立新 Repository 的 API**；本機也沒有可用的 `gh` CLI，所以我不能直接替你按下「Create repository」。
-
-你只需要先在 GitHub 建立一個：
-
-* Repository name：`breakout-rl-engineering`
-* 建議：**Public**
-* **不要勾 Add a README** 也可以
-* 其他先全部空白
-
-建立完之後直接跟我說 **「建好了」**，我就能直接透過 GitHub App 把下面這份 README 寫進 `main`，你不用自己複製貼上。
-
 # Breakout RL Engineering
 
 > From DQN to Deployment: building, evaluating, optimizing, and deploying a reinforcement learning agent for Atari Breakout.
