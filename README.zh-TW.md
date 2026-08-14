@@ -39,9 +39,9 @@
 
 主要使用的環境：
 
-\`\`\`text
+```text
 ALE/Breakout-v5
-\`\`\`
+```
 
 透過以下工具提供：
 
@@ -54,7 +54,7 @@ ALE/Breakout-v5
 
 原始 Atari 畫面預計經過以下預處理：
 
-\`\`\`text
+```text
 210 × 160 RGB
       ↓
 灰階化
@@ -66,7 +66,7 @@ Frame Skip = 4
 堆疊 4 個畫面
       ↓
 4 × 84 × 84
-\`\`\`
+```
 
 Frame stacking 讓代理人能夠從連續畫面推斷球的移動方向與速度等資訊。
 
@@ -80,13 +80,13 @@ Frame stacking 讓代理人能夠從連續畫面推斷球的移動方向與速�
 
 每次互動會產生一筆 transition：
 
-\`\`\`text
+```text
 (state, action, reward, next_state, done)
-\`\`\`
+```
 
 這些 transition 會被存放到 **Experience Replay Buffer**，並在訓練時抽樣使用。
 
-\`\`\`text
+```text
 Agent
   ↓
 Action
@@ -98,7 +98,7 @@ Reward + Next State
 Replay Buffer
   ↓
 Neural Network Training
-\`\`\`
+```
 
 ---
 
@@ -108,11 +108,11 @@ Neural Network Training
 
 訓練時會評估以下 reward clipping 方式：
 
-\`\`\`text
+```text
 正 reward → +1
 零 reward →  0
 負 reward → -1
-\`\`\`
+```
 
 評估時則使用原始 Atari 遊戲分數。
 
@@ -124,7 +124,7 @@ Neural Network Training
 
 ### DQN
 
-\`\`\`text
+```text
 State
  ↓
 CNN
@@ -137,7 +137,7 @@ Q(LEFT)
 argmax
  ↓
 Action
-\`\`\`
+```
 
 ### Double DQN
 
@@ -147,13 +147,13 @@ Double DQN 會將 action selection 與 target evaluation 分離，用來研究 Q
 
 此網路會進一步將狀態價值與動作優勢分離：
 
-\`\`\`text
+```text
           ┌─ Value V(s)
 Features ─┤
           └─ Advantage A(s, a)
                 ↓
               Q(s, a)
-\`\`\`
+```
 
 ---
 
@@ -163,17 +163,17 @@ Features ─┤
 
 ### Development
 
-\`\`\`text
+```text
 10K–50K steps
-\`\`\`
+```
 
 用於 smoke test、除錯與確認整個 pipeline 可以正常運作。
 
 ### Pilot Experiments
 
-\`\`\`text
+```text
 100K–1M steps
-\`\`\`
+```
 
 用於確認代理人確實開始學習，以及訓練指標是否合理。
 
@@ -181,9 +181,9 @@ Features ─┤
 
 目標：
 
-\`\`\`text
+```text
 3M steps × multiple seeds
-\`\`\`
+```
 
 用來比較：
 
@@ -195,9 +195,9 @@ Features ─┤
 
 根據實際測得的訓練速度，最佳設定可能會延長至約：
 
-\`\`\`text
+```text
 10M environment steps
-\`\`\`
+```
 
 ---
 
@@ -211,7 +211,7 @@ Features ─┤
 * Frame skipping
 * Vectorized Atari environments
 * Batched GPU inference
-* 使用高效率的 \`uint8\` replay buffer 儲存方式
+* 使用高效率的 `uint8` replay buffer 儲存方式
 * CPU environment 與 GPU training overlap
 * 依據 profiling 結果進行最佳化
 
@@ -219,12 +219,12 @@ Features ─┤
 
 候選設定：
 
-\`\`\`text
+```text
 1 environment
 2 environments
 4 environments
 8 environments
-\`\`\`
+```
 
 ---
 
@@ -232,7 +232,7 @@ Features ─┤
 
 訓練會追蹤以下指標：
 
-\`\`\`text
+```text
 Episode Return
 Average Return
 TD Loss
@@ -241,7 +241,7 @@ Q-value Maximum
 Gradient Norm
 Epsilon
 Steps Per Second
-\`\`\`
+```
 
 在可行的情況下，模型比較會使用多個隨機種子進行。
 
@@ -251,7 +251,7 @@ Steps Per Second
 
 最終訓練好的 policy 會經過以下 AI engineering pipeline：
 
-\`\`\`text
+```text
 PyTorch
    ↓
 ONNX
@@ -260,17 +260,17 @@ ONNX Runtime
    ├── CPU
    ├── CUDA
    └── Web
-\`\`\`
+```
 
 可選的 NVIDIA 部署實驗：
 
-\`\`\`text
+```text
 ONNX
  ↓
 TensorRT
  ↓
 FP32 / FP16 inference
-\`\`\`
+```
 
 ---
 
@@ -278,7 +278,7 @@ FP32 / FP16 inference
 
 可能比較的執行環境包括：
 
-\`\`\`text
+```text
 PyTorch CPU
 PyTorch CUDA
 ONNX Runtime CPU
@@ -287,7 +287,7 @@ TensorRT FP32
 TensorRT FP16
 ONNX Runtime Web WASM
 ONNX Runtime Web WebGPU
-\`\`\`
+```
 
 測量項目包括：
 
@@ -306,15 +306,15 @@ ONNX Runtime Web WebGPU
 
 因此，本專案會使用以下指標比較不同 runtime 的輸出：
 
-\`\`\`text
+```text
 Numerical Error
 Action Agreement Rate
 Average Episode Return
-\`\`\`
+```
 
 例如：
 
-\`\`\`text
+```text
 PyTorch FP32
       vs
 ONNX Runtime FP32
@@ -324,7 +324,7 @@ FP16
 TensorRT
       vs
 ONNX Runtime Web
-\`\`\`
+```
 
 ---
 
@@ -334,7 +334,7 @@ ONNX Runtime Web
 
 預計架構：
 
-\`\`\`text
+```text
 Browser
    │
    ├── Atari / Breakout Environment
@@ -346,18 +346,18 @@ Browser
    ├── WASM / WebGPU
    │
    └── Interactive UI
-\`\`\`
+```
 
 介面可能顯示：
 
-\`\`\`text
+```text
 Current Model
 Current Action
 Q Values
 Episode Reward
 Inference Latency
 Backend
-\`\`\`
+```
 
 未來的 demo 也可能允許使用者在 AI 控制與人類控制之間切換。
 
