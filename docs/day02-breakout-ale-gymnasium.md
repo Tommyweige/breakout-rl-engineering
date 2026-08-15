@@ -1,218 +1,114 @@
-# Day 2 — Atari Breakout、ALE 與 Gymnasium
+# Day 2｜當 Agent 走進 Atari Breakout：ALE 與 Gymnasium
 
-本日的目標是確認 Agent 如何透過 Gymnasium 操作 Atari Breakout，並看見環境實際提供的 observation 與 action。這一日先不進入 DQN 訓練；我們使用最簡單的 random agent 建立可執行的 baseline。
+Day 1 我們談了為什麼想做這個系列，也談到強化學習最後必須回到一個真實的環境裡。今天就讓 Agent 走進 Breakout，看看它究竟看見什麼、可以做什麼，以及一個遊戲畫面是怎麼變成程式可以理解的資料。
 
-## 1. Atari Breakout 是什麼？
+今天先從遊戲本身開始，讓一個隨機 Agent 和一個人類玩家同時操作兩個 Breakout，從最基本的互動理解強化學習的介面，再為後面的神經網路訓練做好準備。
 
-Breakout 是 Atari 遊戲：玩家控制底部的球拍，讓球反彈並擊破上方磚塊。對強化學習而言，遊戲提供一個持續變化的狀態，Agent 每一步選擇一個 action，然後收到新的畫面與 reward。
+## 先從 Atari 的故事說起
 
-本專案使用標準化的 `ALE/Breakout-v5` 環境，而不是自行實作一個 Breakout clone。這讓環境介面與其他 Atari 強化學習實驗保持一致。
+Atari 在 1972 年成立，早期的 Pong 讓許多人第一次接觸到街機電子遊戲。幾年後，Atari 在 1976 年推出 Breakout：玩家控制畫面下方的球拍，讓球反彈，逐層擊破上方的磚塊。1977 年，Atari 又推出 Atari VCS，後來更常被稱為 Atari 2600，家用遊戲因此開始走進更多人的客廳。
 
-### 先回答：Breakout 是 Atari 出的嗎？
+這段歷史可以參考 [Atari 官方簡介](https://atari.com/pages/about)、[The Strong Museum 的 Pong 介紹](https://www.museumofplay.org/games/pong/) 和 [Science Museum 的電子遊戲時間線](https://blog.scienceandmediamuseum.org.uk/60-years-history-of-videogames-timeline-1951-2011/)。Atari 的 Breakout 資料也明確把它標示為 1976 年的 Atari 街機遊戲。[Atari 的 Breakout 介紹](https://atari.com/pages/among-the-top-five-highest-grossing-arcade-video-games-of-1976)
 
-是。這裡的 Breakout 指的是 **Atari 在 1976 年推出的經典街機遊戲**；它不是我們自己做的 clone。`ALE/Breakout-v5` 則是把這個 Atari 遊戲放進 Atari Learning Environment，並透過 Gymnasium API 提供給程式控制。
+Breakout 的規則很簡單：球拍左右移動，球在畫面裡反彈，磚塊被打掉之後得到分數。對剛開始學習強化學習的我們來說，這種簡單反而很珍貴。畫面、動作和分數之間的關係清楚可見，也很容易觀察 Agent 每一步做了什麼。
 
-### Atari 的簡短歷史
+## Atari、Breakout 和 ALE 到底是什麼關係？
 
-Atari 在 1972 年成立，早期透過 Pong 讓街機遊戲走進大眾視野；接著持續推出街機遊戲，並在 1977 年推出 Atari VCS（後來常稱為 Atari 2600），把遊戲帶進家庭。這段早期歷史可參考 [Atari 官方簡介](https://atari.com/pages/about)、[The Strong Museum 的 Pong 介紹](https://www.museumofplay.org/games/pong/) 與 [Science Museum 的電子遊戲時間線](https://blog.scienceandmediamuseum.org.uk/60-years-history-of-videogames-timeline-1951-2011/)。
+先把三個名字分開：Atari 是公司與品牌，Breakout 是 Atari 推出的原始街機遊戲，而 `ALE/Breakout-v5` 是一個可以讓程式操作這款遊戲的環境名稱。
 
-Breakout 正好出現在這段街機發展的早期階段：玩家控制一個水平球拍，讓球反彈並打掉磚塊。規則看似簡單，卻很適合用來觀察 Agent 如何從畫面、動作與 reward 的互動中逐步學習；[Atari 的資料也將 Breakout 標示為 1976 年的 Atari 街機遊戲](https://atari.com/pages/among-the-top-five-highest-grossing-arcade-video-games-of-1976)。
+ALE 是 Arcade Learning Environment 的縮寫。它負責讓 Atari 遊戲在模擬器裡執行，處理遊戲規則、畫面更新、分數與可用動作。Gymnasium 則提供一套統一的溝通方式，讓 Agent 可以用相同的 `reset()` 和 `step()` 介面操作不同環境。
 
-可以把三個名稱分開理解：
-
-- **Atari**：最初開發與發行 Breakout 的遊戲公司及品牌。
-- **Breakout**：Atari 的原始街機遊戲。
-- **`ALE/Breakout-v5`**：以 Atari Breakout 為基礎，透過 Atari Learning Environment 與 Gymnasium API 提供的可程式化環境。
-
-所以我們不是在 Python 裡重新創造 Breakout，而是在控制一個標準化的 Atari 遊戲模擬環境。
-
-## 2. ALE（Arcade Learning Environment）
-
-ALE 是 Atari Learning Environment，負責把 Atari 遊戲模擬器包裝成可以被程式控制的環境。它處理遊戲規則、畫面更新、分數與 Atari 原生 action。
-
-在本專案中，ALE 是 Breakout 的遊戲執行層；Agent 不直接操作模擬器內部，而是透過上層的 Gymnasium API 與它互動。
-
-## 3. Gymnasium
-
-Gymnasium 提供一套一致的 environment API。不同遊戲可以有不同的規則，但 Agent 可以用相同的方式呼叫：
-
-- `env.reset()`：開始或重新開始一個 episode。
-- `env.step(action)`：執行一個 action，取得環境回傳的結果。
-- `env.observation_space`：描述 observation 的格式與範圍。
-- `env.action_space`：描述 Agent 可以採取的 action。
-
-## 4. Gymnasium、ALE、Breakout 與 Agent 的關係
+可以把整個關係想成一條線：
 
 ```text
 Agent
-  │
-  │ action
-  ▼
-Gymnasium
-  │
-  ▼
+  ↓ action
+Gymnasium API
+  ↓
 ALE / Breakout
-  │
-  ├─ observation
-  ├─ reward
-  ├─ terminated
-  ├─ truncated
-  └─ info
-  │
-  ▼
+  ↓ observation、reward、遊戲狀態
 Agent
 ```
 
-可以把 Gymnasium 想成統一的插座介面，把 Agent 與實際執行遊戲的 ALE 分開。Agent 只需要理解 Gymnasium 的呼叫方式；ALE 則負責讓 Breakout 按照遊戲規則前進。
+模擬器負責磚塊繪製與 Atari 的遊戲規則，Agent 專注於接收畫面、選擇動作，再把動作交回環境。
 
-## 5. `observation_space`
+## Agent 看見的第一件事：一張畫面
 
-`observation_space` 描述 Agent 看到的 observation 可能長什麼樣子。這個專案目前使用原始 RGB 畫面，因此可以看到類似以下的空間：
+建立環境並重設之後，Agent 會拿到一張 observation。這個專案目前保留 Breakout 的原始 RGB 畫面，因此 observation space 會顯示：
 
 ```text
 Box(0, 255, (210, 160, 3), uint8)
 ```
 
-它代表：
+這串文字可以拆成四個部分來看。`Box` 表示這是一個多維數值陣列，每個數值都有範圍；`0` 和 `255` 是像素值的上下限；`(210, 160, 3)` 代表畫面高 210、寬 160，最後的 3 是 RGB 三個顏色通道；`uint8` 則表示每個像素通道使用 0 到 255 的 8 位元整數。
 
-- 畫面高度是 210 pixels。
-- 畫面寬度是 160 pixels。
-- 每個 pixel 有 3 個通道（RGB）。
-- 每個值是 `uint8`，範圍是 0 到 255。
+換句話說，一張畫面裡有 `210 × 160 × 3` 個數值。對人類來說，這是一張 Breakout 畫面；對 Agent 來說，這是一個形狀固定、數值範圍固定的陣列。
 
-實際 reset 後的 `observation.shape` 是 `(210, 160, 3)`。
+## Agent 可以做什麼？
 
-## 6. `action_space`
-
-`action_space` 描述 Agent 可以傳給 `env.step(action)` 的 action。Breakout 的 action space 是：
+Breakout 的 action space 是：
 
 ```text
 Discrete(4)
-```
-
-目前可用的 action meanings 是：
-
-```text
 ['NOOP', 'FIRE', 'RIGHT', 'LEFT']
 ```
 
-也就是 action 整數 0 到 3 分別代表不動、發射、向右與向左。程式不需要自己猜測整數的意義，可以從 `env.unwrapped.get_action_meanings()` 取得名稱。
+`Discrete(4)` 代表共有四個離散動作。它們依序是保持不動、發射球、向右和向左。Agent 實際傳入環境的是整數 0 到 3，環境再依照 action meanings 把整數解讀成對應的動作。
 
-## 7. `env.reset()`
+人類玩家和 Agent 使用的是同一組動作。差別只在於：random Agent 從四個選項裡隨機抽一個，人類則透過鍵盤決定要送出哪一個。
 
-`env.reset()` 會把環境放回 episode 的起始狀態，並回傳兩個值：
+## 一次互動是怎麼發生的？
+
+遊戲開始時，先呼叫 `reset()`：
 
 ```python
 observation, info = env.reset(seed=42)
 ```
 
-- `observation`：episode 開始時 Agent 看到的第一個畫面。
-- `info`：額外的環境資訊字典。它不是 Agent 主要要學習的 observation，但可以提供除錯或記錄用的資訊。
-
-在本次示範中使用 `seed=42`，讓起始狀態的隨機性可以被重現。
-
-## 8. `env.step(action)`
-
-Agent 選好 action 後，將它傳給環境：
+這會建立一個新的 episode，並把第一張畫面交給 Agent。接著，Agent 選一個 action，呼叫 `step()` 讓遊戲前進：
 
 ```python
 observation, reward, terminated, truncated, info = env.step(action)
 ```
 
-一次 `step` 的五個回傳值如下：
+這五個回傳值就像環境給 Agent 的一則回覆：新的 `observation` 是下一張畫面，`reward` 是這一步得到的分數訊號，`terminated` 表示遊戲本身是否結束，`truncated` 表示外部時間限制是否到達，`info` 則放著額外的環境資訊。
 
-| 回傳值 | 意義 |
-|---|---|
-| `observation` | 執行 action 後，Agent 看到的下一個畫面。 |
-| `reward` | 這一步得到的分數訊號；在 Breakout 中通常會在擊破磚塊時得到正 reward。 |
-| `terminated` | episode 因遊戲本身的終止條件結束，例如遊戲結束。 |
-| `truncated` | episode 因外部限制被截斷，例如時間上限到達。 |
-| `info` | 額外的診斷或環境資訊。 |
+當一局結束，下一局會重新從 `reset()` 開始。這就是強化學習最基本的循環：看見狀態、選擇動作、收到回饋，再看下一個狀態。
 
-如果 `terminated` 或 `truncated` 任一個是 `True`，就不應再對已結束的 episode 呼叫下一次 `step`；程式會先呼叫 `reset()` 開始新的 episode。
+## 把 AI 和人類放在同一個畫面裡
 
-## 9. 程式碼快速導讀
+為了讓這個互動更直觀，這次的畫面同時放入兩個 Breakout。左側由 random Agent 操作，右側交給人類。兩個環境各自擁有自己的遊戲狀態，所以可以清楚比較兩種控制方式。
 
-把前面的概念放回 `play_breakout.py`，核心互動流程其實很短。現在程式同時建立兩個獨立的 Breakout environment：
+程式的核心流程可以濃縮成這幾行：
 
 ```python
-def main() -> None:
-    ai_env = gym.make("ALE/Breakout-v5", render_mode="rgb_array")
-    human_env = gym.make("ALE/Breakout-v5", render_mode="rgb_array")
+ai_env = gym.make("ALE/Breakout-v5", render_mode="rgb_array")
+human_env = gym.make("ALE/Breakout-v5", render_mode="rgb_array")
 
-    try:
-        play_side_by_side(ai_env, human_env)
-    finally:
-        ai_env.close()
-        human_env.close()
+ai_action = ai_env.action_space.sample()
+human_action = human_input.next_action()
 
-def update() -> None:
-    ai_action = ai_env.action_space.sample()
-    human_action = human_input.next_action()
-
-    ai_observation, ai_reward, ai_terminated, ai_truncated, _ = ai_env.step(ai_action)
-    human_observation, human_reward, human_terminated, human_truncated, _ = human_env.step(human_action)
+ai_observation, ai_reward, ai_terminated, ai_truncated, _ = ai_env.step(ai_action)
+human_observation, human_reward, human_terminated, human_truncated, _ = human_env.step(human_action)
 ```
 
-可以按照這個順序閱讀：
+左邊的 `action_space.sample()` 是目前的 random policy。右邊的 `next_action()` 會讀取鍵盤狀態，按住方向鍵時持續送出移動動作，按一下 `Space` 或 `F` 時送出一次 `FIRE`，把球發射出去。
 
-1. `gym.make(...)` 建立兩個 `ALE/Breakout-v5`；`render_mode="rgb_array"` 讓程式取得畫面 frame。
-2. 左邊的 `ai_env` 用 `action_space.sample()` 隨機選 action，代表目前尚未訓練的 AI。
-3. 右邊的 `human_env` 由 `HumanInput.next_action()` 讀取鍵盤狀態。
-4. 兩個 environment 各自呼叫 `step(action)`，因此左、右兩局互不影響。
-5. Tkinter 把兩張 RGB frame 放在同一個視窗中，左邊顯示 AI，右邊顯示人類。
-6. `terminated or truncated` 表示該局結束，程式會只重設對應的 environment。
-7. `finally` 確保程式停止時呼叫兩個 `env.close()`，釋放環境資源。
+兩張 RGB 畫面最後由 Tkinter 放到同一個視窗裡。操作右側時，按住 `←` 或 `A` 可以向左移動，按住 `→` 或 `D` 可以向右移動；`R` 會重設右側遊戲，`Esc` 或 `Q` 可以關閉視窗。底部的操作提示保持固定，讓畫面閱讀起來更舒服。
 
-## 10. AI 與人類並排操作
+## 實際畫面：AI 與人類並排 GIF
 
-執行 `play_breakout.py` 後，視窗左側是 AI、右側是人類。這裡的 AI 仍然是 random agent，還不是訓練完成的 DQN；這個版本的重點是先讓兩種控制方式同時跑起來。
-
-人類玩家可以使用以下按鍵：
-
-- `←` 或 `A`：按住讓球拍向左。
-- `→` 或 `D`：按住讓球拍向右。
-- `Space` 或 `F`：按一下送出一次 `FIRE` action，發射球。
-- `R`：重設右側的人類遊戲。
-- `Esc` 或 `Q`：關閉視窗。
-
-底部操作提示是固定文字，不會隨著每一個 action 和 reward 逐幀更新，避免畫面持續閃動。
-
-## 11. 實際畫面：AI 與人類並排 GIF
-
-下面的 GIF 是從兩個相同的 `ALE/Breakout-v5` environment 擷取的實際 RGB frames，左邊是 random agent，右邊是 scripted human input。`play_breakout.py` 也使用 `render_mode="rgb_array"`，再由 Tkinter 把兩張畫面合併到同一個視窗；實際執行時，右側可以改由鍵盤操作。
+下面的 GIF 來自兩個實際運作中的 `ALE/Breakout-v5` environment。左側使用 random policy，右側使用 scripted input 重現人類的發射與移動，畫面尺寸和操作提示都按照實際視窗呈現。
 
 ![AI and human playing Atari Breakout side by side](../assets/day02-ai-vs-human.gif)
 
-這不是訓練好的 Agent，也不是人類實際按鍵錄製的比賽，而是用 scripted input 做出的可重現示範。它的用途是先確認：左右兩個環境都在更新、兩種控制方式都真的有送出 action，而不是展示學習成果。
+這段畫面的重點在兩個完整的互動循環：左側 Agent 自己選擇動作，右側則由人類輸入控制。下一階段加入真正的學習 policy 之後，就能用同一個畫面觀察 Agent 的進步。
 
-## 12. Random Agent 的用途
+## 今天到底完成了什麼？
 
-目前的 Agent 不會學習，而是從 action space 隨機抽一個 action：
+今天我們把一款 1976 年的 Atari 街機遊戲接上了 Gymnasium，也讓 ALE 成為 Agent 和遊戲之間的執行層。Agent 現在知道自己收到的是一張 `(210, 160, 3)` 的 RGB 畫面，也知道 Breakout 提供四個可用動作。
 
-```python
-action = env.action_space.sample()
-```
-
-這個 baseline 的目的不是取得高分，而是先驗證完整互動管線：
-
-```text
-Agent 選擇 action
-      ↓
-env.step(action)
-      ↓
-Breakout 更新遊戲狀態
-      ↓
-observation + reward + episode status
-      ↓
-Agent 繼續下一步
-```
-
-後續加入 DQN 時，就可以用學習到的 policy 與這個完全不學習的 baseline 比較。
-
-## 13. 本次實際驗證結果
-
-`play_breakout.py` 在 `env.reset()` 後會輸出環境介面資訊。使用目前的 `ALE/Breakout-v5` 設定，輸出為：
+實際執行時，環境介面會印出：
 
 ```text
 Observation shape: (210, 160, 3)
@@ -221,8 +117,6 @@ Action space: Discrete(4)
 Action meanings: ['NOOP', 'FIRE', 'RIGHT', 'LEFT']
 ```
 
-程式使用兩個 `render_mode="rgb_array"` 的 environment，左側使用 random policy，右側使用鍵盤 action，並在各自的 `terminated or truncated` 時重設對應 episode。`finally` 區塊會呼叫兩個 `env.close()`，確保程式結束時釋放環境資源。
+這些資訊看起來很像幾行簡單的輸出，卻是後面所有訓練工作的基礎。當我們知道畫面長什麼樣子、動作怎麼表示、每一步會得到什麼回覆，才有辦法把 random policy 換成真正會學習的 Agent。
 
-## 本日範圍
-
-本日只驗證原始 Atari environment 的基本介面與互動流程。84×84 resize、grayscale、frame stacking、Replay Buffer 與 DQN 會在後續階段處理，並不屬於本日的實作。
+Day 2 先到這裡。下一篇開始，我們會進一步處理畫面，讓模型逐漸學會從遊戲狀態中做出更好的選擇。
