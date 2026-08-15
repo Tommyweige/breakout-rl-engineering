@@ -1,6 +1,5 @@
-# Breakout RL Engineering — Day 1
+# Breakout RL Engineering
 
-[Day 2 — Atari Breakout、ALE 與 Gymnasium](docs/day02-breakout-ale-gymnasium.md) | [環境設定](docs/environment.md)
 
 ---
 
