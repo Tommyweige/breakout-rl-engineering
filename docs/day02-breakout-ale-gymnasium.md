@@ -170,19 +170,21 @@ def update() -> None:
 
 人類玩家可以使用以下按鍵：
 
-- `←` 或 `A`：球拍向左。
-- `→` 或 `D`：球拍向右。
-- `Space` 或 `F`：發球。
+- `←` 或 `A`：按住讓球拍向左。
+- `→` 或 `D`：按住讓球拍向右。
+- `Space` 或 `F`：按一下送出一次 `FIRE` action，發射球。
 - `R`：重設右側的人類遊戲。
 - `Esc` 或 `Q`：關閉視窗。
 
-## 11. 實際畫面：Random Agent GIF
+底部操作提示是固定文字，不會隨著每一個 action 和 reward 逐幀更新，避免畫面持續閃動。
 
-下面的 GIF 是從相同的 `ALE/Breakout-v5` 環境擷取的實際 RGB frames。`play_breakout.py` 也使用 `render_mode="rgb_array"`，再由 Tkinter 把 AI 與人類的兩張畫面合併到同一個視窗；遊戲規則、observation 與 action space 維持不變。
+## 11. 實際畫面：AI 與人類並排 GIF
 
-![Random agent playing Atari Breakout](../assets/day02-breakout-random-agent.gif)
+下面的 GIF 是從兩個相同的 `ALE/Breakout-v5` environment 擷取的實際 RGB frames，左邊是 random agent，右邊是 scripted human input。`play_breakout.py` 也使用 `render_mode="rgb_array"`，再由 Tkinter 把兩張畫面合併到同一個視窗；實際執行時，右側可以改由鍵盤操作。
 
-這不是訓練好的 Agent，而是隨機 policy 的實際互動畫面。它的用途是先確認：環境真的有在更新、Agent 真的有送出 action，而不是展示學習成果。
+![AI and human playing Atari Breakout side by side](../assets/day02-ai-vs-human.gif)
+
+這不是訓練好的 Agent，也不是人類實際按鍵錄製的比賽，而是用 scripted input 做出的可重現示範。它的用途是先確認：左右兩個環境都在更新、兩種控制方式都真的有送出 action，而不是展示學習成果。
 
 ## 12. Random Agent 的用途
 

@@ -87,7 +87,6 @@ def play_side_by_side(ai_env: gym.Env, human_env: gym.Env) -> None:
     human_observation, _ = human_env.reset(seed=43)
     human_actions = action_indices(human_env)
     human_input = HumanInput(human_actions)
-    action_meanings = ai_env.unwrapped.get_action_meanings()
 
     root = tk.Tk()
     root.title("Atari Breakout — AI vs Human")
@@ -137,7 +136,7 @@ def play_side_by_side(ai_env: gym.Env, human_env: gym.Env) -> None:
 
     status = tk.Label(
         root,
-        text="←/A and →/D: move    Space/F: fire    R: reset human game    Esc/Q: quit",
+        text="Human: hold ←/A or →/D to move | press Space/F to fire | R reset | Esc/Q quit",
         bg="#171717",
         fg="#dddddd",
         font=("Segoe UI", 9),
@@ -173,7 +172,7 @@ def play_side_by_side(ai_env: gym.Env, human_env: gym.Env) -> None:
         ai_action = ai_env.action_space.sample()
         (
             ai_observation,
-            ai_reward,
+            _,
             ai_terminated,
             ai_truncated,
             _,
@@ -182,7 +181,7 @@ def play_side_by_side(ai_env: gym.Env, human_env: gym.Env) -> None:
         human_action = human_input.next_action()
         (
             human_observation,
-            human_reward,
+            _,
             human_terminated,
             human_truncated,
             _,
@@ -199,16 +198,6 @@ def play_side_by_side(ai_env: gym.Env, human_env: gym.Env) -> None:
         human_image_label.configure(image=human_image)
         ai_image_label.image = ai_image
         human_image_label.image = human_image
-
-        status.configure(
-            text=(
-                "AI: "
-                f"{action_meanings[ai_action]} (reward {ai_reward:g})    |    "
-                "Human: "
-                f"{action_meanings[human_action]} (reward {human_reward:g})    |    "
-                "←/A  →/D  Space/F  R reset  Esc/Q quit"
-            )
-        )
         root.after(FRAME_DELAY_MS, update)
 
     initial_ai_image = frame_to_photoimage(ai_observation)
