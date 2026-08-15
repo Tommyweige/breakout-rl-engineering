@@ -375,7 +375,7 @@ The eventual demo may also allow switching between AI and human control.
 ### Phase 1 — Environment & RL Foundations
 
 * Day 1 — Project motivation and roadmap
-* Day 2 — Atari Breakout, ALE, and Gymnasium
+* Day 2 — [Atari Breakout, ALE, and Gymnasium](docs/day02-breakout-ale-gymnasium.md)
 * Day 3 — State, Action, Reward, and RL-generated data
 * Day 4 — Atari preprocessing and frame stacking
 * Day 5 — MDP and Bellman Equation
