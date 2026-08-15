@@ -2,6 +2,10 @@
 
 [繁體中文版本](README.zh-TW.md)
 
+## Development Setup
+
+See [Environment Setup](docs/environment.md) for the Conda environment and reproducible dependency records.
+
 > From DQN to Deployment: building, evaluating, optimizing, and deploying a reinforcement learning agent for Atari Breakout.
 
 ## Project Overview
