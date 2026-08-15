@@ -2,6 +2,10 @@
 
 [English](README.md) | **繁體中文**
 
+## 開發環境
+
+請參閱[環境設定](docs/environment.md)，了解 Conda 環境建立方式與可重現的套件版本紀錄。
+
 > 從 DQN 到部署：打造、評估、最佳化並部署一個能夠遊玩 Atari Breakout 的強化學習代理人。
 
 ## 專案概述
