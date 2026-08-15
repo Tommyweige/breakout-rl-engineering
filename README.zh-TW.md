@@ -1,6 +1,6 @@
 # Breakout RL Engineering
 
-[English](README.md) | **繁體中文**
+[Day 1 文章](README.md) | **繁體中文專案總覽**
 
 ## 開發環境
 
@@ -371,7 +371,7 @@ Backend
 
 ### Phase 1 — 環境與強化學習基礎
 
-* Day 1 — 專案動機與開發路線
+* Day 1 — [專案動機與開發路線](README.md)
 * Day 2 — [Atari Breakout、ALE 與 Gymnasium](docs/day02-breakout-ale-gymnasium.md)
 * Day 3 — State、Action、Reward 與強化學習產生的資料
 * Day 4 — Atari 預處理與 frame stacking
