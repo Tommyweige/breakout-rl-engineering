@@ -113,7 +113,50 @@ observation, reward, terminated, truncated, info = env.step(action)
 
 如果 `terminated` 或 `truncated` 任一個是 `True`，就不應再對已結束的 episode 呼叫下一次 `step`；程式會先呼叫 `reset()` 開始新的 episode。
 
-## 9. Random Agent 的用途
+## 9. 程式碼快速導讀
+
+把前面的概念放回 `play_breakout.py`，整個互動流程其實很短：
+
+```python
+def main() -> None:
+    env = gym.make("ALE/Breakout-v5", render_mode="human")
+    observation, info = env.reset(seed=42)
+
+    print("Observation shape:", observation.shape)
+    print("Observation space:", env.observation_space)
+    print("Action space:", env.action_space)
+    print("Action meanings:", env.unwrapped.get_action_meanings())
+
+    try:
+        while True:
+            action = env.action_space.sample()
+            observation, reward, terminated, truncated, info = env.step(action)
+
+            if terminated or truncated:
+                observation, info = env.reset()
+    finally:
+        env.close()
+```
+
+可以按照這個順序閱讀：
+
+1. `gym.make(...)` 建立 `ALE/Breakout-v5`；`render_mode="human"` 讓人可以直接看到遊戲視窗。
+2. `env.reset(seed=42)` 開始一個 episode，拿到第一張 observation 和額外的 `info`。
+3. 四個 `print` 把 Agent 看到的畫面格式與可用動作列出來，先確認環境介面符合預期。
+4. `env.action_space.sample()` 暫時代替真正的 policy，隨機選一個 action。
+5. `env.step(action)` 讓遊戲前進一步，並取得下一張畫面、reward、episode 狀態與 `info`。
+6. `terminated or truncated` 表示這一局結束，需要 `reset()` 才能開始下一局。
+7. `finally` 確保程式停止時呼叫 `env.close()`，釋放遊戲視窗與環境資源。
+
+## 10. 實際畫面：Random Agent GIF
+
+下面的 GIF 是從相同的 `ALE/Breakout-v5` 環境擷取的實際 RGB frames。為了放進文章，擷取時使用 `render_mode="rgb_array"` 保存畫面；遊戲規則、observation 與 action space 都與 `play_breakout.py` 的人類觀看模式相同。
+
+![Random agent playing Atari Breakout](../assets/day02-breakout-random-agent.gif)
+
+這不是訓練好的 Agent，而是隨機 policy 的實際互動畫面。它的用途是先確認：環境真的有在更新、Agent 真的有送出 action，而不是展示學習成果。
+
+## 11. Random Agent 的用途
 
 目前的 Agent 不會學習，而是從 action space 隨機抽一個 action：
 
@@ -137,7 +180,7 @@ Agent 繼續下一步
 
 後續加入 DQN 時，就可以用學習到的 policy 與這個完全不學習的 baseline 比較。
 
-## 10. 本次實際驗證結果
+## 12. 本次實際驗證結果
 
 `play_breakout.py` 在 `env.reset()` 後會輸出環境介面資訊。使用目前的 `ALE/Breakout-v5` 設定，輸出為：
 
