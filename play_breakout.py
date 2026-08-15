@@ -11,6 +11,11 @@ def main() -> None:
     env = gym.make("ALE/Breakout-v5", render_mode="human")
     observation, info = env.reset(seed=42)
 
+    print("Observation shape:", observation.shape)
+    print("Observation space:", env.observation_space)
+    print("Action space:", env.action_space)
+    print("Action meanings:", env.unwrapped.get_action_meanings())
+
     try:
         while True:
             action = env.action_space.sample()
