@@ -1,0 +1,19 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Conda and local experiment outputs
+*.conda
+checkpoints/
+logs/
+results/
+
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+
