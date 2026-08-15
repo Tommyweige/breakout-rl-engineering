@@ -8,6 +8,24 @@ Breakout 是 Atari 遊戲：玩家控制底部的球拍，讓球反彈並擊破�
 
 本專案使用標準化的 `ALE/Breakout-v5` 環境，而不是自行實作一個 Breakout clone。這讓環境介面與其他 Atari 強化學習實驗保持一致。
 
+### 先回答：Breakout 是 Atari 出的嗎？
+
+是。這裡的 Breakout 指的是 **Atari 在 1976 年推出的經典街機遊戲**；它不是我們自己做的 clone。`ALE/Breakout-v5` 則是把這個 Atari 遊戲放進 Atari Learning Environment，並透過 Gymnasium API 提供給程式控制。
+
+### Atari 的簡短歷史
+
+Atari 在 1972 年成立，早期透過 Pong 讓街機遊戲走進大眾視野；接著持續推出街機遊戲，並在 1977 年推出 Atari VCS（後來常稱為 Atari 2600），把遊戲帶進家庭。這段早期歷史可參考 [Atari 官方簡介](https://atari.com/pages/about)、[The Strong Museum 的 Pong 介紹](https://www.museumofplay.org/games/pong/) 與 [Science Museum 的電子遊戲時間線](https://blog.scienceandmediamuseum.org.uk/60-years-history-of-videogames-timeline-1951-2011/)。
+
+Breakout 正好出現在這段街機發展的早期階段：玩家控制一個水平球拍，讓球反彈並打掉磚塊。規則看似簡單，卻很適合用來觀察 Agent 如何從畫面、動作與 reward 的互動中逐步學習；[Atari 的資料也將 Breakout 標示為 1976 年的 Atari 街機遊戲](https://atari.com/pages/among-the-top-five-highest-grossing-arcade-video-games-of-1976)。
+
+可以把三個名稱分開理解：
+
+- **Atari**：最初開發與發行 Breakout 的遊戲公司及品牌。
+- **Breakout**：Atari 的原始街機遊戲。
+- **`ALE/Breakout-v5`**：以 Atari Breakout 為基礎，透過 Atari Learning Environment 與 Gymnasium API 提供的可程式化環境。
+
+所以我們不是在 Python 裡重新創造 Breakout，而是在控制一個標準化的 Atari 遊戲模擬環境。
+
 ## 2. ALE（Arcade Learning Environment）
 
 ALE 是 Atari Learning Environment，負責把 Atari 遊戲模擬器包裝成可以被程式控制的環境。它處理遊戲規則、畫面更新、分數與 Atari 原生 action。
