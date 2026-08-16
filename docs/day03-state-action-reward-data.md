@@ -185,3 +185,5 @@ reward + action 後的 observation + episode status
 - trajectory 是多筆 transition 按時間串起來的序列。
 
 這些名詞不是獨立的定義，而是同一個互動過程的不同切面。下一步自然會遇到一個問題：如果單張 observation 無法直接表達球的移動方向，怎麼把連續畫面整理成 Agent 更容易使用的輸入？這會帶我們進入 grayscale、resize 和 frame stacking。
+
+下一篇：[Day 4 — Atari 預處理與 frame stacking](day04-atari-preprocessing-frame-stacking.md)

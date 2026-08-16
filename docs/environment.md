@@ -31,6 +31,7 @@ python play_breakout.py
 | Gymnasium | 1.3.0 | 強化學習環境 API |
 | ALE-Py | 0.12.0 | Atari Learning Environment Python binding |
 | NumPy | 2.5.2 | observation 與數值運算 |
+| opencv-python | 5.0.0.93 | AtariPreprocessing 的 grayscale 與 resize |
 
 其他 transitive dependencies 的版本會記錄在 [`environment.lock.yml`](../environment.lock.yml)。
 
