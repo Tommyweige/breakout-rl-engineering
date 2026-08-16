@@ -1,227 +1,212 @@
-# Day 4｜當一張 Atari 畫面還不夠：Preprocessing、Frame Skip 與 Frame Stacking
+# Day 4｜AI 看到的，不再只是一張畫面
 
-Day 3 我們把 `env.step(action)` 拆成了一筆 transition，也看見 Breakout 原始 observation 是一張 `(210, 160, 3)` 的 RGB 畫面。
+Day 3 的時候，我們讓 AI 和 Breakout 互動，並拆開了一次遊戲回傳的資料。
 
-這張畫面可以讓 Agent 看見球、球拍和磚塊，但它也留下了兩個問題：畫面是不是比模型真正需要的資訊大很多？更重要的是，只看一張畫面，Agent 怎麼知道球正在往哪個方向移動？
+當時 AI 每次拿到的是一張原始遊戲畫面：
 
-今天要處理的不是 DQN，也不是訓練 loop，而是把 environment 回傳的原始畫面整理成一個穩定的 observation contract：
+```text
+210 × 160 × 3
+```
 
-~~~text
-原始 Atari 畫面
-(210, 160, 3) / uint8
+可以把它想成一張寬 160、高 210 的彩色圖片，最後的 3 代表紅、綠、藍三種顏色。
+
+這張圖片看起來已經包含很多資訊，但它其實還不適合直接拿來學習。
+
+問題在於：
+
+> 只看一張畫面，AI 知道球現在在哪裡，卻不一定知道球正在往哪裡飛。
+
+今天要做的事情，就是把原始畫面整理成 AI 比較容易使用的形式。
+
+## 先把畫面變小、變簡單
+
+對 Breakout 來說，AI 最需要知道的是：
+
+- 球在哪裡；
+- 球拍在哪裡；
+- 磚塊在哪裡；
+- 這些東西正在怎麼移動。
+
+畫面的顏色不一定是最重要的資訊。因此第一步，我們把彩色畫面轉成灰階。
+
+灰階畫面不再分成紅、綠、藍三種顏色，而是用一個數字表示明暗。這樣一張畫面就不需要同時保存三份顏色資料。
+
+接著，再把畫面縮小成：
+
+```text
+84 × 84
+```
+
+這不代表我們把遊戲內容刪掉了，而是把太大的圖片縮小，保留球、球拍和磚塊之間的相對位置，同時減少後面計算的負擔。
+
+所以，第一階段的結果是：
+
+```text
+原始彩色畫面
+(210, 160, 3)
         ↓
-AtariPreprocessing
+灰階 + 縮小
         ↓
-(84, 84) / uint8
-        ↓
-FrameStackObservation(4)
-        ↓
-(4, 84, 84) / uint8
-~~~
-
-這個結果會成為後面 CNN 和 DQN 使用的輸入起點。
-
-## 先看原始 observation 的問題
-
-原始 RGB 畫面共有 `210 × 160 × 3` 個像素值。對人類來說，顏色讓畫面更容易閱讀；對 Breakout 的控制而言，球、球拍和磚塊的位置與形狀通常比完整的色彩資訊更重要。
-
-而且單張畫面本身沒有時間方向。假設球在某個時間點位於 `(x, y)`，它可能正往右下方飛，也可能正往左上方飛。兩種情況都可能產生相似的單張畫面；真正能區分它們的，是前後畫面的變化。
-
-所以 Day 4 的工作分成兩件事：先讓每一張畫面更適合儲存和計算，再保留幾張連續畫面，讓 Agent 有機會從像素變化推斷動態。
-
-## Grayscale 與 84 × 84 resize：保留控制需要的資訊
-
-`AtariPreprocessing` 會把 RGB 畫面轉成 grayscale，再縮小到 `84 × 84`。這不是把畫面變得「更像答案」，而是移除目前控制任務不一定需要的負擔：
-
-- grayscale 把三個色彩通道縮成一個通道，減少每張 observation 的資料量；
-- resize 把原始畫面縮小，讓後面的 convolution 不必在不必要的解析度上計算；
-- 空間關係仍然保留，球、球拍和磚塊仍然是畫面中的位置與形狀。
-
-因此，一張 processed observation 的 shape 是：
-
-~~~text
 (84, 84)
-~~~
+```
 
-這裡特別設定 `grayscale_newaxis=False`，所以不會得到 `(84, 84, 1)`。多出來的單通道軸在這個 pipeline 中沒有必要，下一步直接堆疊四張畫面就能得到 `(4, 84, 84)`。
+這個「先整理畫面再交給 AI」的步驟，通常叫做畫面預處理（preprocessing）。
 
-這裡使用的是 Gymnasium 官方的 `AtariPreprocessing`，resize 依賴 OpenCV；環境因此明確安裝 `opencv-python`，而不是另外維護一套自製的 grayscale 或 resize 實作。
+## AI 不需要每一個小動作都重新決定
 
-## Frame skip：降低 action decision 的頻率
+遊戲畫面其實更新得很快。如果 AI 每更新一次畫面，就必須重新選一次動作，會做出非常多決定，而且很多決定之間的差異很小。
 
-Agent 不需要在 Atari emulator 的每一個 frame 都重新選一次 action。這次選擇 `RIGHT` 之後，可以讓同一個 action 持續數個 emulator frames，再回來要求 Agent 做下一次決策。
+因此我們讓同一個動作持續一小段時間。
 
-這就是 `frame_skip=4` 的意義：
+例如 AI 選擇向右：
 
-~~~text
-Agent 選擇 RIGHT
+```text
+AI 選擇「向右」
         ↓
-RIGHT 在 emulator 中持續 4 個 frames
+遊戲連續更新 4 次
         ↓
-環境回傳下一個 processed observation
-~~~
+AI 再選下一個動作
+```
 
-它控制的是：
+這叫做 frame skip。它真正代表的是：
 
-> Agent 多久做一次新的 action decision。
+> 同一個動作要持續多久，AI 多久重新做一次決定。
 
-`AtariPreprocessing` 也會在跳過的 frame 中，對最近的畫面做 max-pooling。Atari 某些物件可能因為畫面更新方式，在單一 frame 中短暫消失；把最近畫面取最大值，可以降低重要 sprite flickering 造成的資訊遺失。這個 max-pooling 已經是官方 wrapper 的一部分，不需要在外面再做一次。
+在我們的設定裡，這個數字是 4。
 
-reset 時的 `noop_max=30` 是另一個容易混在一起的設定。它表示每一局開始時，可以隨機執行最多 30 個 `NOOP`，讓每一局不必永遠從完全相同的 emulator 時刻開始。這不是 frame skip，也不是 frame stacking；固定 seed 時，這個 reset 行為仍然可以重現。
+有一個容易忽略的地方：遊戲本身也可能自動跳過畫面。因此我們先把遊戲本身的跳過次數設成 1，再由畫面處理步驟統一負責「持續 4 次」。
 
-還有一個重要的 wrapper 邊界：底層 `ALE/Breakout-v5` 必須使用 `frameskip=1`。如果 base environment 自己已經 skip frames，再加上 `AtariPreprocessing(frame_skip=4)`，同一段時間就會被重複跳過。Gymnasium 也會直接拒絕這種設定。因此由 `AtariPreprocessing` 統一負責 frame skip，才能清楚知道每一個 agent step 的語意。
+如果兩邊都跳過，就會重複計算，AI 以為自己走了一小步，遊戲卻可能已經向前走了太多步。
 
-目前也保留 `repeat_action_probability=0.25`，不改變 `ALE/Breakout-v5` 的 sticky-action baseline。`terminal_on_life_loss=False` 則表示掉一條命不會在 preprocessing 階段被重新定義成完整 episode 結束；這是 episode semantics 的選擇，不應悄悄混進影像處理。
+## 為什麼還要保留最近幾張畫面？
 
-## Frame stacking：把短期時間資訊交給 Agent
+現在每次得到的畫面雖然比較小，但仍然只有一張。
 
-Frame skip 解決的是「多久選一次 action」，但它沒有讓 Agent 同時看見過去的畫面。要讓 Agent 推斷球的方向，還需要把最近幾張 processed observation 放在一起：
+假設球出現在同一個位置：
 
-~~~text
-obs(t-3)
-obs(t-2)
-obs(t-1)
-obs(t)
-    ↓
-stack
-    ↓
+```text
+畫面 A：球正在往右下方移動
+畫面 B：球正在往左上方移動
+```
+
+如果只看當下那一張，AI 很難分辨這兩種情況。
+
+人類通常不會只看一張截圖。我們會看前後幾個畫面，從位置的變化判斷球的方向。
+
+所以 Day 4 會保留最近四張灰階畫面：
+
+```text
+第 1 張畫面
+第 2 張畫面
+第 3 張畫面
+第 4 張畫面
+        ↓
+放在一起交給 AI
+```
+
+這個做法叫做 frame stacking，也就是把連續畫面疊在一起。
+
+最後的資料形狀是：
+
+```text
 (4, 84, 84)
-~~~
+```
 
-這就是 `FrameStackObservation(stack_size=4)` 的工作。它控制的是：
+其中：
 
-> Agent 每次做決策時，可以同時看到多少時間歷史。
+- 第一個 4 代表四個不同時間點的畫面；
+- 84 代表畫面高度；
+- 84 代表畫面寬度。
 
-兩個設定雖然都使用數字 4，意義卻完全不同：
+這裡的 4 不是四種顏色，而是四段短時間記錄。
 
-~~~text
+也要注意兩個「4」的差別：
+
+```text
 frame skip = 4
-  同一個 action 持續幾個 emulator frames
+  同一個動作持續 4 次遊戲更新
 
-frame stack = 4
-  一次 observation 保留幾張 processed frames
-~~~
+frame stacking = 4
+  一次保留最近 4 張畫面
+```
 
-Frame stacking 並不是先替 Agent 算出 `(vx, vy)`，再把速度數值塞進 state。它保留的是一段短時間的像素序列，讓之後的 neural network 可以從相鄰畫面的差異學出球的移動方向。
+它們剛好使用同一個數字，但解決的是完全不同的問題。
 
-reset 時，stack 裡還沒有四張不同的歷史畫面。`FrameStackObservation` 預設使用 `padding_type="reset"`，因此會用 reset 時的第一張 processed observation 填滿：
+## 遊戲剛開始時，還沒有四張畫面怎麼辦？
 
-~~~text
-reset:
-[f0, f0, f0, f0]
+一局遊戲剛開始時，我們手上只有第一張畫面，還沒有過去的三張畫面。
 
-step 1:
-[f0, f0, f0, f1]
+這時會用第一張畫面填滿整個畫面組合：
 
-step 2:
-[f0, f0, f1, f2]
-~~~
+```text
+剛開始：
+[第一張、第一張、第一張、第一張]
 
-這個 padding 讓每一次 reset 都有固定的 shape，也不會把上一局最後幾張畫面帶進下一局。
+下一次：
+[第一張、第一張、第一張、第二張]
 
-## 為什麼 shape 是 `(4, 84, 84)`？
+再下一次：
+[第一張、第一張、第二張、第三張]
+```
 
-最後的第一個維度不是 RGB channel，而是四個時間上的 grayscale observations：
+這樣每一次交給 AI 的資料大小都相同，也不會把上一局最後的畫面帶到下一局。
 
-~~~text
-4 個時間切片 × 84 高 × 84 寬
-~~~
+## 為什麼不現在就把數字變成小數？
 
-`FrameStackObservation` 會把 stack 軸放在第一個位置，因此這裡是 `(4, 84, 84)`，不是 `(84, 84, 4)`。後者是 channel-last 的排列；前者則是四個時間切片放在 leading axis，扮演後續 CNN 輸入中 channel-like 平面的角色，後兩個維度代表高度與寬度。此時還沒有建立 PyTorch tensor；我們先在 environment 邊界固定資料的 shape，之後 model pipeline 再決定何時轉成 tensor。
+目前每個像素仍然使用 `0` 到 `255` 的小整數表示。程式裡把這種資料稱為 `uint8`，但可以先把它理解成「很省空間的像素數字」。
 
-## 為什麼先保持 `uint8`？
+如果一開始就把所有畫面轉成小數，每個數字會需要更多記憶體。之後我們會保存大量遊戲畫面，讓 AI 從過去的經驗中學習；這時記憶體大小就會變得很重要。
 
-這次設定 `scale_obs=False`，所以 observation 仍然是 `uint8`，數值範圍是 `0..255`，而不是在 wrapper 中直接變成 `float32`。
+因此目前先保存小整數。等到真正送進模型之前，再把它轉成小數並縮放到 `0` 到 `1` 之間。
 
-這是 Replay Buffer 的工程選擇。每個 `uint8` 像素使用 1 byte；如果一開始就存成 `float32`，同樣的像素會使用 4 bytes。當 buffer 儲存大量 `(4, 84, 84)` observations 時，差異會直接反映在記憶體用量上。
+這樣可以同時得到兩個好處：
 
-等到真正送入模型之前，再把資料轉成 `float32` 並除以 `255.0`，就能把數值正規化與儲存格式分開處理。Environment 的 contract 因此保持輕量，也和之後使用 `uint8` replay buffer 的方向一致。
+- 保存大量畫面時比較省記憶體；
+- 模型計算時仍然可以使用適合計算的小數。
 
-## 實際看一次三階段輸出
+## 實際執行後看到了什麼？
 
-用下面的命令，以固定 seed 執行 8 個 processed steps：
+用固定的隨機起點執行 8 步後，可以看到三個階段的結果：
 
-~~~bash
-python inspect_preprocessing.py --steps 8 --seed 42
-~~~
-
-實際看到的 observation contract 是：
-
-~~~text
-Raw Atari observation
+```text
+原始畫面
   shape : (210, 160, 3)
   dtype : uint8
 
-After AtariPreprocessing
+整理後的單張畫面
   shape : (84, 84)
   dtype : uint8
 
-After FrameStackObservation(stack_size=4)
+最後交給 AI 的畫面
   shape : (4, 84, 84)
   dtype : uint8
-  min   : 0
-  max   : 148
-~~~
+```
 
-接著隨機 Agent 仍然使用原本的四個 Breakout actions；processed environment 只改變 observation，不改變 action semantics：
+每次遊戲更新時，AI 仍然使用原本的四個動作：不動、發射、向右、向左。今天改變的是 AI 看到的畫面格式，沒有改變遊戲本身可以做的事情。
 
-~~~text
-Step 0
-  action       : 0 (NOOP)
-  stacked_obs  : shape=(4, 84, 84), dtype=uint8
-  reward       : 0.0
-  terminated   : False
-  truncated    : False
+## Day 4 做完了什麼？
 
-Step 1
-  action       : 3 (LEFT)
-  stacked_obs  : shape=(4, 84, 84), dtype=uint8
-  reward       : 0.0
-  terminated   : False
-  truncated    : False
+Day 4 完成了一條完整的畫面整理流程：
 
-Processed steps: 8
-Episode return: 0.0
-Episodes ended: 0
-~~~
+```text
+原始彩色畫面
+(210, 160, 3)
+        ↓
+灰階、縮小
+(84, 84)
+        ↓
+同一個動作持續 4 次遊戲更新
+        ↓
+保留最近 4 張畫面
+(4, 84, 84)
+```
 
-這裡的重點不是這 8 步得到多少分，而是每次 `step()` 都維持相同的 observation contract，同時仍然回傳 reward、`terminated` 和 `truncated`。這使得 Day 3 的 transition 資料邊界可以延伸到 processed observation，而不必重新發明一套互動介面。
+這讓 AI 不只看見「球現在在哪裡」，也有機會從幾張連續畫面的差異中，理解球正在往哪裡移動。
 
-## 把 wrapper chain 收斂成一個 contract
+今天我們解決的是「AI 要看什麼」。
 
-整條 pipeline 的核心設定可以濃縮成下面這段：
+下一個問題則是：
 
-~~~python
-env = gym.make(
-    "ALE/Breakout-v5",
-    frameskip=1,
-    repeat_action_probability=0.25,
-)
-env = AtariPreprocessing(
-    env,
-    frame_skip=4,
-    screen_size=84,
-    grayscale_obs=True,
-    grayscale_newaxis=False,
-    scale_obs=False,
-)
-env = FrameStackObservation(env, stack_size=4)
-~~~
+> AI 已經看得到比較完整的遊戲狀態，那它要怎麼判斷哪個動作對未來最好？
 
-這段程式碼要讓我們看見的不是 API 參數清單，而是每一層的責任邊界：base environment 提供 Atari interaction；`AtariPreprocessing` 負責 frame skip、max-pooling、grayscale 和 resize；`FrameStackObservation` 負責保留短期歷史。正式使用時，這條 chain 由同一個 environment factory 建立，避免 inspection、測試和未來 training loop 各自長出不同版本。
-
-## 今天真正建立的是什麼？
-
-Day 4 結束後，Agent 每次看到的已經不再是未處理的 RGB 畫面，而是一個明確的輸入邊界：
-
-~~~text
-raw observation       = (210, 160, 3) / uint8
-processed observation = (84, 84) / uint8
-agent observation     = (4, 84, 84) / uint8
-~~~
-
-grayscale 和 resize 減少了不必要的影像負擔；frame skip 降低了 action decision 的頻率；max-pooling 處理 Atari 畫面更新可能造成的 flickering；frame stacking 則把短期時間資訊留給 Agent 自己學習。最後維持 `uint8`，讓資料在大量儲存時保持合理的記憶體成本。
-
-現在 Agent 已經拿到一個比單張 RGB frame 更完整的 observation，但還有一個更深的問題：它要怎麼判斷 `LEFT`、`RIGHT`、`NOOP`、`FIRE` 哪個 action 對未來比較好？
-
-下一篇會從 **MDP 與 Bellman Equation** 開始，討論狀態、動作與長期回饋之間的關係。
+這就是下一篇要開始討論的問題。
