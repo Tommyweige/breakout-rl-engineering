@@ -85,7 +85,7 @@ Frame stacking 讓代理人能夠從連續畫面推斷球的移動方向與速�
 每次互動會產生一筆 transition：
 
 ```text
-(state, action, reward, next_state, done)
+(state, action, reward, next_state, terminated, truncated)
 ```
 
 這些 transition 會被存放到 **Experience Replay Buffer**，並在訓練時抽樣使用。
@@ -97,7 +97,7 @@ Action
   ↓
 ALE/Breakout
   ↓
-Reward + Next State
+Reward + Next State + Episode Status
   ↓
 Replay Buffer
   ↓
@@ -373,7 +373,7 @@ Backend
 
 * Day 1 — [專案動機與開發路線](README.md)
 * Day 2 — [Atari Breakout、ALE 與 Gymnasium](docs/day02-breakout-ale-gymnasium.md)
-* Day 3 — State、Action、Reward 與強化學習產生的資料
+* Day 3 — [State、Action、Reward 與強化學習產生的資料](docs/day03-state-action-reward-data.md)
 * Day 4 — Atari 預處理與 frame stacking
 * Day 5 — MDP 與 Bellman Equation
 * Day 6 — 從 Q-Learning 到 Deep Q-Learning
