@@ -56,23 +56,26 @@ ALE/Breakout-v5
 
 ### Observation Pipeline
 
-原始 Atari 畫面預計經過以下預處理：
+原始 Atari 畫面會經過以下預處理：
 
 ```text
-210 × 160 RGB
+ALE/Breakout-v5
+210 × 160 × 3 RGB / uint8
       ↓
-灰階化
+AtariPreprocessing
+  - Frame Skip = 4
+  - Max Pooling
+  - Grayscale
+  - Resize = 84 × 84
       ↓
-調整大小至 84 × 84
+84 × 84 / uint8
       ↓
-Frame Skip = 4
+FrameStackObservation(stack_size=4)
       ↓
-堆疊 4 個畫面
-      ↓
-4 × 84 × 84
+4 × 84 × 84 / uint8
 ```
 
-Frame stacking 讓代理人能夠從連續畫面推斷球的移動方向與速度等資訊。
+底層 ALE environment 使用 `frameskip=1`，由 `AtariPreprocessing` 統一負責 frame skipping，避免重複 skip。Frame stacking 則讓代理人能夠從連續畫面推斷球的移動方向與速度等資訊。
 
 ---
 
@@ -374,7 +377,7 @@ Backend
 * Day 1 — [專案動機與開發路線](README.md)
 * Day 2 — [Atari Breakout、ALE 與 Gymnasium](docs/day02-breakout-ale-gymnasium.md)
 * Day 3 — [State、Action、Reward 與強化學習產生的資料](docs/day03-state-action-reward-data.md)
-* Day 4 — Atari 預處理與 frame stacking
+* Day 4 — [Atari 預處理與 frame stacking](docs/day04-atari-preprocessing-frame-stacking.md)
 * Day 5 — MDP 與 Bellman Equation
 * Day 6 — 從 Q-Learning 到 Deep Q-Learning
 
