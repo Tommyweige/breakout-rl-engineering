@@ -119,10 +119,4 @@ Action meanings: ['NOOP', 'FIRE', 'RIGHT', 'LEFT']
 
 這些資訊看起來很像幾行簡單的輸出，卻是後面所有訓練工作的基礎。當我們知道畫面長什麼樣子、動作怎麼表示、每一步會得到什麼回覆，才有辦法把 random policy 換成真正會學習的 Agent。
 
-## 下一篇
-
-現在我們已經知道 Agent 看得到什麼、可以做什麼，也知道一次 `env.step()` 會回傳一組資料。可是這組資料裡的每個欄位，究竟各自代表什麼？
-
-下一篇先不急著處理畫面。我們會在 [Day 3 文章](day03-state-action-reward-data.md) 裡把一次 `env.step(action)` 拆開，看看 state、action、reward 和 next state 如何組成一筆真正的強化學習資料，並追蹤這些資料如何在 Agent 與 Breakout 的互動中持續產生。
-
 
