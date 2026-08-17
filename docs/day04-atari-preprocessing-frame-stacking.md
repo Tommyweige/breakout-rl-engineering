@@ -222,3 +222,5 @@ Day 4 完成了一條完整的畫面整理流程：
 > AI 已經看得到比較完整的遊戲狀態，那它要怎麼判斷哪個動作對未來最好？
 
 這就是下一篇要開始討論的問題。
+
+下一篇：[Day 5 — MDP、Return 與 Bellman Equation](day05-mdp-bellman-equation.md)
