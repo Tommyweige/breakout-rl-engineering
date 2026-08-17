@@ -378,7 +378,7 @@ Backend
 * Day 2 — [Atari Breakout、ALE 與 Gymnasium](docs/day02-breakout-ale-gymnasium.md)
 * Day 3 — [State、Action、Reward 與強化學習產生的資料](docs/day03-state-action-reward-data.md)
 * Day 4 — [Atari 預處理與 frame stacking](docs/day04-atari-preprocessing-frame-stacking.md)
-* Day 5 — MDP 與 Bellman Equation
+* Day 5 — [MDP、Return 與 Bellman Equation](docs/day05-mdp-bellman-equation.md)
 * Day 6 — 從 Q-Learning 到 Deep Q-Learning
 
 ### Phase 2 — 建立 DQN
