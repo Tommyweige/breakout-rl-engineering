@@ -128,8 +128,8 @@ Q*(s,a) = E[r + gamma × max_a' Q*(s',a')]
 
 專案中的小型 demo 會用上面的 toy MDP 計算兩種數字。執行：
 
-```bash
-python bellman_demo.py --gamma 0.9
+```powershell
+python .\bellman_demo.py --gamma 0.9
 ```
 
 實際輸出的重點如下：
@@ -145,7 +145,9 @@ terminal:    reward 1 + no bootstrap = 1.000000
 non-terminal: reward 0 + 0.9 * next_value 3 = 2.700000
 ```
 
-![Bellman demo 顯示 SAFE、WAIT 與 one-step target 的實際輸出](../assets/day05/bellman-demo-output.png)
+下圖是同一條命令在 Windows PowerShell 的實際執行畫面：
+
+![Windows PowerShell 實際執行 Bellman demo，顯示 SAFE、WAIT 與 one-step target 的輸出](../assets/day05/bellman-demo-output.png)
 
 *在 `gamma = 0.9` 時，WAIT 雖然從 immediate reward `0` 開始，折扣後的 return `2.43` 仍高於 SAFE 的 `1`。*
 
