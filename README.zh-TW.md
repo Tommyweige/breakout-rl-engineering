@@ -379,7 +379,7 @@ Backend
 * Day 3 — [State、Action、Reward 與強化學習產生的資料](docs/day03-state-action-reward-data.md)
 * Day 4 — [Atari 預處理與 frame stacking](docs/day04-atari-preprocessing-frame-stacking.md)
 * Day 5 — [MDP、Return 與 Bellman Equation](docs/day05-mdp-bellman-equation.md)
-* Day 6 — 從 Q-Learning 到 Deep Q-Learning
+* Day 6 — [從 Bellman Equation 到 Q-Learning，再理解為什麼 Breakout 需要 Deep Q-Learning](docs/day06-q-learning-to-deep-q-learning.md)
 
 ### Phase 2 — 建立 DQN
 

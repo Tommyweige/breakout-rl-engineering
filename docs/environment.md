@@ -32,6 +32,7 @@ python play_breakout.py
 | ALE-Py | 0.12.0 | Atari Learning Environment Python binding |
 | NumPy | 2.5.2 | observation 與數值運算 |
 | opencv-python | 5.0.0.93 | AtariPreprocessing 的 grayscale 與 resize |
+| Matplotlib | 3.11.1 | 由真實 Q-Learning trace 產生 learning curve 與 update breakdown 圖 |
 
 其他 transitive dependencies 的版本會記錄在 [`environment.lock.yml`](../environment.lock.yml)。
 

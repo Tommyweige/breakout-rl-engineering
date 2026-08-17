@@ -5,6 +5,7 @@ dependencies:
   - python=3.12
   - tk
   - numpy
+  - matplotlib
   - pip
   - pip:
       - ale-py==0.12.0

@@ -199,4 +199,4 @@ Bellman Equation 把現在的 reward 接上未來的價值
 
 現在只剩下一個自然的問題：Q-value 一開始並不知道，Agent 要怎麼靠實際 interaction 一次次把它學準？這就是 Day 6 要回答的 Q-Learning 問題。
 
-下一篇：Day 6 — 從 Bellman Equation 到 Q-Learning，再理解為什麼 Breakout 需要 Deep Q-Learning。
+下一篇：[Day 6 — 從 Bellman Equation 到 Q-Learning，再理解為什麼 Breakout 需要 Deep Q-Learning](day06-q-learning-to-deep-q-learning.md)。
