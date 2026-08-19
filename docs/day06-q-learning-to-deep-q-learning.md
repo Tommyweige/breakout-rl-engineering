@@ -286,4 +286,4 @@ python .\scripts\visualize_day06.py
 
 下一個問題是：**如果輸入變成四張 84 × 84 的 Atari 畫面，CNN 要怎麼把它轉成可以估計四個 action 價值的 features？**
 
-這就是 Day 7 的 CNN Feature Extractor。
+這就是 [Day 7 的 CNN Feature Extractor](day07-cnn-and-tensor-dimensions.md)。

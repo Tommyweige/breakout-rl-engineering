@@ -383,7 +383,7 @@ Backend
 
 ### Phase 2 — 建立 DQN
 
-* Day 7 — CNN 架構與 tensor 維度
+* Day 7 — [CNN 架構與 tensor 維度](docs/day07-cnn-and-tensor-dimensions.md)
 * Day 8 — 實作 DQN network
 * Day 9 — Experience Replay
 * Day 10 — Exploration vs. Exploitation
