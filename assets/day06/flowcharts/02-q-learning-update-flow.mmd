@@ -1,0 +1,18 @@
+%%{init: {
+  "theme": "base",
+  "themeVariables": {
+    "fontFamily": "Microsoft JhengHei, Arial, sans-serif",
+    "primaryColor": "#eff6ff",
+    "primaryTextColor": "#0f172a",
+    "primaryBorderColor": "#2563eb",
+    "lineColor": "#64748b",
+    "secondaryColor": "#fff7ed",
+    "tertiaryColor": "#f8fafc"
+  }
+}}%%
+flowchart LR
+    A["transition<br/>r = 0<br/>next state = 1"] --> B["建立 target<br/>0 + 0.99 × 0.1 = 0.099"]
+    Q["目前估計<br/>Q(0, RIGHT) = 0"] --> C["計算 TD error<br/>0.099 - 0 = 0.099"]
+    B --> C
+    C --> D["只修正一部分<br/>Q ← Q + α × TD error"]
+    D --> E["新的 Q(0, RIGHT)<br/>= 0.0099"]

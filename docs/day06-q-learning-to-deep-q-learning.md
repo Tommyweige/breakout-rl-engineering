@@ -12,13 +12,7 @@ Day 5 已經說明一件事：一個 action 的價值，不能只看這一步拿
 
 這個 demo 的小環境只有兩個非 terminal state。先用圖看懂 Agent 到底有哪些路可以走：
 
-```mermaid
-flowchart LR
-    S0["state 0"] -->|"RIGHT / reward 0"| S1["state 1"]
-    S0 -->|"LEFT / reward 0"| T["TERMINAL"]
-    S1 -->|"RIGHT / reward 1"| T
-    S1 -->|"LEFT / reward 0"| T
-```
+![Toy MDP 的 state transition 流程圖](../assets/day06/flowcharts/01-state-transitions.png)
 
 真正能拿到 reward 1 的路徑只有一條：`state 0 → RIGHT → state 1 → RIGHT → TERMINAL`。如果 Agent 在任何一個 state 選 LEFT，episode 都會直接結束，而且拿不到 reward。
 
@@ -104,14 +98,7 @@ updated Q = current_q + alpha × TD error
 
 如果把這次 update 當成一條資料流，實際上就是下面四個步驟：
 
-```mermaid
-flowchart LR
-    A["transition<br/>r = 0<br/>next state = 1"] --> B["建立 target<br/>0 + 0.99 × 0.1 = 0.099"]
-    Q["目前估計<br/>Q(0, RIGHT) = 0"] --> C["計算 TD error<br/>0.099 - 0 = 0.099"]
-    B --> C
-    C --> D["只修正一部分<br/>Q ← Q + α × TD error"]
-    D --> E["新的 Q(0, RIGHT)<br/>= 0.0099"]
-```
+![一次 Q-Learning update 的資料流流程圖](../assets/day06/flowcharts/02-q-learning-update-flow.png)
 
 這是同一次真實 update 的數值拆解：
 
@@ -189,13 +176,7 @@ target = 0 + 0.99 × 0.1 = 0.099
 
 用流程圖看會更清楚：reward 並不是直接「跳回」前一個 state，而是透過下一個 state 已經學到的 Q-value，一次一次往前傳。
 
-```mermaid
-flowchart RL
-    R["reward 1"] --> Q1["先更新<br/>Q(1, RIGHT)"]
-    Q1 --> T1["之後 state 0 → RIGHT<br/>看到 max next Q > 0"]
-    T1 --> Q0["再更新<br/>Q(0, RIGHT)"]
-    Q0 --> P["更早的 state<br/>未來也能用同樣方式得到訊號"]
-```
+![Bootstrap 讓 reward 影響逐步往前傳的流程圖](../assets/day06/flowcharts/03-bootstrap-reward-propagation.png)
 
 reward 1 並沒有直接出現在 state 0 → RIGHT 這一步，但它的影響透過 Q(state 1, RIGHT) 開始往前傳。這就是前面 Figure 1 中看到「後面的 Q-value 先上升，前面的 Q-value 再跟著上升」的原因。
 
@@ -212,15 +193,7 @@ Agent 不需要等完整局遊戲結束，才知道前面的 action 可能有價
 - epsilon = 0.2 表示保留一部分探索機會；
 - Day 6 不加入 epsilon decay，完整的探索排程留到 Day 10。
 
-```mermaid
-flowchart TD
-    S["目前 state"] --> E{"這次要探索嗎？<br/>random < epsilon"}
-    E -->|"是"| R["隨機選一個 action"]
-    E -->|"否"| G["選目前 Q-value 最大的 action"]
-    R --> A["把 action 送進 environment"]
-    G --> A
-    A --> T["得到 transition<br/>(s, a, r, s')"]
-```
+![Epsilon-greedy action selection 流程圖](../assets/day06/flowcharts/04-epsilon-greedy.png)
 
 固定 seed 讓這段隨機探索可以重現。這不是把隨機拿掉，而是讓同一組條件能再次產生同一份 trace。
 
@@ -234,16 +207,7 @@ max_a' Q(s', a')
 
 也就是「實際怎麼走」和「update 時假設未來會怎麼走」可以是兩件不同的事：
 
-```mermaid
-flowchart LR
-    S["state s"] --> B["Behavior policy<br/>epsilon-greedy"]
-    B --> A["實際執行 action a"]
-    A --> N["得到 next state s'"]
-    N --> T["Target<br/>使用 max Q(s', a')"]
-
-    B -. "可能因探索選非最佳 action" .-> A
-    T -. "更新時仍假設下一步選目前最佳 action" .-> U["更新 Q(s, a)"]
-```
+![Q-Learning 的 behavior policy 與 target policy 對照流程圖](../assets/day06/flowcharts/05-off-policy.png)
 
 簡單來說，Agent 可以一邊因為 epsilon 亂試，一邊學「如果接下來都選目前認為最好的 action，這裡的價值是多少」。
 
@@ -276,20 +240,7 @@ Neural Network 不只是為了省掉一張巨大的表，而是希望從大量�
 
 這就是從 Q-Learning 走到 Deep Q-Learning 最重要的一步：**Q-value 的定義沒有變，改變的是「我們怎麼得到 Q-value」。**
 
-```mermaid
-flowchart LR
-    subgraph TABULAR["Tabular Q-Learning"]
-        TS["小型離散 state"] --> QT["Q-table"]
-        QT --> QTA["直接查出<br/>每個 action 的 Q-value"]
-    end
-
-    subgraph DQN["Deep Q-Learning / DQN"]
-        PS["Breakout state<br/>4 × 84 × 84 pixels"] --> NN["Neural Network"]
-        NN --> QV["Q(NOOP)<br/>Q(FIRE)<br/>Q(RIGHT)<br/>Q(LEFT)"]
-    end
-
-    QT -. "state 太多，表格不可行" .-> NN
-```
+![Tabular Q-Learning 與 Deep Q-Learning 的流程對照圖](../assets/day06/flowcharts/06-tabular-vs-dqn.png)
 
 小型 toy problem 裡，我們可以找到某個 `Q(s,a)` 的格子，直接把那個數字改掉；到了 Breakout，則改成讓 neural network 接收整個 state，一次輸出所有 actions 的 Q-values。
 
@@ -329,19 +280,7 @@ python .\scripts\visualize_day06.py
 
 今天真正跑過的因果鏈，可以濃縮成下面這張圖：
 
-```mermaid
-flowchart TD
-    A["Q-table 一開始全部是 0"] --> B["Agent 執行 transition"]
-    B --> C["探索到能取得 reward 1 的路徑"]
-    C --> D["Q(1, RIGHT) 先上升"]
-    D --> E["前一個 state 使用 max next Q"]
-    E --> F["Q(0, RIGHT) 也開始上升"]
-    F --> G["價值透過 bootstrap 逐步往前傳"]
-    G --> H["但 Breakout state 空間太大"]
-    H --> I["Q-table 不再可行"]
-    I --> J["用 Neural Network 近似 Q-function"]
-    J --> K["下一步：CNN 從 Atari 畫面抽 features"]
-```
+![Day 6 接到 Day 7 的學習流程圖](../assets/day06/flowcharts/07-day6-to-day7.png)
 
 現在我們知道 Q-Learning 到底在更新什麼，也能從真實數據看見價值如何逐步改變；更重要的是，也能看出 DQN 並不是突然換了一套完全不同的方法，而是把原本「查 Q-table」這件事換成「讓 neural network 估計 Q-value」。
 

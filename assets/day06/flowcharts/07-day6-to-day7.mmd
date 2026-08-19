@@ -1,0 +1,23 @@
+%%{init: {
+  "theme": "base",
+  "themeVariables": {
+    "fontFamily": "Microsoft JhengHei, Arial, sans-serif",
+    "primaryColor": "#eff6ff",
+    "primaryTextColor": "#0f172a",
+    "primaryBorderColor": "#2563eb",
+    "lineColor": "#64748b",
+    "secondaryColor": "#fff7ed",
+    "tertiaryColor": "#f8fafc"
+  }
+}}%%
+flowchart TD
+    A["Q-table 一開始全部是 0"] --> B["Agent 執行 transition"]
+    B --> C["探索到能取得 reward 1 的路徑"]
+    C --> D["Q(1, RIGHT) 先上升"]
+    D --> E["前一個 state 使用 max next Q"]
+    E --> F["Q(0, RIGHT) 也開始上升"]
+    F --> G["價值透過 bootstrap 逐步往前傳"]
+    G --> H["但 Breakout state 空間太大"]
+    H --> I["Q-table 不再可行"]
+    I --> J["用 Neural Network 近似 Q-function"]
+    J --> K["下一步：CNN 從 Atari 畫面抽 features"]

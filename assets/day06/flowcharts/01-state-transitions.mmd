@@ -1,0 +1,17 @@
+%%{init: {
+  "theme": "base",
+  "themeVariables": {
+    "fontFamily": "Microsoft JhengHei, Arial, sans-serif",
+    "primaryColor": "#eff6ff",
+    "primaryTextColor": "#0f172a",
+    "primaryBorderColor": "#2563eb",
+    "lineColor": "#64748b",
+    "secondaryColor": "#fff7ed",
+    "tertiaryColor": "#f8fafc"
+  }
+}}%%
+flowchart LR
+    S0["state 0"] -->|"RIGHT / reward 0"| S1["state 1"]
+    S0 -->|"LEFT / reward 0"| T["TERMINAL"]
+    S1 -->|"RIGHT / reward 1"| T
+    S1 -->|"LEFT / reward 0"| T

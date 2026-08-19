@@ -1,0 +1,24 @@
+%%{init: {
+  "theme": "base",
+  "themeVariables": {
+    "fontFamily": "Microsoft JhengHei, Arial, sans-serif",
+    "primaryColor": "#eff6ff",
+    "primaryTextColor": "#0f172a",
+    "primaryBorderColor": "#2563eb",
+    "lineColor": "#64748b",
+    "secondaryColor": "#fff7ed",
+    "tertiaryColor": "#f8fafc"
+  }
+}}%%
+flowchart LR
+    subgraph TABULAR["Tabular Q-Learning"]
+        TS["小型離散 state"] --> QT["Q-table"]
+        QT --> QTA["直接查出<br/>每個 action 的 Q-value"]
+    end
+
+    subgraph DQN["Deep Q-Learning / DQN"]
+        PS["Breakout state<br/>4 × 84 × 84 pixels"] --> NN["Neural Network"]
+        NN --> QV["Q(NOOP)<br/>Q(FIRE)<br/>Q(RIGHT)<br/>Q(LEFT)"]
+    end
+
+    QT -. "state 太多，表格不可行" .-> NN
