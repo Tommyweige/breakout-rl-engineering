@@ -1,0 +1,19 @@
+%%{init: {
+  "theme": "base",
+  "themeVariables": {
+    "fontFamily": "Microsoft JhengHei, Arial, sans-serif",
+    "primaryColor": "#eff6ff",
+    "primaryTextColor": "#0f172a",
+    "primaryBorderColor": "#2563eb",
+    "lineColor": "#64748b",
+    "secondaryColor": "#fff7ed",
+    "tertiaryColor": "#f8fafc"
+  }
+}}%%
+flowchart TD
+    S["目前 state"] --> E{"這次要探索嗎？<br/>random < epsilon"}
+    E -->|"是"| R["隨機選一個 action"]
+    E -->|"否"| G["選目前 Q-value 最大的 action"]
+    R --> A["把 action 送進 environment"]
+    G --> A
+    A --> T["得到 transition<br/>(s, a, r, s')"]

@@ -1,0 +1,17 @@
+%%{init: {
+  "theme": "base",
+  "themeVariables": {
+    "fontFamily": "Microsoft JhengHei, Arial, sans-serif",
+    "primaryColor": "#eff6ff",
+    "primaryTextColor": "#0f172a",
+    "primaryBorderColor": "#2563eb",
+    "lineColor": "#64748b",
+    "secondaryColor": "#fff7ed",
+    "tertiaryColor": "#f8fafc"
+  }
+}}%%
+flowchart RL
+    R["reward 1"] --> Q1["先更新<br/>Q(1, RIGHT)"]
+    Q1 --> T1["之後 state 0 → RIGHT<br/>看到 max next Q > 0"]
+    T1 --> Q0["再更新<br/>Q(0, RIGHT)"]
+    Q0 --> P["更早的 state<br/>未來也能用同樣方式得到訊號"]
