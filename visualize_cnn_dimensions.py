@@ -13,7 +13,7 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 
 
-DEFAULT_OUTPUT = Path("artifacts/day07/cnn-dimensions.png")
+DEFAULT_OUTPUT = Path("assets/day07/cnn-dimensions.png")
 
 
 def parse_args() -> argparse.Namespace:
