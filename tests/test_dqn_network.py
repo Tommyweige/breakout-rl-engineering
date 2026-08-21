@@ -43,18 +43,13 @@ class DQNNetworkTests(unittest.TestCase):
         with torch.inference_mode():
             q_values = model(observations)
 
+        self.assertFalse(any(isinstance(layer, torch.nn.Softmax) for layer in model.q_head))
         probability_sums = q_values.sum(dim=1)
         self.assertFalse(
             torch.allclose(
                 probability_sums,
                 torch.ones_like(probability_sums),
                 atol=1e-5,
-            )
-        )
-        self.assertFalse(
-            all(
-                isinstance(layer, torch.nn.Softmax)
-                for layer in model.q_head
             )
         )
 
@@ -64,10 +59,7 @@ class DQNNetworkTests(unittest.TestCase):
 
         model(observations).sum().backward()
 
-        cnn_gradients = [
-            parameter.grad
-            for parameter in model.feature_extractor.parameters()
-        ]
+        cnn_gradients = [parameter.grad for parameter in model.feature_extractor.parameters()]
         head_gradients = [parameter.grad for parameter in model.q_head.parameters()]
 
         self.assertTrue(cnn_gradients)
@@ -100,9 +92,7 @@ class DQNNetworkTests(unittest.TestCase):
             torch.save(model.state_dict(), path)
 
             clone = DQNNetwork(num_actions=4).cpu().eval()
-            clone.load_state_dict(
-                torch.load(path, map_location="cpu", weights_only=True)
-            )
+            clone.load_state_dict(torch.load(path, map_location="cpu", weights_only=True))
 
             with torch.inference_mode():
                 actual = clone(observations)
