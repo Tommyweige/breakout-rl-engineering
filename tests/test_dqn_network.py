@@ -35,21 +35,15 @@ class DQNNetworkTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     DQNNetwork(num_actions=invalid)  # type: ignore[arg-type]
 
-    def test_output_is_raw_q_values_not_softmax_probabilities(self) -> None:
-        torch.manual_seed(42)
+    def test_q_head_ends_in_linear_without_probability_activation(self) -> None:
         model = DQNNetwork(num_actions=4).cpu().eval()
-        observations = torch.randn(3, 4, 84, 84)
 
-        with torch.inference_mode():
-            q_values = model(observations)
-
-        self.assertFalse(any(isinstance(layer, torch.nn.Softmax) for layer in model.q_head))
-        probability_sums = q_values.sum(dim=1)
+        self.assertIsInstance(model.q_head[-1], torch.nn.Linear)
+        self.assertEqual(model.q_head[-1].out_features, 4)
         self.assertFalse(
-            torch.allclose(
-                probability_sums,
-                torch.ones_like(probability_sums),
-                atol=1e-5,
+            any(
+                isinstance(layer, (torch.nn.Softmax, torch.nn.Sigmoid))
+                for layer in model.q_head
             )
         )
 
