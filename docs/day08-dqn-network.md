@@ -207,6 +207,8 @@ NOOP / FIRE / RIGHT / LEFT
 
 這張圖要幫助理解的是 **network output 和 action 的一一對應關係**。
 
+[![Day 8 raw Q-values for four actions](https://github.com/Tommyweige/breakout-rl-engineering/blob/main/assets/day08/dqn-q-values.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/main/assets/day08/dqn-q-values.png)
+
 在模型還沒有訓練以前，柱子的高低不能拿來判斷策略好壞；它只能顯示目前這次 forward 的數值結果。
 
 產圖程式保留在：

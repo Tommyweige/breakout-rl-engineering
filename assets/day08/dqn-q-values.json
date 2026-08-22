@@ -1,0 +1,41 @@
+{
+  "command": "python visualize_dqn_network.py --device cpu --seed 42",
+  "seed": 42,
+  "device": "cpu",
+  "observation_shape": [
+    4,
+    84,
+    84
+  ],
+  "model_input_shape": [
+    1,
+    4,
+    84,
+    84
+  ],
+  "feature_shape": [
+    1,
+    3136
+  ],
+  "output_shape": [
+    1,
+    4
+  ],
+  "action_meanings": [
+    "NOOP",
+    "FIRE",
+    "RIGHT",
+    "LEFT"
+  ],
+  "q_values": [
+    -0.018794821575284004,
+    -0.023067481815814972,
+    0.02891855500638485,
+    -0.0315503366291523
+  ],
+  "greedy_action_index": 2,
+  "greedy_action_meaning": "RIGHT",
+  "parameter_count": 1686180,
+  "state_dict_roundtrip_max_abs_diff": 0.0,
+  "trained": false
+}
