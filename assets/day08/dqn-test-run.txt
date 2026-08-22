@@ -1,0 +1,12 @@
+test_action_count_is_configurable (tests.test_dqn_network.DQNNetworkTests.test_action_count_is_configurable) ... ok
+test_backward_reaches_cnn_and_q_head_parameters (tests.test_dqn_network.DQNNetworkTests.test_backward_reaches_cnn_and_q_head_parameters) ... ok
+test_batch_one_and_eight_produce_one_q_value_per_action (tests.test_dqn_network.DQNNetworkTests.test_batch_one_and_eight_produce_one_q_value_per_action) ... ok
+test_feature_extractor_is_reused_by_forward (tests.test_dqn_network.DQNNetworkTests.test_feature_extractor_is_reused_by_forward) ... ok
+test_invalid_action_count_is_rejected (tests.test_dqn_network.DQNNetworkTests.test_invalid_action_count_is_rejected) ... ok
+test_output_is_raw_q_values_not_softmax_probabilities (tests.test_dqn_network.DQNNetworkTests.test_output_is_raw_q_values_not_softmax_probabilities) ... ok
+test_state_dict_save_load_preserves_outputs (tests.test_dqn_network.DQNNetworkTests.test_state_dict_save_load_preserves_outputs) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.162s
+
+OK
