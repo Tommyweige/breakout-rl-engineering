@@ -49,32 +49,6 @@ state → action label
 
 這個差別會一路影響後面的 Bellman target、Experience Replay 和 training loop。
 
-## 先確認這個 network 真的能跑
-
-在開始解釋 Q-value 前，先做一件很實際的事：把 Day 8 的 DQN core tests 真正跑一次。
-
-執行：
-
-```powershell
-python -m unittest tests.test_dqn_network -v
-```
-
-這次 CPU 執行結果如下：
-
-![Day 8 actual DQN CPU test run](https://github.com/Tommyweige/breakout-rl-engineering-private/raw/e45a237ccc5373802e7f4f836e79bcb0fb551cd6/assets/day08/dqn-test-run.svg)
-
-這不是裝飾用的 terminal 圖。圖片內容直接來自實際執行輸出，原始文字也保存在 `assets/day08/dqn-test-run.txt`。
-
-從這次執行可以確認幾件 Day 8 真正在意的事情：batch size 1 和 8 都會得到正確的 action-value shape、action count 可以改、最後沒有 Softmax、gradient 能從 Q head 回到 CNN，而且 `state_dict` save/load 後，同一個 input 的輸出保持一致。
-
-但這張圖**不能**證明 Agent 已經會玩 Breakout。
-
-它只能證明：
-
-> **DQN network 的資料流與 PyTorch 行為符合我們目前的設計。**
-
-學會玩遊戲，是之後訓練資料和 optimizer 的問題。
-
 ## DQN 真正輸出的是什麼？
 
 Day 8 的 `inspect_dqn_network.py` 會建立 `ALE/Breakout-v5` environment，拿到一個真實 `(4, 84, 84)` observation，再送進 DQN：
