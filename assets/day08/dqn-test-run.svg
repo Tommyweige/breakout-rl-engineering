@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="524" viewBox="0 0 1600 524">
+<title>Day 8 actual CPU unit test output</title>
+<desc>Image rendered directly from stdout captured from python -m unittest tests.test_dqn_network -v.</desc>
+<rect width="100%" height="100%" rx="16" fill="#121212"/>
+<rect width="100%" height="54" rx="16" fill="#242424"/>
+<circle cx="26" cy="27" r="8" fill="#f05a55"/><circle cx="52" cy="27" r="8" fill="#ebbe46"/><circle cx="78" cy="27" r="8" fill="#5abe5f"/>
+<text x="108" y="34" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="17" fill="#eeeeee">Day 8 — actual CPU test run</text>
+<text x="24" y="82" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="18" fill="#aee6ae">test_action_count_is_configurable (tests.test_dqn_network.DQNNetworkTests.test_action_count_is_configurable) ... ok</text>
+<text x="24" y="113" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="18" fill="#aee6ae">test_backward_reaches_cnn_and_q_head_parameters (tests.test_dqn_network.DQNNetworkTests.test_backward_reaches_cnn_and_q_head_parameters) ... ok</text>
+<text x="24" y="144" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="18" fill="#aee6ae">test_batch_one_and_eight_produce_one_q_value_per_action (tests.test_dqn_network.DQNNetworkTests.test_batch_one_and_eight_produce_one_q_value_per_action) ... ok</text>
+<text x="24" y="175" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="18" fill="#aee6ae">test_feature_extractor_is_reused_by_forward (tests.test_dqn_network.DQNNetworkTests.test_feature_extractor_is_reused_by_forward) ... ok</text>
+<text x="24" y="206" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="18" fill="#aee6ae">test_invalid_action_count_is_rejected (tests.test_dqn_network.DQNNetworkTests.test_invalid_action_count_is_rejected) ... ok</text>
+<text x="24" y="237" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="18" fill="#aee6ae">test_output_is_raw_q_values_not_softmax_probabilities (tests.test_dqn_network.DQNNetworkTests.test_output_is_raw_q_values_not_softmax_probabilities) ... ok</text>
+<text x="24" y="268" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="18" fill="#aee6ae">test_state_dict_save_load_preserves_outputs (tests.test_dqn_network.DQNNetworkTests.test_state_dict_save_load_preserves_outputs) ... ok</text>
+<text x="24" y="299" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="18" fill="#e3e3e3"></text>
+<text x="24" y="330" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="18" fill="#e3e3e3">----------------------------------------------------------------------</text>
+<text x="24" y="361" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="18" fill="#e3e3e3">Ran 7 tests in 0.162s</text>
+<text x="24" y="392" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="18" fill="#e3e3e3"></text>
+<text x="24" y="423" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="18" fill="#aee6ae">OK</text>
+<text x="24" y="496" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="15" fill="#999999">Command: python -m unittest tests.test_dqn_network -v</text>
+</svg>
