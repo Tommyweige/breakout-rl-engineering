@@ -4,7 +4,17 @@
 
 Files under `docs/day*.md` are reader-facing technical articles, not README-style implementation reports, PR descriptions, lab notes, or acceptance-checklist prose.
 
-Write from the reader's understanding path: problem → intuition → technical mechanism → real evidence → limitation → next question. Keep technical depth, but do not organize the article around filenames, tests, acceptance criteria, or implementation order unless that ordering genuinely helps explain the concept.
+Write from the reader's understanding path: problem → intuition → technical mechanism → real evidence → limitation → next step. Keep technical depth, but do not organize the article around filenames, tests, acceptance criteria, or implementation order unless that ordering genuinely helps explain the concept.
+
+### Keep implementation detail proportional
+
+Do not paste code merely because it exists in the implementation.
+
+Keep a code snippet only when seeing the code materially helps the reader understand the concept being taught. Prefer a compact shape/data-flow example or a short representative fragment over reproducing constructors, validation logic, CLI wiring, serialization code, test cases, parameter counts, or file-by-file implementation details.
+
+Tests and engineering checks should normally stay in the repository rather than becoming article sections. Mention them only when the observed result teaches something the reader needs to understand.
+
+If a paragraph can explain the idea more clearly than a code block, use the paragraph.
 
 ### Heading style
 
@@ -18,7 +28,7 @@ Prefer a natural mix of heading styles:
 - conclusion headings, e.g. `未訓練模型的 argmax 沒有策略意義`
 - process headings, e.g. `從 3,136 features 到四個 Q-values`
 - evidence headings, e.g. `用真實 forward 檢查輸出`
-- occasional question headings when they genuinely improve understanding, e.g. `Q-value 是機率嗎？`
+- occasional question headings when they genuinely improve understanding
 
 A heading should tell the reader what the section is about or what they will learn from it. If converting a statement into a question makes it longer, more obvious, or more like filler, keep it as a statement.
 
@@ -33,9 +43,19 @@ For new or modified article attachments, do **not** use parent-relative Markdown
 ../../assets/example.svg
 ```
 
-Use an absolute repository/GitHub reference instead. For image assets that must render from GitHub, prefer a full absolute GitHub `raw` URL pointing to a stable ref. When an article is moved/synchronized to another repository, rewrite the absolute repository URL to that repository rather than leaving a private-repo URL behind.
+Use an absolute GitHub URL instead.
 
-Generated artifact paths shown as text should also be root-anchored, for example:
+For private-repository images, do not use `raw.githubusercontent.com` as the default article link because authenticated browser rendering can be unreliable. Prefer a full GitHub `blob` URL on a stable commit/ref with `?raw=1` for the image source, and wrap the image in a link to the corresponding blob page so the reader can click it.
+
+Example pattern:
+
+```md
+[![diagram](https://github.com/OWNER/REPO/blob/COMMIT/assets/dayXX/diagram.svg?raw=1)](https://github.com/OWNER/REPO/blob/COMMIT/assets/dayXX/diagram.svg)
+```
+
+When an article is synchronized to another repository, rewrite the absolute repository URL to that repository rather than leaving a private-repo URL behind.
+
+Generated artifact paths shown as text should be root-anchored, for example:
 
 ```text
 /assets/day08/dqn-q-values.png
@@ -59,4 +79,4 @@ For every important image, the article should explain: what the reader is seeing
 
 ## Day-to-day reproducibility
 
-For Day 7 onward, prefer a reproducible visualization/inspection script and preserve seed/run/checkpoint/source metadata when applicable. The article should provide the command needed to regenerate the artifact.
+For Day 7 onward, prefer a reproducible visualization/inspection script and preserve seed/run/checkpoint/source metadata when applicable. The article should provide the command needed to regenerate the artifact when the command materially helps reproducibility.
