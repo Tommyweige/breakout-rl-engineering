@@ -23,7 +23,7 @@ argmax
 greedy action
 ```
 
-[![Day 8 DQN forward path](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/73fbe691af4d7d0a7b00893e700d9f1bbb0c36b5/assets/day08/dqn-forward-flow.svg?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/73fbe691af4d7d0a7b00893e700d9f1bbb0c36b5/assets/day08/dqn-forward-flow.svg)
+[![Day 8 DQN forward path](https://github.com/Tommyweige/breakout-rl-engineering/blob/73fbe691af4d7d0a7b00893e700d9f1bbb0c36b5/assets/day08/dqn-forward-flow.svg?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/73fbe691af4d7d0a7b00893e700d9f1bbb0c36b5/assets/day08/dqn-forward-flow.svg)
 
 這張圖最重要的是中間的關係：
 
