@@ -211,21 +211,6 @@ NOOP / FIRE / RIGHT / LEFT
 
 在模型還沒有訓練以前，柱子的高低不能拿來判斷策略好壞；它只能顯示目前這次 forward 的數值結果。
 
-產圖程式保留在：
-
-```text
-/visualize_dqn_network.py
-```
-
-輸出位置為：
-
-```text
-/assets/day08/dqn-q-values.png
-/assets/day08/dqn-q-values.json
-```
-
-圖片必須由真實 Breakout observation 和實際 DQN forward 產生，不使用手寫 Q-values。
-
 ## Day 8 完成了哪一塊
 
 走到這裡，從 Atari 畫面到 action value 的路徑已經接起來：
