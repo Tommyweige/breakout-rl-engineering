@@ -1,0 +1,11 @@
+flowchart TD
+    A["Agent + Breakout environment 互動<br/>state + action"] --> B["組成 transition<br/>state + action + next_state + reward + flags"]
+    B --> C["ReplayBuffer.add(...)<br/>複製 uint8 transition"]
+    C --> D{"buffer 已滿？"}
+    D -- "否" --> E["寫入 write_index<br/>size 增加"]
+    D -- "是" --> F["覆蓋 write_index<br/>推進到下一個 slot"]
+    E --> G["ReplayBuffer.sample(batch_size, rng)<br/>batch_size ≤ len(buffer)"]
+    F --> G
+    G --> H["TransitionBatch<br/>抽出的 NumPy arrays"]
+    H --> I["replay_batch_to_tensors(batch, device)"]
+    I --> J["states / next_states → float32 / 255<br/>actions、rewards、flags → 模型 dtype"]

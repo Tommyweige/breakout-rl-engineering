@@ -12,17 +12,7 @@ Day 8 已經讓 DQN 能把一個 Breakout 畫面狀態轉成四個 action 的 Q-
 
 可以先把它理解成：
 
-```text
-原本看到什麼 state
-        ↓
-做了哪個 action
-        ↓
-得到多少 reward
-        ↓
-接著看到什麼 next_state
-        ↓
-這一局是否真的結束 / 被外部條件中止
-```
+先記下 action 發生前看到的 state，再記下 Agent 做了哪個 action；環境執行後回傳 reward、next_state，以及這一局是否真的結束或被外部條件中止。這六個欄位必須屬於同一次互動，不能把 reset 後的新 state 接到上一局的 transition 裡。
 
 如果每得到最新一筆 transition，就立刻只拿這一筆更新 network，會有兩個問題：相鄰的 Atari 畫面太相似，而且稍早的經驗很快就沒有再次被使用的機會。
 
@@ -30,16 +20,16 @@ DQN 因此加入 **Experience Replay**。它的概念很直接：
 
 > 先把過去發生過的互動存起來，訓練時再從這些經驗中隨機抽一批回來學。
 
-```text
-和遊戲互動
-    ↓
-產生 transition
-    ↓
-Replay Buffer 保存
-    ↓
-隨機抽一批過去經驗
-    ↓
-交給 DQN 訓練
+下面這張 structural diagram 把這個資料流和 capacity 分支放在一起。節點對應本專案真正的 `ReplayBuffer.add()`、`sample()` 與 `replay_batch_to_tensors()`；它是依 implementation 整理出的結構圖，不是偽造的 runtime trace。
+
+[![Day 9 replay data flow from Breakout interaction through ring-buffer sampling and tensor conversion](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/codex/issue-11-day9/assets/day09/replay-data-flow.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/codex/issue-11-day9/assets/day09/replay-data-flow.png)
+
+圖中最值得注意的是中間的分支：buffer 尚未滿時增加 `size`；已滿時則覆蓋 `write_index`。兩條路最後都會回到 `sample()`，再把抽出的 NumPy batch 交給模型邊界轉換。
+
+可編輯的 Mermaid source 保存在 `/assets/day09/replay-data-flow.mmd`，這次使用 repository root 執行以下命令產生 PNG：
+
+```powershell
+python C:\Users\tommy\.codex\skills\technical-blog-writer\scripts\render_mermaid.py assets/day09/replay-data-flow.mmd assets/day09/replay-data-flow.png --theme neutral --background-color white --width 1200 --scale 2
 ```
 
 這個用來保存過去 transition 的記憶體，就是 **Replay Buffer**。
@@ -48,28 +38,11 @@ Replay Buffer 保存
 
 假設球正在往右移，連續幾個 state 可能只有一點點差別：
 
-```text
-state t     → 球在 x = 50
-state t + 1 → 球在 x = 52
-state t + 2 → 球在 x = 54
-state t + 3 → 球在 x = 56
-```
-
-這四筆資料不是四個完全不同的例子，而是同一段遊戲過程切成的四小段。
+在一段很短的觀察裡，球的位置可能依序是 `x = 50`、`x = 52`、`x = 54`、`x = 56`。這些 state 不是四個完全不同的例子，而是同一段遊戲過程切成的四小段。
 
 如果 network 每次都只拿最新一筆來更新，連續幾次訓練看到的東西會非常接近。模型可能才剛看過「球在右邊」，下一次又看到幾乎一樣的畫面。
 
-Replay Buffer 把「現在產生什麼資料」和「這次訓練要拿什麼資料」分開：
-
-```text
-Agent 現在產生的新資料
-          ↓
-      先存進去
-          ↓
-     Replay Buffer
-          ↓
-訓練時再隨機抽過去資料
-```
+Replay Buffer 把「現在產生什麼資料」和「這次訓練要拿什麼資料」分開：Agent 產生的新 transition 先交給 `add()` 保存，真正要更新模型時，呼叫 `sample()` 從目前仍在 buffer 裡的經驗取一批。這個分離讓資料收集的時間順序，不再直接決定下一次更新看到的資料。
 
 這不代表抽出來的資料就完全彼此獨立，但至少不會每次都只看到時間上緊鄰的畫面。
 
@@ -92,24 +65,18 @@ states
 (4, 84, 84)
 ```
 
-這裡的三個數字可以讀成：
-
-```text
-4    → 最近四張畫面
-84   → 每張畫面的高度
-84   → 每張畫面的寬度
-```
+這裡的三個維度分別代表四張最近畫面、每張畫面的高度，以及每張畫面的寬度。把維度含義先釐清，後面才不會把 frame 數量誤認成 batch size。
 
 在 NumPy 裡，資料除了「形狀」以外，還有一個 **資料型別（dtype）**。dtype 決定每個數字用什麼格式、占多少記憶體。
 
 這次 Replay Buffer 的主要資料型別是：
 
-```text
-state / next_state → uint8
- action            → int64
- reward            → float32
-結束狀態            → bool
-```
+| 欄位 | 保存格式 | 作用 |
+| --- | --- | --- |
+| state / next_state | `uint8` | 保存 `0..255` 的 stacked pixels |
+| action | `int64` | 保存離散 action 編號 |
+| reward | `float32` | 保存環境回傳的即時回饋 |
+| 結束狀態 | `bool` | 分開保存 `terminated` 與 `truncated` |
 
 `uint8` 是 8-bit unsigned integer，也就是只能表示 `0 ~ 255` 的整數。這正好符合 Atari 灰階 pixel 原本的範圍，所以很適合拿來保存畫面。
 
@@ -160,13 +127,7 @@ batch size = 32
 
 所以完全可能出現：
 
-```text
-Replay Buffer 裡有 100,000 筆
-            ↓
-這一次只抽 32 筆
-```
-
-capacity 決定「能記多久」，batch size 決定「一次學多少」。
+Replay Buffer 裡可以有 100,000 筆歷史資料，但這一次的 mini-batch 仍然只抽 32 筆。capacity 決定「能記多久」，batch size 決定「一次學多少」。
 
 ## Ring Buffer：滿了之後直接覆蓋最舊資料
 
@@ -182,14 +143,7 @@ slot 0  slot 1  slot 2  slot 3  slot 4
 
 前五筆資料依序放滿後，第六筆不會新增第六格，而是回到最前面，把最舊的資料覆蓋掉：
 
-```text
-第 1 筆 → slot 0
-第 2 筆 → slot 1
-第 3 筆 → slot 2
-第 4 筆 → slot 3
-第 5 筆 → slot 4
-第 6 筆 → 回到 slot 0
-```
+第 1 到第 5 筆會依序填入 slot 0 到 slot 4；第 6 筆則回到 slot 0，覆蓋最舊資料。
 
 這就是「環形」的意思：寫到最後一格後，再繞回第一格繼續寫。
 
@@ -234,13 +188,7 @@ Day 9 使用的是最基本的 **Uniform Random Sampling（均勻隨機抽樣）
 
 例如 buffer 裡有 10,000 筆資料，一次要抽 32 筆：
 
-```text
-10,000 筆保存中的 transition
-              ↓
-          隨機抽取
-              ↓
-          32 筆資料
-```
+這次抽樣會從 10,000 筆保存中的 transition 選出 32 筆；同一批不重複抽同一格，但下一次訓練仍然可能再次抽到同一筆舊資料。
 
 同一批 32 筆裡不會重複抽同一格，但下一次訓練時，同一筆舊資料仍然可能再次被抽中。
 
@@ -289,21 +237,15 @@ Q-learning 還有一個重要特性叫 **off-policy**。
 
 所以這個專案把兩件事分開：
 
-```text
-長期保存資料
-uint8 / 0..255
-        ↓
-真正要丟進模型時
-才轉成 float32 / 0..1
-```
+長期保存時保留 `uint8 / 0..255`；真正要丟進模型時，才轉成 `float32 / 0..1`。這樣 storage 不必為了尚未抽到的資料先支付較高的格式成本。
 
 這裡的「轉成 `0..1`」就是把原本 `0..255` 的 pixel 除以 255。例如：
 
-```text
-0   → 0.0
-128 → 約 0.502
-255 → 1.0
-```
+| 原始 `uint8` pixel | 模型輸入 `float32` |
+| ---: | ---: |
+| 0 | 0.0 |
+| 128 | 約 0.502 |
+| 255 | 1.0 |
 
 這樣比較適合神經網路計算，但沒有必要讓 Replay Buffer 裡幾萬、幾十萬筆畫面都提前用 `float32` 保存。
 
@@ -362,25 +304,18 @@ Replay Buffer 內保存的是 NumPy array。NumPy 是 Python 常用的數值陣�
 
 轉換後會變成：
 
-```text
-states       → float32 Tensor，並除以 255
-next_states  → float32 Tensor，並除以 255
-actions      → 整數 Tensor
-rewards      → float32 Tensor
-terminated   → True / False Tensor
-truncated    → True / False Tensor
-```
+| Replay Buffer 欄位 | 模型邊界格式 |
+| --- | --- |
+| states / next_states | `float32 Tensor`，並除以 255 |
+| actions | 整數 Tensor |
+| rewards | `float32 Tensor` |
+| terminated / truncated | `True / False Tensor` |
 
 這樣的好處是 Replay Buffer 只負責保存資料，PyTorch 需要的格式則在真正要訓練時才準備。
 
 換句話說：
 
-```text
-Replay Buffer 關心：資料怎麼存、怎麼抽
-DQN            關心：抽到的資料怎麼拿來計算
-```
-
-兩個責任分開，後面的 training loop 會比較容易理解。
+Replay Buffer 關心的是資料怎麼存、怎麼抽；DQN 關心的是抽到的資料怎麼拿來計算。這兩個責任分開，後面的 training loop 會比較容易理解。
 
 ## `terminated` 和 `truncated` 不是同一種結束
 
@@ -410,15 +345,7 @@ Day 9 先把這兩個資訊完整保存，Day 11、Day 12 再使用它們計算�
 
 一般 dataset 通常在訓練開始前就已經準備完成；Replay Buffer 則會一邊訓練、一邊改變內容：
 
-```text
-Agent 繼續玩遊戲
-      ↓
-新 transition 不斷加入
-      ↓
-buffer 滿了
-      ↓
-最舊資料被覆蓋
-```
+Agent 繼續玩遊戲時，新 transition 不斷交給 `add()`；buffer 滿了之後，`write_index` 會指向下一個要被覆蓋的 slot。前面的 Mermaid 結構圖已經把「加入、判斷是否已滿、保留或覆蓋」這個生命週期畫出來。
 
 而且 Agent 的行為也會隨著訓練改變，因此後期收集到的遊戲經驗，可能和一開始亂玩的資料很不一樣。
 
@@ -428,19 +355,7 @@ buffer 滿了
 
 走到這裡，資料路徑已經完整很多：
 
-```text
-Agent 和 Breakout 互動
-        ↓
-產生 transition
-        ↓
-Replay Buffer 保存過去經驗
-        ↓
-隨機抽一批 transition
-        ↓
-轉成 PyTorch Tensor
-        ↓
-之後交給 DQN 訓練
-```
+Agent 和 Breakout 互動後產生 transition，Replay Buffer 保存過去經驗；之後由 `sample()` 抽出一批，再轉成 PyTorch Tensor，交給後續 DQN training loop。這條完整路徑與前面的 Mermaid 圖相同，差別只在 Day 9 先停在模型邊界，還沒有加入完整的 loss 與 optimizer。
 
 Experience Replay 解決的是「過去經驗怎麼保存、怎麼重複使用、怎麼避免每次只看最新畫面」。
 
