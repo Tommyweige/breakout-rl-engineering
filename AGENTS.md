@@ -6,6 +6,24 @@ Files under `docs/day*.md` are reader-facing technical articles, not README-styl
 
 Write from the reader's understanding path: problem → intuition → technical mechanism → real evidence → limitation → next question. Keep technical depth, but do not organize the article around filenames, tests, acceptance criteria, or implementation order unless that ordering genuinely helps explain the concept.
 
+### Heading style
+
+Do **not** turn every section heading into a rhetorical question.
+
+Question-style headings are useful only when the question represents a real conceptual tension, common misconception, or important transition that the reader genuinely needs answered. Do not manufacture obvious questions just to make the article look conversational.
+
+Prefer a natural mix of heading styles:
+
+- concept headings, e.g. `Q-value 不是機率`
+- conclusion headings, e.g. `未訓練模型的 argmax 沒有策略意義`
+- process headings, e.g. `從 3,136 features 到四個 Q-values`
+- evidence headings, e.g. `用真實 forward 檢查輸出`
+- occasional question headings when they genuinely improve understanding, e.g. `Q-value 是機率嗎？`
+
+A heading should tell the reader what the section is about or what they will learn from it. If converting a statement into a question makes it longer, more obvious, or more like filler, keep it as a statement.
+
+Avoid repetitive patterns such as multiple consecutive headings beginning with `為什麼...`、`到底...`、`怎麼...`. The article should feel like a coherent technical narrative, not a FAQ generated from every paragraph.
+
 ## Images and attachments
 
 For new or modified article attachments, do **not** use parent-relative Markdown paths such as:
