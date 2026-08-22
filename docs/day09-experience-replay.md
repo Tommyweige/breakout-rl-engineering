@@ -22,7 +22,7 @@ DQN 因此加入 **Experience Replay**。它的概念很直接：
 
 下面這張 structural diagram 把這個資料流和 capacity 分支放在一起。節點對應本專案真正的 `ReplayBuffer.add()`、`sample()` 與 `replay_batch_to_tensors()`；它是依 implementation 整理出的結構圖，不是偽造的 runtime trace。
 
-[![Day 9 replay data flow from Breakout interaction through ring-buffer sampling and tensor conversion](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/codex/issue-11-day9/assets/day09/replay-data-flow.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/codex/issue-11-day9/assets/day09/replay-data-flow.png)
+[![Day 9 replay data flow from Breakout interaction through ring-buffer sampling and tensor conversion](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/298fcd98efba982799098c276fa296e385140269/assets/day09/replay-data-flow.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/298fcd98efba982799098c276fa296e385140269/assets/day09/replay-data-flow.png)
 
 圖中最值得注意的是中間的分支：buffer 尚未滿時增加 `size`；已滿時則覆蓋 `write_index`。兩條路最後都會回到 `sample()`，再把抽出的 NumPy batch 交給模型邊界轉換。
 
