@@ -1,26 +1,73 @@
-# Day 9｜為什麼 DQN 不能只用最新一筆 transition？
+# Day 9｜Experience Replay：把連續遊戲經驗變成可重複抽樣的訓練資料
 
-Day 8 的 DQN network 已經能把一個 Breakout state 轉成四個 Q-values，但「能算」和「能學」中間還差一個資料問題：每次和 environment 互動得到的 transition，要怎麼留到之後再次使用？
+Day 8 已經讓 DQN 能把一個 Breakout state 轉成四個 action 的 Q-values。但 network 會算 Q-values，不代表它已經有適合的資料可以學。
 
-如果 Agent 每收到一筆新資料，就立刻只用那一筆更新模型，資料會有兩個問題。第一，Atari 的連續畫面高度相似，前後幾筆 transition 並不是彼此獨立的例子；第二，新資料一來，舊的經驗就沒有機會再被使用。這篇要建立的 mental model 是：先把互動結果放進一個固定容量的記憶體，再從目前保存的經驗中隨機抽出一個 mini-batch。
-
-## 先看一批實際保存的資料
-
-Day 3 已經看過一筆 transition 的時間邊界：
+Agent 和 environment 互動時，每一步都會產生一筆 transition：
 
 ```text
 (state, action, reward, next_state, terminated, truncated)
 ```
 
-Day 4 又把 observation 固定成四張 `84 × 84` 的灰階畫面。因此 Day 9 的資料結構不是一串抽象的數字，而是許多筆形狀為 `(4, 84, 84)` 的 state，以及每筆 action、reward 和 episode status。
+如果最新一筆 transition 一出現，就立刻只拿這一筆更新 network，訓練資料會一直沿著遊戲時間順序進來。Atari 的相鄰畫面通常只差一點點：球移動幾個 pixel、paddle 稍微換位置，其他內容幾乎沒有變。
 
-先用專案的預處理 Breakout environment 收集 40 筆真實 transition，再放進 capacity 為 128 的 buffer：
+DQN 因此多了一層 **Experience Replay**：先把 interaction data 保存起來，training 時再從過去經驗中隨機抽出一個 mini-batch。
 
-```powershell
-conda run --name breakout-rl-engineering python inspect_replay_buffer.py --capacity 128 --batch-size 32 --steps 40 --seed 42
+```text
+Environment interaction
+        ↓
+transition
+        ↓
+Replay Buffer
+        ↓
+uniform random sample
+        ↓
+mini-batch
+        ↓
+DQN training
 ```
 
-這次執行的摘要如下：
+Day 9 要完成的不是 training loop，而是把這個資料層建立起來。
+
+## 連續 Interaction 不適合直接當 Training Batch
+
+假設球正往右移，連續幾個 state 可能只差一小段距離：
+
+```text
+state t     → 球在 x = 50
+state t + 1 → 球在 x = 52
+state t + 2 → 球在 x = 54
+state t + 3 → 球在 x = 56
+```
+
+這幾筆資料不是四個互相獨立的例子，而是同一段遊戲過程的連續切片。
+
+如果 network 每次都只看最新資料，連續幾次更新看到的內容會非常接近；稍早發生的 transition 也很快失去再次被利用的機會。
+
+Replay Buffer 把兩件事情拆開：
+
+```text
+現在發生什麼          這次 training 學什麼
+      ↓                        ↓
+收集 transition      從過去資料隨機 sample
+      └──────── Replay Buffer ────────┘
+```
+
+這不會讓 RL 資料突然變成完全獨立，但能降低一個 mini-batch 被相鄰 frames 主導的程度。
+
+## Replay Buffer：保存與抽樣分開處理
+
+這次實作的 buffer 會保存六個欄位：
+
+```text
+states       : (capacity, 4, 84, 84) uint8
+actions      : (capacity,)           int64
+rewards      : (capacity,)           float32
+next_states  : (capacity, 4, 84, 84) uint8
+terminated   : (capacity,)           bool
+truncated    : (capacity,)           bool
+```
+
+實際用 Breakout environment 收集 40 筆 transition，再從 capacity 128 的 buffer sample 32 筆，可以看到：
 
 ```text
 ReplayBuffer
@@ -30,128 +77,218 @@ ReplayBuffer
   observation dtype : uint8
   allocated memory  : 6.892 MiB
 
-Sampled NumPy batch
-  states      : shape=(32, 4, 84, 84), dtype=uint8
-  actions     : shape=(32,), dtype=int64
-  rewards      : shape=(32,), dtype=float32
-  next_states : shape=(32, 4, 84, 84), dtype=uint8
-  terminated  : shape=(32,), dtype=bool
-  truncated   : shape=(32,), dtype=bool
+Sampled batch
+  states      : (32, 4, 84, 84) uint8
+  actions     : (32,)           int64
+  rewards     : (32,)           float32
+  next_states : (32, 4, 84, 84) uint8
+  terminated  : (32,)           bool
+  truncated   : (32,)           bool
 ```
 
-這裡有一個很容易混淆的差異：`capacity=128` 代表最多可以保存 128 筆 transition，`batch-size=32` 則只代表這一次抽出 32 筆。這次只收集了 40 筆，所以 `current size` 是 40；預配置的陣列仍然按照 capacity 配置空間。
+這裡最容易混淆的是 **capacity** 和 **batch size**。
 
-## Replay Buffer 解決的是「保存與重用」
+`capacity` 決定最多保存多少筆歷史 transition；`batch size` 則決定一次 training 要抽多少筆。
 
-把互動資料保存起來的容器叫做 Experience Replay Buffer，通常簡稱 Replay Buffer。它的工作不是替模型計算 loss，也不是決定 action，而是先守住一筆 transition 的完整邊界，讓之後的訓練可以從過去經驗取樣。
-
-在這個專案裡，sample 回來的資料被包成具名的 `TransitionBatch`：
+例如：
 
 ```text
-states       : (B, 4, 84, 84) uint8
-actions      : (B,)           int64
-rewards      : (B,)           float32
-next_states  : (B, 4, 84, 84) uint8
-terminated   : (B,)           bool
-truncated    : (B,)           bool
+Replay capacity : 100,000 transitions
+Training batch  : 32 transitions
 ```
 
-用具名欄位而不是一個沒有語意的六元素 tuple，會讓 Day 12 的 training loop 不必靠位置猜測「第四個欄位到底是 next state 還是 reward」。更重要的是，Replay Buffer 只保存資料，不在這一層把 pixel 轉成模型 tensor；這兩個責任要分開，才能知道記憶體裡究竟存了什麼。
+這兩個數字負責的是完全不同的事情。
 
-## capacity 滿了之後，最舊的經驗會去哪裡？
+## Ring Buffer：容量滿了就覆蓋最舊經驗
 
-固定容量的 Replay Buffer 不能讓 Python list 無限制成長。這裡使用 ring buffer：寫入位置到達陣列尾端後，回到 slot 0，覆蓋最舊的 transition。
+Replay Buffer 不可能無限制長大，所以這次使用固定容量的 **ring buffer**。
 
-下面的圖不是手寫的示意數字。腳本用 seed `42` 的真實 Breakout environment 產生 8 筆 transition，讓 capacity 為 5 的 ReplayBuffer 實際寫入，再用 buffer 回報的 physical slot、sample 結果與 memory estimator 產圖。它回答的問題是：**寫入超過容量時，資料在固定陣列中如何移動，以及 capacity 如何影響配置記憶體？**
+假設 capacity 是 5，前五筆 transition 會先填滿五個 slot。第六筆進來時，不會再新增第六格，而是回到 slot 0 覆蓋最舊資料。
 
-[![Day 9 Replay Buffer wraparound, real sampled observations, and memory estimates](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/main/assets/day09/replay-buffer.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/main/assets/day09/replay-buffer.png)
+Day 9 的圖直接用 seed 42 的 Breakout environment 收集 8 筆真實 transition，寫進 capacity 5 的 ReplayBuffer，再從同一個 buffer 做 sampling 與記憶體估算。
 
-上方的表格橫軸是寫入順序，縱軸是陣列的 physical slot，格子裡的數字是實際第幾次寫入。第 1 到第 5 筆先填滿 slot 0 到 4；第 6 筆回到 slot 0，第 7 筆覆蓋 slot 1，第 8 筆覆蓋 slot 2。因此最後從 oldest 到 newest 讀取時，slot 順序是 `[3, 4, 0, 1, 2]`，而不是陣列索引的 `[0, 1, 2, 3, 4]`。
+[![Day 9 Replay Buffer wraparound, sampled Breakout observations, and memory estimates](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/9c58589e056f4fabe6438ee6c5f17a06b37fd41d/assets/day09/replay-buffer.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/9c58589e056f4fabe6438ee6c5f17a06b37fd41d/assets/day09/replay-buffer.png)
 
-這個順序差異就是 ring buffer 最重要的邊界：`write_index` 指向下一個要覆蓋的位置，`size` 則最多增加到 capacity。圖下方的三張小圖是同一個 buffer 隨機抽出的三筆 state 的最新 frame；它們只是說明 sample 確實拿到 `(4, 84, 84)` 的實際 observation，不代表模型已經學會打磚塊。
+寫入 8 次之後，buffer 仍然只有 5 筆資料：
 
-圖中的 JSON metadata 保存在 `/assets/day09/replay-buffer.json`，可以用同一個腳本重新生成：
+```text
+capacity    = 5
+writes      = 8
+size        = 5
+write_index = 3
+
+oldest → newest slots
+[3, 4, 0, 1, 2]
+```
+
+第 6、7、8 筆資料已經分別回頭覆蓋 slot 0、1、2，所以「最舊到最新」的順序不再等於陣列索引的 `0 → 1 → 2 → 3 → 4`。
+
+圖下方顯示的三張小圖，則是同一個 buffer 實際 sample 出來的 Breakout observations；seed 42 下抽到的 physical slots 是：
+
+```text
+[4, 0, 3]
+```
+
+這張圖證明的是 **wraparound 與 random sampling 確實發生在真實 ReplayBuffer 上**。它不代表這三筆資料比較重要，也不代表 Agent 已經學會玩 Breakout。
+
+產圖資料同時保存在：
+
+```text
+/assets/day09/replay-buffer.json
+```
+
+可用下面的命令重新生成：
 
 ```powershell
 conda run --name breakout-rl-engineering python visualize_replay_buffer.py --seed 42
 ```
 
-這個小 capacity 是為了讓 wraparound 在一張圖中看得見；它不是建議的訓練設定。實際 capacity 應該根據可用 RAM、訓練步數和資料的新鮮度取捨。
+## Uniform Sampling：降低時間順序的影響
 
-## 為什麼要隨機抽樣，而不是照時間順序拿資料？
+baseline Experience Replay 採用 uniform random sampling。
 
-Breakout 的 state 是連續畫面堆疊。相鄰的 state 往往只差一個 frame，球和 paddle 也只移動了一小段距離。如果每次都拿最新 transition 更新，模型看到的資料會集中在同一個很短的時間片段；一個罕見但重要的事件，則可能很快被後續畫面淹沒。
+意思是：只要一筆 transition 還留在 buffer 裡，它就和其他有效 transition 一樣，有機會被抽進下一個 mini-batch。
 
-Replay Buffer 讓這些 transition 暫時脫離原本的時間順序，從目前仍然有效的資料中做 uniform random sampling。uniform 的意思是每個尚未被覆蓋的 slot 有相同的抽樣機會；baseline 不會因為 reward 大、看起來驚訝，或某個 transition 比較新，就偷偷提高它的權重。
+例如 buffer 目前保存 10,000 筆資料，每次抽 32 筆：
 
-實作的核心選擇只有一行：
-
-```python
-indices = rng.choice(self.size, size=batch_size, replace=False)
+```text
+10,000 stored transitions
+          ↓
+uniform random sampling
+          ↓
+32-transition mini-batch
 ```
 
-`replace=False` 表示同一個 mini-batch 裡不重複抽同一個 slot；它不表示一筆 transition 從此只能用一次。下一個 batch 仍然可能再次抽到它，只要它還沒有被新的資料覆蓋。顯式傳入 NumPy generator，則讓固定 seed 時的抽樣順序可以重現。
+同一個 mini-batch 裡不重複抽相同 slot，但一筆 transition 在不同 training steps 之間仍然可能再次出現。
 
-因此，Replay Buffer 不是把資料打亂一次後就結束的固定資料集。它會持續收到新 transition、淘汰最舊內容，並且由 Agent 當前的行為逐步改變資料分布；抽樣只是讓同一段經驗能在有效期限內被重複利用，也降低連續 observation 之間的相關性。
+這就是「Replay」的意思：一段 experience 不需要只使用一次。
 
-## `batch size` 不等於 `capacity`
+Uniform replay 也有明確限制。它不會判斷某一筆資料是不是特別重要，也不會保證抽出的 samples 完全沒有相關性；它只是先建立一個簡單、可重現的 baseline。Prioritized Experience Replay 不屬於 Day 9 的範圍。
 
-`capacity` 控制的是歷史窗口：最多保留多少筆 transition，以及 ring buffer 何時開始覆蓋舊資料。`batch size` 控制的是一次更新要拿多少筆資料。前者影響記憶體和資料新鮮度，後者影響一次計算的輸入量。
+## 舊 Transition 仍然可以拿來學
 
-在上面的實際執行中，capacity 是 128、目前保存 40 筆、每次 sample 32 筆。當 buffer 還沒收集到 32 筆時，這個 baseline 會清楚拒絕 sample，而不是默默回傳一個較小的 batch；當 buffer 滿了之後，`len(buffer)` 仍然最多是 128。
+Replay Buffer 裡的 transition 可能是幾千甚至幾萬 steps 以前收集的。那為什麼 policy 已經改變了，舊資料還能拿來更新 Q-network？
 
-## `uint8` 應該留在 storage，`float32` 再交給模型
+關鍵在於 transition 記錄的是 environment 真正發生過的一次互動：
 
-一個 `(4, 84, 84)` observation 有：
+```text
+在 state s
+做了 action a
+得到 reward r
+並到達 next_state s'
+```
+
+這段 environment experience 不會因為目前 policy 改變就失效。
+
+Q-learning 本身也是 **off-policy** 方法：用來學習 Q-value 的資料，不要求一定要由「現在這一刻的 greedy policy」產生。因此早期探索時收集到的 transition，之後仍然可以被 replay。
+
+不過這不代表越舊的資料永遠越好。policy 持續改變後，buffer 中的資料分布也可能和目前 Agent 的行為越來越不同；capacity 因此同時控制了「記得多少歷史」以及「資料有多舊」。
+
+## `uint8` 留在 Storage，`float32` 留到 Model Boundary
+
+一個 Breakout state 有：
 
 ```text
 4 × 84 × 84 = 28,224 pixels
 ```
 
-`uint8` 每個 pixel 只需要 1 byte，且正好表達環境的 `0..255` contract。若長期用 `float32` 保存同一份 pixel，單是 observation array 就會變成約四倍大小；但 CNN 真正運算時仍需要 `float32`，而且要把 pixel 除以 255 變成 `0..1`。
+環境原本就是 `uint8 / 0..255`。如果 Replay Buffer 一開始就把所有 observation 轉成 `float32`，pixel storage 大約會放大四倍。
 
-所以轉換時機放在 sample 之後、送進模型之前：
+所以資料 contract 保持成：
 
 ```text
-Replay storage       → model boundary
-uint8 NumPy           → float32 torch / 255
-int64 actions         → torch.long
-float32 rewards       → torch.float32
-bool episode flags    → torch.bool
+Replay storage
+uint8 NumPy / 0..255
+        ↓ sample
+TransitionBatch
+        ↓ model boundary
+float32 torch / 255
+        ↓
+DQN
 ```
 
-這次 baseline 會同時保存 `states` 和 `next_states`。以 `(4, 84, 84)`、capacity `10000` 為例，記憶體估算器實際算出 `564,620,000` bytes，也就是圖中的約 `0.526 GiB`；capacity `100000` 和 `1000000` 則分別約為 `5.258 GiB` 和 `52.584 GiB`。這些數字不是從圖上目測，也不是文章手算後填入，而是由 `estimate_replay_memory_bytes()` 使用同一組 dtype 和 shape 產生。
+這次 baseline 同時保存完整的 `state` 和 `next_state`，因此記憶體成本其實不低。實際 estimator 得到：
 
-每筆 transition 的 observation 部分本身就是 `2 × 28,224 = 56,448` bytes；再加上 int64 action 的 8 bytes、float32 reward 的 4 bytes，以及兩個 bool flag，baseline 的配置量是每筆 `56,462` bytes。這是 NumPy arrays 的配置估算，不包含 Python 物件、allocator 或其他 runtime overhead。
+| Capacity | Baseline replay memory |
+| ---: | ---: |
+| 10,000 | 0.526 GiB |
+| 100,000 | 5.258 GiB |
+| 1,000,000 | 52.584 GiB |
 
-這個設計用較簡單的資料 layout 換取可讀性和可測試性，但也誠實留下了浪費：連續 stacked observations 之間其實共享許多 frame，`states` 和 `next_states` 可能保存重複 pixel。若 profiling 證明 RAM 成為瓶頸，之後可以研究 frame-level compact replay；現在先不讓記憶體最佳化遮住資料邊界本身。
+這些數字來自 `estimate_replay_memory_bytes()`，和實際 NumPy arrays 使用相同 dtype 與 observation shape。
 
-## 為什麼要把 `terminated` 和 `truncated` 分開？
+目前設計的優點是簡單、清楚、容易測試；缺點是相鄰 stacked observations 之間其實共享很多 frame，而 `state + next_state` 會重複保存其中不少 pixel。
 
-兩個 flag 都可能讓 environment 在下一輪 reset，但原因不同。`terminated` 表示遊戲本身達到終止條件；`truncated` 表示被時間上限等外部限制截斷。收集 transition 時可以用 `terminated or truncated` 決定是否 reset，卻不代表兩者在未來計算 target 時意思相同。
+更省 RAM 的 Atari replay 可以只保存 frame-level data，sample 時再重建 frame stack。不過 Day 9 先把資料 semantics 做正確，之後真的由 profiling 證明 replay memory 是瓶頸，再做 compact replay 會更容易比較優化前後的差異。
 
-因此 buffer 使用兩個獨立的 bool array，而不是立即壓成一個 `done`。Day 11 和 Day 12 會再決定 target 的 bootstrap mask 如何使用 `terminated`；Day 9 只負責把 episode semantics 原樣保存下來。
+## Sample 後才轉成 Model Tensor
 
-## 這個 baseline 還沒有回答哪些問題？
+從 Replay Buffer 抽出的資料仍然是 NumPy arrays。真正進 DQN 前才統一轉換：
 
-Experience Replay 解決的是「過去資料如何保存、抽樣與重用」，不是完整 DQN training loop。這篇沒有加入 Prioritized Replay、epsilon-greedy exploration、Target Network、TD loss 或 optimizer；它們分別回答抽樣權重、資料收集策略、目標穩定性和參數更新等後續問題。
+```text
+states       → torch.float32 / 255
+next_states  → torch.float32 / 255
+actions      → torch.long
+rewards      → torch.float32
+terminated   → torch.bool
+truncated    → torch.bool
+```
 
-今天真正接起來的資料流是：
+這個邊界讓 Replay Buffer 專心處理「怎麼保存、怎麼抽樣」，而不是同時負責 CNN preprocessing 或 GPU inference。
+
+Day 12 寫 training loop 時，也不需要把 dtype conversion 散落在每個 training step 裡。
+
+## `terminated` 與 `truncated` 必須保留
+
+兩個 flag 都可能讓 environment 在下一輪 reset，但原因不同：
+
+```text
+terminated → environment 真正進入終止狀態
+truncated  → 因時間限制等外部條件被截斷
+```
+
+對 interaction loop 來說，`terminated or truncated` 都可能代表需要 reset；但對之後的 Bellman target 來說，兩者的語意不應該在資料保存階段就被壓成一個 `done`。
+
+因此 Replay Buffer 從一開始就分開保存這兩個欄位，讓 Day 11、Day 12 還能根據真正的 episode semantics 決定 bootstrap mask。
+
+## Replay Buffer 不是固定 Dataset
+
+它看起來很像 supervised learning 的 dataset：裡面有 samples，也會抽 mini-batch。
+
+差別在於 Replay Buffer 的內容一直在變。
+
+```text
+Agent 與 environment 互動
+        ↓
+新 transition 持續加入
+        ↓
+buffer 滿了
+        ↓
+最舊 transition 被覆蓋
+```
+
+而且 Agent 的 policy 也會隨訓練改變，所以之後收集到的資料分布，可能和訓練初期完全不同。
+
+Experience Replay 比較像一個會持續更新的 **experience pool**，而不是訓練開始前就固定好的 dataset。
+
+## Day 9 完成的是 DQN 的資料層
+
+到這裡，資料路徑已經接起來：
 
 ```text
 environment interaction
         ↓
-(state, action, reward, next_state, terminated, truncated)
+transition
         ↓
-固定容量 uint8 ring buffer
+fixed-capacity uint8 Replay Buffer
         ↓
 uniform random TransitionBatch
         ↓
-sample 後轉成 model tensors
+model-boundary tensor conversion
 ```
 
-這條路徑讓同一筆經驗有機會被重複使用，又不會把模型計算需要的 normalization 混進 storage。它也讓一個重要的限制變得可見：capacity 越大，能保留的歷史越長，但 RAM 成本會線性增加，而且舊資料可能和目前 policy 越來越不相似。
+Replay Buffer 解決了「過去經驗如何保存、重用與抽樣」，但還沒有決定 Agent **怎麼收集新的 experience**。
 
-下一個問題因此很自然：Agent 在繼續收集 transition 時，應該一直選目前 Q-value 最高的 action，還是要刻意探索還沒試過的 action？這會帶我們進入 Day 10 的 Exploration vs. Exploitation。
+如果每次都選目前 Q-value 最大的 action，Agent 很可能只重複自己已經知道的行為；如果完全亂選，又無法利用目前已經學到的資訊。
 
-
+這就是 Day 10 要處理的 **Exploration vs. Exploitation**。
