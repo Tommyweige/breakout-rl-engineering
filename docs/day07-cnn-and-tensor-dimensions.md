@@ -281,4 +281,6 @@ Q(RIGHT)
 Q(LEFT)
 ~~~
 
-到了那一步，這個 feature extractor 才會真正變成一個能估計 `Q(s, a)` 的 DQN network。這就是 Day 8。
+到了那一步，這個 feature extractor 才會真正變成一個能估計 `Q(s, a)` 的 DQN network。
+
+下一篇：[Day 8 — DQN 為什麼不直接告訴 Agent「往左」或「往右」？](day08-dqn-network.md)
