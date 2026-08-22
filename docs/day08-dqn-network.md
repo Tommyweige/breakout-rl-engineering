@@ -1,16 +1,16 @@
 # Day 8｜DQN 為什麼不直接告訴 Agent「往左」或「往右」？
 
-Day 7 已經把 Breakout 的四張灰階畫面一路送進 CNN，最後得到一個長度 3,136 的 feature vector。
+Day 7 已經把 Breakout 的四張灰階畫面送進 CNN，最後得到一個長度 3,136 的 feature vector。
 
 現在真正的問題來了：
 
 > **Agent 最後明明只需要按一個按鍵，為什麼 neural network 不直接輸出 `LEFT` 或 `RIGHT`，而是要輸出四個 Q-values？**
 
-這個問題其實就是 DQN 和一般影像分類最容易被混在一起的地方。
+這個問題正好是 DQN 和一般影像分類最容易被混在一起的地方。
 
-今天要把 Day 7 留下的最後一段補起來：
+今天要把 Day 7 留下的最後一段接起來：
 
-~~~text
+```text
 Breakout state
 (4, 84, 84) uint8
       ↓
@@ -27,25 +27,65 @@ ReLU
 Linear 512 → 4
       ↓
 Q(NOOP), Q(FIRE), Q(RIGHT), Q(LEFT)
-~~~
+```
 
-走到這裡，我們第一次擁有一個完整的 **DQN network**。
+把這條路徑畫成一張圖，會更容易看出每一步到底改變了什麼：
 
-但要先講清楚一件很重要的事：**network 寫完，不代表 Agent 已經學會玩 Breakout。**
+![Day 8 DQN forward path](https://github.com/Tommyweige/breakout-rl-engineering-private/raw/73fbe691af4d7d0a7b00893e700d9f1bbb0c36b5/assets/day08/dqn-forward-flow.svg)
 
-今天的模型還沒有看過任何 training target，也沒有做過一次 optimizer update。現在輸出的四個 Q-values，只是隨機初始化權重經過 forward 後得到的數字。
+這張圖最重要的地方不是最後的 `argmax`，而是 **DQN 先把 state 轉成「每個 action 的價值」，最後才選 action**。
 
-## 先看完整 network 到底輸出什麼
+換句話說：
 
-Day 8 新增的 `inspect_dqn_network.py` 會真的建立 `ALE/Breakout-v5` environment，取得一個 `(4, 84, 84)` observation，再把它送進 DQN：
+```text
+state → Q-values → action
+```
 
-~~~powershell
+而不是：
+
+```text
+state → action label
+```
+
+這個差別會一路影響後面的 Bellman target、Experience Replay 和 training loop。
+
+## 先確認這個 network 真的能跑
+
+在開始解釋 Q-value 前，先做一件很實際的事：把 Day 8 的 DQN core tests 真正跑一次。
+
+執行：
+
+```powershell
+python -m unittest tests.test_dqn_network -v
+```
+
+這次 CPU 執行結果如下：
+
+![Day 8 actual DQN CPU test run](https://github.com/Tommyweige/breakout-rl-engineering-private/raw/e45a237ccc5373802e7f4f836e79bcb0fb551cd6/assets/day08/dqn-test-run.svg)
+
+這不是裝飾用的 terminal 圖。圖片內容直接來自實際執行輸出，原始文字也保存在 `assets/day08/dqn-test-run.txt`。
+
+從這次執行可以確認幾件 Day 8 真正在意的事情：batch size 1 和 8 都會得到正確的 action-value shape、action count 可以改、最後沒有 Softmax、gradient 能從 Q head 回到 CNN，而且 `state_dict` save/load 後，同一個 input 的輸出保持一致。
+
+但這張圖**不能**證明 Agent 已經會玩 Breakout。
+
+它只能證明：
+
+> **DQN network 的資料流與 PyTorch 行為符合我們目前的設計。**
+
+學會玩遊戲，是之後訓練資料和 optimizer 的問題。
+
+## DQN 真正輸出的是什麼？
+
+Day 8 的 `inspect_dqn_network.py` 會建立 `ALE/Breakout-v5` environment，拿到一個真實 `(4, 84, 84)` observation，再送進 DQN：
+
+```powershell
 python .\inspect_dqn_network.py --device cpu --seed 42
-~~~
+```
 
-inspection 會把這條路徑完整列出來：
+完整資料流是：
 
-~~~text
+```text
 Observation        : (4, 84, 84) uint8
 Model input        : (1, 4, 84, 84) torch.float32
 Feature shape      : (1, 3136)
@@ -55,176 +95,160 @@ Q-values           : [四個 raw values]
 Greedy action      : argmax 對應的 action
 Parameter count    : 1,686,180
 state_dict diff    : 0.00000000
-~~~
+```
 
-這裡最值得看的不是某一個 Q-value 恰好是多少，而是資料的意義真的改變了：
+這裡真正重要的不是某一個 Q-value 恰好是多少，而是資料的意義已經一路改變：
 
-~~~text
+```text
 28,224 個 pixel values
         ↓
 3,136 個 CNN features
         ↓
 4 個 action values
-~~~
+```
 
-前兩步在處理「畫面裡有什麼」，最後一步才開始回答「在這個 state 下，每個 action 看起來有多值得做」。
+前半段的 CNN 在整理畫面資訊，最後的 Q head 才開始回答：
 
-而現在這四個值來自**未訓練的隨機權重**。所以就算其中 `RIGHT` 剛好最大，也不能說模型已經知道要往右。
+> **在這個 state 下，每一個 action 看起來有多值得做？**
 
 ## 為什麼輸出不是一個 action？
 
-先想像另一種設計：
+先想像另一種最直覺的設計：
 
-~~~text
+```text
 state
   ↓
 neural network
   ↓
 RIGHT
-~~~
+```
 
 看起來很合理，因為 Agent 最後確實只會執行一個 action。
 
-問題是，這樣的輸出只告訴我們「目前選了誰」，卻沒有留下其他 action 的價值資訊。
+但這種輸出只有「答案」，沒有其他 action 的價值資訊。
 
 Q-Learning 真正想學的是：
 
-~~~text
+```text
 Q(state, action)
-~~~
+```
 
 也就是同一個 state 下，每一個 action 都有自己的估計值。
 
-對 Breakout 的四個 action 來說，network 更像是在回答：
+對目前 Breakout 的四個 action，可以把 network 想成同時回答四個問題：
 
-~~~text
+```text
 如果現在 NOOP，長期累積 reward 看起來是多少？
 如果現在 FIRE，長期累積 reward 看起來是多少？
 如果現在 RIGHT，長期累積 reward 看起來是多少？
 如果現在 LEFT，長期累積 reward 看起來是多少？
-~~~
+```
 
-因此輸出自然是：
+因此 network 的輸出自然是：
 
-~~~text
+```text
 [Q(NOOP), Q(FIRE), Q(RIGHT), Q(LEFT)]
-~~~
+```
 
-不是一個 action label。
+而不是一個 action label。
 
-這也讓 Day 6 的 Q-table 和現在的 DQN 接了起來。
+這也把 Day 6 的 Q-table 和現在的 DQN 接了起來。
 
-以前的小型問題可以想成：
+以前的小型問題可以寫成：
 
-~~~text
+```text
 Q-table[state]
     ↓
 [每個 action 的 Q-value]
-~~~
+```
 
-現在只是把「查表」換成：
+現在則是：
 
-~~~text
+```text
 neural network(state)
     ↓
 [每個 action 的 Q-value]
-~~~
+```
 
-**Q-value 的概念沒有換，換的是得到 Q-value 的方式。**
+**Q-value 的概念沒有換，換的是取得 Q-value 的方式。**
 
-## 為什麼剛好輸出四個數字？
+## 為什麼剛好是四個輸出？
 
-因為目前 Breakout environment 的 action space 有四個 action：
+目前 Breakout environment 的 action space 有四個 action：
 
-~~~text
+```text
 0 → NOOP
 1 → FIRE
 2 → RIGHT
 3 → LEFT
-~~~
+```
 
 所以：
 
-~~~text
+```text
 num_actions = 4
 output shape = (B, 4)
-~~~
+```
 
-但 `DQNNetwork` 本身沒有去碰 ALE，也沒有把「Breakout 一定是 4」寫死在 model 裡。
+但 `DQNNetwork` 本身沒有把 `4` 寫死在 CNN 裡，也不需要依賴 ALE object。
 
-建立模型時，action count 由外面傳進去：
+建立模型時，action count 從外面傳進去：
 
-~~~python
+```python
 num_actions = int(env.action_space.n)
 model = DQNNetwork(num_actions=num_actions)
-~~~
+```
 
-因此 network 的責任很單純：
+所以如果別的 environment 有 6 個 actions，最後一層就可以變成 `(B, 6)`。
 
-> 你告訴我有幾個 actions，我就輸出幾個 Q-values。
-
-如果某個別的 environment 有 6 個 actions，同一個 model class 也可以建立成：
-
-~~~text
-(B, 6)
-~~~
-
-這一點後面做 export 或 inference 也很重要，因為模型本身不需要把整個 Atari environment 帶在身上才能被建立。
+這也是為什麼「environment 負責告訴我們有幾個 actions」和「network 負責輸出多少個 Q-values」最好分開。
 
 ## 3,136 個 features 怎麼變成四個 Q-values？
 
 Day 7 的 CNN 最後輸出：
 
-~~~text
+```text
 (B, 3136)
-~~~
+```
 
-這 3,136 個數字已經不再保留原本 `84 × 84` 的畫面排列，而是一組由 CNN 計算出的 features。
+Day 8 在後面接上 fully connected head：
 
-接下來使用 fully connected layers：
-
-~~~python
+```python
 self.q_head = nn.Sequential(
     nn.Linear(self.feature_extractor.feature_dim, 512),
     nn.ReLU(),
     nn.Linear(512, num_actions),
 )
-~~~
+```
 
-資料流是：
+資料流就是：
 
-~~~text
+```text
 3136 features
      ↓
 512 hidden activations
      ↓
 4 Q-values
-~~~
+```
 
-為什麼到這裡適合 fully connected layer？
+CNN 前面的工作是利用畫面的空間結構，把局部 pixel pattern 逐層轉成 features。
 
-CNN 前面的工作是利用空間結構，把局部 pixel pattern 慢慢轉成 features。到了 Flatten 之後，我們現在要做的已經不是繼續問「某個 feature 出現在畫面哪個位置」，而是把整組 features 綜合起來，估計每一個 action 的價值。
+到了 Flatten 之後，我們現在不再問「某個 feature 在畫面哪個位置」，而是希望把整組 features 綜合起來，估計每個 action 的價值，因此 fully connected layer 很適合放在這裡。
 
-因此最後這個 Q head 可以把所有 features 一起拿來決定四個輸出。
+完整 network 目前有：
 
-這裡也可以看到一個有趣的參數量差異。
-
-完整 network 一共有：
-
-~~~text
+```text
 1,686,180 parameters
-~~~
+```
 
-其中光第一個 fully connected layer：
+其中第一個 fully connected layer 就有：
 
-~~~text
+```text
 3136 × 512 + 512
 = 1,606,144 parameters
-~~~
+```
 
-已經佔了整個 network 的大部分。
-
-所以「CNN 把畫面變成比較小的 feature vector」不只是 shape 好看而已，它也直接影響後面 fully connected head 的規模。
+也就是說，DQN 的大部分 parameters 其實集中在 CNN 後面的這個 head。
 
 ## Q-value 是機率嗎？
 
@@ -232,66 +256,66 @@ CNN 前面的工作是利用空間結構，把局部 pixel pattern 慢慢轉成 
 
 這是 Day 8 最容易寫錯的一件事。
 
-影像分類常會看到：
+影像分類常看到：
 
-~~~text
+```text
 logits
   ↓
 softmax
   ↓
-每個 class 的 probability
-~~~
+class probabilities
+```
 
 例如：
 
-~~~text
+```text
 cat  = 0.70
 dog  = 0.20
 bird = 0.10
-~~~
+```
 
-這些值被設計成介於 0 和 1，而且總和為 1。
+它們介於 0 和 1，而且總和等於 1。
 
-但 Q-value 完全不是這種東西。
+但 Q-value 不是分類機率。
 
-Q-value 表示的是：
+Q-value 想表示的是：
 
-> 在 state `s` 採取 action `a` 後，按照目前策略繼續下去時，預期可以得到多少 discounted return。
+> 在 state `s` 採取 action `a` 後，之後按照目前策略繼續走，預期可以得到多少 discounted return。
 
-因此它可以是：
+所以它可以是：
 
-~~~text
+```text
 2.7
 -0.4
 15.2
 0.0
-~~~
+```
 
-也可以是其他任意實數。
+甚至可以全部是負數。
 
 它們不需要：
 
-~~~text
+```text
 全部 >= 0
 全部 <= 1
 總和 = 1
-~~~
+```
 
-所以 DQN 的最後一層直接回傳：
+因此 DQN 的最後一層直接回傳 raw values：
 
-~~~python
+```python
 q_values = self.q_head(features)
-~~~
+```
 
-**後面沒有 softmax。**
+**後面沒有 Softmax。**
 
-如果硬套 softmax，會把原本的價值尺度壓成一組彼此競爭、總和等於 1 的機率，Q-Learning 要估計的 quantity 就被改掉了。
+如果硬套 Softmax，就會把原本的價值尺度壓成一組總和等於 1 的相對比例，這已經不是 Q-Learning 想估計的 quantity。
 
-## 那 `argmax` 在做什麼？
+## `argmax` 到底做了什麼？
 
-既然 network 一次會輸出所有 actions 的 Q-values，最直接的 greedy action selection 就是找最大的那一個：
+當 network 同時輸出四個 Q-values 後，最直接的 greedy action selection 就是找最大的那一個：
 
-~~~text
+```text
 Q(NOOP)  = ...
 Q(FIRE)  = ...
 Q(RIGHT) = ...  ← 最大
@@ -300,71 +324,60 @@ Q(LEFT)  = ...
            argmax
               ↓
             RIGHT
-~~~
+```
 
-`argmax` 本身不會改變 Q-values，也不是另一層 neural network。
+程式裡可以寫成：
 
-它只是問：
-
-> 這四個數字裡，哪一個最大？
-
-因此如果：
-
-~~~python
+```python
 greedy_action = q_values.argmax(dim=1)
-~~~
+```
 
-得到 index 2，就代表目前四個輸出中 `Q(RIGHT)` 最大。
+`argmax` 不會改變 Q-values，也不是 neural network 的一層。
 
-但這裡一定要加上「目前」兩個字。
+它只是回答：
 
-## 為什麼現在的 argmax 完全不能代表 Agent 會玩？
+> **這幾個 action value 裡，哪一個最大？**
 
-因為目前 network 的 weights 還只是 PyTorch 初始化出來的值。
+## 為什麼現在的 argmax 還沒有策略意義？
+
+因為現在 network 的 weights 還只是初始化值。
 
 它從來沒有被告訴過：
 
-- 哪個 action 後來拿到 reward；
+- 哪個 action 之後拿到 reward；
 - 哪個 state 很危險；
-- 球往哪裡飛時應該移動球拍；
-- 某一筆 Q-value 應該往上還是往下修。
+- 球往哪裡飛時應該怎麼移動球拍；
+- 哪一個 Q-value 應該往上或往下修。
 
-所以現在的流程其實是：
+所以目前其實是：
 
-~~~text
-real Breakout state
-        ↓
-randomly initialized network
-        ↓
-four numbers
-        ↓
+```text
+Breakout state
+      ↓
+randomly initialized DQN
+      ↓
+four raw values
+      ↓
 argmax
-        ↓
+      ↓
 one random-weight preference
-~~~
+```
 
 這不是 learned policy。
 
-固定 `torch.manual_seed(42)` 只是讓這組初始 weights 可以重現，方便檢查程式。它不會讓隨機初始化突然變聰明。
+固定 `torch.manual_seed(42)` 只是在固定初始化，方便重現與除錯，不會讓 network 因此變聰明。
 
-這也是為什麼 `inspect_dqn_network.py` 最後會直接提醒：
+## 為什麼還要做 Q-value 視覺化？
 
-~~~text
-untrained random-weight outputs;
-the greedy action is not a learned policy
-~~~
+Day 8 另外有：
 
-## 把四個 Q-values 畫出來，會更容易看出哪裡容易誤解
-
-Day 8 另外新增：
-
-~~~powershell
+```powershell
 python .\visualize_dqn_network.py --device cpu --seed 42
-~~~
+```
 
-它使用的不是手寫假數字，而是：
+它的資料來源是：
 
-~~~text
+```text
 make_breakout_env()
       ↓
 真實 observation
@@ -373,148 +386,142 @@ DQNNetwork forward
       ↓
 四個 raw Q-values
       ↓
-產生圖與 JSON metadata
-~~~
+圖 + JSON metadata
+```
 
-預設輸出：
+預設會生成：
 
-~~~text
-assets/day08/dqn-q-values.png
-assets/day08/dqn-q-values.json
-~~~
+```text
+/assets/day08/dqn-q-values.png
+/assets/day08/dqn-q-values.json
+```
 
-圖裡會同時放進：
+這張圖真正要回答的是：
 
-- 真正送進這次 state 的其中一張 Breakout frame；
-- `(1, 4, 84, 84) → (1, 3136) → (1, 4)` 的 forward path；
-- 四個 action 對應的 raw Q-values；
-- 哪一個值被 `argmax` 選到；
-- 「未訓練模型」的限制提醒。
+> **四個 network outputs 到底如何一一對應 `NOOP / FIRE / RIGHT / LEFT`？**
 
-這張圖真正要回答的不是「哪個 action 比較好」，而是：
+而不是比較「哪根柱子最高，所以 Agent 已經學會了什麼」。在模型還沒訓練以前，柱子的高低只反映初始化後的 forward output。
 
-> **DQN 的四個輸出到底和四個 actions 怎麼一一對應？**
+因此 Day 8 對圖片的解讀有一條很重要的界線：
 
-只要模型還沒訓練，就不能從柱子的高低推出遊戲策略。
+> **可以用圖理解 Q-value 與 action 的對應，但不能把未訓練 Q-values 解讀成遊戲策略。**
 
-## Batch 進來時，為什麼還是每個 state 四個輸出？
+## Batch 進來時，為什麼仍然是一個 state 四個輸出？
 
 單一 state：
 
-~~~text
+```text
 (1, 4, 84, 84)
       ↓
 DQN
       ↓
 (1, 4)
-~~~
+```
 
 如果未來 Replay Buffer 一次 sample 32 個 states：
 
-~~~text
+```text
 (32, 4, 84, 84)
        ↓
 DQN
        ↓
 (32, 4)
-~~~
+```
 
-第一個 `32` 一直都是 batch dimension。
+第一個 `32` 是 batch size。
 
-每一列都代表一個 state：
+每一列仍然只對應一個 state：
 
-~~~text
-state 0 → 4 Q-values
-state 1 → 4 Q-values
-state 2 → 4 Q-values
+```text
+state 0  → 4 Q-values
+state 1  → 4 Q-values
 ...
 state 31 → 4 Q-values
-~~~
+```
 
-所以 action count 不會因 batch size 增加。
+所以 batch size 增加，不會改變 action count。
 
-這個 shape 在 Day 12 會非常重要，因為 training 時 network 會一次處理一整個 mini-batch。
+這個 `(B, 4)` shape 之後會非常重要，因為 training 時 DQN 會一次處理一整批 transitions。
 
 ## `state_dict` 到底保存了什麼？
 
-現在 network 雖然還沒訓練，但 Day 8 先驗證一件很實際的事情：模型的 parameters 可以被保存，再載入到同樣 architecture 的另一個 model。
+現在 network 雖然還沒有訓練，但已經可以先驗證一件很實際的事：model parameters 能不能保存，再正確載回來。
 
-PyTorch 最常用的是：
+PyTorch 常見做法是：
 
-~~~python
+```python
 torch.save(model.state_dict(), path)
-~~~
+```
 
-以及：
+載入時：
 
-~~~python
+```python
 model.load_state_dict(torch.load(path, ...))
-~~~
+```
 
 `state_dict` 可以先理解成：
 
-> **這個 model 裡需要學習、需要保存的參數值。**
+> **這個 model 裡需要保存的 parameter values。**
 
-它包含 convolution weights、bias，以及 fully connected head 的 weights、bias。
+它包含 CNN 的 weights / bias，也包含 fully connected head 的 weights / bias。
 
-但它不是「把整個 Python project 打包成一個檔」。
+但 `state_dict` 不是整個 Python project，也不是完整 training checkpoint。
 
-要載入它，程式仍然需要先知道要建立什麼 architecture：
+載入前仍然需要先建立相同 architecture：
 
-~~~python
+```python
 model = DQNNetwork(num_actions=4)
 model.load_state_dict(state_dict)
-~~~
+```
 
-Day 8 的 inspection 會做一次 temporary save/load round-trip，然後比較同一個 input 的輸出。
+Day 8 的 inspection 和 unit test 都會驗證 save/load round-trip。
 
-如果保存前後完全相同：
+同一個 input 在保存前後如果得到完全相同的 output：
 
-~~~text
+```text
 state_dict diff = 0.00000000
-~~~
+```
 
-代表這個最基本的 serialization contract 是成立的。
+代表最基本的 model serialization 沒有問題。
 
-真正包含 optimizer、training step、replay 狀態等資訊的 checkpoint，會等到完整 training loop 再處理。
+optimizer、training step、replay buffer 等訓練狀態，會等到真正建立 training loop 後再處理。
 
-## DQN 已經完整了，為什麼還不能開始正式訓練？
+## Network 寫完了，為什麼還不能開始穩定學習？
 
 現在我們已經有：
 
-~~~text
+```text
 state
   ↓
 DQNNetwork
   ↓
 Q-values
-~~~
+```
 
-但 network 還缺最重要的一件事：**用什麼資料反覆修正這些 Q-values？**
+但還缺最重要的一件事：
 
-如果 Agent 和 environment 互動一次，就只拿最新那一筆 transition 訓練一下，會碰到幾個問題：
+> **這些 Q-values 到底要用哪些 interaction data 來反覆修正？**
 
-- 連續 Atari frames 高度相關；
-- 剛發生的資料會一直覆蓋舊經驗；
-- 同一筆有價值的 experience 很難被重新利用；
-- mini-batch training 也沒有一個可以抽樣的資料來源。
+如果 Agent 每跟 environment 互動一次，就只拿最新那一筆 transition 訓練，連續 Atari frames 之間會高度相關，而且舊經驗很快就被新的資料淹沒。
 
-所以 DQN 經典做法不是把 transition 用完就丟掉，而是先把過去的 interaction data 存起來。
+所以經典 DQN 不會把 transition 用完就丟掉。
 
-資料長得像 Day 3 已經看過的：
+它會先把過去經驗保存起來：
 
-~~~text
+```text
 (state, action, reward, next_state, terminated, truncated)
-~~~
+```
 
-把很多筆這種 experience 放進一個可以隨機抽樣的記憶體結構，就是下一步要做的 **Experience Replay**。
+之後再從很多過去 transitions 裡隨機抽樣 mini-batch。
+
+這就是下一篇要進入的 **Experience Replay**。
 
 Day 8 解決的是：
 
-> **network 怎麼從一個 state 產生所有 actions 的 Q-values？**
+> **一個 state 如何經過 CNN 和 Q head，變成所有 actions 的 Q-values？**
 
-Day 9 接著要解決：
+Day 9 要接著回答：
 
-> **這個 network 到底要從哪裡取得可以反覆學習的 interaction data？**
+> **這個 network 到底要從哪裡取得可以重複學習的 interaction data？**
 
-下一篇：[Day 9 — Experience Replay](day09-experience-replay.md)
+下一篇：[Day 9 — Experience Replay](/docs/day09-experience-replay.md)
