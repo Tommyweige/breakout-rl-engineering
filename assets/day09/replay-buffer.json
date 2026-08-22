@@ -1,0 +1,120 @@
+{
+  "generated_by": "visualize_replay_buffer.py",
+  "source": "make_breakout_env(render_mode='rgb_array')",
+  "seed": 42,
+  "capacity": 5,
+  "writes": 8,
+  "batch_size": 3,
+  "observation_shape": [
+    4,
+    84,
+    84
+  ],
+  "observation_dtype": "uint8",
+  "buffer_size": 5,
+  "write_index": 3,
+  "oldest_to_newest_slots": [
+    3,
+    4,
+    0,
+    1,
+    2
+  ],
+  "allocated_bytes": 282310,
+  "write_history": [
+    {
+      "write_number": 1,
+      "slot": 0,
+      "action": 0,
+      "reward": 0.0,
+      "terminated": false,
+      "truncated": false
+    },
+    {
+      "write_number": 2,
+      "slot": 1,
+      "action": 3,
+      "reward": 0.0,
+      "terminated": false,
+      "truncated": false
+    },
+    {
+      "write_number": 3,
+      "slot": 2,
+      "action": 2,
+      "reward": 0.0,
+      "terminated": false,
+      "truncated": false
+    },
+    {
+      "write_number": 4,
+      "slot": 3,
+      "action": 1,
+      "reward": 0.0,
+      "terminated": false,
+      "truncated": false
+    },
+    {
+      "write_number": 5,
+      "slot": 4,
+      "action": 1,
+      "reward": 0.0,
+      "terminated": false,
+      "truncated": false
+    },
+    {
+      "write_number": 6,
+      "slot": 0,
+      "action": 3,
+      "reward": 0.0,
+      "terminated": false,
+      "truncated": false
+    },
+    {
+      "write_number": 7,
+      "slot": 1,
+      "action": 0,
+      "reward": 0.0,
+      "terminated": false,
+      "truncated": false
+    },
+    {
+      "write_number": 8,
+      "slot": 2,
+      "action": 2,
+      "reward": 0.0,
+      "terminated": false,
+      "truncated": false
+    }
+  ],
+  "sampled_slots": [
+    4,
+    0,
+    3
+  ],
+  "sampled_state_shape": [
+    3,
+    4,
+    84,
+    84
+  ],
+  "sampled_state_dtype": "uint8",
+  "memory_estimates": [
+    {
+      "capacity": 10000,
+      "bytes": 564620000,
+      "gib": 0.5258433520793915
+    },
+    {
+      "capacity": 100000,
+      "bytes": 5646200000,
+      "gib": 5.258433520793915
+    },
+    {
+      "capacity": 1000000,
+      "bytes": 56462000000,
+      "gib": 52.58433520793915
+    }
+  ],
+  "reproduction_command": "conda run --name breakout-rl-engineering python visualize_replay_buffer.py --seed 42"
+}

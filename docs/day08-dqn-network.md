@@ -234,3 +234,5 @@ Q head
 經典 DQN 會把過去和 environment 互動得到的 transitions 保存起來，再隨機抽成 mini-batch 訓練。
 
 這個結構就是下一篇的 **Experience Replay**。
+
+下一篇：[Day 9 — Experience Replay](day09-experience-replay.md)
