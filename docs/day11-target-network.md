@@ -143,21 +143,6 @@ Target Network 的角色不同：它在兩次同步之間只是提供參考值�
 
 因此目前實作會讓 Target Network 保持不參與梯度更新，並在計算 target 時使用 no-grad。它的參數真正發生變化，只應該是在 Hard Update 把 Online 的參數複製過來時。
 
-## Replay Buffer 和 Target Network 解決的是兩個不同問題
-
-Replay Buffer 和 Target Network 都是 DQN 很重要的穩定化元件，但它們處理的問題完全不同：
-
-| 機制 | 解決什麼問題 |
-| --- | --- |
-| **Replay Buffer** | 不要只按照時間順序連續學高度相似的最新資料，並讓舊經驗可以再次被抽到 |
-| **Target Network** | 不要讓拿來計算學習目標的 network 在每一次 Online 更新後立刻一起改變 |
-
-可以把它們簡化成一句話：
-
-**Replay Buffer 穩定「拿哪些經驗來學」，Target Network 穩定「拿什麼參考值來學」。**
-
-只有 Replay Buffer，並不能解決 moving target；只有 Target Network，也不能解決連續畫面高度相關的資料問題。
-
 ## Target Network 只是讓學習條件更穩定，不是成功保證
 
 Target Network 並不會自動解決所有強化學習問題。
