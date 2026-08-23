@@ -43,7 +43,7 @@ hard_update(target, online)
 optimizer = torch.optim.SGD(online.parameters(), lr=0.01)
 ```
 
-`target = online` 是錯的，因為那只會建立另一個 reference。兩個變數最後仍然指向同一個 Python 物件，也就共用同一份 parameter storage；online 一改，target 沒有可能保持舊值。`hard_update()` 則是把 state_dict 的值複製過去，並把 target parameters 設成不需要梯度，保留兩個獨立 instance 的角色邊界。
+`target = online` 是錯的，因為那只會建立另一個 reference。兩個變數最後仍然指向同一個 Python 物件，也就共用同一份 parameter storage；online 一改，target 沒有可能保持舊值。`state_dict` 是 PyTorch 用來按名稱保存模型 parameters 與其他狀態值的鍵值集合；`hard_update()` 複製的就是這份集合，並把 target parameters 設成不需要梯度，保留兩個獨立 instance 的角色邊界。
 
 下面的結構圖把這個分工放回一次 DQN target 計算裡。圖是依照目前 helper 的資料流整理出的結構示意，不是某一局 Breakout 的逐步 trace；它要回答的是「哪個 network 產生哪個數字，以及同步箭頭往哪裡走」。
 
@@ -114,7 +114,7 @@ if should_update_target(global_step, target_update_interval):
 
 [![實際 DQN forward output 在初始同步、online 更新後與 hard sync 後的變化，以及三個階段的 max absolute difference](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/d8ddf24/assets/day11/target-network-sync.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/d8ddf24/assets/day11/target-network-sync.png)
 
-這張圖不是長時間 Breakout training 的成績圖，而是 seed `42`、CPU、`(2, 4, 84, 84)`、每個值以 `float32` 儲存的 synthetic batch（為了固定實驗輸入而建立的合成批次）上，真實 DQN forward 的結果。上半部只畫 batch 中第 `0` 筆 sample 的四個 Q-values：實線是 online，虛線是 target；顏色區分四個 action。初始 hard sync 時兩組線重疊，online optimizer step 後只有實線移動，最後一次 hard sync 又讓兩組線重疊。
+這張圖不是長時間 Breakout training 的成績圖，而是 seed `42`、CPU、`(2, 4, 84, 84)`、每個值以 `float32`（32 位元浮點資料型別）儲存的 synthetic batch（為了固定實驗輸入而建立的合成批次）上，真實 DQN forward 的結果。上半部只畫 batch 中第 `0` 筆 sample 的四個 Q-values：實線是 online，虛線是 target；顏色區分四個 action。初始 hard sync 時兩組線重疊，online optimizer step 後只有實線移動，最後一次 hard sync 又讓兩組線重疊。
 
 下半部直接畫整個 batch 的最大絕對差距 `max |online - target|`：三個階段依序是 `0.00000000`、`0.00746517`、`0.00000000`。同一次執行還量到 online parameter 的最大變化是 `0.00250000`，target parameter 的變化是 `0.00000000`。因此這個實驗支持的是「兩個 instance 沒有共用會同步變動的參數，且 hard update 確實重新複製了值」；它不支持「DQN 已經學會 Breakout」或「某一個 interval 一定能讓訓練成功」。圖上的 network 仍是隨機初始化，synthetic batch 也只是為了隔離同步機制，不是遊戲表現評估。
 
