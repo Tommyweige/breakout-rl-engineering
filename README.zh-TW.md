@@ -387,7 +387,7 @@ Backend
 * Day 8 — [實作 DQN network](docs/day08-dqn-network.md)
 * Day 9 — [Experience Replay](docs/day09-experience-replay.md)
 * Day 10 — [Exploration vs. Exploitation：Epsilon-Greedy 與探索排程](docs/day10-exploration-vs-exploitation.md)
-* Day 11 — Target Network
+* Day 11 — [Target Network：讓 Bellman 目標暫時固定下來](docs/day11-target-network.md)
 * Day 12 — 完整 DQN training loop
 * Day 13 — 除錯不穩定的 RL 訓練
 * Day 14 — Hyperparameter experiments

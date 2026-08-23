@@ -1,0 +1,67 @@
+{
+  "generated_by": "visualize_target_network_sync.py",
+  "source": "inspect_target_network.py runtime JSON",
+  "reproduction_command": "conda run --name breakout-rl-engineering python visualize_target_network_sync.py --device cpu --seed 42",
+  "device": "cpu",
+  "seed": 42,
+  "batch_shape": [
+    2,
+    4,
+    84,
+    84
+  ],
+  "num_actions": 4,
+  "phase_names": [
+    "after initial hard sync",
+    "after online optimizer step",
+    "after hard sync"
+  ],
+  "online_sample_outputs": [
+    [
+      -0.017423460260033607,
+      -0.02343188039958477,
+      0.024919357150793076,
+      -0.026123862713575363
+    ],
+    [
+      -0.021936241537332535,
+      -0.027535930275917053,
+      0.02055257372558117,
+      -0.03040776029229164
+    ],
+    [
+      -0.021936241537332535,
+      -0.027535930275917053,
+      0.02055257372558117,
+      -0.03040776029229164
+    ]
+  ],
+  "target_sample_outputs": [
+    [
+      -0.017423460260033607,
+      -0.02343188039958477,
+      0.024919357150793076,
+      -0.026123862713575363
+    ],
+    [
+      -0.017423460260033607,
+      -0.02343188039958477,
+      0.024919357150793076,
+      -0.026123862713575363
+    ],
+    [
+      -0.021936241537332535,
+      -0.027535930275917053,
+      0.02055257372558117,
+      -0.03040776029229164
+    ]
+  ],
+  "max_abs_diffs": [
+    0.0,
+    0.007465166039764881,
+    0.0
+  ],
+  "update_loss": -0.009511967189610004,
+  "online_parameter_delta_max_abs": 0.0025000013411045074,
+  "target_parameter_delta_after_online_update": 0.0
+}

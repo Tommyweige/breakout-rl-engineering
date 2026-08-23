@@ -8,9 +8,12 @@ __all__ = [
     "TransitionBatch",
     "estimate_replay_memory_bytes",
     "LinearEpsilonSchedule",
+    "compute_dqn_targets",
+    "hard_update",
     "observation_to_tensor",
     "replay_batch_to_tensors",
     "select_epsilon_greedy_action",
+    "should_update_target",
 ]
 
 
@@ -55,6 +58,19 @@ def __getattr__(name: str) -> Any:
         return {
             "LinearEpsilonSchedule": LinearEpsilonSchedule,
             "select_epsilon_greedy_action": select_epsilon_greedy_action,
+        }[name]
+
+    if name in {"compute_dqn_targets", "hard_update", "should_update_target"}:
+        from breakout_rl.targets import (
+            compute_dqn_targets,
+            hard_update,
+            should_update_target,
+        )
+
+        return {
+            "compute_dqn_targets": compute_dqn_targets,
+            "hard_update": hard_update,
+            "should_update_target": should_update_target,
         }[name]
 
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
