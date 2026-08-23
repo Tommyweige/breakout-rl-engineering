@@ -18,7 +18,7 @@ DQN 因此加入 **Experience Replay（經驗回放）**：先把過去發生過
 
 先把整體位置放對：
 
-[![Experience Replay 從 transition、Replay Buffer、隨機抽樣到模型輸入的資料流](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/298fcd98efba982799098c276fa296e385140269/assets/day09/replay-data-flow.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/298fcd98efba982799098c276fa296e385140269/assets/day09/replay-data-flow.png)
+[![Experience Replay 從 transition、Replay Buffer、隨機抽樣到模型輸入的資料流](https://github.com/Tommyweige/breakout-rl-engineering/blob/298fcd98efba982799098c276fa296e385140269/assets/day09/replay-data-flow.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/298fcd98efba982799098c276fa296e385140269/assets/day09/replay-data-flow.png)
 
 這張圖只需要先記住一件事：**Agent 產生 transition，Replay Buffer 負責保存；真正訓練時，再從裡面抽出一批資料交給模型。**
 
@@ -147,7 +147,7 @@ slot 0  slot 1  slot 2  slot 3  slot 4
 
 Day 9 的視覺化使用 seed 42 的 Breakout environment 收集 8 筆真實 transition，再寫進 capacity 5 的 Replay Buffer：
 
-[![Replay Buffer wraparound、真實 Breakout 抽樣畫面與記憶體估算](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/9c58589e056f4fabe6438ee6c5f17a06b37fd41d/assets/day09/replay-buffer.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/9c58589e056f4fabe6438ee6c5f17a06b37fd41d/assets/day09/replay-buffer.png)
+[![Replay Buffer wraparound、真實 Breakout 抽樣畫面與記憶體估算](https://github.com/Tommyweige/breakout-rl-engineering/blob/9c58589e056f4fabe6438ee6c5f17a06b37fd41d/assets/day09/replay-buffer.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/9c58589e056f4fabe6438ee6c5f17a06b37fd41d/assets/day09/replay-buffer.png)
 
 寫入 8 次後，buffer 還是只有 5 筆：
 
@@ -321,7 +321,7 @@ Replay Buffer 看起來有點像一般機器學習的 dataset：裡面有很多�
 
 這個生命週期可以拆成一個很簡單的流程：
 
-[![Replay Buffer 持續加入新 transition，未滿時增加 size，已滿時覆蓋最舊資料](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/ca3c2e4f06e30eb2157b8399294b2f32fda03ea6/assets/day09/replay-lifecycle.svg?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/ca3c2e4f06e30eb2157b8399294b2f32fda03ea6/assets/day09/replay-lifecycle.svg)
+[![Replay Buffer 持續加入新 transition，未滿時增加 size，已滿時覆蓋最舊資料](https://github.com/Tommyweige/breakout-rl-engineering/blob/ca3c2e4f06e30eb2157b8399294b2f32fda03ea6/assets/day09/replay-lifecycle.svg?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/ca3c2e4f06e30eb2157b8399294b2f32fda03ea6/assets/day09/replay-lifecycle.svg)
 
 Buffer 還沒滿時，新 transition 會讓目前保存的資料數量增加；一旦達到 capacity，空間就不再增加，後來的新 transition 會逐步把最舊的資料換掉。
 
