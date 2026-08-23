@@ -338,3 +338,5 @@ Experience Replay 解決的核心問題是：**過去經驗怎麼保存、怎麼
 但還有另一個問題沒有處理：Agent 在收集新資料時，到底應該一直選目前 Q-value 最高的 action，還是故意去試一些自己還不確定的 action？
 
 這就是 Day 10 的 **Exploration vs. Exploitation**：探索新行為，和利用目前已經知道的最好行為之間，要怎麼取得平衡。
+
+下一篇：[Day 10 — Exploration vs. Exploitation](day10-exploration-vs-exploitation.md)

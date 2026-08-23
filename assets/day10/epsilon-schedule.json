@@ -1,0 +1,29 @@
+{
+  "command": "python plot_epsilon_schedule.py --start 0.9 --end 0.05 --decay-steps 1000 --max-step 1200",
+  "source": "breakout_rl.exploration.LinearEpsilonSchedule",
+  "start": 0.9,
+  "end": 0.05,
+  "decay_steps": 1000,
+  "max_step": 1200,
+  "point_count": 1201,
+  "random_branch": "epsilon",
+  "greedy_branch": "1 - epsilon",
+  "sampled_points": [
+    {
+      "step": 0,
+      "epsilon": 0.9
+    },
+    {
+      "step": 500,
+      "epsilon": 0.47500000000000003
+    },
+    {
+      "step": 1000,
+      "epsilon": 0.05
+    },
+    {
+      "step": 1200,
+      "epsilon": 0.05
+    }
+  ]
+}

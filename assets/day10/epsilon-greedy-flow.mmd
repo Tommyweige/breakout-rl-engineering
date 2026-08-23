@@ -1,0 +1,8 @@
+flowchart LR
+    state["current state"] --> q_values["DQN q_values"]
+    q_values --> schedule["epsilon = schedule.value(step)"]
+    schedule --> draw{"rng.random() < epsilon?"}
+    draw -- "yes" --> random["rng.integers(action_space_n)\nsource = random"]
+    draw -- "no" --> greedy["torch.argmax(q_values)\nfirst maximum wins\nsource = greedy"]
+    random --> environment["environment.step(action)"]
+    greedy --> environment
