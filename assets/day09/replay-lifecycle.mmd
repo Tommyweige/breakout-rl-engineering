@@ -1,0 +1,8 @@
+flowchart TD
+    A[Agent 繼續玩 Breakout] --> B[新 transition 加入 Replay Buffer]
+    B --> C{Buffer 已滿？}
+    C -- 否 --> D[保留新資料並增加 size]
+    C -- 是 --> E[覆蓋目前最舊的 transition]
+    D --> F[Replay Buffer 內容持續更新]
+    E --> F
+    F --> A

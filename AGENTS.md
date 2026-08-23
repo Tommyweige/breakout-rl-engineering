@@ -6,6 +6,26 @@ Files under `docs/day*.md` are reader-facing technical articles, not README-styl
 
 Write from the reader's understanding path: problem → intuition → technical mechanism → real evidence → limitation → next step. Keep technical depth, but do not organize the article around filenames, tests, acceptance criteria, or implementation order unless that ordering genuinely helps explain the concept.
 
+### Explain terminology at first use
+
+Assume the reader is technically curious but may be seeing the current concept for the first time.
+
+Do not stack unexplained jargon into a sentence. When an important technical term first appears, explain it immediately in plain language before continuing. Prefer Chinese/plain-language meaning first, then the English term when the English name is useful for later reference.
+
+Examples:
+
+- `dtype` → explain that it is the data type that determines how each value is stored and how much memory it uses.
+- `observation shape` → explain what each dimension means, not only the tuple itself.
+- `frame stack` → explain that several recent frames are grouped together so motion can be inferred.
+- `off-policy` → explain that data collected by an older or different behavior can still be used for learning.
+- `Tensor` → explain that it is PyTorch's multi-dimensional array used for neural-network computation.
+
+If an English engineering term is not necessary for the reader to understand the idea, replace it with plain language instead of introducing extra vocabulary. For example, prefer `實際量測發現 RAM 成為瓶頸` over `profiling 證明 memory bottleneck`, unless profiling itself is the concept being taught.
+
+Do not assume that a reader who has followed earlier days automatically knows every implementation term such as `slot`, `write_index`, `uint8`, `float32`, `MiB/GiB`, `bootstrap mask`, `compact replay`, or `frame-level storage`. Either define the term when it matters or omit it.
+
+The goal is not to remove technical vocabulary. The goal is that a reader should not need to leave the article to understand a sentence whose main idea is otherwise simple.
+
 ### Keep implementation detail proportional
 
 Do not paste code merely because it exists in the implementation.
