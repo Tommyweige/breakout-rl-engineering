@@ -7,8 +7,10 @@ __all__ = [
     "ReplayTensorBatch",
     "TransitionBatch",
     "estimate_replay_memory_bytes",
+    "LinearEpsilonSchedule",
     "observation_to_tensor",
     "replay_batch_to_tensors",
+    "select_epsilon_greedy_action",
 ]
 
 
@@ -43,5 +45,16 @@ def __getattr__(name: str) -> Any:
         from breakout_rl.tensors import observation_to_tensor
 
         return observation_to_tensor
+
+    if name in {"LinearEpsilonSchedule", "select_epsilon_greedy_action"}:
+        from breakout_rl.exploration import (
+            LinearEpsilonSchedule,
+            select_epsilon_greedy_action,
+        )
+
+        return {
+            "LinearEpsilonSchedule": LinearEpsilonSchedule,
+            "select_epsilon_greedy_action": select_epsilon_greedy_action,
+        }[name]
 
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

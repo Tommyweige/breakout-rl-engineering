@@ -386,7 +386,7 @@ Backend
 * Day 7 — [CNN 架構與 tensor 維度](docs/day07-cnn-and-tensor-dimensions.md)
 * Day 8 — [實作 DQN network](docs/day08-dqn-network.md)
 * Day 9 — [Experience Replay](docs/day09-experience-replay.md)
-* Day 10 — Exploration vs. Exploitation
+* Day 10 — [Exploration vs. Exploitation：Epsilon-Greedy 與探索排程](docs/day10-exploration-vs-exploitation.md)
 * Day 11 — Target Network
 * Day 12 — 完整 DQN training loop
 * Day 13 — 除錯不穩定的 RL 訓練
