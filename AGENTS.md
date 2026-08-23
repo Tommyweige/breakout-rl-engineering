@@ -82,15 +82,19 @@ For new or modified article attachments, do **not** use parent-relative Markdown
 
 Use an absolute GitHub URL instead.
 
-For private-repository images, do not use `raw.githubusercontent.com` as the default article link because authenticated browser rendering can be unreliable. Prefer a full GitHub `blob` URL on a stable commit/ref with `?raw=1` for the image source, and wrap the image in a link to the corresponding blob page so the reader can click it.
+All reader-facing article images must use clickable Markdown image syntax. Do not use inline HTML such as `<a><img ...></a>` for normal article images.
 
-Example pattern:
+Required pattern:
 
 ```md
 [![diagram](https://github.com/OWNER/REPO/blob/COMMIT/assets/dayXX/diagram.svg?raw=1)](https://github.com/OWNER/REPO/blob/COMMIT/assets/dayXX/diagram.svg)
 ```
 
-If an image is visually too large in the article, do not accept it merely because the source file is valid. Prefer to redesign/render a more compact diagram. When necessary, use GitHub-compatible inline HTML only for image sizing, for example a clickable `<a><img ... width="720"></a>`; do not introduce CSS or decorative HTML layouts.
+The inner URL is the rendered image source and must end with `?raw=1`. The outer URL points to the corresponding GitHub blob page so the image is clickable.
+
+For private-repository images, do not use `raw.githubusercontent.com` as the default article link because authenticated browser rendering can be unreliable. Prefer a full GitHub `blob` URL on a stable commit/ref with `?raw=1` for the image source.
+
+If an image is visually too large, redesign or rerender the source image to be more compact rather than switching to HTML width controls. Keep the article image syntax consistent.
 
 When an article is synchronized to another repository, rewrite the absolute repository URL to that repository rather than leaving a private-repo URL behind.
 
