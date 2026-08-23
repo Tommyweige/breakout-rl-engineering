@@ -1,0 +1,12 @@
+flowchart LR
+    B[Transition 批次] --> S[下一個 state]
+    B --> R[reward]
+    B --> D[terminated mask]
+    S --> T[Target network]
+    T --> M[對 action 取最大值]
+    R --> Y[Vanilla DQN target]
+    D --> Y
+    M --> Y
+    O[Online network] --> Q[目前 action 的 Q-value]
+    Q --> L[後續 training loss]
+    O -. "step % interval = 0 時 hard update" .-> T
