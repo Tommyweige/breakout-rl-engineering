@@ -1,0 +1,21 @@
+flowchart TB
+    subgraph collect["① 收集經驗｜幾乎每個 environment step 都會發生"]
+        S["目前 state"] --> P["epsilon-greedy<br/>選 action"]
+        P --> E["Breakout<br/>執行 action"]
+        E --> T["形成 transition<br/>state · action · reward · next state"]
+        T --> R["Replay Buffer"]
+    end
+
+    subgraph learn["② 更新模型｜warm-up 完成，而且符合 train_frequency 才發生"]
+        R -->|sample mini-batch| B["隨機抽 mini-batch"]
+        B --> O["Online Network<br/>目前 Q(s, a)"]
+        B --> N["next state"]
+        N --> G["Target Network<br/>下一步 Q-value"]
+        B --> Y["reward + terminated"]
+        G --> Y
+        Y --> BT["Bellman target"]
+        O --> L["Huber loss<br/>比較 prediction 與 target"]
+        BT --> L
+        L --> U["backprop + optimizer<br/>更新 Online Network"]
+        U -. "每隔 target_update_interval<br/>hard update" .-> G
+    end

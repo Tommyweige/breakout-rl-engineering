@@ -1,0 +1,38 @@
+sequenceDiagram
+    autonumber
+    participant Agent
+    participant Env as Breakout environment
+    participant Replay as Replay Buffer
+    participant Online as Online network
+    participant Target as Target network
+    participant Log as Metrics / checkpoint
+
+    Agent->>Env: epsilon-greedy action
+    Env-->>Agent: next_state, raw reward, terminated / truncated
+    Agent->>Replay: add(state, action, training reward, next_state, terminated, truncated)
+    Agent->>Agent: global_step += 1
+
+    alt warm-up not finished or train_frequency not due
+        Agent->>Agent: no optimizer update
+    else update is due
+        Agent->>Replay: sample mini-batch
+        Replay-->>Online: normalized states and actions
+        Online->>Online: Q(s, ·) then gather Q(s, a)
+        Online->>Target: next_state batch
+        Target-->>Online: max Q_target(next_state, ·)
+        Online->>Online: Bellman target → Huber loss → optimizer.step
+    end
+
+    opt target_update_interval is due
+        Online->>Target: hard_update(online → target)
+    end
+
+    alt episode ended
+        Agent->>Env: reset()
+    else episode continues
+        Agent->>Agent: keep next_state
+    end
+    Agent->>Log: record return, loss, Q-values, replay size
+    opt checkpoint_interval is due
+        Agent->>Log: save model, optimizer, and RNG state
+    end

@@ -1,0 +1,52 @@
+{
+  "run_id": "day12-gif-seed42",
+  "seed": 42,
+  "environment": "ALE/Breakout-v5",
+  "device": "cpu",
+  "total_steps": 1000,
+  "record_every": 8,
+  "source_render": "env.render() from make_breakout_env(render_mode='rgb_array')",
+  "source_script": "record_training_gif.py",
+  "trainer": "breakout_rl/training/dqn_trainer.py",
+  "run_artifacts": {
+    "config": "runs/day12-gif-seed42/config.json",
+    "metrics": "runs/day12-gif-seed42/metrics.csv",
+    "summary": "runs/day12-gif-seed42/summary.json"
+  },
+  "reproduction_command": "python record_training_gif.py --run-id day12-gif-seed42 --total-steps 1000 --seed 42 --record-every 8 --fps 10 --device cpu",
+  "training_summary": {
+    "status": "completed",
+    "run_id": "day12-gif-seed42",
+    "run_dir": "runs\\day12-gif-seed42",
+    "seed": 42,
+    "total_steps": 1000,
+    "episodes": 4,
+    "optimizer_updates": 243,
+    "target_sync_count": 11,
+    "last_target_sync_step": 1000,
+    "replay_size": 256,
+    "steps_per_second": 159.89181847597237,
+    "last_loss": 0.0004191651532892138,
+    "last_q_mean": 0.25932276248931885,
+    "last_q_max": 0.2705382704734802,
+    "last_target_mean": 0.2324264496564865,
+    "last_checkpoint": "runs\\day12-gif-seed42\\checkpoints\\step-00001000.pt"
+  },
+  "gif": {
+    "path": "assets/day12/training-smoke.gif",
+    "frame_count": 125,
+    "frame_steps": [
+      8,
+      1000
+    ],
+    "fps": 10,
+    "frame_duration_ms": 100,
+    "duration_seconds": 12.5,
+    "frame_size": [
+      240,
+      357
+    ],
+    "palette_colors": 96,
+    "file_size_bytes": 498932
+  }
+}

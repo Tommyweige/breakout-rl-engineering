@@ -9,11 +9,15 @@ __all__ = [
     "estimate_replay_memory_bytes",
     "LinearEpsilonSchedule",
     "compute_dqn_targets",
+    "DQNConfig",
+    "DQNTrainer",
+    "DQNTrainingStepResult",
     "hard_update",
     "observation_to_tensor",
     "replay_batch_to_tensors",
     "select_epsilon_greedy_action",
     "should_update_target",
+    "dqn_training_step",
 ]
 
 
@@ -71,6 +75,26 @@ def __getattr__(name: str) -> Any:
             "compute_dqn_targets": compute_dqn_targets,
             "hard_update": hard_update,
             "should_update_target": should_update_target,
+        }[name]
+
+    if name in {
+        "DQNConfig",
+        "DQNTrainer",
+        "DQNTrainingStepResult",
+        "dqn_training_step",
+    }:
+        from breakout_rl.training import (
+            DQNConfig,
+            DQNTrainer,
+            DQNTrainingStepResult,
+            dqn_training_step,
+        )
+
+        return {
+            "DQNConfig": DQNConfig,
+            "DQNTrainer": DQNTrainer,
+            "DQNTrainingStepResult": DQNTrainingStepResult,
+            "dqn_training_step": dqn_training_step,
         }[name]
 
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -1,0 +1,18 @@
+{
+  "status": "completed",
+  "run_id": "day12-smoke-seed42-reproducible",
+  "run_dir": "runs\\day12-smoke-seed42-reproducible",
+  "seed": 42,
+  "total_steps": 1000,
+  "episodes": 4,
+  "optimizer_updates": 243,
+  "target_sync_count": 11,
+  "last_target_sync_step": 1000,
+  "replay_size": 256,
+  "steps_per_second": 157.72925892502022,
+  "last_loss": 0.0004191651532892138,
+  "last_q_mean": 0.25932276248931885,
+  "last_q_max": 0.2705382704734802,
+  "last_target_mean": 0.2324264496564865,
+  "last_checkpoint": "runs\\day12-smoke-seed42-reproducible\\checkpoints\\step-00001000.pt"
+}

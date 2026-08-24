@@ -1,0 +1,19 @@
+{
+  "run_id": "day12-smoke-seed42-reproducible",
+  "total_steps": 1000,
+  "seed": 42,
+  "gamma": 0.99,
+  "learning_rate": 0.0001,
+  "batch_size": 8,
+  "replay_capacity": 256,
+  "learning_starts": 32,
+  "train_frequency": 4,
+  "target_update_interval": 100,
+  "epsilon_start": 0.9,
+  "epsilon_end": 0.05,
+  "epsilon_decay_steps": 1000,
+  "gradient_clip_norm": 10.0,
+  "reward_clip": true,
+  "device": "cpu",
+  "checkpoint_interval": 500
+}

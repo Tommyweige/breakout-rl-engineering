@@ -12,6 +12,9 @@ checkpoints/
 logs/
 results/
 
+# Local DQN training runs; selected reproducible evidence may still be tracked.
+runs/
+
 # Secrets and local configuration
 .env
 .env.*
