@@ -28,3 +28,6 @@ training run itself was started with:
 ```text
 python train_dqn.py --preset debug --total-steps 10000 --seed 42 --device cpu --run-dir runs --run-id day13-debug-seed42
 ```
+
+`random-baseline.json` is the corresponding five-episode random-policy
+collector output from the same environment preprocessing and seed.
