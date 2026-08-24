@@ -13,7 +13,7 @@ import torch
 from torch import nn
 
 from breakout_rl.training.config import DQNConfig
-from breakout_rl.training.dqn_trainer import DQNTrainer
+from breakout_rl.training.dqn_trainer import DQNTrainer, TrainingStepSnapshot
 
 
 class FakeActionSpace:
@@ -49,6 +49,9 @@ class ShortEpisodeEnv:
         terminated = self.steps % 5 == 0
         return observation, 2.0 if self.steps == 3 else 0.0, terminated, False, {}
 
+    def render(self) -> np.ndarray:
+        return np.full((210, 160, 3), self.steps % 256, dtype=np.uint8)
+
 
 class TinyImageQNetwork(nn.Module):
     def __init__(self) -> None:
@@ -61,6 +64,43 @@ class TinyImageQNetwork(nn.Module):
 
 
 class DQNTrainerTests(unittest.TestCase):
+    def test_step_callback_receives_runtime_snapshot_and_rendered_frame(self) -> None:
+        snapshots: list[TrainingStepSnapshot] = []
+        frames: list[np.ndarray] = []
+
+        def on_step(snapshot: TrainingStepSnapshot, frame: np.ndarray | None) -> None:
+            snapshots.append(snapshot)
+            self.assertIsNotNone(frame)
+            frames.append(frame)  # type: ignore[arg-type]
+
+        config = DQNConfig(
+            total_steps=4,
+            batch_size=4,
+            replay_capacity=8,
+            learning_starts=8,
+            train_frequency=2,
+            target_update_interval=4,
+            checkpoint_interval=4,
+            device="cpu",
+        )
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            trainer = DQNTrainer(
+                ShortEpisodeEnv(),
+                config,
+                run_dir=Path(temporary_directory) / "callback-smoke",
+                online_network=TinyImageQNetwork(),
+                on_step=on_step,
+            )
+            trainer.train()
+
+        self.assertEqual(len(snapshots), 4)
+        self.assertEqual(len(frames), 4)
+        self.assertEqual(snapshots[0].global_step, 1)
+        self.assertFalse(snapshots[0].warmup_complete)
+        self.assertFalse(snapshots[0].optimizer_updated)
+        self.assertEqual(frames[0].shape, (210, 160, 3))
+
     def test_same_seed_reproduces_cpu_action_and_replay_sequence(self) -> None:
         config = DQNConfig(
             total_steps=12,

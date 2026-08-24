@@ -23,6 +23,23 @@ python visualize_training_run.py --run-id day12-smoke-seed42-reproducible --runs
 The PNGs are generated from the CSV written by the first command. No metric
 values are entered in the plotting script.
 
+## Training GIF
+
+- Run ID: `day12-gif-seed42`
+- Source program: `record_training_gif.py` → `DQNTrainer` step callback
+- Source render: `env.render()` from `make_breakout_env(render_mode="rgb_array")`
+- Metadata: `assets/day12/training-smoke-gif.json`
+- GIF: `assets/day12/training-smoke.gif`
+- Seed: `42`
+- Frames: `125` sampled every `8` environment steps
+- Playback: `10 fps`, `12.5 seconds`, `240 × 357`, `96` palette colors
+
+Rebuild the GIF and its run artifacts with:
+
+```powershell
+python record_training_gif.py --run-id day12-gif-seed42 --total-steps 1000 --seed 42 --record-every 8 --fps 10 --device cpu
+```
+
 ## Mermaid diagram
 
 `dqn-training-loop.mmd` is a structural flow verified against

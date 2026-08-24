@@ -5,6 +5,8 @@ from breakout_rl.training.dqn_trainer import (
     DQNTrainer,
     DQNTrainingStepResult,
     NonFiniteTrainingError,
+    TrainingStepCallback,
+    TrainingStepSnapshot,
     dqn_training_step,
     seed_everything,
 )
@@ -17,6 +19,8 @@ __all__ = [
     "METRIC_FIELDS",
     "MetricsLogger",
     "NonFiniteTrainingError",
+    "TrainingStepCallback",
+    "TrainingStepSnapshot",
     "dqn_training_step",
     "seed_everything",
 ]

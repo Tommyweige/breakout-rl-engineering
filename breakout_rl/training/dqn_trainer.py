@@ -10,7 +10,7 @@ import random
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Callable, Iterable
 
 import numpy as np
 import torch
@@ -53,6 +53,32 @@ class DQNTrainingStepResult:
         """Descriptive alias matching the Bellman-update notation."""
 
         return self.selected_q_values
+
+
+@dataclass(frozen=True)
+class TrainingStepSnapshot:
+    """Runtime values exposed after one real environment interaction."""
+
+    global_step: int
+    episode: int
+    action: int
+    action_source: str
+    epsilon: float
+    raw_reward: float
+    current_raw_episode_return: float
+    terminated: bool
+    truncated: bool
+    replay_size: int
+    warmup_complete: bool
+    optimizer_updated: bool
+    optimizer_updates: int
+    target_sync_count: int
+
+
+TrainingStepCallback = Callable[
+    [TrainingStepSnapshot, np.ndarray | None],
+    None,
+]
 
 
 def _is_integer_tensor(tensor: torch.Tensor) -> bool:
@@ -290,11 +316,15 @@ class DQNTrainer:
         target_network: nn.Module | None = None,
         optimizer: torch.optim.Optimizer | None = None,
         resume_from: str | Path | None = None,
+        on_step: TrainingStepCallback | None = None,
     ) -> None:
         if not isinstance(config, DQNConfig):
             raise TypeError("config must be a DQNConfig")
         self.env = env
         self.config = config
+        if on_step is not None and not callable(on_step):
+            raise TypeError("on_step must be callable or None")
+        self.on_step = on_step
         # Seed before constructing the default network and optimizer. When a
         # checkpoint is loaded below, its saved RNG states take precedence.
         seed_everything(config.seed)
@@ -414,6 +444,60 @@ class DQNTrainer:
         self.target_network.eval()
         self.target_sync_count += 1
         self.last_target_sync_step = self.global_step
+
+    def _render_callback_frame(self) -> np.ndarray | None:
+        """Read one raw rendered frame only when a callback requested it."""
+
+        if self.on_step is None:
+            return None
+        render = getattr(self.env, "render", None)
+        if not callable(render):
+            return None
+        frame = render()
+        if frame is None:
+            return None
+        frame_array = np.asarray(frame)
+        if frame_array.ndim not in {2, 3}:
+            raise ValueError(
+                "env.render() must return a grayscale or color image; "
+                f"received shape {tuple(frame_array.shape)}"
+            )
+        if frame_array.dtype != np.uint8:
+            raise TypeError("env.render() must return a uint8 image")
+        return np.ascontiguousarray(frame_array)
+
+    def _notify_step_callback(
+        self,
+        *,
+        action: int,
+        action_source: str,
+        epsilon: float,
+        raw_reward: float,
+        terminated: bool,
+        truncated: bool,
+        result: DQNTrainingStepResult | None,
+    ) -> None:
+        if self.on_step is None:
+            return
+        snapshot = TrainingStepSnapshot(
+            global_step=self.global_step,
+            # The trainer increments episode after an ended transition. The
+            # callback should still label the frame with the episode on screen.
+            episode=self.episode + 1,
+            action=action,
+            action_source=action_source,
+            epsilon=epsilon,
+            raw_reward=raw_reward,
+            current_raw_episode_return=self._current_raw_episode_return,
+            terminated=terminated,
+            truncated=truncated,
+            replay_size=len(self.replay),
+            warmup_complete=len(self.replay) >= self.config.learning_starts,
+            optimizer_updated=result is not None,
+            optimizer_updates=self.optimizer_updates,
+            target_sync_count=self.target_sync_count,
+        )
+        self.on_step(snapshot, self._render_callback_frame())
 
     def _metric_row(
         self,
@@ -615,6 +699,16 @@ class DQNTrainer:
 
                 self._sync_target_if_due()
 
+                self._notify_step_callback(
+                    action=action,
+                    action_source=action_source,
+                    epsilon=epsilon,
+                    raw_reward=raw_reward,
+                    terminated=terminated,
+                    truncated=truncated,
+                    result=result,
+                )
+
                 completed_return: float | None = None
                 completed_length: int | None = None
                 if terminated or truncated:
@@ -671,6 +765,8 @@ __all__ = [
     "DQNTrainer",
     "DQNTrainingStepResult",
     "NonFiniteTrainingError",
+    "TrainingStepCallback",
+    "TrainingStepSnapshot",
     "seed_everything",
     "dqn_training_step",
 ]
