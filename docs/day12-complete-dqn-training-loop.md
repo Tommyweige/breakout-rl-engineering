@@ -1,41 +1,48 @@
 # Day 12｜完整 DQN Training Loop：一筆遊戲經驗怎麼真的變成模型更新
 
-前面幾天，我們把 DQN 需要的零件一個一個拆開來做：模型可以輸出 Q-values、Replay Buffer 可以保存經驗、epsilon-greedy 可以決定要探索還是利用、Target Network 也能提供比較穩定的下一步估計。
+前面幾天，我們已經把 DQN 需要的幾個重要零件分開做完了：模型可以輸出 Q-value、Replay Buffer 可以保存經驗、epsilon-greedy 可以決定要探索還是利用，Target Network 也能提供比較穩定的下一步估計。
 
-但直到今天，這些東西都還只是各自能運作。
+但「每個零件都能運作」還不等於「模型真的會訓練」。
 
-Day 12 第一次要回答完整的問題：**Agent 在 Breakout 裡做出一個 action 之後，那筆互動資料究竟怎麼一路走到 Replay Buffer、Bellman target、loss，最後真的改變 Online Network 的參數？**
+Day 12 第一次把這些東西接在一起，回答一個很實際的問題：**Agent 在 Breakout 裡做出一個動作之後，這筆遊戲經驗到底怎麼一路變成一次模型更新？**
 
-這一天的完成標準也不是「1,000 steps 之後就能把 Breakout 打得很好」。真正要確認的是：整條訓練資料流有沒有接對、模型有沒有真的被更新、Target Network 有沒有在正確時間同步，以及我們是否留下足夠的資料判斷訓練到底發生了什麼。
+今天不要求 Agent 已經會玩 Breakout。先把整條訓練流程接對，確認資料真的有被收集、模型真的有被修改，而且我們看得出訓練過程發生了什麼。
 
-## 所有元件第一次真的接在一起
+## 一次遊戲經驗，怎麼變成一次模型更新
 
-完整 DQN training loop 可以先看成兩個一直交替進行的工作。
+完整的 DQN 訓練其實一直在做兩件事：**玩遊戲收集經驗**，以及**拿過去的經驗更新模型**。
 
-第一個工作是**收集經驗**：目前的 state 進入 DQN，epsilon-greedy 決定這一步要探索還是利用，選出的 action 交給 Breakout，環境回傳 reward、next state，以及 episode 是否結束。這些資料組成一筆 transition，存進 Replay Buffer。
+[![DQN training loop 分成收集經驗與更新模型兩個不同節奏，Replay Buffer 位在兩者之間](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/4c295d296a358fec55010424d0575021953bd6db/assets/day12/dqn-training-loop-overview.svg?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/4c295d296a358fec55010424d0575021953bd6db/assets/day12/dqn-training-loop-overview.svg)
 
-第二個工作是**利用過去經驗更新模型**：當 Replay Buffer 已經累積到足夠資料，而且這個 environment step 符合訓練頻率時，就從 Buffer 抽一個 mini-batch。Online Network 算目前 action 的 Q-value，Target Network 提供下一個 state 的參考 Q-value，兩者組成 Bellman target 和 loss，最後才由 optimizer 更新 Online Network。
+先看圖的上半部。
 
-整條關係如下：
+Agent 拿到目前的遊戲畫面後，使用 epsilon-greedy 選一個動作。Breakout 執行這個動作，再回傳新的畫面、reward，以及這一局是否結束。
 
-[![Agent、Breakout、Replay Buffer、Online Network 與 Target Network 在完整 DQN training loop 中的資料流](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/5d725ae7d752439d390098726f238dbbd5d01a5a/assets/day12/dqn-training-loop.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/5d725ae7d752439d390098726f238dbbd5d01a5a/assets/day12/dqn-training-loop.png)
+這幾個資料會合在一起，變成一筆**互動紀錄（transition）**：
 
-這張圖最重要的不是函式名稱，而是順序：**先和環境互動，才有 transition；先有足夠 transition，才有 mini-batch；先算出 prediction 和 target，才有 loss；最後 optimizer 才能改模型。**
+```text
+目前狀態 → 做了什麼動作 → 得到多少 reward → 來到什麼新狀態
+```
 
-## Environment step 與 optimizer step 是兩條不同的時鐘
+這筆紀錄不會立刻拿去訓練，而是先放進 Replay Buffer。
 
-Training loop 裡最容易混淆的詞之一就是 `step`。
+圖的下半部才是模型學習的部分。當 Buffer 裡已經有足夠的經驗，而且到了該更新模型的時間，才從裡面隨機抽出一小批資料來訓練。
 
-這個專案的 **environment step** 指的是 Agent 做出一次 action，並呼叫一次預處理後的 `env.step(action)`。Atari 內部的 frame skip 已經由環境 wrapper 處理，所以 `global_step` 記的是 Agent 和環境互動了幾次，不是 emulator 畫了幾張 frame。
+所以 Replay Buffer 很像兩件事中間的橋樑：**Agent 幾乎每一步都在產生新經驗，但模型不需要每走一步就立刻更新。**
 
-**Optimizer step** 則完全不同。它表示模型真的完成一次反向傳播，並修改 Online Network 的參數。
+這也帶出下一個問題：既然「玩一步」和「學一次」不是同一件事，那它們到底多久發生一次？
 
-兩者通常不會一比一發生，因為訓練開始前還有兩個條件：
+## 走一步遊戲，不代表模型也更新一步
 
-- `learning_starts`：Replay Buffer 至少先累積到多少經驗，才開始訓練；
-- `train_frequency`：每隔多少個 environment steps 做一次 optimizer update。
+這篇文章裡會出現兩種不同的 step，最好先把它們分清楚。
 
-這次 smoke run 使用：
+**Environment step** 可以直接理解成「Agent 和遊戲互動一步」：選一個 action，呼叫一次 `env.step(action)`，然後拿到環境回傳的結果。
+
+**Optimizer step** 則是「模型真的學一次」：拿一批資料算出誤差，再修改 Online Network 的參數。
+
+兩者通常不是一比一。
+
+這次短跑測試使用：
 
 ```text
 learning_starts = 32
@@ -43,39 +50,47 @@ train_frequency = 4
 batch_size      = 8
 ```
 
-所以前 31 個 environment steps 只負責收集資料，第 32 步才第一次更新，之後每隔 4 步再更新一次。
+`learning_starts = 32` 的意思是：前 31 步先專心收集資料，第 32 步之後才允許開始學習。
 
-因此 1,000 個 environment steps 最後會得到：
+這樣做不只是為了避免 Buffer 太小。遊戲剛開始時，裡面幾乎都是很相似的開場畫面；如果立刻開始訓練，模型看到的資料會非常單一。先累積一些經驗，第一次學習時才不會只盯著幾乎一樣的畫面。
+
+`train_frequency = 4` 則表示開始訓練後，每 4 個 environment steps 才更新一次模型。
+
+因此這次跑到 1,000 個 environment steps 時，更新次數應該是：
 
 ```text
-(1000 - 32) / 4 + 1 = 243 次 optimizer updates
+(1000 - 32) / 4 + 1 = 243
 ```
 
-實際執行結果也正好是 243 次。這個數字不是遊戲成績，但它是一個很有用的 correctness check：training loop 的時序真的按照設定發生。
+實際結果也正好是 243 次。
 
-`learning_starts` 也不是單純為了避免程式 sample 不到 batch。更重要的是，剛開始的 Replay Buffer 幾乎只有非常接近的開場畫面，如果太早開始訓練，模型會一直從很窄的資料分布學習。先收集一小段經驗，至少能讓第一批更新不至於只看到幾乎一模一樣的 transition。
+這個數字不是遊戲分數，而是在確認一件很基本的事：**我們設定的訓練節奏真的有照預期執行。**
 
-## 一筆 Transition 只更新當時真正做過的 Action
+知道「什麼時候要學」之後，下一個問題就是：從 Replay Buffer 抽出資料後，DQN 到底要改哪一個 Q-value？
 
-DQN 對一個 state 做 forward 時，會一次輸出所有 action 的 Q-values。假設某個 state 得到：
+## 一筆經驗，只能告訴模型當時那個動作的結果
+
+DQN 看一個 state 時，會一次輸出所有 action 的 Q-value。假設某個畫面得到：
 
 ```text
 Q(s, ·) = [0.4, 0.1, 0.8, 0.3]
 ```
 
-但 Replay Buffer 裡那筆 transition 還記著：當時 Agent 真正採取的是哪個 action。
+但那筆 transition 還記得 Agent 當時真正做了哪個 action。
 
-如果當時做的是 action `2`，那這筆資料真正需要更新的是 `0.8`，因為 reward 和 next state 都是「執行 action 2 之後」得到的結果。其他三個 action 並沒有在這筆 transition 裡真的被執行，不能拿同一個 reward 當成它們的答案。
+如果當時做的是 action `2`，那這筆經驗能直接告訴我們的，就是第三個 Q-value `0.8` 應該怎麼修正。
 
-PyTorch 的 `gather` 在這裡只是做一件事：**從每一列所有 action 的 Q-values 中，挑出這筆 transition 當時真正採取的 action。**
+原因很簡單：這筆 reward 和下一個 state 都是**做了 action 2 之後**才出現的。我們沒有真的做另外三個 action，所以不能拿同一個結果去教另外三個 Q-value。
 
-假設 batch size 是 8，Online Network 原本輸出的是 8 組、每組 4 個 Q-values；挑完之後就只剩 8 個 `Q(s, a)`，剛好每筆 transition 一個 prediction。
+實作裡會用 PyTorch 的 `gather`，從每一筆資料的所有 Q-values 中，挑出當時真正採取的 action。它做的事情其實就只是這麼簡單。
 
-## Bellman Target 提供「這個 Q-value 應該往哪裡靠」
+現在我們已經找到模型目前的預測 `Q(s, a)`。但要訓練模型，還缺另一個東西：**這個 Q-value 應該往哪裡靠？**
 
-挑出目前的 `Q(s, a)` 之後，還需要一個學習目標來比較。
+## Bellman Target 就是這次更新的參考答案
 
-Day 12 延續 Day 11 的 Vanilla DQN target：
+Day 11 已經介紹過 Target Network。到了完整 training loop 裡，它真正的用途就是幫我們算出下一步的參考價值。
+
+Day 12 使用的學習目標可以寫成：
 
 ```text
 target = reward
@@ -83,74 +98,97 @@ target = reward
        × max Q_target(next_state, action)
 ```
 
-白話來說，一筆 transition 的學習目標由兩部分組成：
+先不用被公式嚇到，它其實只是在說：
 
-1. 這一步已經真的拿到的 reward；
-2. 如果遊戲還沒真正結束，下一個 state 未來可能帶來的價值。
+**這個 action 的價值 = 現在真的拿到的 reward + 下一個 state 未來可能帶來的價值。**
 
-第二部分由 Target Network 計算，因為我們不希望 Online Network 每更新一次，拿來當參考的下一步 Q-value 就立刻跟著變。
+`gamma` 用來決定我們有多重視未來的 reward；Target Network 則負責估計「下一個 state 還可能有多少價值」。
 
-`terminated=True` 時，遊戲已經進入真正的終止狀態，後面沒有合理的未來價值可以再接，因此 target 只剩 reward。
+如果 `terminated=True`，代表遊戲真的已經進入終止狀態，後面沒有下一步可以繼續，所以這時候學習目標只剩下目前拿到的 reward。
 
-`truncated=True` 則不能直接當成同一件事。它可能只是 episode 因為外部限制而被截斷，例如時間上限；這種情況不代表遊戲世界本身進入 terminal state，所以不能自動把未來價值切掉。
+`truncated=True` 則不一定代表遊戲世界真的結束。它可能只是因為外部限制，例如時間到了，所以不能看到 truncated 就一律把未來價值清掉。
 
-這裡仍然是 Vanilla DQN：下一個 state 裡「哪個 action 最大」以及「這個最大值是多少」，都由 Target Network 完成。到 Day 17 的 Double DQN 才會把這兩個角色拆開。
-
-## Huber Loss 把 Prediction 和 Target 的差距變成學習訊號
-
-現在手上有兩個數字：
+到這裡，一筆資料終於有了兩個可以比較的數字：
 
 ```text
-prediction = Online Network 的 Q(s, a)
-target     = Bellman target
+模型目前的預測：Q(s, a)
+這次的參考答案：Bellman target
 ```
 
-兩者的差距就是模型這一次需要修正的方向。這個 prediction 和 target 之間的差距，在強化學習裡常叫 **TD error**。
+接下來要做的，就是讓兩者之間的差距真正反映到模型參數上。
 
-Day 12 使用 **Huber loss**，PyTorch 裡叫 `SmoothL1Loss`。它在誤差小時對細微差異保持敏感；誤差很大時，增長又不會像純平方誤差那麼猛烈，因此比較不容易讓少數非常大的 TD error 主導整個更新。
+## 預測和答案的差距，最後才會改變模型
 
-這只是一個穩健的 baseline，不代表 Huber loss 在所有情況下永遠最好。
+Day 12 使用 **Huber loss** 來衡量「目前的 Q-value」和「Bellman target」差多少。
 
-Loss 算出來之後，才會進入真正修改模型參數的階段：先清掉上一輪 gradient，做 backward 計算這次的參數變化方向，必要時限制過大的 gradient，最後 optimizer 才更新 Online Network。
+可以先把 loss 理解成一個數字：**差得越多，代表這次越需要修正；差得越少，代表目前預測比較接近目標。**
 
-**Target Network 不在這個 optimizer 裡。** 它在兩次同步之間保持不動，只在指定的間隔把 Online Network 的參數整份複製過去。
+Huber loss 的特點是，遇到很大的誤差時不會像單純平方誤差那樣快速放大，因此常被拿來當 DQN 的穩健起點。這不代表它永遠是最好的選擇，只是 Day 12 先用一個合理的 baseline。
 
-## Reward Clipping 改的是訓練訊號，不是遊戲分數
+有了 loss 之後，PyTorch 會透過反向傳播（backpropagation）算出模型裡各個參數應該往哪個方向調整，最後由 optimizer 真正修改 **Online Network**。
 
-Atari 的 reward 同時扮演兩個不同角色，很容易被混在一起。
+Target Network 不會跟著這一步一起被 optimizer 修改。它仍然保持 Day 11 的設計：隔一段時間，才把 Online Network 的最新參數整份複製過去。
 
-第一個角色是**訓練訊號**。為了讓不同大小的 reward 不至於讓更新尺度差異太大，DQN baseline 可以把 reward clipping 成：正數變 `+1`、零維持 `0`、負數變 `-1`。Replay Buffer 保存的是這個真正拿去算 Bellman target 的 training reward。
+所以一次真正的學習可以濃縮成：
 
-第二個角色是**遊戲表現**。我們真正想知道 Agent 在 Breakout 裡拿了多少分，這時就必須保留環境原本回傳的 raw reward，並用它累積 raw episode return。
+```text
+抽一批舊經驗
+→ 找出當時做過的 action 對應 Q-value
+→ 算出 Bellman target
+→ 比較兩者差距
+→ 更新 Online Network
+```
 
-如果把 clipped reward 和 raw reward 混在一起，之後看到 return 上升也不知道究竟是遊戲真的得分變高，還是只是在看訓練用的符號化訊號。
+模型現在真的會更新了，但還有一個很容易混淆的地方：訓練時用的 reward，和我們最後拿來判斷 Agent 玩得好不好的分數，不一定要是同一個數字。
 
-所以這兩個數字必須從 training loop 一開始就分開保存。
+## 訓練用的 Reward 和遊戲分數要分開
 
-## 真實 Smoke Run：Pipeline 已經能完整跑通
+Atari 的 reward 在這裡有兩種用途。
 
-這次 Day 12 實際跑了一個固定 seed `42`、CPU、1,000 environment steps 的 smoke run。
+第一種是拿來訓練模型。這次 baseline 可以把 reward 簡化成：
 
-結果是：
+```text
+正 reward → +1
+0          → 0
+負 reward → -1
+```
 
-| 指標 | 結果 |
+這叫做 **reward clipping**。目的不是竄改遊戲分數，而是讓訓練時不同大小的 reward 不要造成過大的尺度差異。
+
+Replay Buffer 存的是這個拿來訓練的 reward。
+
+但如果我們想知道 Agent 在 Breakout 裡到底拿了幾分，就一定要另外保留環境原本給的 reward。每一局把原始 reward 加起來，才是實際遊戲表現。
+
+所以這兩件事必須分開：
+
+- 訓練模型時，可以使用 clipped reward；
+- 評估 Agent 玩得好不好時，要看原始遊戲分數。
+
+如果把兩者混在一起，後面就算看到一條上升曲線，也很難知道 Agent 到底是真的變強，還是只是訓練訊號的數值變了。
+
+## 用 1,000 Steps 先確認整條流程真的接通
+
+完整 training loop 接好之後，我先跑了一次很短的 **smoke run**。Smoke run 可以理解成「先用很低成本跑一小段，確認整套系統真的能工作」。
+
+這次設定為固定 seed `42`、CPU、1,000 個 environment steps，最後得到：
+
+| 項目 | 結果 |
 | --- | ---: |
 | Environment steps | 1,000 |
 | 完成 episodes | 4 |
-| Optimizer updates | 243 |
-| Target sync count | 11 |
-| 最後 Replay size | 256 |
-| 最後 loss | 0.000419 |
+| 模型更新次數 | 243 |
+| Target Network 同步次數 | 11 |
+| Replay Buffer 最後大小 | 256 |
 
-更重要的是，訓練過程中的 return、loss、Q-value 和 epsilon 都有被持續記錄，而不是只在最後印一句「training finished」。
+更重要的是，整個過程都有持續留下訓練紀錄，而不是只在最後印一句「training finished」。
 
 [![Day 12 真實 CPU smoke run 的 raw episode return、Huber loss、selected Q mean 與 epsilon](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/5d725ae7d752439d390098726f238dbbd5d01a5a/assets/day12/training-overview.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/5d725ae7d752439d390098726f238dbbd5d01a5a/assets/day12/training-overview.png)
 
-從這張圖可以確認幾件事：epsilon 的確照排程下降；learning warm-up 之後 loss 開始出現；Q-value 也隨著 optimizer update 改變；episode return 則確實來自實際遊戲互動。
+這張圖最值得看的不是曲線漂不漂亮，而是前面講的幾件事真的同時發生了：epsilon 隨著步數下降，Replay Buffer 累積資料之後開始出現模型更新，loss 有被算出來，Q-value 也會隨著訓練改變。
 
-這些現象足以支持：**training pipeline 真的在執行，而且 Online Network 真的有被更新。**
+換句話說，這次短跑可以支持一句話：**整條 DQN 訓練流程真的已經接通，而且 Online Network 確實有在被修改。**
 
-但它們還不能支持：**Agent 已經學會 Breakout。**
+但這還不能證明 Agent 已經學會 Breakout。
 
 ## 真實畫面裡看到的是什麼？
 
@@ -166,59 +204,40 @@ overview 圖把數值變化畫成曲線；但讀者還需要看到另一個更�
 
 但 GIF 不能支持「policy 已經學會 Breakout」。它只展示一段 1,000-step smoke run，沒有長期 evaluation、不同 seed 或和 baseline 的公平比較；畫面裡出現的 movement 也不等於策略品質已經穩定。
 
-## Loss 下降不等於 Policy 變好
+## 程式有在訓練，不代表 Agent 已經變強
 
-這是 Day 12 最重要的界線之一。
+這次只完成了 4 個 episode，原始分數是 `2、3、0、0`。
 
-這次 run 一共有 243 次 optimizer updates，因此可以畫出真正的 Huber loss：
+樣本這麼少，根本不足以判斷 Agent 是否真的有進步。就算 loss 越來越小，也只能表示模型越來越接近**目前這批資料所定義的學習目標**，不代表最後選出的動作一定會讓遊戲分數變高。
 
-[![Day 12 真實 CPU smoke run 的 DQN Huber loss](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/5d725ae7d752439d390098726f238dbbd5d01a5a/assets/day12/training-loss.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/5d725ae7d752439d390098726f238dbbd5d01a5a/assets/day12/training-loss.png)
+這也是為什麼訓練時不能只盯著一個數字。
 
-圖上的尖峰表示某些 mini-batch 中，Online Network 的 prediction 和 Bellman target 差得比較遠；接近零的點則表示那一批資料上的差距比較小。
+如果之後分數不升，我們還會想知道：epsilon 是否正常下降？Replay Buffer 有沒有正常累積？Q-value 有沒有突然變得非常大？模型到底有沒有持續更新？Target Network 有沒有照預期同步？
 
-Loss 是很重要的健康指標：如果突然變成 NaN、infinity，或持續爆炸，代表訓練流程很可能出問題。
+這些訓練紀錄不會直接告訴我們答案，但它們能把「Agent 好像沒在學」這句模糊的感覺，拆成一個個可以檢查的問題。
 
-但 loss 下降只表示模型越來越能貼近**目前 Replay Buffer 裡、目前 Target Network 所定義的學習目標**。這並不保證這些 Q-values 最後會形成更好的遊戲策略。
+這正是 Day 13 要繼續處理的內容。
 
-這次完成的四個 episode，raw return 只有 `2、3、0、0`。樣本太少、訓練也太短，完全不足以判斷 Agent 是否真的有學習趨勢。
+## Checkpoint 讓訓練中斷後不用全部重來
 
-所以「程式有跑」與「Agent 有學」必須分開驗證：
+訓練時間變長之後，另一個很實際的需求就是存檔。
 
-- 程式有跑，可以看 optimizer update、finite loss、Q-value 是否改變、Replay 是否增長、Target 是否同步；
-- Agent 有學，則需要更長時間的 evaluation return、不同 seed，以及和 baseline 的比較。
+Day 12 的 checkpoint 會保存 Online Network、Target Network、optimizer，以及目前跑到第幾步等主要訓練狀態。這樣程式中斷後，不必把模型重新從隨機初始化開始。
 
-Day 12 只完成前者。
+不過目前 **Replay Buffer 沒有一起存進 checkpoint**。Atari 的 Buffer 會保存大量畫面，如果每次都把整份資料一起存下來，檔案會非常大。
 
-## Metrics 的目的不是做漂亮曲線，而是讓訓練可診斷
+因此恢復訓練後，模型本身可以接著原本的參數繼續，但 Replay Buffer 需要重新累積一段經驗，之後才能再次開始更新。
 
-RL 很常出現一種情況：程式完全沒有 crash，GPU 也一直在跑，但 Agent 其實根本沒有變好。
+所以目前的 resume 可以理解成「接回主要模型狀態」，而不是保證中斷前後每一步遊戲都會完全一模一樣。
 
-因此 training loop 不能只記 episode score。至少還需要同時知道 epsilon、loss、Q-value、gradient、Replay size、optimizer update 次數以及 Target Network 的同步狀態。
+## Day 12：DQN 第一次形成完整的學習閉環
 
-不同指標回答的是不同問題。例如 return 不升、但 loss 很正常，可能代表模型確實在擬合目前資料，只是探索或 target 有問題；如果 Q-value 突然快速變得非常大，則可能是估計開始發散；如果 Replay size 一直沒有正常增長，問題甚至可能根本還沒進入神經網路。
+回頭看今天真正完成的事情，其實只有一條主線。
 
-這些 metrics 不會直接告訴我們答案，但會把「Agent 沒在學」從一句模糊感覺，拆成可以逐步排查的工程問題。
+Agent 先和 Breakout 互動，產生一筆經驗；經驗進入 Replay Buffer；累積到足夠資料後抽出一批舊經驗；Online Network 先給出目前的 Q-value，Target Network 再提供學習目標；兩者的差距變成 loss，最後真的修改 Online Network。
 
-## Checkpoint 能恢復模型，但不代表完全回到同一條時間線
+到這裡，DQN 才第一次不只是「有模型、有 Buffer、有探索策略」，而是形成了一條真正能持續學習的閉環。
 
-Day 12 也第一次把 checkpoint 納入 training loop。
+這次 1,000 steps 的短跑證明這條閉環可以運作，沒有證明 Agent 已經會玩 Breakout。
 
-Checkpoint 保存 Online Network、Target Network、optimizer、目前的 global step、episode/update 計數，以及能保存的亂數狀態。這讓中斷後不必重新把模型從隨機初始化開始訓練。
-
-但目前 **Replay Buffer 沒有一起存進 checkpoint**。原因很直接：Atari Replay Buffer 可能非常大，把整份 frame storage 每次都寫進 checkpoint 會帶來明顯的空間與 I/O 成本。
-
-所以 resume 之後，模型和 optimizer 可以接著先前狀態，但 Replay Buffer 必須重新累積到 warm-up 條件後才能再次訓練。
-
-這代表目前的 resume 是「恢復主要訓練狀態」，不是 bit-exact resume，也不是保證從中斷前的下一個 action 開始完全走出一模一樣的未來。
-
-這個限制比單純說「支援 resume」更重要，因為它定義了 checkpoint 真正能保證什麼。
-
-## Day 12 的完成標準：能學習、能觀察、能恢復
-
-到這裡，DQN 第一次有了一條完整閉環：Agent 用目前的 network 和 epsilon-greedy 選 action，Breakout 產生 transition，Replay Buffer 保存資料；條件成熟後抽 mini-batch，Online Network 提供 prediction，Target Network 提供 Bellman target，再由 loss 和 optimizer 改變 Online Network。
-
-這次 smoke run 證明的是這條閉環可以實際執行、留下 metrics，而且 checkpoint 可以保存主要訓練狀態。
-
-它沒有證明 Agent 已經會玩 Breakout。
-
-而這正好帶出 Day 13 真正要處理的問題：**如果 loss 有值、Q-value 也在變、程式完全沒有 crash，但 return 就是不改善，我們要怎麼知道到底是哪一個環節出了問題？**
+而 Day 13 要接著回答的，就是更棘手的問題：**如果程式一直在跑、模型也一直在更新，但分數就是沒有變好，我們要怎麼知道問題出在哪裡？**
