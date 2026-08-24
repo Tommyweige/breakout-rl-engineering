@@ -1,0 +1,31 @@
+{
+  "status": "completed",
+  "run_id": "day13-debug-seed42",
+  "run_dir": "runs\\day13-debug-seed42",
+  "seed": 42,
+  "total_steps": 10000,
+  "episodes": 45,
+  "optimizer_updates": 2251,
+  "target_sync_count": 21,
+  "last_target_sync_step": 10000,
+  "replay_size": 10000,
+  "steps_per_second": 109.74360940743568,
+  "last_loss": 0.0013905602972954512,
+  "last_q_mean": 0.24612851440906525,
+  "last_q_max": 0.31519848108291626,
+  "last_q_min": 0.1903814971446991,
+  "last_target_mean": 0.21691104769706726,
+  "last_target_max": 0.25412076711654663,
+  "last_td_error_mean_abs": 0.03138354420661926,
+  "last_td_error_max_abs": 0.24621807038784027,
+  "action_distribution": {
+    "NOOP": 2247,
+    "FIRE": 2784,
+    "RIGHT": 2579,
+    "LEFT": 2390
+  },
+  "random_decision_count": 4754,
+  "greedy_decision_count": 5246,
+  "random_decision_ratio": 0.4754,
+  "last_checkpoint": "runs\\day13-debug-seed42\\checkpoints\\step-00010000.pt"
+}

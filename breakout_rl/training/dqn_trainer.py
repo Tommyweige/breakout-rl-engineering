@@ -23,6 +23,7 @@ from breakout_rl.replay_tensors import ReplayTensorBatch, replay_batch_to_tensor
 from breakout_rl.targets import hard_update, should_update_target
 from breakout_rl.tensors import observation_to_tensor
 from breakout_rl.training.config import DQNConfig
+from breakout_rl.training.diagnostics import ATARI_ACTION_NAMES
 from breakout_rl.training.metrics import MetricsLogger
 
 
@@ -39,7 +40,11 @@ class DQNTrainingStepResult:
     targets: torch.Tensor
     q_mean: float
     q_max: float
+    q_min: float
     target_mean: float
+    target_max: float
+    td_error_mean_abs: float
+    td_error_max_abs: float
     gradient_norm: float
 
     @property
@@ -259,13 +264,21 @@ def dqn_training_step(
     for parameter in online_network.parameters():
         _require_finite(parameter.data, name="online parameters")
 
+    detached_selected_q_values = selected_q_values.detach()
+    detached_targets = targets.detach()
+    absolute_td_errors = (detached_targets - detached_selected_q_values).abs()
+
     return DQNTrainingStepResult(
         loss=float(loss.detach().item()),
-        selected_q_values=selected_q_values.detach().clone(),
-        targets=targets.detach().clone(),
-        q_mean=float(selected_q_values.detach().mean().item()),
-        q_max=float(selected_q_values.detach().max().item()),
-        target_mean=float(targets.detach().mean().item()),
+        selected_q_values=detached_selected_q_values.clone(),
+        targets=detached_targets.clone(),
+        q_mean=float(detached_selected_q_values.mean().item()),
+        q_max=float(detached_selected_q_values.max().item()),
+        q_min=float(detached_selected_q_values.min().item()),
+        target_mean=float(detached_targets.mean().item()),
+        target_max=float(detached_targets.max().item()),
+        td_error_mean_abs=float(absolute_td_errors.mean().item()),
+        td_error_max_abs=float(absolute_td_errors.max().item()),
         gradient_norm=gradient_norm,
     )
 
@@ -396,8 +409,21 @@ class DQNTrainer:
         self._current_training_episode_return = 0.0
         self._current_episode_length = 0
         self._last_result: DQNTrainingStepResult | None = None
+        self._action_counts = [0 for _ in range(self.action_count)]
+        self._random_decision_count = 0
+        self._greedy_decision_count = 0
         self._started_at = time.perf_counter()
-        self.metrics = MetricsLogger(self.run_dir, config)
+        environment_spec = getattr(env, "spec", None)
+        environment_id = getattr(environment_spec, "id", None)
+        self.metrics = MetricsLogger(
+            self.run_dir,
+            config,
+            metadata={
+                "environment_id": environment_id or "unavailable",
+                "observation_shape": list(self.observation_shape),
+                "action_count": self.action_count,
+            },
+        )
 
         if resume_from is not None:
             self.load_checkpoint(resume_from)
@@ -502,6 +528,7 @@ class DQNTrainer:
     def _metric_row(
         self,
         *,
+        action: int,
         epsilon: float,
         action_source: str,
         raw_reward: float,
@@ -523,7 +550,13 @@ class DQNTrainer:
             "loss": None if result is None else result.loss,
             "q_mean": None if result is None else result.q_mean,
             "q_max": None if result is None else result.q_max,
+            "q_min": None if result is None else result.q_min,
             "target_mean": None if result is None else result.target_mean,
+            "target_max": None if result is None else result.target_max,
+            "td_error_mean_abs": (
+                None if result is None else result.td_error_mean_abs
+            ),
+            "td_error_max_abs": None if result is None else result.td_error_max_abs,
             "gradient_norm": None if result is None else result.gradient_norm,
             "replay_size": len(self.replay),
             "steps_per_second": sps,
@@ -534,7 +567,28 @@ class DQNTrainer:
             "last_target_sync_step": self.last_target_sync_step,
             "raw_reward": raw_reward,
             "training_reward": training_reward,
+            "action": action,
+            "action_name": ATARI_ACTION_NAMES.get(action, f"ACTION_{action}"),
             "action_source": action_source,
+            "noop_count": self._action_counts[0]
+            if len(self._action_counts) > 0
+            else 0,
+            "fire_count": self._action_counts[1]
+            if len(self._action_counts) > 1
+            else 0,
+            "right_count": self._action_counts[2]
+            if len(self._action_counts) > 2
+            else 0,
+            "left_count": self._action_counts[3]
+            if len(self._action_counts) > 3
+            else 0,
+            "random_decision_count": self._random_decision_count,
+            "greedy_decision_count": self._greedy_decision_count,
+            "random_decision_ratio": (
+                self._random_decision_count / self.global_step
+                if self.global_step
+                else 0.0
+            ),
         }
 
     def _summary(self, *, status: str = "completed", **extra: Any) -> dict[str, Any]:
@@ -554,9 +608,30 @@ class DQNTrainer:
             "last_loss": None if self._last_result is None else self._last_result.loss,
             "last_q_mean": None if self._last_result is None else self._last_result.q_mean,
             "last_q_max": None if self._last_result is None else self._last_result.q_max,
+            "last_q_min": None if self._last_result is None else self._last_result.q_min,
             "last_target_mean": None
             if self._last_result is None
             else self._last_result.target_mean,
+            "last_target_max": None
+            if self._last_result is None
+            else self._last_result.target_max,
+            "last_td_error_mean_abs": None
+            if self._last_result is None
+            else self._last_result.td_error_mean_abs,
+            "last_td_error_max_abs": None
+            if self._last_result is None
+            else self._last_result.td_error_max_abs,
+            "action_distribution": {
+                ATARI_ACTION_NAMES.get(index, f"ACTION_{index}"): count
+                for index, count in enumerate(self._action_counts)
+            },
+            "random_decision_count": self._random_decision_count,
+            "greedy_decision_count": self._greedy_decision_count,
+            "random_decision_ratio": (
+                self._random_decision_count / self.global_step
+                if self.global_step
+                else 0.0
+            ),
             "last_checkpoint": None
             if self._last_checkpoint is None
             else str(self._last_checkpoint),
@@ -605,6 +680,9 @@ class DQNTrainer:
             "episode": self.episode,
             "target_sync_count": self.target_sync_count,
             "last_target_sync_step": self.last_target_sync_step,
+            "action_counts": list(self._action_counts),
+            "random_decision_count": self._random_decision_count,
+            "greedy_decision_count": self._greedy_decision_count,
             "config": self.config.to_dict(),
             "rng_state": self._rng_state(),
             "replay_saved": False,
@@ -640,6 +718,11 @@ class DQNTrainer:
         self.episode = int(payload["episode"])
         self.target_sync_count = int(payload["target_sync_count"])
         self.last_target_sync_step = int(payload["last_target_sync_step"])
+        saved_action_counts = payload.get("action_counts")
+        if isinstance(saved_action_counts, list) and len(saved_action_counts) == self.action_count:
+            self._action_counts = [int(count) for count in saved_action_counts]
+        self._random_decision_count = int(payload.get("random_decision_count", 0))
+        self._greedy_decision_count = int(payload.get("greedy_decision_count", 0))
         self.target_network.eval()
         rng_state = payload.get("rng_state")
         if isinstance(rng_state, dict):
@@ -663,6 +746,11 @@ class DQNTrainer:
                     current_observation,
                     epsilon,
                 )
+                self._action_counts[action] += 1
+                if action_source == "random":
+                    self._random_decision_count += 1
+                elif action_source == "greedy":
+                    self._greedy_decision_count += 1
                 next_observation, raw_reward, terminated, truncated, _ = self.env.step(action)
                 next_observation_array = _as_uint8_observation(
                     next_observation,
@@ -728,6 +816,7 @@ class DQNTrainer:
 
                 self.metrics.write(
                     self._metric_row(
+                        action=action,
                         epsilon=epsilon,
                         action_source=action_source,
                         raw_reward=raw_reward,

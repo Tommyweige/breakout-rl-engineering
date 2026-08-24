@@ -29,6 +29,15 @@ class DQNConfigTests(unittest.TestCase):
         self.assertEqual(config.train_frequency, 4)
         self.assertEqual(config.device, "cpu")
 
+    def test_debug_preset_keeps_training_logic_and_shortens_observation_window(self) -> None:
+        config = DQNConfig.debug(device="cpu")
+
+        self.assertGreaterEqual(config.total_steps, 10_000)
+        self.assertEqual(config.learning_starts, 1_000)
+        self.assertEqual(config.target_update_interval, 500)
+        self.assertEqual(config.checkpoint_interval, 500)
+        self.assertEqual(config.device, "cpu")
+
     def test_zero_discount_is_a_valid_boundary_value(self) -> None:
         self.assertEqual(DQNConfig(gamma=0.0).gamma, 0.0)
 

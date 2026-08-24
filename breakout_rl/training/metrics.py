@@ -10,6 +10,7 @@ from typing import Any, Mapping
 import numpy as np
 
 from breakout_rl.training.config import DQNConfig
+from breakout_rl.training.diagnostics import collect_runtime_metadata
 
 
 METRIC_FIELDS: tuple[str, ...] = (
@@ -23,7 +24,11 @@ METRIC_FIELDS: tuple[str, ...] = (
     "loss",
     "q_mean",
     "q_max",
+    "q_min",
     "target_mean",
+    "target_max",
+    "td_error_mean_abs",
+    "td_error_max_abs",
     "gradient_norm",
     "replay_size",
     "steps_per_second",
@@ -34,7 +39,16 @@ METRIC_FIELDS: tuple[str, ...] = (
     "last_target_sync_step",
     "raw_reward",
     "training_reward",
+    "action",
+    "action_name",
     "action_source",
+    "noop_count",
+    "fire_count",
+    "right_count",
+    "left_count",
+    "random_decision_count",
+    "greedy_decision_count",
+    "random_decision_ratio",
 )
 
 
@@ -51,7 +65,13 @@ def _json_default(value: Any) -> Any:
 class MetricsLogger:
     """Append one structured row per environment step and write run metadata."""
 
-    def __init__(self, run_dir: str | Path, config: DQNConfig) -> None:
+    def __init__(
+        self,
+        run_dir: str | Path,
+        config: DQNConfig,
+        *,
+        metadata: Mapping[str, Any] | None = None,
+    ) -> None:
         if not isinstance(config, DQNConfig):
             raise TypeError("config must be a DQNConfig")
         self.run_dir = Path(run_dir)
@@ -60,7 +80,17 @@ class MetricsLogger:
         self.metrics_path = self.run_dir / "metrics.csv"
         self.summary_path = self.run_dir / "summary.json"
         if not self.config_path.exists():
-            config_payload = {"run_id": self.run_dir.name, **config.to_dict()}
+            runtime_metadata = collect_runtime_metadata(
+                seed=config.seed,
+                device=config.device,
+                run_dir=self.run_dir,
+                extra=metadata,
+            )
+            config_payload = {
+                "run_id": self.run_dir.name,
+                **config.to_dict(),
+                "runtime": runtime_metadata,
+            }
             self.config_path.write_text(
                 json.dumps(config_payload, indent=2, ensure_ascii=False),
                 encoding="utf-8",

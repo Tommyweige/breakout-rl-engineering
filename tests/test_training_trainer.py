@@ -248,6 +248,19 @@ class DQNTrainerTests(unittest.TestCase):
                 (run_dir / "summary.json").read_text(encoding="utf-8")
             )
             self.assertEqual(saved_summary["optimizer_updates"], summary["optimizer_updates"])
+            self.assertEqual(sum(summary["action_distribution"].values()), 16)
+            self.assertEqual(
+                summary["random_decision_count"]
+                + summary["greedy_decision_count"],
+                16,
+            )
+            config_payload = json.loads(
+                (run_dir / "config.json").read_text(encoding="utf-8")
+            )
+            self.assertIn("runtime", config_payload)
+            self.assertIn("git_commit_sha", config_payload["runtime"])
+            self.assertIn("q_min", rows[-1])
+            self.assertIn("td_error_max_abs", rows[-1])
 
     def test_resume_restores_model_state_and_rewarms_replay(self) -> None:
         base_values = {
