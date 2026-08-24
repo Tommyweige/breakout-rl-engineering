@@ -263,6 +263,8 @@ class DQNTrainerTests(unittest.TestCase):
             )
             self.assertIn("runtime", config_payload)
             self.assertIn("git_commit_sha", config_payload["runtime"])
+            self.assertGreater(config_payload["runtime"]["wall_clock_seconds"], 0.0)
+            self.assertIn("torch_cuda_version", config_payload["runtime"])
             self.assertIn("q_min", rows[-1])
             self.assertIn("td_error_max_abs", rows[-1])
 

@@ -96,6 +96,7 @@ dependencies:
   - zlib-ng=2.3.3
   - zstd=1.5.7
   - pip:
+      - --extra-index-url=https://download.pytorch.org/whl/cu130
       - ale-py==0.12.0
       - cloudpickle==3.1.2
       - farama-notifications==0.0.6

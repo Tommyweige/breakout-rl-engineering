@@ -138,8 +138,12 @@ class DQNConfig:
         )
 
     @classmethod
-    def debug(cls, *, total_steps: int = 10_000, device: str = "cpu") -> "DQNConfig":
-        """Return a short diagnostic run with frequent observable checkpoints."""
+    def debug(cls, *, total_steps: int = 10_000, device: str = "cuda") -> "DQNConfig":
+        """Return the CUDA-first diagnostic run with frequent checkpoints.
+
+        CPU remains an explicit portability override for tests and small
+        sanity checks; the formal Day 13 debug preset targets CUDA.
+        """
 
         return cls(
             total_steps=total_steps,
