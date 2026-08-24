@@ -1,15 +1,20 @@
 {
   "status": "completed",
-  "run_id": "day13-debug-cuda-seed42-clean",
-  "run_dir": "runs\\day13-debug-cuda-seed42-clean",
+  "run_id": "day13-debug-cuda-seed42-final",
+  "run_dir": "runs\\day13-debug-cuda-seed42-final",
   "seed": 42,
   "total_steps": 10000,
-  "episodes": 43,
+  "episodes": 48,
   "optimizer_updates": 2251,
   "target_sync_count": 21,
   "last_target_sync_step": 10000,
   "replay_size": 10000,
-  "steps_per_second": 145.7543112974691,
+  "replay_occupancy": {
+    "size": 10000,
+    "capacity": 10000,
+    "ratio": 1.0
+  },
+  "steps_per_second": 166.21039116437825,
   "runtime": {
     "python_version": "3.12.13",
     "pytorch_version": "2.13.0+cu130",
@@ -24,10 +29,10 @@
     "cuda_device_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
     "cuda_allocated_bytes": 51090432,
     "cuda_peak_allocated_bytes": 70963200,
-    "wall_clock_seconds": 68.60860519995913,
-    "steps_per_second": 145.7543112974691,
+    "wall_clock_seconds": 60.16471009992529,
+    "steps_per_second": 166.21039116437825,
     "seed": 42,
-    "git_commit_sha": "5bd36a74a3234a2de659daecda709e3310cf8571",
+    "git_commit_sha": "6f20079770da339f6ed2b89560be2c93928f8b14",
     "environment_id": "ALE/Breakout-v5",
     "observation_shape": [
       4,
@@ -36,22 +41,22 @@
     ],
     "action_count": 4
   },
-  "last_loss": 9.778652747627348e-05,
-  "last_q_mean": 0.28800076246261597,
-  "last_q_max": 0.3284938335418701,
-  "last_q_min": 0.26676443219184875,
-  "last_target_mean": 0.27729111909866333,
-  "last_target_max": 0.2946767508983612,
-  "last_td_error_mean_abs": 0.011332589201629162,
-  "last_td_error_max_abs": 0.03381708264350891,
+  "last_loss": 0.0009123729541897774,
+  "last_q_mean": 0.22176054120063782,
+  "last_q_max": 0.3229333758354187,
+  "last_q_min": 0.1763516366481781,
+  "last_target_mean": 0.21159973740577698,
+  "last_target_max": 0.29612356424331665,
+  "last_td_error_mean_abs": 0.020818166434764862,
+  "last_td_error_max_abs": 0.21970267593860626,
   "action_distribution": {
-    "NOOP": 2846,
-    "FIRE": 2242,
-    "RIGHT": 2870,
-    "LEFT": 2042
+    "NOOP": 2512,
+    "FIRE": 2546,
+    "RIGHT": 2841,
+    "LEFT": 2101
   },
   "random_decision_count": 4754,
   "greedy_decision_count": 5246,
   "random_decision_ratio": 0.4754,
-  "last_checkpoint": "runs\\day13-debug-cuda-seed42-clean\\checkpoints\\step-00010000.pt"
+  "last_checkpoint": "runs\\day13-debug-cuda-seed42-final\\checkpoints\\step-00010000.pt"
 }

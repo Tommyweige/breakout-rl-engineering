@@ -1,5 +1,5 @@
 {
-  "run_id": "day13-debug-cuda-seed42-clean",
+  "run_id": "day13-debug-cuda-seed42-final",
   "total_steps": 10000,
   "seed": 42,
   "gamma": 0.99,
@@ -30,10 +30,10 @@
     "cuda_device_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
     "cuda_allocated_bytes": 51090432,
     "cuda_peak_allocated_bytes": 70963200,
-    "wall_clock_seconds": 68.60860519995913,
-    "steps_per_second": 145.7543112974691,
+    "wall_clock_seconds": 60.16471009992529,
+    "steps_per_second": 166.21039116437825,
     "seed": 42,
-    "git_commit_sha": "5bd36a74a3234a2de659daecda709e3310cf8571",
+    "git_commit_sha": "6f20079770da339f6ed2b89560be2c93928f8b14",
     "environment_id": "ALE/Breakout-v5",
     "observation_shape": [
       4,
