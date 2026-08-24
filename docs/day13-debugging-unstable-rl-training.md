@@ -2,13 +2,13 @@
 
 Day 12 的深度 Q 網路（Deep Q-Network，DQN）已經能和 Breakout 互動、累積 replay buffer（保存過去 transition，也就是 state、action、reward、next state 一次互動紀錄的資料池）、更新 Online Network（目前會被 optimizer，也就是依梯度修改模型參數的機制，更新的網路），也會保存 checkpoint（可恢復訓練狀態的存檔）。可是「程式沒有 crash」和「Agent 正在變強」是兩件完全不同的事。
 
-正式 debug run 在 `cuda:0`（NVIDIA GeForce RTX 4060 Laptop GPU）上用固定 seed `42` 跑了 `10,000` 個 environment steps（Agent 和環境互動 10,000 次）。流程完成了 `48` 個 episodes、`2,251` 次 optimizer updates（optimizer 是依照梯度修改模型參數的機制），以及 `21` 次 Target Network sync；Target Network 是暫時固定、用來產生 Bellman target（這次更新用來比較的參考值）的參考網路。可是 raw episode return（每局把原始 reward 加總）的平均值只有 `1.40`，第一局是 `2`、最後一局是 `1`。這組數字能證明 GPU training loop 有在工作，不能證明 policy 已經學會 Breakout。
+正式 debug run 在 `cuda:0`（NVIDIA GeForce RTX 4060 Laptop GPU）上用固定 seed `42` 跑了 `10,000` 個 environment steps（Agent 和環境互動 10,000 次）。流程完成了 `48` 個 episodes、`2,251` 次 optimizer updates（optimizer 是依照梯度修改模型參數的機制），以及 `21` 次 Target Network sync；Target Network 是暫時固定、用來產生 Bellman target（這次更新用來比較的參考值）的參考網路。可是 raw episode return（每局把原始 reward 加總）的平均值只有 `1.40`，第一局是 `2`、最後一局是 `1`。這組數字能證明 GPU training loop 有在工作，不能證明 policy（Agent 根據畫面選 action 的行為策略）已經學會 Breakout。
 
-真正要解決的問題是：**當強化學習（Reinforcement Learning，RL）訓練「看起來正常」但行為沒有改善時，如何把模糊的懷疑拆成可以逐一驗證的問題？** 這裡的 policy 指 Agent 根據畫面選 action 的行為策略。
+真正要解決的問題是：**當強化學習（Reinforcement Learning，RL）訓練「看起來正常」但行為沒有改善時，如何把模糊的懷疑拆成可以逐一驗證的問題？**
 
 ## RL 的錯誤，常常不會讓程式停止
 
-監督式學習通常有一份固定資料和明確標籤；只要輸入、標籤或 loss 的形狀錯了，錯誤比較容易在一次計算中暴露。RL 不一樣：資料是 Agent 自己和環境互動產生的，下一批資料又會受到目前 policy 影響；DQN 的 target 也會隨著模型和 Target Network 的同步而改變。
+監督式學習通常有一份固定資料和明確標籤；只要輸入、標籤或 loss（prediction 和 target 差距的摘要）的形狀（資料的維度排列）錯了，錯誤比較容易在一次計算中暴露。RL 不一樣：資料是 Agent 自己和環境互動產生的，下一批資料又會受到目前 policy 影響；DQN 的 target 也會隨著模型和 Target Network 的同步而改變。
 
 因此下面這些情況都可能「正常跑完」：
 
@@ -112,7 +112,7 @@ gradient norm 是所有參數梯度合成的 L2 大小。它不是分數，而�
 
 同一個 `metrics.csv` 只記錄數字還不夠。這次 GPU run 另外保存了 `config.json` 和 `summary.json`：前者包含 Python `3.12.13`、PyTorch `2.13.0+cu130`、CUDA `13.0`、Gymnasium、ALE、NumPy、resolved device `cuda:0`、GPU name、CUDA 狀態、seed、git commit、environment id、observation shape、wall-clock `60.16` 秒、SPS（steps per second，每秒 environment steps）`166.21` 和 peak VRAM（GPU 顯示記憶體）`70,963,200` bytes；後者則保存 steps、episodes、optimizer updates、target sync、action distribution 和最後一次 update 的摘要。
 
-這次 replay capacity 是 `10,000`，最後 replay size 也是 `10,000`，所以 occupancy ratio 到達 `1.0`。把 replay occupancy、epsilon `0.0501`、`21` 次 target sync 和 `2,251` 次 optimizer updates 放在同一張 run 的上下文裡，才能分辨「資料還在 warm-up」、「模型根本沒更新」和「模型更新了但行為沒有改善」這三種不同問題。
+這次 replay capacity 是 `10,000`，最後 replay size 也是 `10,000`，所以 occupancy ratio（replay size 除以 capacity）到達 `1.0`。把 replay occupancy、epsilon `0.0501`、`21` 次 target sync 和 `2,251` 次 optimizer updates 放在同一張 run 的上下文裡，才能分辨「資料還在 warm-up」、「模型根本沒更新」和「模型更新了但行為沒有改善」這三種不同問題。
 
 因此 run analyzer 可以從同一組 artifacts 重建 step range、return/loss/Q/gradient summary、epsilon range、replay size、SPS、non-finite count，以及 action 和 random/greedy distribution；輸出也會明確標出 `resolved_device: cuda:0`，不把 CPU 和 GPU run 混在一起。這讓「我記得那次好像有問題」變成「在 seed 42、這個 commit、這個 GPU、這個環境版本的第幾步，哪個訊號先變了」。
 
