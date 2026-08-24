@@ -1,6 +1,6 @@
 # Day 13｜除錯不穩定的 RL 訓練：從 sanity check 到 training diagnostics
 
-Day 12 的深度 Q 網路（Deep Q-Network，DQN）已經能和 Breakout 互動、累積 replay buffer（保存過去 transition，也就是 state、action、reward、next state 一次互動紀錄的資料池）、更新 Online Network（目前會被 optimizer 修改的網路），也會保存 checkpoint（可恢復訓練狀態的存檔）。可是「程式沒有 crash」和「Agent 正在變強」是兩件完全不同的事。
+Day 12 的深度 Q 網路（Deep Q-Network，DQN）已經能和 Breakout 互動、累積 replay buffer（保存過去 transition，也就是 state、action、reward、next state 一次互動紀錄的資料池）、更新 Online Network（目前會被 optimizer，也就是依梯度修改模型參數的機制，更新的網路），也會保存 checkpoint（可恢復訓練狀態的存檔）。可是「程式沒有 crash」和「Agent 正在變強」是兩件完全不同的事。
 
 正式 debug run 在 `cuda:0`（NVIDIA GeForce RTX 4060 Laptop GPU）上用固定 seed `42` 跑了 `10,000` 個 environment steps（Agent 和環境互動 10,000 次）。流程完成了 `48` 個 episodes、`2,251` 次 optimizer updates（optimizer 是依照梯度修改模型參數的機制），以及 `21` 次 Target Network sync；Target Network 是暫時固定、用來產生 Bellman target（這次更新用來比較的參考值）的參考網路。可是 raw episode return（每局把原始 reward 加總）的平均值只有 `1.40`，第一局是 `2`、最後一局是 `1`。這組數字能證明 GPU training loop 有在工作，不能證明 policy 已經學會 Breakout。
 
@@ -14,7 +14,7 @@ Day 12 的深度 Q 網路（Deep Q-Network，DQN）已經能和 Breakout 互動�
 
 - action index 有效，但永遠只選同一個 action；
 - replay 裡有資料，卻沒有真的執行 optimizer update；
-- prediction 和 target 的 shape 都正確，但 `gather` 選錯了 action；
+- prediction 和 target 的 shape 都正確，但 `gather`（依 action index 挑出對應 Q 值）選錯了 action；
 - loss（prediction 和 target 差距的摘要）是 finite（既不是 NaN，也不是正負 infinity），卻只是把目前收集到的偏斜資料擬合得更好；
 - Q-value（模型對 action 價值的估計）逐步變大，最後變成不合理的數字，但還沒有 NaN。
 

@@ -206,6 +206,10 @@ def analyze_run(
     rows = _read_metrics(path / "metrics.csv")
     summary = _read_json(path / "summary.json")
     report = aggregate_training_metrics(rows)
+    if summary.get("status") == "failed_non_finite":
+        # The trainer checkpoints and summarizes before the failed row can be
+        # appended, so the CSV alone may not contain the offending value.
+        report["non_finite_count"] = max(int(report["non_finite_count"]), 1)
     runtime = config.get("runtime", {})
     if not isinstance(runtime, dict):
         runtime = {}

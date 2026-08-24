@@ -37,7 +37,11 @@ python train_dqn.py --preset debug --total-steps 10000 --seed 42 --device cuda -
 ```
 
 `debugging-workflow.mmd` is the verified conceptual flow source rendered to
-`debugging-workflow.png` with the repository's Mermaid renderer.
+`debugging-workflow.png` with `@mermaid-js/mermaid-cli@11.16.0`:
+
+```text
+C:\Users\tommy\anaconda3\envs\breakout-rl-engineering\python.exe C:\Users\tommy\.codex\skills\technical-blog-writer\scripts\render_mermaid.py --theme neutral --background-color white --width 1200 --scale 2.0 assets/day13/debugging-workflow.mmd assets/day13/debugging-workflow.png
+```
 
 `random-baseline.json` is the corresponding five-episode random-policy
 collector output from the same environment preprocessing and seed.

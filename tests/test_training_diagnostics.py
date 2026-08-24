@@ -252,6 +252,35 @@ class TrainingDiagnosticsTests(unittest.TestCase):
         self.assertEqual(report["resolved_device"], "cuda:0")
         self.assertEqual(report["cuda_device_index"], 0)
 
+    def test_analyzer_marks_failed_non_finite_runs(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            run_dir = Path(temporary_directory) / "failed"
+            run_dir.mkdir()
+            (run_dir / "config.json").write_text(
+                json.dumps({"run_id": "failed", "runtime": {"resolved_device": "cpu"}}),
+                encoding="utf-8",
+            )
+            (run_dir / "summary.json").write_text(
+                json.dumps(
+                    {
+                        "status": "failed_non_finite",
+                        "error": "loss contains non-finite values",
+                    }
+                ),
+                encoding="utf-8",
+            )
+            with (run_dir / "metrics.csv").open(
+                "w", newline="", encoding="utf-8"
+            ) as stream:
+                writer = csv.DictWriter(stream, fieldnames=["global_step"])
+                writer.writeheader()
+                writer.writerow({"global_step": 1})
+
+            report = analyze_run(run_dir)
+
+        self.assertGreaterEqual(report["non_finite_count"], 1)
+        self.assertEqual(report["run_summary"]["status"], "failed_non_finite")
+
 
 if __name__ == "__main__":
     unittest.main()
