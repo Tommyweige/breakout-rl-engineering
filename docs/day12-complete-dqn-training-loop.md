@@ -18,7 +18,7 @@ Day 12 第一次要回答完整的問題：**Agent 在 Breakout 裡做出一個 
 
 整條關係如下：
 
-[![Agent、Breakout、Replay Buffer、Online Network 與 Target Network 在完整 DQN training loop 中的資料流](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/6467c33363afcaa061995cc58e0a5974844bd87e/assets/day12/dqn-training-loop.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/6467c33363afcaa061995cc58e0a5974844bd87e/assets/day12/dqn-training-loop.png)
+[![Agent、Breakout、Replay Buffer、Online Network 與 Target Network 在完整 DQN training loop 中的資料流](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/5d725ae7d752439d390098726f238dbbd5d01a5a/assets/day12/dqn-training-loop.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/5d725ae7d752439d390098726f238dbbd5d01a5a/assets/day12/dqn-training-loop.png)
 
 這張圖最重要的不是函式名稱，而是順序：**先和環境互動，才有 transition；先有足夠 transition，才有 mini-batch；先算出 prediction 和 target，才有 loss；最後 optimizer 才能改模型。**
 
@@ -144,7 +144,7 @@ Atari 的 reward 同時扮演兩個不同角色，很容易被混在一起。
 
 更重要的是，訓練過程中的 return、loss、Q-value 和 epsilon 都有被持續記錄，而不是只在最後印一句「training finished」。
 
-[![Day 12 真實 CPU smoke run 的 raw episode return、Huber loss、selected Q mean 與 epsilon](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/6467c33363afcaa061995cc58e0a5974844bd87e/assets/day12/training-overview.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/6467c33363afcaa061995cc58e0a5974844bd87e/assets/day12/training-overview.png)
+[![Day 12 真實 CPU smoke run 的 raw episode return、Huber loss、selected Q mean 與 epsilon](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/5d725ae7d752439d390098726f238dbbd5d01a5a/assets/day12/training-overview.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/5d725ae7d752439d390098726f238dbbd5d01a5a/assets/day12/training-overview.png)
 
 從這張圖可以確認幾件事：epsilon 的確照排程下降；learning warm-up 之後 loss 開始出現；Q-value 也隨著 optimizer update 改變；episode return 則確實來自實際遊戲互動。
 
@@ -158,7 +158,7 @@ Atari 的 reward 同時扮演兩個不同角色，很容易被混在一起。
 
 這次 run 一共有 243 次 optimizer updates，因此可以畫出真正的 Huber loss：
 
-[![Day 12 真實 CPU smoke run 的 DQN Huber loss](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/6467c33363afcaa061995cc58e0a5974844bd87e/assets/day12/training-loss.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/6467c33363afcaa061995cc58e0a5974844bd87e/assets/day12/training-loss.png)
+[![Day 12 真實 CPU smoke run 的 DQN Huber loss](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/5d725ae7d752439d390098726f238dbbd5d01a5a/assets/day12/training-loss.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/5d725ae7d752439d390098726f238dbbd5d01a5a/assets/day12/training-loss.png)
 
 圖上的尖峰表示某些 mini-batch 中，Online Network 的 prediction 和 Bellman target 差得比較遠；接近零的點則表示那一批資料上的差距比較小。
 
