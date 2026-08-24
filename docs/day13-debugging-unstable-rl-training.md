@@ -81,45 +81,103 @@ RL 不一樣。Agent 會自己和環境互動，今天模型做出的 action，�
 
 這次我在 `cuda:0` 上用固定 seed `42` 跑了 10,000 個 environment steps。整個 run 完成 48 局、2,251 次模型更新，以及 21 次 Target Network 同步。
 
-這些數字只能證明「trainer 有在做事」，還不能證明它做得對。所以接下來要一起看 loss、Q-value 和 gradient。
+這些數字只能證明「trainer 有在做事」，還不能證明它做得對。所以接下來要一起看 loss、Q-value、target 和 gradient。
 
-### Loss：有數字，不等於學得好
+這幾條曲線都不是越平越好。DQN 每次是從 Replay Buffer 隨機抽一批不同的經驗來更新，而且 Target Network 還會定期同步，因此曲線本來就可能出現尖峰。真正需要判斷的是：**尖峰為什麼出現、整體基線是否持續抬高，以及不同訊號是不是一起失控。**
 
-loss 可以先理解成「模型目前的 Q-value 和這次學習目標差多少」。DQN 常用的 TD error 也是在描述這個預測和目標之間的差距；loss 則把這些差距整理成一個可以拿來更新模型的數字。
+### Loss：尖峰通常來自「這一批資料比較難」
+
+loss 可以先理解成「模型目前的 Q-value 和這次學習目標差多少」。DQN 常用的 TD error 也是在描述這個預測和目標之間的差距；loss 則把一整批資料的差距整理成一個可以拿來更新模型的數字。
 
 這次 2,251 次更新裡，loss 都保持為正常有限數值，平均約 `0.00299`，最大約 `0.0463`。
 
 [![10K-step CUDA debug run 的 Huber loss 曲線，尖峰代表部分 batch 的誤差較大](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/39ae567c4ee01e11b4a9405ba1dd1c1e4af5a6d5/assets/day13/loss-curve.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/39ae567c4ee01e11b4a9405ba1dd1c1e4af5a6d5/assets/day13/loss-curve.png)
 
-圖裡偶爾有尖峰，表示某些抽到的資料和目前模型預測差得比較多。這本身不一定是 bug。
+圖裡的尖峰不是憑空出現的。每次更新抽到的 mini-batch 都不同，有些 batch 可能剛好包含比較少見的畫面、真正拿到 reward 的 transition，或目前 Q-value 和 target 差距特別大的資料。這時同一批資料的平均誤差就會突然變大，loss 也跟著形成波峰。
 
-真正值得警覺的是：loss 開始持續爆大，或直接變成 NaN / infinity。如果那種情況發生，後面再看遊戲分數就沒有太大意義了。
+另外，Target Network 會週期性從 Online Network 複製新參數。同步後，某些 next state 的參考價值可能跟上一段時間不同，因此接下來抽到相同類型資料時，prediction 和 target 的距離也可能暫時變大。這是可能造成 loss 波動的另一個來源，但不能只看到一個尖峰就斷定「一定是 Target sync 造成」；要把尖峰發生的 step 和同步時間真正對上才算證據。
 
-但反過來也一樣：**loss 很小，不能證明 Agent 已經學會。** 它只代表模型比較能貼近目前這批學習目標。
+Day 12 使用的 Huber loss 會降低極端誤差對更新的影響，但它不會把這些波峰消掉。因此這種「大部分時間很低、偶爾跳高」的形狀本身並不奇怪。
 
-### Q-value：看趨勢，不要硬設一條通用門檻
+真正值得警覺的是：loss 的基線和尖峰一起持續往上抬，甚至開始出現 NaN / infinity。反過來也一樣：**loss 很小，不能證明 Agent 已經學會。** 它只代表模型比較能貼近目前這批學習目標。
 
-Q-value 是模型對「在這個畫面做某個 action 有多值得」的估計。
+### Q-value 與 Target：為什麼 Target max 會有尖峰，還逐漸往上？
 
-這次所有 action 的 Q-value 都有一起被記錄，而不是只看最後真的被選中的 action。
+Q-value 是模型對「在這個畫面做某個 action 有多值得」的估計。Target 則是這次更新時拿來當參考答案的數值。
+
+DQN 的 target 可以簡化成：
+
+```text
+target = 這一步拿到的 reward
+       + gamma × 下一個 state 的最大 Q-value
+```
+
+因此 target 並不是固定答案。只要下一個 state 的估計價值變了，target 就會跟著變。
 
 [![10K-step CUDA debug run 的所有 action Q-values 與 Bellman targets](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/39ae567c4ee01e11b4a9405ba1dd1c1e4af5a6d5/assets/day13/q-values.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/39ae567c4ee01e11b4a9405ba1dd1c1e4af5a6d5/assets/day13/q-values.png)
 
-這個 run 裡，Q mean 大致從接近 `0` 升到約 `0.26`，而 target max 的最高觀測值約 `1.39`。目前沒有看到數值一路無限制暴增，也沒有出現 NaN 或 infinity。
+這張圖裡的 **Target max** 有兩個值得分開看的現象：尖峰，以及整體往上的趨勢。
 
-這不代表 Q-value 一定「正確」。比較合理的判讀方式，是看它相對 reward 和 target 的尺度是否逐漸失控，而不是訂一條「Q > 某個數字就一定錯」的通用規則。
+先看尖峰。`max` 本來就是一個對極端值很敏感的統計量：一個 mini-batch 裡只要有一筆 transition 剛好拿到正 reward，或它的 next state 被 Target Network 評估成特別有價值，那一批的 Target max 就可能突然跳高。這也是為什麼 Target max 通常比 Target mean 更容易出現明顯波峰。
 
-### Gradient：模型有沒有收到更新訊號
+再看整體趨勢。這次 Q mean 大致從接近 `0` 升到約 `0.26`，Target max 的上緣也隨訓練逐漸抬高，最高觀測值約 `1.39`。這其實符合 DQN 的 bootstrapping 特性：Online Network 開始對某些 state 給出比較高的未來價值後，定期同步會把這些較高的估計複製到 Target Network；下一輪計算 target 時，`gamma × 下一步最大 Q-value` 這一項也會跟著提高。
 
-反向傳播之後，每個參數都會得到一個「應該往哪裡調」的梯度。**Gradient norm** 就是把這些梯度濃縮成一個大小，方便觀察這次更新到底有多強。
+所以 **Target max 往上不一定是壞事**。它可能只是代表模型不再把所有畫面都估成接近零，而是開始拉開「比較有希望的 state」和其他 state 的價值差距。
+
+但這裡也正是 DQN 需要小心的地方：target 是拿另一個 Q-value 算出來的，如果模型只是越估越樂觀，較高的 Q-value 又被複製進 Target Network，下一輪 target 就可能繼續被往上推。這種正回饋如果沒有被真實 reward 和遊戲表現支持，就可能演變成 overestimation，甚至讓數值逐步發散。
+
+因此這張圖不能只問「Target max 有沒有變大」，而要一起問：
+
+- Q-value 和 target 是不是以相近尺度往上？
+- prediction 和 target 的差距有沒有越拉越開？
+- loss 是否也跟著長期抬升？
+- 最重要的是，return 有沒有真的改善？
+
+這次所有值仍維持有限，Q-value 也沒有看到無限制暴增，因此目前比較合理的結論是：**Target max 確實有往上走，值得持續監控，但光靠這條上升趨勢還不能判定訓練已經發散，也不能反過來當成 Agent 正在進步的證據。**
+
+### Gradient norm：尖峰代表這一次「想改得比較多」
+
+反向傳播之後，每個參數都會得到一個「應該往哪裡調」的梯度。**Gradient norm** 就是把所有參數的梯度濃縮成一個總大小，可以把它理解成「這一次模型想把參數推動多強」。
 
 [![10K-step CUDA debug run 的 gradient norm 曲線，數值取 clipping 前的總 norm](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/39ae567c4ee01e11b4a9405ba1dd1c1e4af5a6d5/assets/day13/gradient-norm.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/39ae567c4ee01e11b4a9405ba1dd1c1e4af5a6d5/assets/day13/gradient-norm.png)
 
-這次 gradient norm 最大約 `0.1952`。它有波動，但沒有持續變大，也沒有出現非正常數值。
+它出現尖峰的原因和 loss 有關，但兩者不是完全同一個東西。當某一批資料的 Q-value 和 target 差得比較多時，反向傳播通常會產生更強的修正訊號，因此 gradient norm 也容易突然變大。Target Network 同步後如果參考值產生變化，或 mini-batch 剛好抽到 reward / 高 TD error 的 transition，也可能讓某一次 gradient 明顯高於前後更新。
 
-單一尖峰不一定有問題；比較危險的是 gradient、loss 和 Q-value 同時越來越大。那時候就該先查 reward、target、輸入正規化或 optimizer，而不是直接換演算法。
+不過 gradient 的大小不只由 loss 決定。它還取決於神經網路本身對參數有多敏感，所以不能簡化成「loss 大兩倍，gradient 就一定大兩倍」。
 
-到這裡，至少沒有看到明顯的數值爆炸。那下一個可能性就是：**模型能正常更新，但它收集到的經驗或實際行為出了問題。**
+而且這張圖不只有尖峰，**後段的 gradient norm 整體也比前段高，確實有逐漸抬升的趨勢。** 一個合理的解釋是：隨著 Q-value 和 target 的尺度提高，某些 batch 需要的修正幅度也變大；Replay Buffer 後期包含的狀態更加多樣，也可能讓更新訊號比訓練初期更強。
+
+這裡要特別注意，圖畫的是 **gradient clipping 之前**的總 norm。這次設定的 clipping 門檻是 `10.0`，而實際觀察到的最大值只有約 `0.1952`，所以這條上升趨勢不是因為 clipping 把數值截成某種形狀；實際上這次 run 根本還遠不到 clipping 門檻。
+
+因此目前的判讀不是「gradient 沒有變大」，而是：**它確實在變大，但目前仍維持在有限而且相對小的尺度。** 這是一個應該追蹤的早期訊號，而不是單憑它就宣布 gradient explosion。
+
+### Target max 和 Gradient norm 一起往上，代表什麼？
+
+把前兩張圖放在一起看會更有意思：Target max 的上緣逐漸提高，Gradient norm 的基線也在後段抬高。
+
+這兩件事在機制上可能有關聯。Target Network 給出的參考值變高之後，如果 Online Network 還沒有完全跟上，prediction 和 target 之間的差距就可能變大；差距變大時，某些 batch 會產生更強的反向更新訊號，因此 gradient norm 也可能提高。
+
+但**「兩條曲線一起往上」不等於已經證明 Target max 導致 Gradient norm 上升。** 它們也可能同時受到 Q-value 尺度、Replay Buffer 資料分布，以及不同 batch 難度影響。要證明直接因果，還需要把 Target sync、TD error、loss 和 gradient 在相同步數上對齊分析。
+
+所以 Day 13 最重要的判讀不是看到上升就立刻下結論，而是建立一組連鎖警訊：
+
+```text
+Target / Q-value 持續抬高
+        ↓
+Prediction 和 Target 的差距越拉越大
+        ↓
+Loss 基線持續上升
+        ↓
+Gradient norm 也持續加速變大
+        ↓
+最後出現極端值或 NaN / infinity
+```
+
+如果這幾件事一起發生，就很像真的進入不穩定的 bootstrapping 正回饋；如果只有 Target max 和 Gradient norm 緩慢抬高，但 loss 仍受控、數值仍有限，就比較適合標記成「需要持續觀察」，而不是直接判定訓練壞掉。
+
+到這裡，我們看到的情況比較接近後者：**Target max 和 Gradient norm 確實有上升趨勢，但目前沒有伴隨 loss 長期爆大或非有限數值。** 因此還沒有足夠證據說模型正在數值發散。
+
+下一個可能性就是：模型能更新、數值暫時也沒有失控，但它收集到的經驗或實際行為出了問題。
 
 ## 第三關：Agent 收集到的資料正常嗎？
 
@@ -203,7 +261,7 @@ Day 13 最重要的成果不是多了幾張曲線，而是把除錯順序固定�
 → 才開始做受控的超參數實驗
 ```
 
-這次真實 CUDA debug run 可以證明：模型能在固定 batch 上學習；正式 training loop 也確實有更新、Target Network 有同步，loss、Q-value 和 gradient 沒有出現明顯數值爆炸；探索和 action 分布也都有在運作。
+這次真實 CUDA debug run 可以證明：模型能在固定 batch 上學習；正式 training loop 也確實有更新、Target Network 有同步；loss 沒有出現長期爆大或非有限值，而 Target max 和 Gradient norm 雖然有逐漸抬高的趨勢，目前仍在有限尺度內；探索和 action 分布也都有在運作。
 
 但 10,000 steps 的 return 仍然沒有提供穩定的學習證據。
 
