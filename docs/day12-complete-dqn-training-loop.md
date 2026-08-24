@@ -51,7 +51,7 @@ batch_size      = 8
 (1000 - 32) / 4 + 1 = 243 次 optimizer updates
 ```
 
-實際執行結果也正好是 243 次。這個數字不是遊戲成績，但它是一個很有用的 correctness check：training loop 的時序真的按照設定發生。fileciteturn390file0
+實際執行結果也正好是 243 次。這個數字不是遊戲成績，但它是一個很有用的 correctness check：training loop 的時序真的按照設定發生。
 
 `learning_starts` 也不是單純為了避免程式 sample 不到 batch。更重要的是，剛開始的 Replay Buffer 幾乎只有非常接近的開場畫面，如果太早開始訓練，模型會一直從很窄的資料分布學習。先收集一小段經驗，至少能讓第一批更新不至於只看到幾乎一模一樣的 transition。
 
@@ -105,7 +105,7 @@ prediction = Online Network 的 Q(s, a)
 target     = Bellman target
 ```
 
-兩者的差距就是模型這一次需要修正的方向。
+兩者的差距就是模型這一次需要修正的方向。這個 prediction 和 target 之間的差距，在強化學習裡常叫 **TD error**。
 
 Day 12 使用 **Huber loss**，PyTorch 裡叫 `SmoothL1Loss`。它在誤差小時對細微差異保持敏感；誤差很大時，增長又不會像純平方誤差那麼猛烈，因此比較不容易讓少數非常大的 TD error 主導整個更新。
 
@@ -141,8 +141,6 @@ Atari 的 reward 同時扮演兩個不同角色，很容易被混在一起。
 | Target sync count | 11 |
 | 最後 Replay size | 256 |
 | 最後 loss | 0.000419 |
-
-這些數字直接來自實際 run 的 summary。fileciteturn390file0
 
 更重要的是，訓練過程中的 return、loss、Q-value 和 epsilon 都有被持續記錄，而不是只在最後印一句「training finished」。
 
