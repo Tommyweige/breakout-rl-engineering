@@ -10,13 +10,17 @@
 
 ## 所有元件第一次真的接在一起
 
-完整的 DQN training loop 可以先拆成兩件不斷交替的工作。
+完整的 DQN training loop 可以先拆成兩件不斷交替的工作：**收集經驗**，以及**利用過去經驗更新模型**。
 
-第一件是**收集經驗**。目前的 state 交給 policy，epsilon-greedy 決定這一步要探索還是利用，選出的 action 送進 Breakout。環境回傳 reward、next state，以及 episode 是否結束，這些資料再被整理成一筆 transition 放進 Replay Buffer。
+[![DQN training loop 分成收集經驗與更新模型兩個不同節奏，Replay Buffer 位在兩者之間](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/4c295d296a358fec55010424d0575021953bd6db/assets/day12/dqn-training-loop-overview.svg?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/4c295d296a358fec55010424d0575021953bd6db/assets/day12/dqn-training-loop-overview.svg)
 
-第二件是**利用過去經驗更新模型**。當 Replay Buffer 已經累積到足夠資料，而且目前的 environment step 符合訓練頻率，就從 Buffer 隨機抽一個 mini-batch。Online Network 算目前 action 的 Q-value，Target Network 提供下一個 state 的參考 Q-value，兩者組成 Bellman target 和 loss，最後 optimizer 才真正修改 Online Network 的參數。
+上半部是**收集經驗**。目前的 state 經過 epsilon-greedy 選出 action，Breakout 執行之後回傳新的結果，最後形成一筆 transition 放進 Replay Buffer。這件事幾乎每個 environment step 都會發生。
 
-這兩件事看起來像同一條 loop，但它們其實有不同的節奏：Agent 幾乎每一步都在和環境互動，模型卻不一定每一步都更新。
+下半部才是**更新模型**。只有 Replay Buffer 已經累積到足夠資料，而且目前 step 符合訓練頻率時，才會抽一個 mini-batch。Online Network 提供目前 `Q(s, a)`，Target Network 提供下一個 state 的參考 Q-value，兩邊組成 Bellman target 和 Huber loss，最後 optimizer 才真正修改 Online Network。
+
+圖中最重要的其實是 Replay Buffer 的位置：**它把「剛剛發生的互動」和「現在拿來訓練的資料」隔開了。** Agent 每一步都在產生新經驗，但模型不需要每一步都立刻拿最新那筆資料更新。
+
+這也帶出 training loop 裡第一個很重要的觀念：**environment step 和 optimizer step 是兩條不同的時鐘。**
 
 ## Environment Step 與 Optimizer Step 是兩條不同的時鐘
 
@@ -144,9 +148,9 @@ Atari 的 reward 同時扮演兩個不同角色，這兩個角色不能混在一
 
 [![Day 12 真實 CPU smoke run 的 raw episode return、Huber loss、selected Q mean 與 epsilon](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/5d725ae7d752439d390098726f238dbbd5d01a5a/assets/day12/training-overview.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/5d725ae7d752439d390098726f238dbbd5d01a5a/assets/day12/training-overview.png)
 
-這張圖現在才是 Day 12 最重要的第一張視覺證據。
+這張圖回答的是另一個問題：**這條 pipeline 實際跑起來之後，各個訊號有沒有真的出現？**
 
-可以先確認幾件事：epsilon 的確照排程下降；learning warm-up 之後 loss 開始出現；Q-value 也隨著 optimizer updates 改變；episode return 則確實來自實際 Breakout 互動。
+可以看到 epsilon 的確照排程下降；learning warm-up 之後 loss 開始出現；Q-value 也隨著 optimizer updates 改變；episode return 則確實來自實際 Breakout 互動。
 
 這些現象足以支持：**training pipeline 真的在執行，而且 Online Network 真的有被更新。**
 
