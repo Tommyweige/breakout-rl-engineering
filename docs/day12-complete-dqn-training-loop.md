@@ -152,6 +152,20 @@ Atari 的 reward 同時扮演兩個不同角色，很容易被混在一起。
 
 但它們還不能支持：**Agent 已經學會 Breakout。**
 
+## 真實畫面裡看到的是什麼？
+
+overview 圖把數值變化畫成曲線；但讀者還需要看到另一個更直接的證據：Agent 是否真的在 Breakout 畫面裡持續做 action，而不是只有一個會增加的 step counter。
+
+下面的 GIF 來自同一個固定 seed `42` 的 `day12-gif-seed42` smoke run。畫面本體是 environment 實際 render 出來的 Breakout frame，每 8 個 environment steps 取一張，以 10 fps 播放，共 125 張、12.5 秒。上方只疊加四個 runtime 值：global step、epsilon、目前 episode 的 raw score，以及目前仍在 warm-up、正在做 optimizer update，或只是收集經驗。
+
+這段 GIF 要回答的問題是：**完整 training loop 是否真的讓 Agent 與遊戲互動，並且在 warm-up 之後進入模型更新？**
+
+[![固定 seed 42 的 Breakout DQN smoke run：真實遊戲畫面與 step、epsilon、raw score、training phase](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/5884cd070c380c78209e5cd2b53fce21d9cf5e1e/assets/day12/training-smoke.gif?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/5884cd070c380c78209e5cd2b53fce21d9cf5e1e/assets/day12/training-smoke.gif)
+
+從畫面可以看到，遊戲本身持續前進，episode score 會隨實際 reward 改變；開頭的標籤是 warm-up，累積到足夠 transition 後，畫面中會出現 optimizer update。這些 overlay 不是另外製作的 mock UI，而是 training loop 每一步傳出的 runtime snapshot；GIF 因此能支持「Agent 真的在互動，而且更新階段確實被執行」這個結論。
+
+但 GIF 不能支持「policy 已經學會 Breakout」。它只展示一段 1,000-step smoke run，沒有長期 evaluation、不同 seed 或和 baseline 的公平比較；畫面裡出現的 movement 也不等於策略品質已經穩定。
+
 ## Loss 下降不等於 Policy 變好
 
 這是 Day 12 最重要的界線之一。
