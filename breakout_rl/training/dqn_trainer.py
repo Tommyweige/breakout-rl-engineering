@@ -23,7 +23,11 @@ from breakout_rl.replay_tensors import ReplayTensorBatch, replay_batch_to_tensor
 from breakout_rl.targets import hard_update, should_update_target
 from breakout_rl.tensors import observation_to_tensor
 from breakout_rl.training.config import DQNConfig
-from breakout_rl.training.diagnostics import ATARI_ACTION_NAMES, collect_runtime_metadata
+from breakout_rl.training.diagnostics import (
+    ATARI_ACTION_NAMES,
+    collect_runtime_metadata,
+    replay_occupancy,
+)
 from breakout_rl.training.metrics import MetricsLogger
 
 
@@ -272,9 +276,9 @@ def dqn_training_step(
         loss=float(loss.detach().item()),
         selected_q_values=detached_selected_q_values.clone(),
         targets=detached_targets.clone(),
-        q_mean=float(detached_selected_q_values.mean().item()),
-        q_max=float(detached_selected_q_values.max().item()),
-        q_min=float(detached_selected_q_values.min().item()),
+        q_mean=float(all_q_values.detach().mean().item()),
+        q_max=float(all_q_values.detach().max().item()),
+        q_min=float(all_q_values.detach().min().item()),
         target_mean=float(detached_targets.mean().item()),
         target_max=float(detached_targets.max().item()),
         td_error_mean_abs=float(absolute_td_errors.mean().item()),
@@ -561,6 +565,8 @@ class DQNTrainer:
             "td_error_max_abs": None if result is None else result.td_error_max_abs,
             "gradient_norm": None if result is None else result.gradient_norm,
             "replay_size": len(self.replay),
+            "replay_capacity": self.config.replay_capacity,
+            "replay_occupancy": len(self.replay) / self.config.replay_capacity,
             "steps_per_second": sps,
             "sps": sps,
             "optimizer_updates": self.optimizer_updates,
@@ -614,6 +620,8 @@ class DQNTrainer:
         )
 
     def _summary(self, *, status: str = "completed", **extra: Any) -> dict[str, Any]:
+        if self.device.type == "cuda":
+            torch.cuda.synchronize(self.device)
         elapsed = max(time.perf_counter() - self._started_at, 1e-9)
         summary: dict[str, Any] = {
             "status": status,
@@ -626,6 +634,10 @@ class DQNTrainer:
             "target_sync_count": self.target_sync_count,
             "last_target_sync_step": self.last_target_sync_step,
             "replay_size": len(self.replay),
+            "replay_occupancy": replay_occupancy(
+                len(self.replay),
+                self.config.replay_capacity,
+            ),
             "steps_per_second": float(self.global_step / elapsed),
             "runtime": self._runtime_metadata(elapsed),
             "last_loss": None if self._last_result is None else self._last_result.loss,

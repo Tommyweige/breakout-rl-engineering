@@ -31,6 +31,8 @@ METRIC_FIELDS: tuple[str, ...] = (
     "td_error_max_abs",
     "gradient_norm",
     "replay_size",
+    "replay_capacity",
+    "replay_occupancy",
     "steps_per_second",
     "sps",
     "optimizer_updates",

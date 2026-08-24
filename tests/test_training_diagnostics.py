@@ -65,6 +65,8 @@ class TrainingDiagnosticsTests(unittest.TestCase):
                 "gradient_norm": "3.0",
                 "epsilon": "0.9",
                 "replay_size": "1",
+                "replay_capacity": "4",
+                "replay_occupancy": "0.25",
                 "sps": "10.0",
                 "action": "0",
                 "action_source": "random",
@@ -79,6 +81,8 @@ class TrainingDiagnosticsTests(unittest.TestCase):
                 "gradient_norm": "2.0",
                 "epsilon": "0.8",
                 "replay_size": "2",
+                "replay_capacity": "4",
+                "replay_occupancy": "0.5",
                 "sps": "12.0",
                 "action": "1",
                 "action_source": "greedy",
@@ -93,6 +97,8 @@ class TrainingDiagnosticsTests(unittest.TestCase):
         self.assertEqual(report["action_distribution"]["counts"]["NOOP"], 1)
         self.assertEqual(report["action_distribution"]["counts"]["FIRE"], 1)
         self.assertAlmostEqual(report["decision_distribution"]["random_ratio"], 0.5)
+        self.assertEqual(report["replay_occupancy"]["capacity"], 4)
+        self.assertAlmostEqual(report["replay_occupancy"]["ratio"], 0.5)
         self.assertEqual(report["non_finite_count"], 0)
 
     def test_fixed_batch_overfit_reduces_loss_with_fixed_targets(self) -> None:

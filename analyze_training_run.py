@@ -12,7 +12,10 @@ import queue
 import sys
 from typing import Any, Iterable, Mapping, Sequence
 
-from breakout_rl.training.diagnostics import aggregate_training_metrics
+from breakout_rl.training.diagnostics import (
+    aggregate_training_metrics,
+    parse_numeric_value,
+)
 
 
 def _read_json(path: Path) -> dict[str, Any]:
@@ -28,15 +31,6 @@ def _read_metrics(path: Path) -> list[dict[str, str]]:
         return [dict(row) for row in csv.DictReader(stream)]
 
 
-def _number(value: Any) -> float | None:
-    if value in (None, ""):
-        return None
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return None
-
-
 def _paired_series(
     rows: Sequence[Mapping[str, Any]],
     x_field: str,
@@ -45,8 +39,8 @@ def _paired_series(
     x_values: list[float] = []
     y_values: list[float] = []
     for row in rows:
-        x_value = _number(row.get(x_field))
-        y_value = _number(row.get(y_field))
+        x_value = parse_numeric_value(row.get(x_field))
+        y_value = parse_numeric_value(row.get(y_field))
         if x_value is None or y_value is None:
             continue
         if not (math.isfinite(x_value) and math.isfinite(y_value)):
@@ -116,15 +110,15 @@ def _write_plots_local(
         ),
         "loss_curve": (
             (("loss", "Huber loss"),),
-            "Training loss over optimizer updates",
+            "Training loss over environment steps",
             "Loss",
             "loss-curve.png",
         ),
         "q_values": (
             (
-                ("q_mean", "Selected Q mean"),
-                ("q_max", "Selected Q max"),
-                ("q_min", "Selected Q min"),
+                ("q_mean", "Q mean"),
+                ("q_max", "Q max"),
+                ("q_min", "Q min"),
                 ("target_mean", "Target mean"),
                 ("target_max", "Target max"),
             ),
@@ -218,10 +212,7 @@ def analyze_run(
     report.update(
         {
             "run_id": str(config.get("run_id", path.name)),
-            "resolved_device": runtime.get(
-                "resolved_device",
-                runtime.get("device", config.get("device", "unavailable")),
-            ),
+            "resolved_device": runtime.get("resolved_device", "unavailable"),
             "cuda_device_index": runtime.get("cuda_device_index"),
             "metadata": runtime,
             "run_summary": summary,

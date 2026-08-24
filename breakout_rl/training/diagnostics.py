@@ -308,7 +308,7 @@ def steps_per_second(steps: int, elapsed_seconds: float) -> float:
     return float(steps / elapsed_seconds)
 
 
-def _as_number(value: Any) -> float | None:
+def parse_numeric_value(value: Any) -> float | None:
     if value is None or value == "":
         return None
     try:
@@ -321,7 +321,7 @@ def _series(rows: Sequence[Mapping[str, Any]], field: str) -> list[float]:
     return [
         number
         for row in rows
-        if (number := _as_number(row.get(field))) is not None
+        if (number := parse_numeric_value(row.get(field))) is not None
     ]
 
 
@@ -330,7 +330,7 @@ def _final_numeric_row_value(
     field: str,
 ) -> float | None:
     for row in reversed(rows):
-        value = _as_number(row.get(field))
+        value = parse_numeric_value(row.get(field))
         if value is not None and math.isfinite(value):
             return value
     return None
@@ -396,6 +396,8 @@ def aggregate_training_metrics(rows: Iterable[Mapping[str, Any]]) -> dict[str, A
                 non_finite_count += 1
 
     replay_values = _series(materialized, "replay_size")
+    replay_capacity_values = _series(materialized, "replay_capacity")
+    replay_occupancy_values = _series(materialized, "replay_occupancy")
     sps_values = _series(materialized, "sps") or _series(
         materialized, "steps_per_second"
     )
@@ -430,7 +432,24 @@ def aggregate_training_metrics(rows: Iterable[Mapping[str, Any]]) -> dict[str, A
         "replay_size": {
             "final": int(replay_values[-1]) if replay_values else None,
             "max": int(max(replay_values)) if replay_values else None,
+            "capacity": (
+                int(replay_capacity_values[-1]) if replay_capacity_values else None
+            ),
+            "occupancy": (
+                float(replay_occupancy_values[-1])
+                if replay_occupancy_values
+                else None
+            ),
         },
+        "replay_occupancy": (
+            {
+                "size": int(replay_values[-1]),
+                "capacity": int(replay_capacity_values[-1]),
+                "ratio": float(replay_occupancy_values[-1]),
+            }
+            if replay_values and replay_capacity_values and replay_occupancy_values
+            else None
+        ),
         "sps": {
             "mean": float(np.mean(sps_values)) if sps_values else None,
             "final": float(sps_values[-1]) if sps_values else None,
@@ -626,6 +645,7 @@ __all__ = [
     "episode_return_trend",
     "gradient_norm",
     "numeric_stats",
+    "parse_numeric_value",
     "replay_occupancy",
     "require_finite",
     "run_fixed_batch_overfit",
