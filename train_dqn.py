@@ -66,7 +66,7 @@ def _config_from_args(args: argparse.Namespace) -> DQNConfig:
     if args.resume is not None:
         base = _load_checkpoint_config(args.resume)
     elif args.preset == "debug":
-        base = DQNConfig.debug(device=args.device or "cpu")
+        base = DQNConfig.debug(device=args.device or "cuda")
     elif args.preset == "smoke":
         base = DQNConfig.smoke(device=args.device or "cpu")
     else:
@@ -129,6 +129,9 @@ def main(argv: list[str] | None = None) -> int:
     except NonFiniteTrainingError as error:
         print(f"Training stopped because a non-finite value was detected: {error}")
         return 1
+    except RuntimeError as error:
+        print(f"Training could not start or was stopped: {error}")
+        return 2
     finally:
         env.close()
 

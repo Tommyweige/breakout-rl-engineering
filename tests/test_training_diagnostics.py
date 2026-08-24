@@ -201,8 +201,50 @@ class TrainingDiagnosticsTests(unittest.TestCase):
 
         self.assertEqual(metadata["seed"], 42)
         self.assertEqual(metadata["device"], "cpu")
+        self.assertIn("resolved_device", metadata)
+        self.assertIn("torch_cuda_version", metadata)
         self.assertIn("cuda_available", metadata)
         self.assertIn("git_commit_sha", metadata)
+
+    def test_finite_check_accepts_cuda_tensors_when_cuda_is_available(self) -> None:
+        if not torch.cuda.is_available():
+            self.skipTest("CUDA is not available in this environment")
+
+        result = check_finite(
+            torch.tensor([1.0, -2.0], device="cuda"),
+            name="cuda loss",
+        )
+
+        self.assertTrue(result.is_finite)
+
+    def test_analyzer_reports_the_run_resolved_device(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            run_dir = Path(temporary_directory) / "cuda-fixture"
+            run_dir.mkdir()
+            (run_dir / "config.json").write_text(
+                json.dumps(
+                    {
+                        "run_id": "cuda-fixture",
+                        "runtime": {
+                            "resolved_device": "cuda:0",
+                            "cuda_device_index": 0,
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (run_dir / "summary.json").write_text("{}", encoding="utf-8")
+            with (run_dir / "metrics.csv").open(
+                "w", newline="", encoding="utf-8"
+            ) as stream:
+                writer = csv.DictWriter(stream, fieldnames=["global_step"])
+                writer.writeheader()
+                writer.writerow({"global_step": 1})
+
+            report = analyze_run(run_dir)
+
+        self.assertEqual(report["resolved_device"], "cuda:0")
+        self.assertEqual(report["cuda_device_index"], 0)
 
 
 if __name__ == "__main__":

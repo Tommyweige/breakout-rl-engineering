@@ -125,6 +125,20 @@ class MetricsLogger:
             encoding="utf-8",
         )
 
+    def update_runtime_metadata(self, metadata: Mapping[str, Any]) -> None:
+        """Persist final wall-clock and device measurements in config.json."""
+
+        payload = json.loads(self.config_path.read_text(encoding="utf-8"))
+        runtime = payload.setdefault("runtime", {})
+        if not isinstance(runtime, dict):
+            runtime = {}
+            payload["runtime"] = runtime
+        runtime.update(dict(metadata))
+        self.config_path.write_text(
+            json.dumps(payload, indent=2, ensure_ascii=False, default=_json_default),
+            encoding="utf-8",
+        )
+
     def close(self) -> None:
         if not self._closed:
             self._file.close()

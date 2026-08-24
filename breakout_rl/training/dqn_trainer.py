@@ -23,7 +23,7 @@ from breakout_rl.replay_tensors import ReplayTensorBatch, replay_batch_to_tensor
 from breakout_rl.targets import hard_update, should_update_target
 from breakout_rl.tensors import observation_to_tensor
 from breakout_rl.training.config import DQNConfig
-from breakout_rl.training.diagnostics import ATARI_ACTION_NAMES
+from breakout_rl.training.diagnostics import ATARI_ACTION_NAMES, collect_runtime_metadata
 from breakout_rl.training.metrics import MetricsLogger
 
 
@@ -349,6 +349,8 @@ class DQNTrainer:
         self.device = torch.device(config.device)
         if self.device.type == "cuda" and not torch.cuda.is_available():
             raise RuntimeError("CUDA was requested, but it is not available in this environment.")
+        if self.device.type == "cuda":
+            torch.cuda.reset_peak_memory_stats(self.device)
 
         raw_action_count = getattr(getattr(env, "action_space", None), "n", None)
         try:
@@ -414,12 +416,12 @@ class DQNTrainer:
         self._greedy_decision_count = 0
         self._started_at = time.perf_counter()
         environment_spec = getattr(env, "spec", None)
-        environment_id = getattr(environment_spec, "id", None)
+        self._environment_id = getattr(environment_spec, "id", None) or "unavailable"
         self.metrics = MetricsLogger(
             self.run_dir,
             config,
             metadata={
-                "environment_id": environment_id or "unavailable",
+                "environment_id": self._environment_id,
                 "observation_shape": list(self.observation_shape),
                 "action_count": self.action_count,
             },
@@ -591,6 +593,26 @@ class DQNTrainer:
             ),
         }
 
+    def _resolved_device_name(self) -> str:
+        if self.device.type != "cuda":
+            return str(self.device)
+        index = 0 if self.device.index is None else self.device.index
+        return f"cuda:{index}"
+
+    def _runtime_metadata(self, elapsed: float) -> dict[str, Any]:
+        return collect_runtime_metadata(
+            seed=self.config.seed,
+            device=self._resolved_device_name(),
+            run_dir=self.run_dir,
+            extra={
+                "environment_id": self._environment_id,
+                "observation_shape": list(self.observation_shape),
+                "action_count": self.action_count,
+                "wall_clock_seconds": float(elapsed),
+                "steps_per_second": float(self.global_step / elapsed),
+            },
+        )
+
     def _summary(self, *, status: str = "completed", **extra: Any) -> dict[str, Any]:
         elapsed = max(time.perf_counter() - self._started_at, 1e-9)
         summary: dict[str, Any] = {
@@ -605,6 +627,7 @@ class DQNTrainer:
             "last_target_sync_step": self.last_target_sync_step,
             "replay_size": len(self.replay),
             "steps_per_second": float(self.global_step / elapsed),
+            "runtime": self._runtime_metadata(elapsed),
             "last_loss": None if self._last_result is None else self._last_result.loss,
             "last_q_mean": None if self._last_result is None else self._last_result.q_mean,
             "last_q_max": None if self._last_result is None else self._last_result.q_max,
@@ -835,6 +858,7 @@ class DQNTrainer:
             ):
                 self.save_checkpoint()
             summary = self._summary()
+            self.metrics.update_runtime_metadata(summary["runtime"])
             self.metrics.write_summary(summary)
             return summary
         except NonFiniteTrainingError as error:
@@ -844,6 +868,7 @@ class DQNTrainer:
                 error=str(error),
                 diagnostic_checkpoint=str(diagnostic_checkpoint),
             )
+            self.metrics.update_runtime_metadata(summary["runtime"])
             self.metrics.write_summary(summary)
             raise
         finally:

@@ -248,6 +248,10 @@ class DQNTrainerTests(unittest.TestCase):
                 (run_dir / "summary.json").read_text(encoding="utf-8")
             )
             self.assertEqual(saved_summary["optimizer_updates"], summary["optimizer_updates"])
+            self.assertIn("runtime", summary)
+            self.assertEqual(summary["runtime"]["resolved_device"], "cpu")
+            self.assertGreater(summary["runtime"]["wall_clock_seconds"], 0.0)
+            self.assertGreater(summary["runtime"]["steps_per_second"], 0.0)
             self.assertEqual(sum(summary["action_distribution"].values()), 16)
             self.assertEqual(
                 summary["random_decision_count"]

@@ -484,22 +484,46 @@ def collect_runtime_metadata(
     except Exception:
         cuda_available = False
 
+    resolved_device = torch.device(device)
+    cuda_device_index: int | None = None
+    if resolved_device.type == "cuda":
+        cuda_device_index = 0 if resolved_device.index is None else int(resolved_device.index)
+
     cuda_device_name: str | None = None
-    if cuda_available:
+    if cuda_available and cuda_device_index is not None:
         try:
-            cuda_device_name = str(torch.cuda.get_device_name(0))
+            cuda_device_name = str(torch.cuda.get_device_name(cuda_device_index))
         except Exception:
             cuda_device_name = "unavailable"
+
+    cuda_allocated_bytes: int | None = None
+    cuda_peak_allocated_bytes: int | None = None
+    if cuda_available and cuda_device_index is not None:
+        try:
+            cuda_allocated_bytes = int(torch.cuda.memory_allocated(cuda_device_index))
+            cuda_peak_allocated_bytes = int(
+                torch.cuda.max_memory_allocated(cuda_device_index)
+            )
+        except Exception:
+            cuda_allocated_bytes = None
+            cuda_peak_allocated_bytes = None
 
     metadata: dict[str, Any] = {
         "python_version": platform.python_version(),
         "pytorch_version": str(torch.__version__),
+        "torch_cuda_version": torch.version.cuda,
         "gymnasium_version": _package_version("gymnasium"),
         "ale_version": _package_version("ale-py"),
         "numpy_version": np.__version__,
         "device": str(device),
+        "resolved_device": str(resolved_device),
+        "cuda_device_index": cuda_device_index,
         "cuda_available": cuda_available,
         "cuda_device_name": cuda_device_name,
+        "cuda_allocated_bytes": cuda_allocated_bytes,
+        "cuda_peak_allocated_bytes": cuda_peak_allocated_bytes,
+        "wall_clock_seconds": None,
+        "steps_per_second": None,
         "seed": int(seed),
         "git_commit_sha": _git_commit_sha(Path(run_dir)),
     }

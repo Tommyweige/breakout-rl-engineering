@@ -212,10 +212,18 @@ def analyze_run(
     rows = _read_metrics(path / "metrics.csv")
     summary = _read_json(path / "summary.json")
     report = aggregate_training_metrics(rows)
+    runtime = config.get("runtime", {})
+    if not isinstance(runtime, dict):
+        runtime = {}
     report.update(
         {
             "run_id": str(config.get("run_id", path.name)),
-            "metadata": config.get("runtime", {}),
+            "resolved_device": runtime.get(
+                "resolved_device",
+                runtime.get("device", config.get("device", "unavailable")),
+            ),
+            "cuda_device_index": runtime.get("cuda_device_index"),
+            "metadata": runtime,
             "run_summary": summary,
             "plots": write_plots(rows, plots_dir or path / "plots"),
         }

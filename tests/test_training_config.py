@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import unittest
 
+from train_dqn import _config_from_args, build_parser
 from breakout_rl.training.config import DQNConfig
 
 
@@ -37,6 +38,13 @@ class DQNConfigTests(unittest.TestCase):
         self.assertEqual(config.target_update_interval, 500)
         self.assertEqual(config.checkpoint_interval, 500)
         self.assertEqual(config.device, "cpu")
+
+    def test_debug_cli_preset_defaults_to_explicit_cuda(self) -> None:
+        args = build_parser().parse_args(["--preset", "debug"])
+
+        config = _config_from_args(args)
+
+        self.assertEqual(config.device, "cuda")
 
     def test_zero_discount_is_a_valid_boundary_value(self) -> None:
         self.assertEqual(DQNConfig(gamma=0.0).gamma, 0.0)
