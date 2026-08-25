@@ -70,6 +70,45 @@ class ExperimentConfigTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 load_experiment_config(path)
 
+    def test_declared_development_budget_is_recorded(self) -> None:
+        config = load_experiment_config(Path("configs/dqn_baseline.json"))
+
+        self.assertEqual(config.budget_level, "development")
+        self.assertEqual(config.config.total_steps, 10_000)
+
+    def test_require_cuda_rejects_mixed_requested_devices(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            base = DQNConfig(
+                total_steps=1_000,
+                batch_size=2,
+                replay_capacity=8,
+                learning_starts=2,
+                device="cuda",
+            ).to_dict()
+            first = root / "first.json"
+            second = root / "second.json"
+            self._write_config(first, {**base, "name": "first"})
+            self._write_config(
+                second,
+                {**base, "name": "second", "device": "cuda:0"},
+            )
+            args = build_parser().parse_args(
+                [
+                    "--require-cuda",
+                    "--dry-run",
+                    "--experiments-root",
+                    str(root / "experiments"),
+                    "--runs-root",
+                    str(root / "runs"),
+                    str(first),
+                    str(second),
+                ]
+            )
+
+            with self.assertRaisesRegex(ValueError, "same CUDA device"):
+                run_batch(args)
+
     def test_manifest_is_round_trippable_and_records_changed_fields(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = Path(temporary_directory)

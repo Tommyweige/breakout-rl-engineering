@@ -5,7 +5,6 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-import traceback
 from pathlib import Path
 from typing import Any, Sequence
 
@@ -120,6 +119,11 @@ def _update_entry(
 
 def run_batch(args: argparse.Namespace) -> tuple[int, Path, dict[str, Any]]:
     configs = load_experiment_configs(args.configs)
+    run_keys = [(slugify(config.label), config.config.seed) for config in configs]
+    if len(set(run_keys)) != len(run_keys):
+        raise ValueError(
+            "config labels/seed pairs must be unique so run directories cannot collide"
+        )
     if args.require_cuda:
         non_cuda = [
             config.label
@@ -132,6 +136,11 @@ def run_batch(args: argparse.Namespace) -> tuple[int, Path, dict[str, Any]]:
         if non_cuda:
             raise ValueError(
                 "--require-cuda rejected config(s): " + ", ".join(non_cuda)
+            )
+        requested_devices = [config.config.requested_device for config in configs]
+        if len(set(requested_devices)) != 1:
+            raise ValueError(
+                "--require-cuda requires every variant to request the same CUDA device"
             )
 
     experiment_id = slugify(args.experiment_id or _new_experiment_id())

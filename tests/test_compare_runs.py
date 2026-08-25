@@ -8,7 +8,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from breakout_rl.experiments import compare_manifest, load_run_report
+from breakout_rl.experiments import compare_manifest, compare_run_dirs, load_run_report
 from visualize_experiment_comparison import render_comparison
 
 
@@ -219,6 +219,79 @@ class CompareRunsTests(unittest.TestCase):
         self.assertEqual(report["status"], "incomplete")
         self.assertEqual(report["expected_steps"], 10)
         self.assertEqual(report["completed_steps"], 4)
+
+    def test_unequal_step_budgets_are_exposed_as_a_comparison_condition(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            first = self._write_run(root, "first", learning_rate=0.1, total_steps=4)
+            second = self._write_run(root, "second", learning_rate=0.2, total_steps=5)
+            comparison = compare_run_dirs(
+                [first, second],
+                recent_window=2,
+                rolling_window=2,
+            )
+
+        self.assertFalse(comparison["comparison_conditions"]["same_step_budget"])
+        self.assertFalse(comparison["comparison_conditions"]["formal_cuda_eligible"])
+
+    def test_failed_run_status_is_preserved(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            run_dir = self._write_run(
+                Path(temporary_directory),
+                "failed",
+                learning_rate=0.1,
+                status="failed_non_finite",
+            )
+            (run_dir / "failure.json").write_text(
+                json.dumps({"status": "failed", "error": "non-finite loss"}),
+                encoding="utf-8",
+            )
+            report = load_run_report(run_dir, recent_window=2, rolling_window=2)
+
+        self.assertEqual(report["status"], "failed_non_finite")
+
+    def test_interrupted_manifest_keeps_not_started_variants_visible(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            baseline = self._write_run(root / "runs", "baseline", learning_rate=0.1)
+            manifest_path = root / "experiments" / "demo" / "manifest.json"
+            manifest_path.parent.mkdir(parents=True)
+            manifest_path.write_text(
+                json.dumps(
+                    {
+                        "experiment_id": "demo",
+                        "status": "interrupted",
+                        "base_config": {"values": {"learning_rate": 0.1}},
+                        "variants": [
+                            {
+                                "label": "baseline",
+                                "run_dir": "../../runs/baseline",
+                                "status": "completed",
+                                "config_values": {"learning_rate": 0.1},
+                                "requested_device": "cuda",
+                                "resolved_device": "cuda:0",
+                                "step_budget": 4,
+                            },
+                            {
+                                "label": "not-started",
+                                "run_dir": None,
+                                "status": "pending",
+                                "config_values": {"learning_rate": 0.2},
+                                "requested_device": "cuda",
+                                "resolved_device": None,
+                                "step_budget": 4,
+                            },
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            report = compare_manifest(manifest_path, recent_window=2, rolling_window=2)
+
+        self.assertEqual([run["label"] for run in report["runs"]], ["baseline", "not-started"])
+        self.assertEqual(report["runs"][1]["status"], "not_started")
+        self.assertFalse(report["comparison_conditions"]["formal_cuda_eligible"])
 
 
 if __name__ == "__main__":

@@ -1,6 +1,7 @@
 {
   "name": "baseline",
   "description": "Day 14 CUDA development baseline; short evidence run, not a final checkpoint.",
+  "budget_level": "development",
   "total_steps": 10000,
   "seed": 42,
   "gamma": 0.99,

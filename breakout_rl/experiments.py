@@ -19,6 +19,11 @@ from breakout_rl.training.config import DQNConfig
 CONFIG_FIELD_NAMES: tuple[str, ...] = tuple(field.name for field in fields(DQNConfig))
 DEFAULT_RECENT_WINDOW = 20
 DEFAULT_ROLLING_WINDOW = 20
+EXPERIMENT_BUDGETS: dict[str, tuple[int, int]] = {
+    "smoke": (1_000, 10_000),
+    "development": (10_000, 50_000),
+    "pilot": (100_000, 1_000_000),
+}
 
 
 def _json_default(value: Any) -> Any:
@@ -64,6 +69,7 @@ def _config_values(payload: Mapping[str, Any], *, source: Path) -> dict[str, Any
         "base_config",
         "overrides",
         "config",
+        "budget_level",
     }
     unknown_top_level = sorted(
         set(payload) - set(CONFIG_FIELD_NAMES) - allowed_metadata
@@ -83,6 +89,42 @@ def _config_values(payload: Mapping[str, Any], *, source: Path) -> dict[str, Any
     return values
 
 
+def _inferred_budget_level(total_steps: int) -> str:
+    for level, (minimum, maximum) in EXPERIMENT_BUDGETS.items():
+        if minimum <= total_steps <= maximum:
+            return level
+    return "custom"
+
+
+def _resolve_budget_level(
+    payload: Mapping[str, Any],
+    *,
+    total_steps: int,
+    inherited: str | None,
+    source: Path,
+) -> str:
+    raw_level = payload.get("budget_level")
+    if raw_level is None and inherited not in {None, "custom"}:
+        raw_level = inherited
+    if raw_level is None:
+        return _inferred_budget_level(total_steps)
+    if not isinstance(raw_level, str) or not raw_level.strip():
+        raise TypeError(f"{source}: budget_level must be a non-empty string")
+    level = raw_level.strip().lower()
+    if level not in EXPERIMENT_BUDGETS:
+        raise ValueError(
+            f"{source}: budget_level must be one of "
+            f"{', '.join(EXPERIMENT_BUDGETS)}"
+        )
+    minimum, maximum = EXPERIMENT_BUDGETS[level]
+    if not minimum <= total_steps <= maximum:
+        raise ValueError(
+            f"{source}: total_steps={total_steps} is outside the {level} budget "
+            f"range [{minimum}, {maximum}]"
+        )
+    return level
+
+
 def _label_for(payload: Mapping[str, Any], source: Path) -> str:
     raw_label = payload.get("label", payload.get("name", source.stem))
     if not isinstance(raw_label, str) or not raw_label.strip():
@@ -99,6 +141,7 @@ class ExperimentConfig:
     config: DQNConfig
     base_config_path: Path | None
     overrides: dict[str, Any]
+    budget_level: str
 
     @property
     def values(self) -> dict[str, Any]:
@@ -119,6 +162,7 @@ def load_experiment_config(
     payload = read_json_object(source)
     base_path: Path | None = None
     base_values: dict[str, Any] = {}
+    inherited_budget_level: str | None = None
     raw_base = payload.get("base_config")
     if raw_base is not None:
         if not isinstance(raw_base, str) or not raw_base.strip():
@@ -126,6 +170,7 @@ def load_experiment_config(
         base_path = (source.parent / raw_base).resolve()
         base = load_experiment_config(base_path, _stack=(*_stack, source))
         base_values.update(base.values)
+        inherited_budget_level = base.budget_level
 
     explicit_values = _config_values(payload, source=source)
     raw_overrides = payload.get("overrides", {})
@@ -138,12 +183,19 @@ def load_experiment_config(
 
     values = {**base_values, **overrides, **explicit_values}
     config = DQNConfig.from_dict(values)
+    budget_level = _resolve_budget_level(
+        payload,
+        total_steps=config.total_steps,
+        inherited=inherited_budget_level,
+        source=source,
+    )
     return ExperimentConfig(
         label=_label_for(payload, source),
         source_path=source,
         config=config,
         base_config_path=base_path,
         overrides={**overrides, **explicit_values} if base_path is not None else {},
+        budget_level=budget_level,
     )
 
 
@@ -214,6 +266,7 @@ def build_manifest(
                 "resolved_device": None,
                 "seed": config.config.seed,
                 "step_budget": config.config.total_steps,
+                "budget_level": config.budget_level,
             }
         )
     return {
@@ -230,6 +283,7 @@ def build_manifest(
         "variants": variants,
         "seeds": sorted({config.config.seed for config in configs}),
         "step_budgets": sorted({config.config.total_steps for config in configs}),
+        "budget_levels": sorted({config.budget_level for config in configs}),
         "status": "running",
         "command": list(command) if command is not None else None,
     }
@@ -302,10 +356,6 @@ def _rolling_means(values: Sequence[float], window: int) -> list[float]:
     if len(values) < window:
         return []
     return [float(mean(values[index - window : index])) for index in range(window, len(values) + 1)]
-
-
-def _summary_value(summary: Mapping[str, Any], runtime: Mapping[str, Any], name: str) -> Any:
-    return runtime.get(name, summary.get(name))
 
 
 def load_run_report(
@@ -395,25 +445,124 @@ def load_run_report(
     }
 
 
-def _manifest_run_path(manifest_path: Path, raw_path: Any) -> Path:
+def _manifest_run_path(
+    manifest_path: Path,
+    raw_path: Any,
+    *,
+    allow_missing: bool,
+) -> Path | None:
     if not isinstance(raw_path, str) or not raw_path.strip():
+        if allow_missing:
+            return None
         raise ValueError("manifest variant is missing run_dir")
     path = Path(raw_path)
     return path.resolve() if path.is_absolute() else (manifest_path.parent / path).resolve()
 
 
-def load_manifest_run_paths(manifest_path: str | Path) -> list[tuple[dict[str, Any], Path]]:
+def load_manifest_run_paths(
+    manifest_path: str | Path,
+    *,
+    allow_missing: bool = False,
+) -> list[tuple[dict[str, Any], Path | None]]:
     manifest_source = Path(manifest_path).resolve()
     manifest = read_json_object(manifest_source)
     variants = manifest.get("variants")
     if not isinstance(variants, list) or not variants:
         raise ValueError(f"{manifest_source}: variants must be a non-empty array")
-    result: list[tuple[dict[str, Any], Path]] = []
+    result: list[tuple[dict[str, Any], Path | None]] = []
     for variant in variants:
         if not isinstance(variant, dict):
             raise TypeError(f"{manifest_source}: each variant must be an object")
-        result.append((variant, _manifest_run_path(manifest_source, variant.get("run_dir"))))
+        result.append(
+            (
+                variant,
+                _manifest_run_path(
+                    manifest_source,
+                    variant.get("run_dir"),
+                    allow_missing=allow_missing,
+                ),
+            )
+        )
     return result
+
+
+def _comparison_conditions(reports: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    requested_devices = [str(report["requested_device"]) for report in reports]
+    resolved_devices = [str(report["resolved_device"]) for report in reports]
+    expected_steps = [report["expected_steps"] for report in reports]
+    statuses = [str(report["status"]) for report in reports]
+    formal_requested = all(
+        device == "cuda" or device.startswith("cuda:") for device in requested_devices
+    )
+    formal_resolved = all(device.startswith("cuda:") for device in resolved_devices)
+    return {
+        "same_requested_device": len(set(requested_devices)) == 1,
+        "same_resolved_device": len(set(resolved_devices)) == 1,
+        "same_step_budget": len(set(expected_steps)) == 1,
+        "requested_devices": requested_devices,
+        "resolved_devices": resolved_devices,
+        "step_budgets": expected_steps,
+        "formal_cuda_eligible": (
+            all(status == "completed" for status in statuses)
+            and formal_requested
+            and formal_resolved
+            and len(set(requested_devices)) == 1
+            and len(set(resolved_devices)) == 1
+            and len(set(expected_steps)) == 1
+        ),
+        "quality_and_throughput_are_separate": True,
+    }
+
+
+def _not_started_report(
+    entry: Mapping[str, Any],
+    *,
+    recent_window: int,
+    rolling_window: int,
+) -> dict[str, Any]:
+    raw_status = str(entry.get("status", "not_started"))
+    status = "not_started" if raw_status in {"pending", "planned"} else raw_status
+    config_values = entry.get("config_values", {})
+    if not isinstance(config_values, Mapping):
+        config_values = {}
+    expected_steps = entry.get("step_budget")
+    return {
+        "run_id": entry.get("run_id"),
+        "run_dir": None,
+        "label": str(entry.get("label", "not-started")),
+        "status": status,
+        "error": entry.get("error"),
+        "requested_device": str(entry.get("requested_device", "unavailable")),
+        "resolved_device": str(entry.get("resolved_device", "unavailable")),
+        "precision": config_values.get("precision", "unavailable"),
+        "gpu_name": None,
+        "cuda_device_index": None,
+        "pytorch_version": None,
+        "torch_cuda_version": None,
+        "expected_steps": expected_steps,
+        "completed_steps": 0,
+        "episodes": 0,
+        "recent_window": recent_window,
+        "rolling_window": rolling_window,
+        "recent_episode_return": _stats([]),
+        "mean_recent_episode_return": None,
+        "median_recent_episode_return": None,
+        "best_rolling_return": None,
+        "rolling_return_count": 0,
+        "loss_summary": _stats([]),
+        "q_value_summary": {field: _stats([]) for field in ("q_mean", "q_max", "q_min", "target_mean", "target_max")},
+        "sps": {**_stats([]), "runtime": None},
+        "wall_clock_seconds": None,
+        "gpu_memory": {
+            "allocated_bytes": None,
+            "peak_allocated_bytes": None,
+            "reserved_bytes": None,
+            "peak_reserved_bytes": None,
+        },
+        "config": dict(config_values),
+        "runtime": {},
+        "summary": {},
+    }
 
 
 def compare_run_dirs(
@@ -440,36 +589,13 @@ def compare_run_dirs(
         report["label"] = labels[index] if labels and index < len(labels) else report["run_id"]
         report["config_diff"] = config_diff(base_values, report["config"])
         report.pop("metrics", None)
-    requested_devices = [str(report["requested_device"]) for report in reports]
-    resolved_devices = [str(report["resolved_device"]) for report in reports]
-    expected_steps = [report["expected_steps"] for report in reports]
-    statuses = [str(report["status"]) for report in reports]
-    formal_requested = all(
-        device == "cuda" or device.startswith("cuda:") for device in requested_devices
-    )
-    formal_resolved = all(device.startswith("cuda:") for device in resolved_devices)
     return {
         "schema_version": 1,
         "aggregate_windows": {
             "recent_episode_returns": recent_window,
             "rolling_episode_returns": rolling_window,
         },
-        "comparison_conditions": {
-            "same_requested_device": len(set(requested_devices)) == 1,
-            "same_resolved_device": len(set(resolved_devices)) == 1,
-            "same_step_budget": len(set(expected_steps)) == 1,
-            "requested_devices": requested_devices,
-            "resolved_devices": resolved_devices,
-            "step_budgets": expected_steps,
-            "formal_cuda_eligible": (
-                all(status == "completed" for status in statuses)
-                and formal_requested
-                and formal_resolved
-                and len(set(resolved_devices)) == 1
-                and len(set(expected_steps)) == 1
-            ),
-            "quality_and_throughput_are_separate": True,
-        },
+        "comparison_conditions": _comparison_conditions(reports),
         "runs": reports,
     }
 
@@ -482,18 +608,49 @@ def compare_manifest(
 ) -> dict[str, Any]:
     source = Path(manifest_path).resolve()
     manifest = read_json_object(source)
-    entries = load_manifest_run_paths(source)
+    entries = load_manifest_run_paths(source, allow_missing=True)
     base = manifest.get("base_config", {})
     base_values = base.get("values") if isinstance(base, Mapping) else None
     if not isinstance(base_values, Mapping):
         base_values = None
-    report = compare_run_dirs(
-        [path for _, path in entries],
-        base_values=base_values,
-        labels=[str(entry.get("label", path.name)) for entry, path in entries],
-        recent_window=recent_window,
-        rolling_window=rolling_window,
-    )
+    available = [(entry, path) for entry, path in entries if path is not None]
+    if available:
+        available_report = compare_run_dirs(
+            [path for _, path in available if path is not None],
+            base_values=base_values,
+            labels=[str(entry.get("label", path.name)) for entry, path in available],
+            recent_window=recent_window,
+            rolling_window=rolling_window,
+        )
+        reports_by_path = {
+            str(report["run_dir"]): report for report in available_report["runs"]
+        }
+        report = {
+            **available_report,
+            "runs": [],
+        }
+    else:
+        report = {
+            "schema_version": 1,
+            "aggregate_windows": {
+                "recent_episode_returns": recent_window,
+                "rolling_episode_returns": rolling_window,
+            },
+            "runs": [],
+        }
+        reports_by_path = {}
+    for entry, path in entries:
+        if path is None:
+            missing = _not_started_report(
+                entry,
+                recent_window=recent_window,
+                rolling_window=rolling_window,
+            )
+            missing["config_diff"] = config_diff(base_values or {}, missing["config"])
+            report["runs"].append(missing)
+        else:
+            report["runs"].append(reports_by_path[str(path)])
+    report["comparison_conditions"] = _comparison_conditions(report["runs"])
     report["experiment_id"] = manifest.get("experiment_id", source.parent.name)
     report["manifest"] = str(source)
     report["manifest_status"] = manifest.get("status")
@@ -505,6 +662,7 @@ __all__ = [
     "CONFIG_FIELD_NAMES",
     "DEFAULT_RECENT_WINDOW",
     "DEFAULT_ROLLING_WINDOW",
+    "EXPERIMENT_BUDGETS",
     "ExperimentConfig",
     "build_manifest",
     "compare_manifest",

@@ -8,6 +8,9 @@ the baseline.
 
 The configs are deliberately short development runs. They are evidence for the
 workflow and a first signal, not a multi-seed claim about the best DQN setting.
+The runner records the declared budget level: smoke is 1K–10K steps,
+development is 10K–50K, and pilot is 100K–1M. A config whose declared level does
+not contain `total_steps` is rejected.
 
 Run the controlled batch sequentially from the repository root:
 

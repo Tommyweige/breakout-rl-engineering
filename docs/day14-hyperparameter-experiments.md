@@ -1,18 +1,18 @@
 # Day 14｜超參數實驗：用受控比較取代「改一個數字試試看」
 
-Day 13 做完除錯後，我們知道 DQN 的更新真的會發生、數值沒有立刻變成 NaN，探索和 Replay Buffer 也都在運作。但 10,000 個 environment steps 的 return 仍然沒有穩定上升。
+Day 13 做完除錯後，我們知道 Deep Q-Network（DQN，從畫面估計每個 action 價值的網路）的更新真的會發生，數值沒有立刻失去有效值；保存過往互動資料的 Replay Buffer 也在運作。但 10,000 個 environment steps（Agent 執行一次 action、環境回傳一次結果）的每局 return（遊戲分數）仍然沒有穩定上升。
 
-這時最容易犯的錯，是開始隨意改 learning rate、epsilon decay、target update interval，看到某次曲線比較高，就把那個設定留下來。問題是：如果一次改了三個地方，我們根本不知道曲線的差異來自哪一個選擇；如果每次跑的 step 數和 seed 也不同，連「比較」本身都沒有固定尺度。
+這時最容易犯的錯，是開始隨意改三種設定：learning rate（每次更新模型走多大一步）、epsilon decay（探索機率下降的速度），以及 target update interval（Target Network 複製 Online Network 的間隔）。看到某次曲線比較高，就把那個設定留下來。問題是：如果一次改了三個地方，我們根本不知道曲線的差異來自哪一個選擇；如果每次跑的 step 數和 seed 也不同，連「比較」本身都沒有固定尺度。
 
-Day 14 要建立的是一個更小、但可以追查的問題：**在程式已經通過 Day 13 correctness 檢查後，只改一個因素，其他條件固定，曲線和統計結果是否提供了足以支持下一步的 evidence？**
+Day 14 要建立的是一個更小、但可以追查的問題：**在程式已經通過 Day 13 correctness 檢查後，只改一個因素，其他條件固定，曲線和統計結果是否提供了足以支持下一步的 evidence（可追查的證據）？**
 
 這篇先用 learning rate 做一組 short development comparison。它不會教大型自動調參，也不會把單一 seed 的結果寫成最佳答案；目標是建立一個能交給 Day 15 延伸的實驗基線。
 
 ## 先分清楚：哪些數字是模型學的，哪些是我們選的？
 
-DQN 在訓練時會更新一大組模型參數（model parameters），也就是 CNN 和 Q-value head 裡真正被 optimizer 修改的 weights。它們是模型從 transition 中學出來的數字。
+DQN 在訓練時會根據畫面，為每個可選 action 輸出一個價值估計。模型裡真正會被 optimizer（根據誤差調整模型的更新工具）修改的數字，叫做模型參數（model parameters），也就是 weights；它們是模型從資料中學出來的結果。
 
-但還有另一組數字不是模型自己學的，而是我們在訓練開始前選好的設定，例如每次更新走多大步、多久同步一次 Target Network、Replay Buffer 要保留多少 transition。這些設定叫做超參數（hyperparameters）。它們決定學習過程怎麼走，卻不會被反向傳播直接更新。
+每次和環境互動會產生一筆 transition，也就是 state、action、reward、next state 和結束狀態的完整紀錄；Replay Buffer 會先保存這些紀錄，之後再抽樣給模型學習。但還有另一組數字不是模型自己學的，而是我們在訓練開始前選好的設定，例如每次更新走多大步、多久同步一次 Target Network、Replay Buffer 要保留多少 transition。這些設定叫做超參數（hyperparameters）。它們決定學習過程怎麼走，卻不會被反向傳播直接更新。
 
 這個差異很重要。把一個超參數改掉，等於改變了實驗條件；不能把它和模型最後學到的 weights 混在一起，也不能只保存「這次把 learning rate 調低」這句話。完整的 run 必須知道其他條件仍然是什麼，否則之後無法重建這次比較。
 
@@ -99,7 +99,6 @@ conda run --name breakout-rl-engineering python run_experiments.py --require-cud
 
 ```powershell
 conda run --name breakout-rl-engineering python compare_runs.py experiments/<experiment-id>/manifest.json
-conda run --name breakout-rl-engineering python visualize_experiment_comparison.py experiments/<experiment-id>/manifest.json
 ```
 
 現在我們可以回答 Day 14 的中心問題：調參不是逐次憑感覺改數字，而是先固定條件、只改一個因素、保存完整 evidence，再用同一個 step budget 和 aggregate window 比較。這組單 seed CUDA 結果只足以選出下一步要追查的候選，還不足以宣稱穩健的演算法結論。

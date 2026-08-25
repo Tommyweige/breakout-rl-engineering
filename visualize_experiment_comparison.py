@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import math
 import multiprocessing
 import queue
 import sys
@@ -11,6 +12,7 @@ from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 from breakout_rl.experiments import load_manifest_run_paths, read_metrics, write_json_object
+from breakout_rl.training.diagnostics import parse_numeric_value
 
 
 METRIC_SPECS: dict[str, tuple[str, str, str]] = {
@@ -22,14 +24,6 @@ METRIC_SPECS: dict[str, tuple[str, str, str]] = {
 }
 
 
-def _number(value: Any) -> float | None:
-    try:
-        parsed = float(value)
-    except (TypeError, ValueError):
-        return None
-    return parsed if parsed == parsed and abs(parsed) != float("inf") else None
-
-
 def _paired_series(
     rows: Sequence[Mapping[str, Any]],
     field: str,
@@ -37,9 +31,14 @@ def _paired_series(
     x_values: list[float] = []
     y_values: list[float] = []
     for row in rows:
-        x_value = _number(row.get("global_step"))
-        y_value = _number(row.get(field))
-        if x_value is None or y_value is None:
+        x_value = parse_numeric_value(row.get("global_step"))
+        y_value = parse_numeric_value(row.get(field))
+        if (
+            x_value is None
+            or y_value is None
+            or not math.isfinite(x_value)
+            or not math.isfinite(y_value)
+        ):
             continue
         x_values.append(x_value)
         y_values.append(y_value)
