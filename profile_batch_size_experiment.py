@@ -368,6 +368,20 @@ def _batch_report(
             for row in metric_rows
             if (parsed := _finite(row.get("epsilon"))) is not None
         ]
+        replay_occupancy = summary.get("replay_occupancy")
+        replay_guardrail = isinstance(replay_occupancy, Mapping) and (
+            int(replay_occupancy.get("size", 0) or 0) > 0
+            and int(replay_occupancy.get("capacity", 0) or 0) > 0
+            and _finite(replay_occupancy.get("ratio")) is not None
+        )
+        epsilon_guardrail = bool(
+            epsilon_values
+            and 0.0 <= min(epsilon_values) <= max(epsilon_values) <= 1.0
+        )
+        episode_guardrail = bool(
+            int(run.get("episodes", 0) or 0) > 0
+            and run.get("mean_recent_episode_return") is not None
+        )
         profile = dict(profiling_by_label.get(label, {}))
         runs.append(
             {
@@ -394,7 +408,8 @@ def _batch_report(
                 "gpu_memory": run.get("gpu_memory"),
                 "finite_metric_counts": finite_counts,
                 "regression_guardrails": {
-                    "replay_occupancy": summary.get("replay_occupancy"),
+                    "replay_occupancy": replay_occupancy,
+                    "replay_guardrail": replay_guardrail,
                     "target_sync_count": summary.get("target_sync_count"),
                     "action_distribution": summary.get("action_distribution"),
                     "epsilon": {
@@ -411,6 +426,11 @@ def _batch_report(
                         ),
                         "recent_return_trend": run.get("recent_return_trend"),
                     },
+                    "epsilon_guardrail": epsilon_guardrail,
+                    "episode_guardrail": episode_guardrail,
+                    "guardrails_passed": replay_guardrail
+                    and epsilon_guardrail
+                    and episode_guardrail,
                 },
                 "milestone_snapshots": run.get("milestone_snapshots"),
                 "profiling": profile,
@@ -432,6 +452,7 @@ def _batch_report(
             and speedup is not None
             and speedup > 1.0
             and all(count > 0 for count in run["finite_metric_counts"].values())
+            and run["regression_guardrails"]["guardrails_passed"]
         )
 
     return {

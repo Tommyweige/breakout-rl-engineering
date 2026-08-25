@@ -305,7 +305,7 @@ class DQNTrainerTests(unittest.TestCase):
         diagnostic_steps = [
             int(row["global_step"])
             for row in rows
-            if row["loss"]
+            if row["loss"].strip()
         ]
         self.assertEqual(diagnostic_steps, [8, 16])
         self.assertEqual(summary["runtime"]["diagnostics_interval"], 100)

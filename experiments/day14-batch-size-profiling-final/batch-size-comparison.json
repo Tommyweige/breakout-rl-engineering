@@ -84,6 +84,7 @@
           "capacity": 10000,
           "ratio": 1.0
         },
+        "replay_guardrail": true,
         "target_sync_count": 21,
         "action_distribution": {
           "NOOP": 2928,
@@ -108,7 +109,10 @@
             "delta": 0.6000000000000001,
             "direction": "up"
           }
-        }
+        },
+        "epsilon_guardrail": true,
+        "episode_guardrail": true,
+        "guardrails_passed": true
       },
       "milestone_snapshots": {},
       "profiling": {
@@ -194,6 +198,7 @@
           "capacity": 10000,
           "ratio": 1.0
         },
+        "replay_guardrail": true,
         "target_sync_count": 21,
         "action_distribution": {
           "NOOP": 1975,
@@ -218,7 +223,10 @@
             "delta": 0.3999999999999999,
             "direction": "up"
           }
-        }
+        },
+        "epsilon_guardrail": true,
+        "episode_guardrail": true,
+        "guardrails_passed": true
       },
       "milestone_snapshots": {},
       "profiling": {
@@ -304,6 +312,7 @@
           "capacity": 10000,
           "ratio": 1.0
         },
+        "replay_guardrail": true,
         "target_sync_count": 21,
         "action_distribution": {
           "NOOP": 2149,
@@ -328,7 +337,10 @@
             "delta": -0.5,
             "direction": "down"
           }
-        }
+        },
+        "epsilon_guardrail": true,
+        "episode_guardrail": true,
+        "guardrails_passed": true
       },
       "milestone_snapshots": {},
       "profiling": {

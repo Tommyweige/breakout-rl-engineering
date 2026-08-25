@@ -32,7 +32,7 @@
 
 learning rate 是每次模型更新調整權重的步幅；它太小可能讓學習變慢，太大可能讓 Q-value 或 gradient 變得更躁動。這次不是同時改 epsilon decay 或 Target Network interval，所以即使結果只是一個初步訊號，也還能回答比較單純的問題：在同一個 100K horizon 下，learning rate 的差異是否值得繼續追蹤？
 
-三個 run 固定 seed `42`。seed 是控制初始化與抽樣的整數起點，能讓實驗條件更容易重現；它不是把 CUDA 執行變成跨硬體 bit-exact deterministic 的保證。三個 run 也都使用 `requested_device=cuda`，解析成同一張 `cuda:0` 的 NVIDIA GeForce RTX 4060 Laptop GPU，precision 是 `float32`。
+三個 run 固定 seed `42`。seed 是控制初始化與抽樣的整數起點，能讓實驗條件更容易重現；它不是把 CUDA 執行變成跨硬體 bit-exact deterministic 的保證。三個 run 也都使用 `requested_device=cuda`，解析成同一張 `cuda:0` 的 NVIDIA GeForce RTX 4060 Laptop GPU，precision 是 `float32`（32-bit 浮點數格式）。
 
 ## 正式 100K 前先量測資料管線
 
@@ -53,7 +53,7 @@ GPU enabled 不等於整條訓練管線都由 GPU 主導。這個 DQN（用神�
 
 ## 100K 不只看最後一個數字
 
-100K 的價值不在於最後一列 summary 比 10K 更大，而在於可以回頭問「變化何時開始」。因此 main config 每 25,000 steps 保存一次 checkpoint，CSV 則保留每個 environment step 的 metrics。comparison report 會取 25K、50K、75K、100K 附近的實際 row，並同時保存 loss、Q、Target、gradient、epsilon 和 SPS。
+100K 的價值不在於最後一列 summary 比 10K 更大，而在於可以回頭問「變化何時開始」。因此 main config 每 25,000 steps 保存一次 checkpoint（保存當時模型與 optimizer 狀態的快照），CSV 則保留每個 environment step 的 metrics。comparison report 會取 25K、50K、75K、100K 附近的實際 row，並同時保存 loss、Q、Target、gradient、epsilon 和 SPS。
 
 回合分數仍然只在 episode 完成時出現，所以 return 曲線的每個點都是實際完成的 episode，不會把缺少的值補成零。為了避免看到結果後改規則，這次固定使用最後 20 個 completed episodes 的 mean/median，以及所有 20-episode rolling windows 中的最高平均值。recent trend 則把最後 20 局分成前後兩半，報告後半平均減去前半平均的變化。
 
@@ -97,7 +97,7 @@ epsilon 在這組 config 中於前 10K steps 下降到 `0.05`，之後 90K 大�
 
 LR comparison 選出的 development candidate 是 `2e-4`，但它還沒有回答另一個問題：GPU 每次收到的工作是否太小。batch size 是一次 optimizer update 使用的 replay transitions 數量；它變大時，每次更新的 GPU 工作與 training samples/s 可能增加，但也會改變梯度估計與 learning dynamics，所以不能把它當成純效能開關。
 
-因此 Day 14C 先固定 learning rate、`train_frequency=4`、環境、seed、replay、epsilon、target update、precision 和 CUDA device，只比較 batch size `32/64/128`。Stage 1 每個設定跑 10K，並以固定 1 秒間隔保存 GPU utilization、power、device memory、process CPU 和 sampling method；Stage 2 只對 Stage 1 中實際提高 environment SPS 且通過數值 guardrails 的候選跑 100K。
+因此 Day 14C 先固定 learning rate、`train_frequency=4`、環境、seed、replay、epsilon、target update、precision 和 CUDA device，只比較 batch size `32/64/128`。Stage 1 每個設定跑 10K，並以固定 1 秒間隔保存 GPU utilization、power、device memory、process CPU 和 sampling method；Stage 2 只對 Stage 1 中實際提高 environment SPS 且通過數值 guardrails（攔截 replay、epsilon、episode 與有限值異常的安全檢查）的候選跑 100K。training samples/s 代表每秒送進 optimizer update 的 transitions 數量。
 
 | batch size | environment SPS | wall-clock | optimizer updates/s | training samples/s | GPU utilization mean | GPU power mean | device memory peak |
 |---:|---:|---:|---:|---:|---:|---:|---:|

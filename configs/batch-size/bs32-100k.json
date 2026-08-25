@@ -8,7 +8,7 @@
     "checkpoint_interval": 25000,
     "diagnostics_interval": 100,
     "metrics_flush_interval": 100,
-    "cpu_threads": 1
+    "cpu_threads": 2
   },
   "budget_level": "main_day14",
   "stage": "batch_validation"

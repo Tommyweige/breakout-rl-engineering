@@ -178,6 +178,35 @@ def benchmark_runs(before_dir: str | Path, after_dir: str | Path) -> dict[str, A
         and phase["mean_recent_episode_return"] is not None
         for phase in (before_phase, after_phase)
     )
+    both_completed = (
+        before_report.get("status") == "completed"
+        and after_report.get("status") == "completed"
+    )
+    same_step_budget = before_report.get("expected_steps") == after_report.get(
+        "expected_steps"
+    )
+    same_optimizer_updates = (
+        before_phase["optimizer_updates"] == after_phase["optimizer_updates"]
+    )
+    same_target_sync_count = (
+        before_phase["target_sync_count"] == after_phase["target_sync_count"]
+    )
+    finite_metrics_present = all(
+        all(count > 0 for count in phase["finite_metric_counts"].values())
+        for phase in (before_phase, after_phase)
+    )
+    semantic_guardrails_passed = all(
+        (
+            both_completed,
+            same_step_budget,
+            same_optimizer_updates,
+            same_target_sync_count,
+            finite_metrics_present,
+            same_replay,
+            epsilon_schedule_consistent,
+            episode_behavior_present,
+        )
+    )
     return {
         "schema_version": 1,
         "before": {"run_dir": str(before_path), **before_phase},
@@ -191,26 +220,15 @@ def benchmark_runs(before_dir: str | Path, after_dir: str | Path) -> dict[str, A
             "target_is_engineering_goal_not_correctness_gate": True,
         },
         "10k_regression": {
-            "both_completed": before_report.get("status") == "completed"
-            and after_report.get("status") == "completed",
-            "same_step_budget": before_report.get("expected_steps")
-            == after_report.get("expected_steps"),
-            "same_optimizer_updates": before_phase["optimizer_updates"]
-            == after_phase["optimizer_updates"],
-            "same_target_sync_count": before_report.get("summary", {}).get(
-                "target_sync_count"
-            )
-            == after_report.get("summary", {}).get("target_sync_count"),
-            "finite_metrics_present": all(
-                all(count > 0 for count in phase["finite_metric_counts"].values())
-                for phase in (before_phase, after_phase)
-            ),
+            "both_completed": both_completed,
+            "same_step_budget": same_step_budget,
+            "same_optimizer_updates": same_optimizer_updates,
+            "same_target_sync_count": same_target_sync_count,
+            "finite_metrics_present": finite_metrics_present,
             "replay_guardrail": same_replay,
             "epsilon_schedule_consistent": epsilon_schedule_consistent,
             "episode_behavior_present": episode_behavior_present,
-            "semantic_guardrails_passed": same_replay
-            and epsilon_schedule_consistent
-            and episode_behavior_present,
+            "semantic_guardrails_passed": semantic_guardrails_passed,
             "bit_exact_curve_required": False,
         },
     }
