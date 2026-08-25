@@ -1,0 +1,178 @@
+{
+  "schema_version": 1,
+  "experiment_id": "day14-cuda-lr-comparison-committed",
+  "created_at_utc": "2026-08-25T06:15:10.622208Z",
+  "updated_at_utc": "2026-08-25T06:18:50.614325Z",
+  "sequential": true,
+  "base_config": {
+    "label": "baseline",
+    "config_path": "../../configs/dqn_baseline.json",
+    "values": {
+      "total_steps": 10000,
+      "seed": 42,
+      "gamma": 0.99,
+      "learning_rate": 0.0001,
+      "batch_size": 32,
+      "replay_capacity": 10000,
+      "learning_starts": 1000,
+      "train_frequency": 4,
+      "target_update_interval": 500,
+      "epsilon_start": 0.9,
+      "epsilon_end": 0.05,
+      "epsilon_decay_steps": 10000,
+      "gradient_clip_norm": 10.0,
+      "reward_clip": true,
+      "device": "cuda",
+      "precision": "float32",
+      "checkpoint_interval": 500
+    }
+  },
+  "variants": [
+    {
+      "label": "baseline",
+      "config_path": "../../configs/dqn_baseline.json",
+      "config_values": {
+        "total_steps": 10000,
+        "seed": 42,
+        "gamma": 0.99,
+        "learning_rate": 0.0001,
+        "batch_size": 32,
+        "replay_capacity": 10000,
+        "learning_starts": 1000,
+        "train_frequency": 4,
+        "target_update_interval": 500,
+        "epsilon_start": 0.9,
+        "epsilon_end": 0.05,
+        "epsilon_decay_steps": 10000,
+        "gradient_clip_norm": 10.0,
+        "reward_clip": true,
+        "device": "cuda",
+        "precision": "float32",
+        "checkpoint_interval": 500
+      },
+      "overrides": {},
+      "changed_fields": [],
+      "status": "completed",
+      "run_dir": "../../assets/day14/experiment-runs/day14-cuda-lr-comparison-committed/baseline-seed42",
+      "run_id": "baseline-seed42",
+      "requested_device": "cuda",
+      "resolved_device": "cuda:0",
+      "seed": 42,
+      "step_budget": 10000,
+      "summary": {
+        "status": "completed",
+        "total_steps": 10000,
+        "episodes": 48,
+        "optimizer_updates": 2251,
+        "steps_per_second": 127.85563335611205,
+        "wall_clock_seconds": 78.21321389998775
+      }
+    },
+    {
+      "label": "learning-rate-low",
+      "config_path": "../../configs/experiments/lr-low.json",
+      "config_values": {
+        "total_steps": 10000,
+        "seed": 42,
+        "gamma": 0.99,
+        "learning_rate": 5e-05,
+        "batch_size": 32,
+        "replay_capacity": 10000,
+        "learning_starts": 1000,
+        "train_frequency": 4,
+        "target_update_interval": 500,
+        "epsilon_start": 0.9,
+        "epsilon_end": 0.05,
+        "epsilon_decay_steps": 10000,
+        "gradient_clip_norm": 10.0,
+        "reward_clip": true,
+        "device": "cuda",
+        "precision": "float32",
+        "checkpoint_interval": 500
+      },
+      "overrides": {
+        "learning_rate": 5e-05
+      },
+      "changed_fields": [
+        "learning_rate"
+      ],
+      "status": "completed",
+      "run_dir": "../../assets/day14/experiment-runs/day14-cuda-lr-comparison-committed/learning-rate-low-seed42",
+      "run_id": "learning-rate-low-seed42",
+      "requested_device": "cuda",
+      "resolved_device": "cuda:0",
+      "seed": 42,
+      "step_budget": 10000,
+      "summary": {
+        "status": "completed",
+        "total_steps": 10000,
+        "episodes": 45,
+        "optimizer_updates": 2251,
+        "steps_per_second": 135.26057945219446,
+        "wall_clock_seconds": 73.93137040000875
+      }
+    },
+    {
+      "label": "learning-rate-high",
+      "config_path": "../../configs/experiments/lr-high.json",
+      "config_values": {
+        "total_steps": 10000,
+        "seed": 42,
+        "gamma": 0.99,
+        "learning_rate": 0.0002,
+        "batch_size": 32,
+        "replay_capacity": 10000,
+        "learning_starts": 1000,
+        "train_frequency": 4,
+        "target_update_interval": 500,
+        "epsilon_start": 0.9,
+        "epsilon_end": 0.05,
+        "epsilon_decay_steps": 10000,
+        "gradient_clip_norm": 10.0,
+        "reward_clip": true,
+        "device": "cuda",
+        "precision": "float32",
+        "checkpoint_interval": 500
+      },
+      "overrides": {
+        "learning_rate": 0.0002
+      },
+      "changed_fields": [
+        "learning_rate"
+      ],
+      "status": "completed",
+      "run_dir": "../../assets/day14/experiment-runs/day14-cuda-lr-comparison-committed/learning-rate-high-seed42",
+      "run_id": "learning-rate-high-seed42",
+      "requested_device": "cuda",
+      "resolved_device": "cuda:0",
+      "seed": 42,
+      "step_budget": 10000,
+      "summary": {
+        "status": "completed",
+        "total_steps": 10000,
+        "episodes": 46,
+        "optimizer_updates": 2251,
+        "steps_per_second": 152.82360312376366,
+        "wall_clock_seconds": 65.43491840001661
+      }
+    }
+  ],
+  "seeds": [
+    42
+  ],
+  "step_budgets": [
+    10000
+  ],
+  "status": "completed",
+  "command": [
+    "run_experiments.py",
+    "--require-cuda",
+    "--experiment-id",
+    "day14-cuda-lr-comparison-committed",
+    "--runs-root",
+    "assets/day14/experiment-runs",
+    "configs/dqn_baseline.json",
+    "configs/experiments/lr-low.json",
+    "configs/experiments/lr-high.json"
+  ]
+}
