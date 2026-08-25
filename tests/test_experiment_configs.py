@@ -84,6 +84,19 @@ class ExperimentConfigTests(unittest.TestCase):
         self.assertEqual(screening.stage, "screening")
         self.assertEqual(screening.config.total_steps, 10_000)
 
+        batch_profiles = load_experiment_configs(
+            [
+                Path("configs/batch-size/bs32-10k.json"),
+                Path("configs/batch-size/bs64-10k.json"),
+                Path("configs/batch-size/bs128-10k.json"),
+            ]
+        )
+        self.assertEqual({profile.stage for profile in batch_profiles}, {"batch_profiling"})
+        self.assertEqual(
+            [profile.config.batch_size for profile in batch_profiles],
+            [32, 64, 128],
+        )
+
     def test_require_cuda_rejects_mixed_requested_devices(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = Path(temporary_directory)

@@ -1,0 +1,320 @@
+{
+  "schema_version": 1,
+  "experiment_id": "day14-batch-size-profiling-final",
+  "created_at_utc": "2026-08-25T09:04:22.522636Z",
+  "updated_at_utc": "2026-08-25T09:06:52.663924Z",
+  "sequential": true,
+  "base_config": {
+    "label": "batch-size-32",
+    "config_path": "../../configs/batch-size/bs32-10k.json",
+    "values": {
+      "total_steps": 10000,
+      "seed": 42,
+      "gamma": 0.99,
+      "learning_rate": 0.0002,
+      "batch_size": 32,
+      "replay_capacity": 10000,
+      "learning_starts": 1000,
+      "train_frequency": 4,
+      "target_update_interval": 500,
+      "epsilon_start": 0.9,
+      "epsilon_end": 0.05,
+      "epsilon_decay_steps": 10000,
+      "gradient_clip_norm": 10.0,
+      "reward_clip": true,
+      "device": "cuda",
+      "precision": "float32",
+      "checkpoint_interval": 1000,
+      "diagnostics_interval": 100,
+      "metrics_flush_interval": 100,
+      "cpu_threads": 1
+    },
+    "budget_level": "short_screening",
+    "stage": "batch_profiling"
+  },
+  "variants": [
+    {
+      "label": "batch-size-32",
+      "config_path": "../../configs/batch-size/bs32-10k.json",
+      "config_values": {
+        "total_steps": 10000,
+        "seed": 42,
+        "gamma": 0.99,
+        "learning_rate": 0.0002,
+        "batch_size": 32,
+        "replay_capacity": 10000,
+        "learning_starts": 1000,
+        "train_frequency": 4,
+        "target_update_interval": 500,
+        "epsilon_start": 0.9,
+        "epsilon_end": 0.05,
+        "epsilon_decay_steps": 10000,
+        "gradient_clip_norm": 10.0,
+        "reward_clip": true,
+        "device": "cuda",
+        "precision": "float32",
+        "checkpoint_interval": 1000,
+        "diagnostics_interval": 100,
+        "metrics_flush_interval": 100,
+        "cpu_threads": 1
+      },
+      "overrides": {
+        "total_steps": 10000,
+        "learning_rate": 0.0002,
+        "batch_size": 32,
+        "checkpoint_interval": 1000,
+        "diagnostics_interval": 100,
+        "metrics_flush_interval": 100,
+        "cpu_threads": 1
+      },
+      "changed_fields": [],
+      "status": "completed",
+      "run_dir": "../../assets/day14/batch-size-runs/day14-batch-size-profiling-final/batch-size-32-seed42",
+      "run_id": "batch-size-32-seed42",
+      "requested_device": "cuda",
+      "resolved_device": "cuda:0",
+      "seed": 42,
+      "step_budget": 10000,
+      "budget_level": "short_screening",
+      "stage": "batch_profiling",
+      "summary": {
+        "status": "completed",
+        "total_steps": 10000,
+        "episodes": 47,
+        "optimizer_updates": 2251,
+        "steps_per_second": 235.73711983468988,
+        "wall_clock_seconds": 42.42013310000766
+      },
+      "profiling": {
+        "sample_csv": "../../assets/day14/batch-size-profiling/day14-batch-size-profiling-final/batch-size-32/runtime-samples.csv",
+        "sample_summary": "../../assets/day14/batch-size-profiling/day14-batch-size-profiling-final/batch-size-32/runtime-samples-summary.json",
+        "sampling_method": "in-process fixed-interval sampler; nvidia-smi query per sample",
+        "sampling_interval_seconds": 1.0,
+        "process_cpu_percent_method": "time.process_time normalized by wall time and logical CPU count",
+        "cpu_logical_count": 16,
+        "sample_count": 45,
+        "gpu_sample_count": 45,
+        "gpu_utilization_percent": {
+          "mean": 30.133333333333333,
+          "p50": 32.0,
+          "p95": 36.0,
+          "max": 38.0
+        },
+        "gpu_power_watts": {
+          "mean": 25.59111111111111,
+          "p50": 26.55,
+          "p95": 27.434,
+          "max": 27.63
+        },
+        "gpu_memory_used_bytes": {
+          "mean": 1837874107.7333333,
+          "peak": 1885339648.0
+        },
+        "gpu_memory_total_bytes": 8585740288.0,
+        "process_cpu_percent": {
+          "mean": 5.545971545954163,
+          "p50": 5.674525758446198,
+          "p95": 6.072174338226413,
+          "max": 6.199256624487798
+        },
+        "available": true
+      }
+    },
+    {
+      "label": "batch-size-64",
+      "config_path": "../../configs/batch-size/bs64-10k.json",
+      "config_values": {
+        "total_steps": 10000,
+        "seed": 42,
+        "gamma": 0.99,
+        "learning_rate": 0.0002,
+        "batch_size": 64,
+        "replay_capacity": 10000,
+        "learning_starts": 1000,
+        "train_frequency": 4,
+        "target_update_interval": 500,
+        "epsilon_start": 0.9,
+        "epsilon_end": 0.05,
+        "epsilon_decay_steps": 10000,
+        "gradient_clip_norm": 10.0,
+        "reward_clip": true,
+        "device": "cuda",
+        "precision": "float32",
+        "checkpoint_interval": 1000,
+        "diagnostics_interval": 100,
+        "metrics_flush_interval": 100,
+        "cpu_threads": 1
+      },
+      "overrides": {
+        "batch_size": 64
+      },
+      "changed_fields": [
+        "batch_size"
+      ],
+      "status": "completed",
+      "run_dir": "../../assets/day14/batch-size-runs/day14-batch-size-profiling-final/batch-size-64-seed42",
+      "run_id": "batch-size-64-seed42",
+      "requested_device": "cuda",
+      "resolved_device": "cuda:0",
+      "seed": 42,
+      "step_budget": 10000,
+      "budget_level": "short_screening",
+      "stage": "batch_profiling",
+      "summary": {
+        "status": "completed",
+        "total_steps": 10000,
+        "episodes": 48,
+        "optimizer_updates": 2251,
+        "steps_per_second": 203.31687655346892,
+        "wall_clock_seconds": 49.18430860002991
+      },
+      "profiling": {
+        "sample_csv": "../../assets/day14/batch-size-profiling/day14-batch-size-profiling-final/batch-size-64/runtime-samples.csv",
+        "sample_summary": "../../assets/day14/batch-size-profiling/day14-batch-size-profiling-final/batch-size-64/runtime-samples-summary.json",
+        "sampling_method": "in-process fixed-interval sampler; nvidia-smi query per sample",
+        "sampling_interval_seconds": 1.0,
+        "process_cpu_percent_method": "time.process_time normalized by wall time and logical CPU count",
+        "cpu_logical_count": 16,
+        "sample_count": 50,
+        "gpu_sample_count": 50,
+        "gpu_utilization_percent": {
+          "mean": 32.22,
+          "p50": 33.0,
+          "p95": 36.55,
+          "max": 38.0
+        },
+        "gpu_power_watts": {
+          "mean": 27.1096,
+          "p50": 27.855,
+          "p95": 28.822499999999998,
+          "max": 31.29
+        },
+        "gpu_memory_used_bytes": {
+          "mean": 1897796730.88,
+          "peak": 2024800256.0
+        },
+        "gpu_memory_total_bytes": 8585740288.0,
+        "process_cpu_percent": {
+          "mean": 5.658154215939645,
+          "p50": 5.786539002217915,
+          "p95": 6.097713129402196,
+          "max": 6.192608087266378
+        },
+        "available": true
+      }
+    },
+    {
+      "label": "batch-size-128",
+      "config_path": "../../configs/batch-size/bs128-10k.json",
+      "config_values": {
+        "total_steps": 10000,
+        "seed": 42,
+        "gamma": 0.99,
+        "learning_rate": 0.0002,
+        "batch_size": 128,
+        "replay_capacity": 10000,
+        "learning_starts": 1000,
+        "train_frequency": 4,
+        "target_update_interval": 500,
+        "epsilon_start": 0.9,
+        "epsilon_end": 0.05,
+        "epsilon_decay_steps": 10000,
+        "gradient_clip_norm": 10.0,
+        "reward_clip": true,
+        "device": "cuda",
+        "precision": "float32",
+        "checkpoint_interval": 1000,
+        "diagnostics_interval": 100,
+        "metrics_flush_interval": 100,
+        "cpu_threads": 1
+      },
+      "overrides": {
+        "batch_size": 128
+      },
+      "changed_fields": [
+        "batch_size"
+      ],
+      "status": "completed",
+      "run_dir": "../../assets/day14/batch-size-runs/day14-batch-size-profiling-final/batch-size-128-seed42",
+      "run_id": "batch-size-128-seed42",
+      "requested_device": "cuda",
+      "resolved_device": "cuda:0",
+      "seed": 42,
+      "step_budget": 10000,
+      "budget_level": "short_screening",
+      "stage": "batch_profiling",
+      "summary": {
+        "status": "completed",
+        "total_steps": 10000,
+        "episodes": 49,
+        "optimizer_updates": 2251,
+        "steps_per_second": 177.35797350410155,
+        "wall_clock_seconds": 56.383143099956214
+      },
+      "profiling": {
+        "sample_csv": "../../assets/day14/batch-size-profiling/day14-batch-size-profiling-final/batch-size-128/runtime-samples.csv",
+        "sample_summary": "../../assets/day14/batch-size-profiling/day14-batch-size-profiling-final/batch-size-128/runtime-samples-summary.json",
+        "sampling_method": "in-process fixed-interval sampler; nvidia-smi query per sample",
+        "sampling_interval_seconds": 1.0,
+        "process_cpu_percent_method": "time.process_time normalized by wall time and logical CPU count",
+        "cpu_logical_count": 16,
+        "sample_count": 57,
+        "gpu_sample_count": 57,
+        "gpu_utilization_percent": {
+          "mean": 34.87719298245614,
+          "p50": 36.0,
+          "p95": 39.0,
+          "max": 42.0
+        },
+        "gpu_power_watts": {
+          "mean": 30.330350877192984,
+          "p50": 30.26,
+          "p95": 33.638,
+          "max": 45.02
+        },
+        "gpu_memory_used_bytes": {
+          "mean": 2027044576.5614035,
+          "peak": 2119172096.0
+        },
+        "gpu_memory_total_bytes": 8585740288.0,
+        "process_cpu_percent": {
+          "mean": 5.769373062595863,
+          "p50": 5.894815218050507,
+          "p95": 6.26499143847028,
+          "max": 6.298034664430865
+        },
+        "available": true
+      }
+    }
+  ],
+  "seeds": [
+    42
+  ],
+  "step_budgets": [
+    10000
+  ],
+  "budget_levels": [
+    "short_screening"
+  ],
+  "stage": "batch_profiling",
+  "status": "completed",
+  "command": [
+    "profile_batch_size_experiment.py",
+    "--experiment-id",
+    "day14-batch-size-profiling-final",
+    "--experiments-root",
+    "experiments",
+    "--runs-root",
+    "assets/day14/batch-size-runs",
+    "--samples-root",
+    "assets/day14/batch-size-profiling",
+    "--sample-interval",
+    "1",
+    "--gpu-index",
+    "0",
+    "--require-cuda",
+    "configs/batch-size/bs32-10k.json",
+    "configs/batch-size/bs64-10k.json",
+    "configs/batch-size/bs128-10k.json"
+  ]
+}

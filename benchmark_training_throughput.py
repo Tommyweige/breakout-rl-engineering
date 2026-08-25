@@ -43,6 +43,21 @@ def _finite_metric_count(run_dir: Path) -> dict[str, int]:
     return result
 
 
+def _epsilon_summary(run_dir: Path) -> dict[str, float | None]:
+    values = [
+        parsed
+        for row in read_metrics(run_dir)
+        if (parsed := _numeric(row.get("epsilon"))) is not None
+    ]
+    return {
+        "first": values[0] if values else None,
+        "last": values[-1] if values else None,
+        "minimum": min(values) if values else None,
+        "maximum": max(values) if values else None,
+        "count": len(values),
+    }
+
+
 def _phase(report: Mapping[str, Any]) -> dict[str, Any]:
     summary = report.get("summary", {})
     if not isinstance(summary, Mapping):
@@ -52,6 +67,7 @@ def _phase(report: Mapping[str, Any]) -> dict[str, Any]:
         wall_clock = None
     optimizer_updates = int(summary.get("optimizer_updates", 0) or 0)
     update_sps = optimizer_updates / wall_clock if wall_clock else None
+    batch_size = int(report.get("config", {}).get("batch_size", 0) or 0)
     configured_threads = _runtime_value(
         report,
         "configured_cpu_threads",
@@ -83,6 +99,10 @@ def _phase(report: Mapping[str, Any]) -> dict[str, Any]:
         or report.get("sps", {}).get("runtime"),
         "optimizer_updates": optimizer_updates,
         "optimizer_updates_per_second": update_sps,
+        "training_samples_per_second": update_sps * batch_size
+        if update_sps is not None
+        else None,
+        "batch_size": batch_size,
         "wall_clock_seconds": wall_clock,
         "cpu_logical_count": _runtime_value(report, "cpu_logical_count"),
         "cpu_thread_count": _runtime_value(report, "cpu_thread_count"),
@@ -107,6 +127,13 @@ def _phase(report: Mapping[str, Any]) -> dict[str, Any]:
         "metrics_flush_interval": flush_interval,
         "metrics_row_cadence": _runtime_value(report, "metrics_row_cadence", 1),
         "finite_metric_counts": _finite_metric_count(Path(report["run_dir"])),
+        "epsilon_summary": _epsilon_summary(Path(report["run_dir"])),
+        "replay_occupancy": summary.get("replay_occupancy"),
+        "target_sync_count": summary.get("target_sync_count"),
+        "episodes": report.get("episodes"),
+        "mean_recent_episode_return": report.get("mean_recent_episode_return"),
+        "recent_return_trend": report.get("recent_return_trend"),
+        "replay_capacity": report.get("config", {}).get("replay_capacity"),
     }
 
 
@@ -127,6 +154,30 @@ def benchmark_runs(before_dir: str | Path, after_dir: str | Path) -> dict[str, A
     before_sps = _numeric(before_phase["end_to_end_sps"])
     after_sps = _numeric(after_phase["end_to_end_sps"])
     speedup = after_sps / before_sps if before_sps and after_sps else None
+    def _same_float(name: str, tolerance: float = 1e-9) -> bool:
+        before_value = before_phase["epsilon_summary"].get(name)
+        after_value = after_phase["epsilon_summary"].get(name)
+        return (
+            before_value is not None
+            and after_value is not None
+            and math.isclose(before_value, after_value, rel_tol=tolerance, abs_tol=tolerance)
+        )
+
+    same_replay = (
+        before_phase["replay_capacity"] == after_phase["replay_capacity"]
+        and before_phase["replay_occupancy"] == after_phase["replay_occupancy"]
+    )
+    epsilon_schedule_consistent = (
+        before_phase["epsilon_summary"]["count"] > 0
+        and after_phase["epsilon_summary"]["count"] > 0
+        and all(_same_float(name) for name in ("first", "last", "minimum", "maximum"))
+    )
+    episode_behavior_present = all(
+        phase["episodes"] is not None
+        and int(phase["episodes"]) > 0
+        and phase["mean_recent_episode_return"] is not None
+        for phase in (before_phase, after_phase)
+    )
     return {
         "schema_version": 1,
         "before": {"run_dir": str(before_path), **before_phase},
@@ -154,6 +205,12 @@ def benchmark_runs(before_dir: str | Path, after_dir: str | Path) -> dict[str, A
                 all(count > 0 for count in phase["finite_metric_counts"].values())
                 for phase in (before_phase, after_phase)
             ),
+            "replay_guardrail": same_replay,
+            "epsilon_schedule_consistent": epsilon_schedule_consistent,
+            "episode_behavior_present": episode_behavior_present,
+            "semantic_guardrails_passed": same_replay
+            and epsilon_schedule_consistent
+            and episode_behavior_present,
             "bit_exact_curve_required": False,
         },
     }

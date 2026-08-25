@@ -1,0 +1,19 @@
+{
+  "source_report": "C:\\Users\\tommy\\.codex\\worktrees\\9ea6\\breakout-rl-engineering\\experiments\\day14-batch-size-profiling-final\\batch-size-comparison.json",
+  "run_ids": [
+    "batch-size-32-seed42",
+    "batch-size-64-seed42",
+    "batch-size-128-seed42"
+  ],
+  "x_field": "batch_size",
+  "metrics": [
+    "end_to_end_sps",
+    "training_samples_per_second",
+    "gpu_utilization_percent",
+    "gpu_power_watts",
+    "peak_vram",
+    "process_cpu_percent",
+    "recent_return_mean",
+    "best_rolling20_mean"
+  ]
+}

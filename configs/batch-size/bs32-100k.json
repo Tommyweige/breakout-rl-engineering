@@ -1,0 +1,15 @@
+{
+  "name": "batch-size-32-validation",
+  "base_config": "../dqn_baseline.json",
+  "overrides": {
+    "total_steps": 100000,
+    "learning_rate": 0.0002,
+    "batch_size": 32,
+    "checkpoint_interval": 25000,
+    "diagnostics_interval": 100,
+    "metrics_flush_interval": 100,
+    "cpu_threads": 1
+  },
+  "budget_level": "main_day14",
+  "stage": "batch_validation"
+}

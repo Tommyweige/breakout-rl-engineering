@@ -155,9 +155,17 @@ def _resolve_stage(
     if not isinstance(raw_stage, str) or not raw_stage.strip():
         raise TypeError(f"{source}: stage must be a non-empty string")
     stage = raw_stage.strip().lower()
-    if stage not in {"screening", "main", "performance", "other"}:
+    if stage not in {
+        "screening",
+        "main",
+        "performance",
+        "batch_profiling",
+        "batch_validation",
+        "other",
+    }:
         raise ValueError(
-            f"{source}: stage must be screening, main, performance, or other"
+            f"{source}: stage must be screening, main, performance, "
+            "batch_profiling, batch_validation, or other"
         )
     return stage
 
@@ -291,7 +299,7 @@ def build_manifest(
     base = configs[0]
     stages = {config.stage for config in configs}
     if len(stages) != 1:
-        raise ValueError("one experiment batch cannot mix screening and main stages")
+        raise ValueError("one experiment batch cannot mix experiment stages")
     stage = next(iter(stages))
     manifest_parent = Path(manifest_path).resolve().parent
     variants = []

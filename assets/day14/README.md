@@ -35,6 +35,36 @@ It contains the before/after end-to-end SPS, optimizer updates per second,
 wall-clock time, CPU thread setting, sampled GPU utilization, peak VRAM,
 logging cadence, and the 10K regression checks.
 
+The batch-size GPU-efficiency stage is recorded separately from both the
+learning-rate comparison and the CPU-thread profile:
+
+- `experiments/day14-batch-size-profiling-final/manifest.json`;
+- `experiments/day14-batch-size-profiling-final/batch-size-comparison.json`;
+- `assets/day14/batch-size-runs/day14-batch-size-profiling-final/*/`;
+- `assets/day14/batch-size-profiling/day14-batch-size-profiling-final/*/runtime-samples.csv`;
+- `assets/day14/batch-size-profiling/day14-batch-size-profiling-final/*/runtime-samples-summary.json`;
+- `assets/day14/batch-size-efficiency.png` and its JSON metadata.
+
+The 10K profiling uses the selected `2e-4` learning rate and compares only
+batch sizes 32, 64, and 128. The fixed-interval samples contain GPU
+utilization, GPU power, used/total memory, process CPU utilization, and the
+sampling method. Batch 64 and 128 increased training samples/s but did not
+increase end-to-end environment SPS, so no new batch-size candidate met the
+100K validation gate. The existing/final batch-32 100K run is registered as
+the batch-validation reference at
+`experiments/day14-batch-size-validation/`.
+
+The CPU-thread selection evidence is:
+
+- `experiments/day14-thread-selection/batch-size-comparison.json`;
+- `experiments/day14-thread-selection/thread-selection.json`;
+- `assets/day14/thread-profiling/day14-thread-selection/*/runtime-samples.csv`.
+
+The 1/2/4 profile selected 2 threads by end-to-end SPS. The frozen handoff is
+`configs/final/day14-vanilla-dqn.json`, with its 100K evidence under
+`experiments/day14-final-frozen-100k/` and
+`assets/day14/final-runs/day14-final-frozen-100k/`.
+
 Recreate the 100K main batch with:
 
 ```powershell
@@ -57,6 +87,12 @@ Recreate the diagnostic comparison PNG:
 
 ```powershell
 conda run --name breakout-rl-engineering python visualize_experiment_comparison.py experiments/day14-cuda-lr-100k-main-final/manifest.json --output assets/day14/experiment-diagnostics-comparison.png --metrics loss q target gradient epsilon sps
+```
+
+Recreate the batch-size efficiency figure from its real comparison report:
+
+```powershell
+conda run --name breakout-rl-engineering python visualize_batch_size_efficiency.py experiments/day14-batch-size-profiling-final/batch-size-comparison.json --output assets/day14/batch-size-efficiency.png
 ```
 
 The budget-stage diagram is structural and its editable source is

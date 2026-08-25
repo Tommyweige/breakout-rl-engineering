@@ -1,0 +1,15 @@
+{
+  "name": "batch-size-32",
+  "base_config": "../dqn_baseline.json",
+  "overrides": {
+    "total_steps": 10000,
+    "learning_rate": 0.0002,
+    "batch_size": 32,
+    "checkpoint_interval": 1000,
+    "diagnostics_interval": 100,
+    "metrics_flush_interval": 100,
+    "cpu_threads": 1
+  },
+  "budget_level": "short_screening",
+  "stage": "batch_profiling"
+}
