@@ -49,8 +49,15 @@ Recreate the diagnostic comparison PNG:
 conda run --name breakout-rl-engineering python visualize_experiment_comparison.py experiments/day14-cuda-lr-100k-main/manifest.json --output assets/day14/experiment-diagnostics-comparison.png --metrics loss q target gradient epsilon sps
 ```
 
-The workflow diagram is structural and its editable source is
-`experiment-workflow.mmd`. The rendered PNG was produced with:
+The budget-stage diagram is structural and its editable source is
+`budget-stages.mmd`. The rendered PNG was produced with:
+
+```powershell
+conda run --name breakout-rl-engineering python C:\Users\tommy\.codex\skills\technical-blog-writer\scripts\render_mermaid.py assets/day14/budget-stages.mmd assets/day14/budget-stages.png
+```
+
+The runner workflow diagram remains in `experiment-workflow.mmd`; its rendered
+PNG was produced with:
 
 ```powershell
 conda run --name breakout-rl-engineering python C:\Users\tommy\.codex\skills\technical-blog-writer\scripts\render_mermaid.py assets/day14/experiment-workflow.mmd assets/day14/experiment-workflow.png
