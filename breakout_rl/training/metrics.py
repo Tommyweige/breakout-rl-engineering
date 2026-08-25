@@ -85,6 +85,8 @@ class MetricsLogger:
             runtime_metadata = collect_runtime_metadata(
                 seed=config.seed,
                 device=config.device,
+                requested_device=config.requested_device,
+                precision=config.precision,
                 run_dir=self.run_dir,
                 extra=metadata,
             )

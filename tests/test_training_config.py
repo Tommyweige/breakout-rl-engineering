@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import unittest
+from unittest.mock import patch
 
 from train_dqn import _config_from_args, build_parser
 from breakout_rl.training.config import DQNConfig
+from breakout_rl.training.dqn_trainer import resolve_device
 
 
 class DQNConfigTests(unittest.TestCase):
@@ -77,6 +79,19 @@ class DQNConfigTests(unittest.TestCase):
             with self.subTest(overrides=overrides):
                 with self.assertRaises((TypeError, ValueError)):
                     DQNConfig(**overrides)
+
+    def test_device_request_and_precision_are_normalized_for_metadata(self) -> None:
+        config = DQNConfig(device="AUTO", precision="fp32")
+
+        self.assertEqual(config.requested_device, "auto")
+        self.assertEqual(config.precision, "float32")
+        self.assertEqual(config.to_dict()["device"], "auto")
+
+    def test_auto_can_use_cpu_but_explicit_cuda_never_falls_back(self) -> None:
+        with patch("breakout_rl.training.dqn_trainer.torch.cuda.is_available", return_value=False):
+            self.assertEqual(str(resolve_device("auto")), "cpu")
+            with self.assertRaisesRegex(RuntimeError, "refusing to fall back to CPU"):
+                resolve_device("cuda")
 
 
 if __name__ == "__main__":

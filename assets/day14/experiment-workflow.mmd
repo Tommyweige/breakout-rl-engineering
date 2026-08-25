@@ -1,0 +1,13 @@
+flowchart LR
+    A[Config files] --> B[Resolve base and overrides]
+    B --> C[Validate DQNConfig and device]
+    C --> D[Manifest with pending variants]
+    D --> E{Variant remains?}
+    E -->|yes| F[One sequential DQNTrainer run]
+    F --> G{CUDA request available?}
+    G -->|yes| H[metrics.csv + runtime metadata + summary]
+    G -->|no| I[Blocked; no CPU fallback]
+    H --> E
+    I --> E
+    E -->|no| J[Compare fixed windows]
+    J --> K[Plot by environment step]

@@ -45,6 +45,21 @@ def _probability(value: float, *, name: str) -> float:
     return parsed
 
 
+def _device_request(value: str, *, name: str) -> str:
+    """Validate the user-facing device request without resolving hardware."""
+
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{name} must be one of auto, cpu, or cuda")
+    normalized = value.strip().lower()
+    if normalized in {"auto", "cpu", "cuda"}:
+        return normalized
+    if normalized.startswith("cuda:") and normalized[5:].isdigit():
+        return normalized
+    raise ValueError(
+        f"{name} must be one of auto, cpu, cuda, or cuda:<index>"
+    )
+
+
 @dataclass(frozen=True)
 class DQNConfig:
     """Development defaults for one reproducible DQN training run.
@@ -69,6 +84,7 @@ class DQNConfig:
     gradient_clip_norm: float | None = 10.0
     reward_clip: bool = True
     device: str = "cpu"
+    precision: str = "float32"
     checkpoint_interval: int = 1_000
 
     def __post_init__(self) -> None:
@@ -113,8 +129,17 @@ class DQNConfig:
 
         if not isinstance(self.reward_clip, bool):
             raise TypeError("reward_clip must be a boolean")
-        if not isinstance(self.device, str) or not self.device.strip():
-            raise ValueError("device must be a non-empty string")
+        object.__setattr__(self, "device", _device_request(self.device, name="device"))
+        if not isinstance(self.precision, str) or not self.precision.strip():
+            raise ValueError("precision must be a non-empty string")
+        precision = self.precision.strip().lower()
+        if precision == "fp32":
+            precision = "float32"
+        if precision != "float32":
+            raise ValueError(
+                "precision must be float32; mixed-precision training is not implemented"
+            )
+        object.__setattr__(self, "precision", precision)
         _validated_int(
             self.checkpoint_interval,
             name="checkpoint_interval",
@@ -161,6 +186,12 @@ class DQNConfig:
         """Return a JSON-compatible mapping of the configuration fields."""
 
         return asdict(self)
+
+    @property
+    def requested_device(self) -> str:
+        """Return the hardware request before runtime resolution."""
+
+        return self.device
 
     @classmethod
     def from_dict(cls, values: Mapping[str, Any]) -> "DQNConfig":

@@ -320,6 +320,38 @@ def seed_everything(seed: int) -> None:
         torch.cuda.manual_seed_all(seed)
 
 
+def resolve_device(requested_device: str) -> torch.device:
+    """Resolve ``auto`` while refusing an unavailable explicit CUDA request."""
+
+    if not isinstance(requested_device, str) or not requested_device.strip():
+        raise ValueError("requested_device must be a non-empty string")
+    request = requested_device.strip().lower()
+    if request == "auto":
+        return torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    if request == "cpu":
+        return torch.device("cpu")
+    if request == "cuda":
+        index = 0
+    elif request.startswith("cuda:") and request[5:].isdigit():
+        index = int(request[5:])
+    else:
+        raise ValueError(
+            "requested_device must be one of auto, cpu, cuda, or cuda:<index>"
+        )
+
+    if not torch.cuda.is_available():
+        raise RuntimeError(
+            f"CUDA was requested ({requested_device}), but it is not available; "
+            "refusing to fall back to CPU."
+        )
+    if index >= torch.cuda.device_count():
+        raise RuntimeError(
+            f"CUDA device index {index} was requested, but only "
+            f"{torch.cuda.device_count()} device(s) are available."
+        )
+    return torch.device(f"cuda:{index}")
+
+
 class DQNTrainer:
     """Connect Breakout interaction, replay, updates, and checkpoints."""
 
@@ -350,11 +382,14 @@ class DQNTrainer:
         self.checkpoint_dir = self.run_dir / "checkpoints"
         self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
-        self.device = torch.device(config.device)
-        if self.device.type == "cuda" and not torch.cuda.is_available():
-            raise RuntimeError("CUDA was requested, but it is not available in this environment.")
+        self.requested_device = config.requested_device
+        self.device = resolve_device(self.requested_device)
         if self.device.type == "cuda":
-            torch.cuda.reset_peak_memory_stats(self.device)
+            # This Windows/CUDA build rejects an explicit argument after
+            # ``torch.manual_seed``. Switch the current device, then use the
+            # no-argument form so peak-memory collection remains reliable.
+            with torch.cuda.device(self.device):
+                torch.cuda.reset_peak_memory_stats()
 
         raw_action_count = getattr(getattr(env, "action_space", None), "n", None)
         try:
@@ -428,6 +463,9 @@ class DQNTrainer:
                 "environment_id": self._environment_id,
                 "observation_shape": list(self.observation_shape),
                 "action_count": self.action_count,
+                "requested_device": self.requested_device,
+                "resolved_device": self._resolved_device_name(),
+                "precision": self.config.precision,
             },
         )
 
@@ -609,6 +647,8 @@ class DQNTrainer:
         return collect_runtime_metadata(
             seed=self.config.seed,
             device=self._resolved_device_name(),
+            requested_device=self.requested_device,
+            precision=self.config.precision,
             run_dir=self.run_dir,
             extra={
                 "environment_id": self._environment_id,
@@ -893,6 +933,7 @@ __all__ = [
     "NonFiniteTrainingError",
     "TrainingStepCallback",
     "TrainingStepSnapshot",
+    "resolve_device",
     "seed_everything",
     "dqn_training_step",
 ]

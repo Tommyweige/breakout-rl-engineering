@@ -1,0 +1,21 @@
+{
+  "name": "baseline",
+  "description": "Day 14 CUDA development baseline; short evidence run, not a final checkpoint.",
+  "total_steps": 10000,
+  "seed": 42,
+  "gamma": 0.99,
+  "learning_rate": 0.0001,
+  "batch_size": 32,
+  "replay_capacity": 10000,
+  "learning_starts": 1000,
+  "train_frequency": 4,
+  "target_update_interval": 500,
+  "epsilon_start": 0.9,
+  "epsilon_end": 0.05,
+  "epsilon_decay_steps": 10000,
+  "reward_clip": true,
+  "gradient_clip_norm": 10.0,
+  "device": "cuda",
+  "precision": "float32",
+  "checkpoint_interval": 500
+}

@@ -492,6 +492,8 @@ def collect_runtime_metadata(
     seed: int,
     device: str,
     run_dir: str | Path,
+    requested_device: str | None = None,
+    precision: str = "float32",
     extra: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Collect best-effort version and runtime context for a training run."""
@@ -503,7 +505,11 @@ def collect_runtime_metadata(
     except Exception:
         cuda_available = False
 
-    resolved_device = torch.device(device)
+    device_request = str(requested_device or device).strip().lower()
+    if device_request == "auto":
+        resolved_device = torch.device("cuda:0" if cuda_available else "cpu")
+    else:
+        resolved_device = torch.device(device)
     cuda_device_index: int | None = None
     if resolved_device.type == "cuda":
         cuda_device_index = 0 if resolved_device.index is None else int(resolved_device.index)
@@ -517,15 +523,23 @@ def collect_runtime_metadata(
 
     cuda_allocated_bytes: int | None = None
     cuda_peak_allocated_bytes: int | None = None
+    cuda_reserved_bytes: int | None = None
+    cuda_peak_reserved_bytes: int | None = None
     if cuda_available and cuda_device_index is not None:
         try:
             cuda_allocated_bytes = int(torch.cuda.memory_allocated(cuda_device_index))
             cuda_peak_allocated_bytes = int(
                 torch.cuda.max_memory_allocated(cuda_device_index)
             )
+            cuda_reserved_bytes = int(torch.cuda.memory_reserved(cuda_device_index))
+            cuda_peak_reserved_bytes = int(
+                torch.cuda.max_memory_reserved(cuda_device_index)
+            )
         except Exception:
             cuda_allocated_bytes = None
             cuda_peak_allocated_bytes = None
+            cuda_reserved_bytes = None
+            cuda_peak_reserved_bytes = None
 
     metadata: dict[str, Any] = {
         "python_version": platform.python_version(),
@@ -534,13 +548,19 @@ def collect_runtime_metadata(
         "gymnasium_version": _package_version("gymnasium"),
         "ale_version": _package_version("ale-py"),
         "numpy_version": np.__version__,
-        "device": str(device),
+        "device": str(resolved_device),
+        "requested_device": device_request,
         "resolved_device": str(resolved_device),
+        "precision": str(precision),
         "cuda_device_index": cuda_device_index,
         "cuda_available": cuda_available,
         "cuda_device_name": cuda_device_name,
+        "gpu_name": cuda_device_name,
+        "gpu_model": cuda_device_name,
         "cuda_allocated_bytes": cuda_allocated_bytes,
         "cuda_peak_allocated_bytes": cuda_peak_allocated_bytes,
+        "cuda_reserved_bytes": cuda_reserved_bytes,
+        "cuda_peak_reserved_bytes": cuda_peak_reserved_bytes,
         "wall_clock_seconds": None,
         "steps_per_second": None,
         "seed": int(seed),

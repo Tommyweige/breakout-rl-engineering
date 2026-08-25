@@ -1,0 +1,7 @@
+{
+  "name": "learning-rate-low",
+  "base_config": "../dqn_baseline.json",
+  "overrides": {
+    "learning_rate": 0.00005
+  }
+}
