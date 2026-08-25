@@ -2,11 +2,11 @@
 
 Day 13 做完除錯後，我們知道 Deep Q-Network（DQN，從畫面估計每個 action 價值的網路）的更新真的會發生，數值沒有立刻失去有效值；保存過往互動資料的 Replay Buffer 也在運作。但 10,000 個 environment steps（Agent 執行一次 action、環境回傳一次結果）的每局 return（遊戲分數）仍然沒有穩定上升。
 
-這時最容易犯的錯，是開始隨意改三種設定：learning rate（每次更新模型走多大一步）、epsilon decay（探索機率下降的速度），以及 target update interval（Target Network 複製 Online Network 的間隔）。看到某次曲線比較高，就把那個設定留下來。問題是：如果一次改了三個地方，我們根本不知道曲線的差異來自哪一個選擇；如果每次跑的 step 數和 seed 也不同，連「比較」本身都沒有固定尺度。
+這時最容易犯的錯，是開始隨意改三種設定：learning rate（每次更新模型走多大一步）、epsilon decay（探索機率下降的速度），以及 target update interval（Target Network 複製 Online Network 的間隔）。看到某次曲線比較高，就把那個設定留下來。問題是：如果一次改了三個地方，我們根本不知道曲線的差異來自哪一個選擇；如果每次跑的 step 數和 seed（控制隨機初始化與抽樣的整數起點）也不同，連「比較」本身都沒有固定尺度。
 
 Day 14 要建立的是一個更小、但可以追查的問題：**在程式已經通過 Day 13 correctness 檢查後，只改一個因素，其他條件固定，曲線和統計結果是否提供了足以支持下一步的 evidence（可追查的證據）？**
 
-這篇先用 learning rate 做一組 short development comparison。它不會教大型自動調參，也不會把單一 seed 的結果寫成最佳答案；目標是建立一個能交給 Day 15 延伸的實驗基線。
+這篇先用 learning rate 做一組 short development comparison（開發階段的短程比較）。它不會教大型自動調參，也不會把單一 seed 的結果寫成最佳答案；目標是建立一個能交給 Day 15 延伸的實驗基線。
 
 ## 先分清楚：哪些數字是模型學的，哪些是我們選的？
 
@@ -26,9 +26,9 @@ DQN 在訓練時會根據畫面，為每個可選 action 輸出一個價值估�
 
 ## 一次實驗要留下什麼，才不會只剩一張曲線？
 
-每一個 config 都先解析成完整的 DQN 設定。variant 可以從 baseline 繼承，再覆寫一個欄位；runner 會把繼承後的完整值寫進 run artifact，並計算它和 baseline 的 changed fields（實際不同的設定欄位）。這避免了「檔案只寫 learning rate，其他設定靠當時記憶」的問題。
+每一個 config（包含一次 run 所有設定的 JSON）都先解析成完整的 DQN 設定。variant 可以從 baseline 繼承，再覆寫一個欄位；runner（按清單順序啟動訓練的程式）會把繼承後的完整值寫進 run artifact（可追查的輸出檔），並計算它和 baseline 的 changed fields（實際不同的設定欄位）。這避免了「檔案只寫 learning rate，其他設定靠當時記憶」的問題。
 
-接著，manifest 會在任何 run 開始前記錄 experiment id、baseline、variants、seed、step budget 和輸出目錄。runner 預設順序執行，因為多個 GPU-heavy run 同時搶同一張卡，會讓 throughput 和 memory condition 都變得不清楚。每個 run 則各自保存 `config.json`、逐 environment step 的 `metrics.csv`、最後的 `summary.json` 和 checkpoint。
+接著，manifest（批次的索引與狀態紀錄）會在任何 run 開始前記錄 experiment id（這一批實驗的識別名稱）、baseline、variants、seed、step budget（每個 run 允許的 environment step 數）和輸出目錄。runner 預設順序執行，因為多個需要大量 GPU 資源的 run 同時搶同一張卡，會讓執行速度（throughput）和 memory condition 都變得不清楚。每個 run 則各自保存 `config.json`、逐 environment step 的 `metrics.csv`、最後的 `summary.json` 和 checkpoint。
 
 這個資料流是實際 runner 的結構：config 先解析並驗證，manifest 再列出待執行的 variants；每次只啟動一個 `DQNTrainer`，成功時留下 metrics 和 runtime metadata，CUDA 條件不成立時留下 blocked status，而不是偷偷改用 CPU。
 
