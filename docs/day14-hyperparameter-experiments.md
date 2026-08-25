@@ -1,20 +1,22 @@
 # Day 14｜為什麼 10K 不夠：把超參數比較拉長到 100K
 
-[Day 13](day13-debugging-unstable-rl-training.md) 的 10,000 environment steps 已經回答了一個重要問題：程式有沒有壞。那次 CUDA diagnostic run 完成 48 個 episode，training loop 有 optimizer update、Target Network 有同步，Replay Buffer 和 epsilon schedule 也在運作；但平均 raw return 約為 `1.40`，沒有可靠的學習趨勢。
+[Day 13](day13-debugging-unstable-rl-training.md) 的 10,000 environment steps 已經回答了一個重要問題：程式有沒有壞。這裡的 environment step 是 agent 執行一次 action、環境回傳一次結果的互動單位。那次 CUDA（讓 PyTorch 使用 NVIDIA GPU 的介面）diagnostic run 完成 48 局遊戲；一局在環境結束時才算完成，這種完整回合稱為 episode，該局累積的分數就是 raw return。
 
-這個結果很容易被誤讀。10K 足以發現 loss、Q-value、gradient 變成非有限值、模型根本沒有更新，或 CUDA 設定錯誤；卻不代表 10K 足以判斷三個 hyperparameter config 誰比較好。如果 baseline 的短期平均是 `1.15`、另一個 variant 是 `1.75`，差異可能只是遊戲回合剛好落在不同的隨機波動，而不是 learning rate 真的造成了穩定改變。
+診斷也確認訓練真的有在動：模型從一批經驗計算梯度並更新權重一次，稱為一次 optimizer update；經驗先放在 Replay Buffer，也就是用來重播過往互動的記憶區；Target Network 則是暫時固定的價值估計副本，用來讓學習目標不要每一步都跟著主模型晃動；epsilon schedule 是隨步數降低隨機探索比例的規則。不過，這些檢查只代表程式能正常執行，不代表 10K 已經足以比較超參數。
 
-所以 Day 14 的問題被重新寫得更精確：**先用 10K 做 health screening，再把相同的 learning-rate comparison 拉長到 100K，觀察 learning curve 和數值診斷是否開始分化。** 100K 仍然不是保證學會 Breakout 的數字；它只是比 Day 13 長十倍的 observation horizon，讓我們有機會看到短跑看不到的變化。
+這個結果很容易被誤讀。10K 足以發現訓練誤差、價值估計或權重調整量變成非有限值、模型根本沒有更新，或 CUDA 設定錯誤；卻不代表 10K 足以判斷三個超參數設定（hyperparameter config）誰比較好。如果 baseline 的短期平均是 `1.15`、另一個 variant 是 `1.75`，差異可能只是遊戲回合剛好落在不同的隨機波動，而不是 learning rate 真的造成了穩定改變。
+
+所以 Day 14 的問題被重新寫得更精確：**先用 10K 做 health screening（只驗證訓練流程能正常運作），再把相同的 learning-rate comparison 拉長到 100K，觀察 learning curve（回報隨訓練步數變化的曲線）和數值診斷是否開始分化。** 100K 仍然不是保證學會 Breakout 的數字；它只是比 Day 13 長十倍的 observation horizon，也就是能觀察到的訓練時間尺度，讓我們有機會看到短跑看不到的變化。
 
 ## 10K 能證明什麼，不能證明什麼？
 
-這裡的 environment step 是 Agent 執行一次 action、環境回傳一次結果的互動單位。10,000 steps 可以當成一個便宜的 short screening：如果 loss、Q-value、gradient 或 Replay Buffer occupancy 立刻異常，就不用浪費更長時間；如果 CUDA request 無法解析，也應該在這一層被擋下來。
+10,000 steps 可以當成一個便宜的 short screening：如果 loss（模型預測與學習目標的差距）、Q-value（模型估計某個 action 長期價值的數字）、gradient（告訴模型權重應往哪裡調整的方向與幅度），或 Replay Buffer occupancy（記憶區目前存了多少互動）立刻異常，就不用浪費更長時間；如果 CUDA request 無法解析，也應該在這一層被擋下來。
 
 但「沒有立即爆掉」和「這個設定比較好」是兩個不同命題。Breakout 的 reward 很稀疏，一局的長度也會變化；10K 只涵蓋有限的遊戲互動，最後幾個 episode 的分數很容易支配平均值。把這樣的 final return 排名，會把 health check 偽裝成 model comparison。
 
 這也是為什麼新的 workflow 把 screening 和 main comparison 分成不同的 stage。screening 只回答「能不能正常跑」；main comparison 才回答「在更長的訓練時間內，曲線是否出現可解釋的差異」。
 
-[![從 Day 13 的 10K diagnostic、10K screening 到 Day 14 100K main comparison 的決策流程](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/f0b077c/assets/day14/budget-stages.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/f0b077c/assets/day14/budget-stages.png)
+[![從 Day 13 的 10K diagnostic、10K screening 到 Day 14 100K main comparison 的決策流程](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/1035a19/assets/day14/budget-stages.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/1035a19/assets/day14/budget-stages.png)
 
 圖中的分支是實際實驗規則，而不是某次 run 的裝飾性流程圖：10K 通過 health checks 才能進入 100K；100K 之後若仍沒有可靠 signal，合法的結論是「目前無法分辨」，不是強行挑一個 winner。
 
@@ -32,6 +34,23 @@ learning rate 是每次模型更新調整權重的步幅；它太小可能讓學
 
 三個 run 固定 seed `42`。seed 是控制初始化與抽樣的整數起點，能讓實驗條件更容易重現；它不是把 CUDA 執行變成跨硬體 bit-exact deterministic 的保證。三個 run 也都使用 `requested_device=cuda`，解析成同一張 `cuda:0` 的 NVIDIA GeForce RTX 4060 Laptop GPU，precision 是 `float32`。
 
+## 正式 100K 前先量測資料管線
+
+GPU enabled 不等於整條訓練管線都由 GPU 主導。這個 DQN 每一步仍要由 Python 環境產生下一個 observation，再把 replay batch 送進 GPU；如果每次更新都把完整診斷統計同步回 Python，並立刻把一列 CSV 寫到磁碟，GPU 會在等待環境、同步或 I/O，而不是持續計算。這正是這一輪先做 throughput gate 的原因：先量測「整個訓練流程每秒完成多少 environment steps」，再開始昂貴的 100K comparison。
+
+| 10K gate | 原始 hot path | 調整後 hot path |
+|---|---:|---:|
+| end-to-end SPS | 145.94 | 218.99 |
+| optimizer updates/s | 32.85 | 49.29 |
+| wall-clock | 68.52 s | 45.66 s |
+| CPU thread count | 12 | 1 |
+| GPU utilization sample | 28% | 35% |
+| diagnostics / CSV flush interval | 1 / 1 | 100 / 100 |
+
+這些是同一台機器、同一個 learning config、同一個 10K seed 的 before/after 量測；GPU utilization 是 `nvidia-smi` 取到的樣本，不是整段 run 的平均值。調整只減少非必要的每步統計同步、把 CSV flush 改成批次處理，並測試 CPU thread count；沒有改 batch size 或 train frequency。端到端 SPS 提升 `1.50×`，達到這次的工程目標；兩邊都完成 `2,251` 次 optimizer update、target sync 次數相同、有限值診斷存在。這不是 bit-exact 曲線的要求，因為效能調整可能改變非關鍵的執行順序，但它保留了訓練邏輯的回歸檢查。
+
+峰值保留的 GPU 記憶體約 `90 MiB`，相對於約 `8 GiB` 顯存仍有充分 headroom，所以沒有為了速度引入 pinned memory（方便 CPU/GPU 傳輸的記憶體配置）或 vectorized environment（一次並行執行多個環境）。這個結果反而說明瓶頸不在顯存容量：CUDA 確實啟用，但單次模型更新太小，環境與 Python/記錄管線的等待時間更值得先處理。
+
 ## 100K 不只看最後一個數字
 
 100K 的價值不在於最後一列 summary 比 10K 更大，而在於可以回頭問「變化何時開始」。因此 main config 每 25,000 steps 保存一次 checkpoint，CSV 則保留每個 environment step 的 metrics。comparison report 會取 25K、50K、75K、100K 附近的實際 row，並同時保存 loss、Q、Target、gradient、epsilon 和 SPS。
@@ -40,33 +59,37 @@ learning rate 是每次模型更新調整權重的步幅；它太小可能讓學
 
 ## 100K main comparison 的真實結果
 
-下表來自 `experiments/day14-cuda-lr-100k-main/comparison.json`。三個 run 都完成 100,000 steps，report 也確認 stage 是 `main`、三個 requested/resolved device 相同，符合正式 CUDA main comparison 條件。
+下表來自正式 100K comparison report。三個 run 都完成 100,000 steps，report 也確認 stage 是 `main`、三個 requested/resolved device 相同，符合正式 CUDA main comparison 條件。
 
 | run | episodes | 最近 20 局 mean | median | 最佳 rolling20 mean | recent trend Δ | SPS | wall-clock |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| baseline | 372 | 4.60 | 4.50 | 4.95 | -2.40 | 162.48 | 615.44 s |
-| learning-rate-low | 375 | 2.30 | 2.00 | 3.20 | -0.60 | 151.89 | 658.39 s |
-| learning-rate-high | 313 | 7.40 | 6.50 | 9.25 | -0.60 | 152.85 | 654.24 s |
+| baseline | 341 | 6.75 | 7.00 | 6.75 | -0.50 | 250.38 | 399.39 s |
+| learning-rate-low | 378 | 3.65 | 3.00 | 3.85 | -0.30 | 235.17 | 425.23 s |
+| learning-rate-high | 304 | 8.75 | 8.50 | 9.40 | +0.90 | 242.85 | 411.77 s |
 
-這次 100K 和 10K 的差異不是「終於得到一個永遠正確的排名」，而是曲線開始提供更長時間尺度的 evidence。high learning rate 的 rolling return 明顯高於 low，baseline 落在中間；這讓 high 成為值得交給 multi-seed evaluation 的 candidate。但三個 recent trend Δ 都是負值，代表最後 20 局相對於那 20 局的前半段並沒有繼續上升。這提醒我們：即使 100K 的差距比 10K 更有資訊，也不能只看一個區間就宣稱已經穩定學會。
+這次 100K 和 10K 的差異不是「終於得到一個永遠正確的排名」，而是曲線開始提供更長時間尺度的 evidence。high learning rate 的 rolling return 明顯高於 low，baseline 落在中間；這讓 high 成為值得交給 multi-seed evaluation（用多個不同 seed 重複同一設定）的 candidate。這次 high 的 recent trend Δ 為 `+0.90`，baseline 與 low 則為 `-0.50`、`-0.30`；但單一最後區間仍不足以宣稱已經穩定學會。
 
 這張圖回答的是：**在相同 100K steps 下，三個 learning-rate run 的 raw return 是否開始沿著不同的 learning curve 前進？** 淡色點是每局實際完成時的 raw episode return；粗線是固定 20-episode rolling mean。x 軸仍然是 environment step，而不是 episode index。
 
-[![100K main comparison 中三個 learning-rate run 的 raw return 與 20-episode rolling mean](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/f0b077c/assets/day14/experiment-return-comparison.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/f0b077c/assets/day14/experiment-return-comparison.png)
+[![100K main comparison 中三個 learning-rate run 的 raw return 與 20-episode rolling mean](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/1035a19/assets/day14/experiment-return-comparison.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/1035a19/assets/day14/experiment-return-comparison.png)
 
 圖中 high 的 rolling curve 在後段維持較高，baseline 次之，low 較低；這支持「100K 比 10K 更能看出候選差異」這個觀察。它不能支持「`2e-4` 在所有 seed 都最佳」，也不能排除更長訓練後排名改變。SPS 是每秒完成多少 environment steps 的 throughput，wall-clock 是實際經過的時間；它們是執行成本，不是遊戲品質。high 的速度稍快，不代表它因此學得比較好。
 
 ## Q、Target、gradient 在較長 horizon 下怎麼走？
 
-Q-value 是模型對 action 長期價值的估計；Target mean 是用來形成 Bellman learning target 的另一組估計；gradient norm 則是一次更新中梯度總量的大小。這些診斷不能單獨判斷策略好壞，但能幫助區分「學得慢」和「數值開始不穩定」。
+Q-value 是模型對 action 長期價值的估計；Target mean 是另一個較穩定的參考估計，用來形成模型要追近的學習目標（Bellman target）；gradient norm 則是一次更新中梯度總量的大小。這些診斷不能單獨判斷策略好壞，但能幫助區分「學得慢」和「數值開始不穩定」。
 
 | run | Q mean：25K → 100K | Target mean：25K → 100K | loss max | gradient max |
 |---|---:|---:|---:|---:|
-| baseline | 0.626 → 1.518 | 0.617 → 1.546 | 0.0433 | 1.8043 |
-| learning-rate-low | 0.505 → 1.009 | 0.513 → 1.024 | 0.0483 | 1.5869 |
-| learning-rate-high | 0.600 → 1.729 | 0.601 → 1.737 | 0.0325 | 1.4534 |
+| baseline | 0.557 → 1.383 | 0.586 → 1.378 | 0.0158 | 1.0946 |
+| learning-rate-low | 0.551 → 1.094 | 0.587 → 1.113 | 0.0287 | 0.8825 |
+| learning-rate-high | 0.400 → 1.830 | 0.390 → 1.862 | 0.0185 | 0.6424 |
 
-三個 run 的 Q 與 Target 都隨 horizon 增加，且 report 沒有非有限值；因此不能把「Q 變大」直接稱為爆炸。high 在 50K 附近的 gradient norm 量測值約為 `0.538`，高於同一 milestone 的 baseline `0.133` 和 low `0.056`，但它後來又回到較低尺度。合理的判讀是：high learning rate 讓價值估計的發展更快、也值得持續監看；這還不是「已經不穩定」或「一定更好」的證明。
+三個 run 的 Q 與 Target 都隨 horizon 增加，且 report 沒有非有限值；因此不能把「Q 變大」直接稱為爆炸。low 在 50K 的 gradient norm 約為 `0.883`，高於 baseline 的 `0.075` 與 high 的 `0.331`，但後續又回到較低尺度。合理的判讀是：high learning rate 讓價值估計在後段發展得更快，也值得持續監看；這還不是「已經不穩定」或「一定更好」的證明。
+
+下圖把同一批 run 的 loss、Q mean、Target mean、gradient norm、epsilon 和 SPS 放在相同的 environment-step 軸上。它的用途不是製造另一個 winner，而是檢查 return 差異是否伴隨非有限值、持續增大的梯度，或完全不同的執行成本。
+
+[![100K main comparison 的 loss、Q、Target、gradient、epsilon 與 throughput diagnostics](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/1035a19/assets/day14/experiment-diagnostics-comparison.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/1035a19/assets/day14/experiment-diagnostics-comparison.png)
 
 epsilon 在這組 config 中於前 10K steps 下降到 `0.05`，之後 90K 大多在低探索機率下執行。這是現有 epsilon schedule 的設計條件，不是這次 learning-rate comparison 的變因；如果下一輪要研究探索速度，應另開一個只改 epsilon decay 的 batch。
 
