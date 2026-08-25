@@ -4,7 +4,7 @@
 
 診斷也確認訓練真的有在動：模型從一批經驗計算梯度並更新權重一次，稱為一次 optimizer update；經驗先放在 Replay Buffer，也就是用來重播過往互動的記憶區；Target Network 則是暫時固定的價值估計副本，用來讓學習目標不要每一步都跟著主模型晃動；epsilon schedule 是隨步數降低隨機探索比例的規則。不過，這些檢查只代表程式能正常執行，不代表 10K 已經足以比較超參數。
 
-這個結果很容易被誤讀。10K 足以發現訓練誤差、價值估計或權重調整量變成非有限值、模型根本沒有更新，或 CUDA 設定錯誤；卻不代表 10K 足以判斷三個超參數設定（hyperparameter config）誰比較好。如果 baseline 的短期平均是 `1.15`、另一個 variant 是 `1.75`，差異可能只是遊戲回合剛好落在不同的隨機波動，而不是 learning rate 真的造成了穩定改變。
+這個結果很容易被誤讀。10K 足以發現訓練誤差、價值估計或權重調整量變成非有限值、模型根本沒有更新，或 CUDA 設定錯誤；卻不代表 10K 足以判斷三個超參數設定（hyperparameter config）誰比較好。baseline 是未改動的參考設定，variant 是只改一個因素的比較設定；如果 baseline 的短期平均是 `1.15`、另一個 variant 是 `1.75`，差異可能只是遊戲回合剛好落在不同的隨機波動，而不是 learning rate（每次模型更新調整權重的步幅）真的造成了穩定改變。
 
 所以 Day 14 的問題被重新寫得更精確：**先用 10K 做 health screening（只驗證訓練流程能正常運作），再把相同的 learning-rate comparison 拉長到 100K，觀察 learning curve（回報隨訓練步數變化的曲線）和數值診斷是否開始分化。** 100K 仍然不是保證學會 Breakout 的數字；它只是比 Day 13 長十倍的 observation horizon，也就是能觀察到的訓練時間尺度，讓我們有機會看到短跑看不到的變化。
 
@@ -16,7 +16,7 @@
 
 這也是為什麼新的 workflow 把 screening 和 main comparison 分成不同的 stage。screening 只回答「能不能正常跑」；main comparison 才回答「在更長的訓練時間內，曲線是否出現可解釋的差異」。
 
-[![從 Day 13 的 10K diagnostic、10K screening 到 Day 14 100K main comparison 的決策流程](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/1035a19/assets/day14/budget-stages.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/1035a19/assets/day14/budget-stages.png)
+[![從 Day 13 的 10K diagnostic、10K screening 到 Day 14 100K main comparison 的決策流程](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/25fee37/assets/day14/budget-stages.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/25fee37/assets/day14/budget-stages.png)
 
 圖中的分支是實際實驗規則，而不是某次 run 的裝飾性流程圖：10K 通過 health checks 才能進入 100K；100K 之後若仍沒有可靠 signal，合法的結論是「目前無法分辨」，不是強行挑一個 winner。
 
@@ -36,20 +36,20 @@ learning rate 是每次模型更新調整權重的步幅；它太小可能讓學
 
 ## 正式 100K 前先量測資料管線
 
-GPU enabled 不等於整條訓練管線都由 GPU 主導。這個 DQN 每一步仍要由 Python 環境產生下一個 observation，再把 replay batch 送進 GPU；如果每次更新都把完整診斷統計同步回 Python，並立刻把一列 CSV 寫到磁碟，GPU 會在等待環境、同步或 I/O，而不是持續計算。這正是這一輪先做 throughput gate 的原因：先量測「整個訓練流程每秒完成多少 environment steps」，再開始昂貴的 100K comparison。
+GPU enabled 不等於整條訓練管線都由 GPU 主導。這個 DQN（用神經網路估計 action 價值的深度 Q-learning）每一步仍要由 Python 環境產生下一個 observation，再把 replay batch 送進 GPU；如果每次更新都把完整診斷統計同步回 Python，並立刻把一列 CSV（以逗號分隔的表格記錄）寫到磁碟，GPU 會在等待環境、同步或磁碟輸入輸出（I/O），而不是持續計算。這些每一步都會經過的耗時路徑稱為 hot path。這正是這一輪先做 throughput gate 的原因：先量測「整個訓練流程每秒完成多少 environment steps」，這個速度稱為 SPS（steps per second）；wall-clock 則是從開始到結束實際經過的時間，再開始昂貴的 100K comparison。
 
 | 10K gate | 原始 hot path | 調整後 hot path |
 |---|---:|---:|
-| end-to-end SPS | 145.94 | 218.99 |
+| end-to-end SPS（每秒 environment steps） | 145.94 | 218.99 |
 | optimizer updates/s | 32.85 | 49.29 |
-| wall-clock | 68.52 s | 45.66 s |
+| wall-clock（實際經過時間） | 68.52 s | 45.66 s |
 | CPU thread count | 12 | 1 |
 | GPU utilization sample | 28% | 35% |
-| diagnostics / CSV flush interval | 1 / 1 | 100 / 100 |
+| diagnostics / CSV flush interval（把記錄寫入磁碟的間隔） | 1 / 1 | 100 / 100 |
 
 這些是同一台機器、同一個 learning config、同一個 10K seed 的 before/after 量測；GPU utilization 是 `nvidia-smi` 取到的樣本，不是整段 run 的平均值。調整只減少非必要的每步統計同步、把 CSV flush 改成批次處理，並測試 CPU thread count；沒有改 batch size 或 train frequency。端到端 SPS 提升 `1.50×`，達到這次的工程目標；兩邊都完成 `2,251` 次 optimizer update、target sync 次數相同、有限值診斷存在。這不是 bit-exact 曲線的要求，因為效能調整可能改變非關鍵的執行順序，但它保留了訓練邏輯的回歸檢查。
 
-峰值保留的 GPU 記憶體約 `90 MiB`，相對於約 `8 GiB` 顯存仍有充分 headroom，所以沒有為了速度引入 pinned memory（方便 CPU/GPU 傳輸的記憶體配置）或 vectorized environment（一次並行執行多個環境）。這個結果反而說明瓶頸不在顯存容量：CUDA 確實啟用，但單次模型更新太小，環境與 Python/記錄管線的等待時間更值得先處理。
+峰值保留的 GPU 記憶體約 `90 MiB`；MiB 與 GiB 是以 2 的次方計算的記憶體單位，headroom 是距離顯存上限刻意保留的安全餘裕。相對於約 `8 GiB` 顯存仍有充分 headroom，所以沒有為了速度引入 pinned memory（方便 CPU/GPU 傳輸的記憶體配置）或 vectorized environment（一次並行執行多個環境）。這個結果反而說明瓶頸不在顯存容量：CUDA 確實啟用，但單次模型更新太小，環境與 Python/記錄管線的等待時間更值得先處理。
 
 ## 100K 不只看最後一個數字
 
@@ -71,7 +71,7 @@ GPU enabled 不等於整條訓練管線都由 GPU 主導。這個 DQN 每一步�
 
 這張圖回答的是：**在相同 100K steps 下，三個 learning-rate run 的 raw return 是否開始沿著不同的 learning curve 前進？** 淡色點是每局實際完成時的 raw episode return；粗線是固定 20-episode rolling mean。x 軸仍然是 environment step，而不是 episode index。
 
-[![100K main comparison 中三個 learning-rate run 的 raw return 與 20-episode rolling mean](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/1035a19/assets/day14/experiment-return-comparison.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/1035a19/assets/day14/experiment-return-comparison.png)
+[![100K main comparison 中三個 learning-rate run 的 raw return 與 20-episode rolling mean](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/25fee37/assets/day14/experiment-return-comparison.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/25fee37/assets/day14/experiment-return-comparison.png)
 
 圖中 high 的 rolling curve 在後段維持較高，baseline 次之，low 較低；這支持「100K 比 10K 更能看出候選差異」這個觀察。它不能支持「`2e-4` 在所有 seed 都最佳」，也不能排除更長訓練後排名改變。SPS 是每秒完成多少 environment steps 的 throughput，wall-clock 是實際經過的時間；它們是執行成本，不是遊戲品質。high 的速度稍快，不代表它因此學得比較好。
 
@@ -89,9 +89,33 @@ Q-value 是模型對 action 長期價值的估計；Target mean 是另一個較�
 
 下圖把同一批 run 的 loss、Q mean、Target mean、gradient norm、epsilon 和 SPS 放在相同的 environment-step 軸上。它的用途不是製造另一個 winner，而是檢查 return 差異是否伴隨非有限值、持續增大的梯度，或完全不同的執行成本。
 
-[![100K main comparison 的 loss、Q、Target、gradient、epsilon 與 throughput diagnostics](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/1035a19/assets/day14/experiment-diagnostics-comparison.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/1035a19/assets/day14/experiment-diagnostics-comparison.png)
+[![100K main comparison 的 loss、Q、Target、gradient、epsilon 與 throughput diagnostics](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/25fee37/assets/day14/experiment-diagnostics-comparison.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/25fee37/assets/day14/experiment-diagnostics-comparison.png)
 
 epsilon 在這組 config 中於前 10K steps 下降到 `0.05`，之後 90K 大多在低探索機率下執行。這是現有 epsilon schedule 的設計條件，不是這次 learning-rate comparison 的變因；如果下一輪要研究探索速度，應另開一個只改 epsilon decay 的 batch。
+
+## Batch size 同時是硬體效率與學習變因
+
+LR comparison 選出的 development candidate 是 `2e-4`，但它還沒有回答另一個問題：GPU 每次收到的工作是否太小。batch size 是一次 optimizer update 使用的 replay transitions 數量；它變大時，每次更新的 GPU 工作與 training samples/s 可能增加，但也會改變梯度估計與 learning dynamics，所以不能把它當成純效能開關。
+
+因此 Day 14C 先固定 learning rate、`train_frequency=4`、環境、seed、replay、epsilon、target update、precision 和 CUDA device，只比較 batch size `32/64/128`。Stage 1 每個設定跑 10K，並以固定 1 秒間隔保存 GPU utilization、power、device memory、process CPU 和 sampling method；Stage 2 只對 Stage 1 中實際提高 environment SPS 且通過數值 guardrails 的候選跑 100K。
+
+| batch size | environment SPS | wall-clock | optimizer updates/s | training samples/s | GPU utilization mean | GPU power mean | device memory peak |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 32 | 235.74 | 42.42 s | 53.06 | 1,698 | 30.13% | 25.59 W | 1.76 GiB |
+| 64 | 203.32 | 49.18 s | 45.77 | 2,929 | 32.22% | 27.11 W | 1.89 GiB |
+| 128 | 177.36 | 56.38 s | 39.92 | 5,110 | 34.88% | 30.33 W | 1.97 GiB |
+
+這組真實量測展示了「GPU 利用率越高不一定越快」：batch128 的 GPU utilization 和 training samples/s 都最高，但 environment SPS 最低；因為單一 Breakout environment 的 action inference 仍是 batch=1，環境互動、replay 和小型 GPU update 之間仍然串行等待。batch64 也沒有帶來 environment throughput 的收益。三組的 process CPU 約為 `5.55%`、`5.66%`、`5.77%`（以 16 logical CPUs 歸一化），顯示前一輪 CPU path optimization 已把瓶頸推向更細小的 GPU work，而不是 CUDA 沒有啟用。
+
+所以這次沒有把 batch64 或 batch128 硬送進 100K：它們沒有實際的 end-to-end efficiency gain；batch32 則沿用已完成的長程 reference。這是有意義的 negative result——增加 samples/s 並沒有降低 wall-clock，也沒有理由只因 GPU utilization 上升就改變正式 training config。
+
+[![Day 14 batch size 32、64、128 的 throughput、GPU utilization、power、VRAM 與短跑 learning guardrails](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/25fee37/assets/day14/batch-size-efficiency.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/25fee37/assets/day14/batch-size-efficiency.png)
+
+## 用 1/2/4 threads 凍結系統設定，再交給 Day 15
+
+batch-size profiling 之後，仍要決定 PyTorch CPU thread count。固定 batch32、同一個 10K config 實測 1、2、4 threads，end-to-end SPS 分別為 `290.08`、`306.79`、`304.15`；因此選 2，而不是沿用預設約 12 threads。這個選擇同樣以實際 SPS 為主，同時保留 GPU power、VRAM、process CPU 和 finite metrics 作 guardrails。
+
+最後凍結的 Vanilla DQN config 是 `learning_rate=2e-4`、`batch_size=32`、`cpu_threads=2`、`float32`、CUDA、單一 environment，並保留 25K/50K/75K/100K checkpoints。用這份 config 跑出的 100K frozen reference 完成 329 個 episodes，最近 20 局 mean `6.15`、最佳 rolling20 mean `7.50`、recent trend Δ `-0.10`，wall-clock `452.39 s`；四個 milestone 都有 finite loss/Q/Target/gradient。下一篇應使用 100K checkpoint 作為最新狀態，只有在完整、finite、device 和 step metadata 都通過時才採用，不因單一高分 episode 選 checkpoint。
 
 ## 10K screening 與 100K main 必須分開保存
 
@@ -105,6 +129,6 @@ main manifest 則標記為 `stage=main`、`budget_level=main_day14`，並由 rep
 
 如果下一輪 multi-seed 仍然看到 high 的 return curve 高於其他設定，而且 Q/Target/gradient 沒有出現不可接受的失控，再把它交給更正式的 milestone evaluation 才合理。如果 100K 後的差異在多 seed 消失，或所有 config 都沒有可靠 trend，也應該保留「目前無法分辨」這個結果；只有在 100K 已經提供清楚但仍不足的 signal 時，才值得把少數候選延長到 250K 或更長。
 
-Day 14 因此沒有把調參變成「跑得久就一定找到答案」。它建立的是一個可分層的判讀方式：10K 負責健康檢查，100K 負責觀察 learning dynamics，25K 到 100K 的 diagnostics 負責揭露穩定性，最後仍由多 seed evaluation 決定這個 signal 是否值得相信。
+Day 14 因此沒有把調參變成「跑得久就一定找到答案」。它建立的是一個可分層的判讀方式：10K 負責健康檢查與 batch-size GPU profiling，100K 負責觀察 learning dynamics，25K 到 100K 的 diagnostics 負責揭露穩定性，最後仍由多 seed evaluation 決定這個 signal 是否值得相信。這次 batch64/128 的負結果也成為 evidence：真正要凍結的不是最高 GPU utilization，而是 learning quality 沒有明顯惡化、同時 environment throughput 更好的可重現 config。
 
 下一篇會把這個 reference/candidate distinction 放進固定的 milestone evaluation，加入 random baseline，檢查 100K 觀察到的差異是否能在更嚴格的 protocol 下重現。
