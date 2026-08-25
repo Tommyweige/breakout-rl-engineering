@@ -76,6 +76,7 @@ class MetricsLogger:
     ) -> None:
         if not isinstance(config, DQNConfig):
             raise TypeError("config must be a DQNConfig")
+        self._config = config
         self.run_dir = Path(run_dir)
         self.run_dir.mkdir(parents=True, exist_ok=True)
         self.config_path = self.run_dir / "config.json"
@@ -110,6 +111,7 @@ class MetricsLogger:
         if is_empty:
             self._writer.writeheader()
             self._file.flush()
+        self._pending_writes = 0
         self._closed = False
 
     def write(self, row: Mapping[str, Any]) -> None:
@@ -121,9 +123,24 @@ class MetricsLogger:
                 for field in METRIC_FIELDS
             }
         )
+        self._pending_writes += 1
+        if self._pending_writes >= self.config.metrics_flush_interval:
+            self.flush()
+
+    @property
+    def config(self) -> DQNConfig:
+        """Return the config controlling buffered logging cadence."""
+
+        return self._config
+
+    def flush(self) -> None:
+        if self._closed:
+            return
         self._file.flush()
+        self._pending_writes = 0
 
     def write_summary(self, summary: Mapping[str, Any]) -> None:
+        self.flush()
         self.summary_path.write_text(
             json.dumps(dict(summary), indent=2, ensure_ascii=False, default=_json_default),
             encoding="utf-8",
@@ -132,6 +149,7 @@ class MetricsLogger:
     def update_runtime_metadata(self, metadata: Mapping[str, Any]) -> None:
         """Persist final wall-clock and device measurements in config.json."""
 
+        self.flush()
         payload = json.loads(self.config_path.read_text(encoding="utf-8"))
         runtime = payload.setdefault("runtime", {})
         if not isinstance(runtime, dict):
@@ -145,6 +163,7 @@ class MetricsLogger:
 
     def close(self) -> None:
         if not self._closed:
+            self.flush()
             self._file.close()
             self._closed = True
 

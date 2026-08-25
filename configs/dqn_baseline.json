@@ -19,5 +19,8 @@
   "gradient_clip_norm": 10.0,
   "device": "cuda",
   "precision": "float32",
-  "checkpoint_interval": 25000
+  "checkpoint_interval": 25000,
+  "diagnostics_interval": 100,
+  "metrics_flush_interval": 100,
+  "cpu_threads": 1
 }

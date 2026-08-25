@@ -6,6 +6,9 @@
   "stage": "screening",
   "overrides": {
     "total_steps": 10000,
-    "checkpoint_interval": 500
+    "checkpoint_interval": 500,
+    "diagnostics_interval": 100,
+    "metrics_flush_interval": 100,
+    "cpu_threads": 1
   }
 }

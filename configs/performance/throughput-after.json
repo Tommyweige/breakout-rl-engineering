@@ -1,0 +1,12 @@
+{
+  "name": "throughput-after-10k",
+  "description": "10K end-to-end throughput after semantics-preserving hot-path optimization.",
+  "base_config": "../screening/dqn_baseline_10k.json",
+  "stage": "performance",
+  "budget_level": "short_screening",
+  "overrides": {
+    "diagnostics_interval": 100,
+    "metrics_flush_interval": 100,
+    "cpu_threads": 1
+  }
+}

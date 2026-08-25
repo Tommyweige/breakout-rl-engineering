@@ -39,26 +39,26 @@ class NonFiniteTrainingError(RuntimeError):
 class DQNTrainingStepResult:
     """Inspectable values produced by one online-network optimizer update."""
 
-    loss: float
-    selected_q_values: torch.Tensor
-    targets: torch.Tensor
-    q_mean: float
-    q_max: float
-    q_min: float
-    target_mean: float
-    target_max: float
-    td_error_mean_abs: float
-    td_error_max_abs: float
-    gradient_norm: float
+    loss: float | None
+    selected_q_values: torch.Tensor | None
+    targets: torch.Tensor | None
+    q_mean: float | None
+    q_max: float | None
+    q_min: float | None
+    target_mean: float | None
+    target_max: float | None
+    td_error_mean_abs: float | None
+    td_error_max_abs: float | None
+    gradient_norm: float | None
 
     @property
-    def td_loss(self) -> float:
+    def td_loss(self) -> float | None:
         """Descriptive alias for the scalar Huber loss."""
 
         return self.loss
 
     @property
-    def q_selected(self) -> torch.Tensor:
+    def q_selected(self) -> torch.Tensor | None:
         """Descriptive alias matching the Bellman-update notation."""
 
         return self.selected_q_values
@@ -189,6 +189,7 @@ def dqn_training_step(
     gamma: float,
     gradient_clip_norm: float | None,
     loss_fn: nn.Module | None = None,
+    collect_diagnostics: bool = True,
 ) -> DQNTrainingStepResult:
     """Perform one vanilla-DQN Huber-loss update.
 
@@ -222,10 +223,11 @@ def dqn_training_step(
         raise ValueError("online_network must return at least one action value")
     if not all_q_values.is_floating_point():
         raise TypeError("online_network output must be a floating-point tensor")
-    _require_finite(all_q_values, name="online Q-values")
+    if collect_diagnostics:
+        _require_finite(all_q_values, name="online Q-values")
 
     actions = batch.actions.to(dtype=torch.long)
-    if actions.numel() and (
+    if collect_diagnostics and actions.numel() and (
         int(actions.min().item()) < 0
         or int(actions.max().item()) >= int(all_q_values.shape[1])
     ):
@@ -241,49 +243,68 @@ def dqn_training_step(
         target_network,
         gamma,
     )
-    _require_finite(targets, name="Bellman targets")
+    if collect_diagnostics:
+        _require_finite(targets, name="Bellman targets")
 
     criterion = loss_fn if loss_fn is not None else nn.SmoothL1Loss()
     loss = criterion(selected_q_values, targets)
     if not isinstance(loss, torch.Tensor) or loss.ndim != 0:
         raise ValueError("loss_fn must return a scalar tensor")
-    _require_finite(loss, name="loss")
+    if collect_diagnostics:
+        _require_finite(loss, name="loss")
 
     optimizer.zero_grad(set_to_none=True)
     loss.backward()
-    gradient_norm = _gradient_norm(online_network.parameters())
+    gradient_norm: float | None = None
+    if collect_diagnostics:
+        gradient_norm = _gradient_norm(online_network.parameters())
 
     if gradient_clip_norm is not None:
         returned_norm = nn.utils.clip_grad_norm_(
             list(online_network.parameters()),
             max_norm=float(gradient_clip_norm),
         )
-        _require_finite(returned_norm, name="gradient norm")
-        # ``clip_grad_norm_`` returns the norm before clipping. Keep the
-        # explicit value above as the metric contract even if PyTorch changes
-        # the return scalar's dtype or device.
-        gradient_norm = float(returned_norm.detach().item())
+        if collect_diagnostics:
+            _require_finite(returned_norm, name="gradient norm")
+            # ``clip_grad_norm_`` returns the norm before clipping. Keep the
+            # explicit value above as the metric contract even if PyTorch changes
+            # the return scalar's dtype or device.
+            gradient_norm = float(returned_norm.detach().item())
 
     optimizer.step()
-    for parameter in online_network.parameters():
-        _require_finite(parameter.data, name="online parameters")
+    if collect_diagnostics:
+        for parameter in online_network.parameters():
+            _require_finite(parameter.data, name="online parameters")
 
-    detached_selected_q_values = selected_q_values.detach()
-    detached_targets = targets.detach()
-    absolute_td_errors = (detached_targets - detached_selected_q_values).abs()
+        detached_selected_q_values = selected_q_values.detach()
+        detached_targets = targets.detach()
+        absolute_td_errors = (detached_targets - detached_selected_q_values).abs()
+        return DQNTrainingStepResult(
+            loss=float(loss.detach().item()),
+            selected_q_values=detached_selected_q_values.clone(),
+            targets=detached_targets.clone(),
+            q_mean=float(all_q_values.detach().mean().item()),
+            q_max=float(all_q_values.detach().max().item()),
+            q_min=float(all_q_values.detach().min().item()),
+            target_mean=float(detached_targets.mean().item()),
+            target_max=float(detached_targets.max().item()),
+            td_error_mean_abs=float(absolute_td_errors.mean().item()),
+            td_error_max_abs=float(absolute_td_errors.max().item()),
+            gradient_norm=gradient_norm,
+        )
 
     return DQNTrainingStepResult(
-        loss=float(loss.detach().item()),
-        selected_q_values=detached_selected_q_values.clone(),
-        targets=detached_targets.clone(),
-        q_mean=float(all_q_values.detach().mean().item()),
-        q_max=float(all_q_values.detach().max().item()),
-        q_min=float(all_q_values.detach().min().item()),
-        target_mean=float(detached_targets.mean().item()),
-        target_max=float(detached_targets.max().item()),
-        td_error_mean_abs=float(absolute_td_errors.mean().item()),
-        td_error_max_abs=float(absolute_td_errors.max().item()),
-        gradient_norm=gradient_norm,
+        loss=None,
+        selected_q_values=None,
+        targets=None,
+        q_mean=None,
+        q_max=None,
+        q_min=None,
+        target_mean=None,
+        target_max=None,
+        td_error_mean_abs=None,
+        td_error_max_abs=None,
+        gradient_norm=None,
     )
 
 
@@ -374,6 +395,8 @@ class DQNTrainer:
         if on_step is not None and not callable(on_step):
             raise TypeError("on_step must be callable or None")
         self.on_step = on_step
+        if config.cpu_threads is not None:
+            torch.set_num_threads(config.cpu_threads)
         # Seed before constructing the default network and optimizer. When a
         # checkpoint is loaded below, its saved RNG states take precedence.
         seed_everything(config.seed)
@@ -466,6 +489,10 @@ class DQNTrainer:
                 "requested_device": self.requested_device,
                 "resolved_device": self._resolved_device_name(),
                 "precision": self.config.precision,
+                "diagnostics_interval": self.config.diagnostics_interval,
+                "metrics_flush_interval": self.config.metrics_flush_interval,
+                "metrics_row_cadence": 1,
+                "configured_cpu_threads": self.config.cpu_threads,
             },
         )
 
@@ -490,6 +517,11 @@ class DQNTrainer:
     def _update_once(self) -> DQNTrainingStepResult:
         batch = self.replay.sample(self.config.batch_size, self.rng)
         tensor_batch = replay_batch_to_tensors(batch, device=self.device)
+        next_update = self.optimizer_updates + 1
+        collect_diagnostics = (
+            next_update % self.config.diagnostics_interval == 0
+            or self.global_step >= self.config.total_steps
+        )
         result = dqn_training_step(
             self.online_network,
             self.target_network,
@@ -497,6 +529,7 @@ class DQNTrainer:
             tensor_batch,
             gamma=self.config.gamma,
             gradient_clip_norm=self.config.gradient_clip_norm,
+            collect_diagnostics=collect_diagnostics,
         )
         self.optimizer_updates += 1
         self._last_result = result
@@ -656,6 +689,10 @@ class DQNTrainer:
                 "action_count": self.action_count,
                 "wall_clock_seconds": float(elapsed),
                 "steps_per_second": float(self.global_step / elapsed),
+                "diagnostics_interval": self.config.diagnostics_interval,
+                "metrics_flush_interval": self.config.metrics_flush_interval,
+                "metrics_row_cadence": 1,
+                "configured_cpu_threads": self.config.cpu_threads,
             },
         )
 
@@ -740,6 +777,7 @@ class DQNTrainer:
     def save_checkpoint(self, *, suffix: str | None = None) -> Path:
         """Save model/optimizer/RNG state without serializing the replay arrays."""
 
+        self.metrics.flush()
         filename = f"step-{self.global_step:08d}"
         if suffix:
             filename += f"-{suffix}"

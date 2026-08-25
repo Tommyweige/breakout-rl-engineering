@@ -281,15 +281,21 @@ class ReplayBuffer:
         return rng.choice(self.size, size=parsed_batch_size, replace=False)
 
     def _batch_from_indices(self, indices: np.ndarray) -> TransitionBatch:
-        """Copy the selected physical slots into a named batch."""
+        """Select a contiguous, independent batch from the ring arrays.
+
+        NumPy advanced indexing already allocates independent arrays. Avoiding
+        a second explicit ``.copy()`` keeps the replay-to-model hot path from
+        copying every selected field twice while preserving the public copy
+        contract.
+        """
 
         return TransitionBatch(
-            states=self.states[indices].copy(),
-            actions=self.actions[indices].copy(),
-            rewards=self.rewards[indices].copy(),
-            next_states=self.next_states[indices].copy(),
-            terminated=self.terminated[indices].copy(),
-            truncated=self.truncated[indices].copy(),
+            states=self.states[indices],
+            actions=self.actions[indices],
+            rewards=self.rewards[indices],
+            next_states=self.next_states[indices],
+            terminated=self.terminated[indices],
+            truncated=self.truncated[indices],
         )
 
     def sample_with_indices(

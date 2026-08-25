@@ -86,6 +86,9 @@ class DQNConfig:
     device: str = "cpu"
     precision: str = "float32"
     checkpoint_interval: int = 1_000
+    diagnostics_interval: int = 1
+    metrics_flush_interval: int = 1
+    cpu_threads: int | None = None
 
     def __post_init__(self) -> None:
         _validated_int(self.total_steps, name="total_steps", minimum=1)
@@ -140,6 +143,18 @@ class DQNConfig:
                 "precision must be float32; mixed-precision training is not implemented"
             )
         object.__setattr__(self, "precision", precision)
+        _validated_int(
+            self.diagnostics_interval,
+            name="diagnostics_interval",
+            minimum=1,
+        )
+        _validated_int(
+            self.metrics_flush_interval,
+            name="metrics_flush_interval",
+            minimum=1,
+        )
+        if self.cpu_threads is not None:
+            _validated_int(self.cpu_threads, name="cpu_threads", minimum=1)
         _validated_int(
             self.checkpoint_interval,
             name="checkpoint_interval",

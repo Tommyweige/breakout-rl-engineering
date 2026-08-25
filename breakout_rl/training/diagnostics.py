@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import importlib.metadata
 import math
+import os
 import platform
+import shutil
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -487,6 +489,51 @@ def _git_commit_sha(path: Path) -> str:
     return value or "unavailable"
 
 
+def _nvidia_smi_sample(device_index: int | None) -> dict[str, Any]:
+    if device_index is None:
+        return {
+            "gpu_utilization_percent": None,
+            "gpu_memory_total_bytes": None,
+            "gpu_utilization_source": "unavailable",
+        }
+    executable = shutil.which("nvidia-smi")
+    if executable is None:
+        return {
+            "gpu_utilization_percent": None,
+            "gpu_memory_total_bytes": None,
+            "gpu_utilization_source": "nvidia-smi-unavailable",
+        }
+    try:
+        completed = subprocess.run(
+            [
+                executable,
+                f"--id={device_index}",
+                "--query-gpu=utilization.gpu,memory.total",
+                "--format=csv,noheader,nounits",
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=2,
+        )
+        if completed.returncode != 0:
+            raise RuntimeError("nvidia-smi returned a non-zero status")
+        fields = [field.strip() for field in completed.stdout.split(",")]
+        if len(fields) < 2:
+            raise ValueError("nvidia-smi returned an incomplete sample")
+        return {
+            "gpu_utilization_percent": float(fields[0]),
+            "gpu_memory_total_bytes": int(float(fields[1]) * 1024 * 1024),
+            "gpu_utilization_source": "nvidia-smi",
+        }
+    except (OSError, ValueError, RuntimeError, subprocess.SubprocessError):
+        return {
+            "gpu_utilization_percent": None,
+            "gpu_memory_total_bytes": None,
+            "gpu_utilization_source": "unavailable",
+        }
+
+
 def collect_runtime_metadata(
     *,
     seed: int,
@@ -541,6 +588,16 @@ def collect_runtime_metadata(
             cuda_reserved_bytes = None
             cuda_peak_reserved_bytes = None
 
+    gpu_sample = _nvidia_smi_sample(cuda_device_index if cuda_available else None)
+    try:
+        cpu_thread_count = int(torch.get_num_threads())
+    except Exception:
+        cpu_thread_count = None
+    try:
+        cpu_interop_thread_count = int(torch.get_num_interop_threads())
+    except Exception:
+        cpu_interop_thread_count = None
+
     metadata: dict[str, Any] = {
         "python_version": platform.python_version(),
         "pytorch_version": str(torch.__version__),
@@ -548,6 +605,9 @@ def collect_runtime_metadata(
         "gymnasium_version": _package_version("gymnasium"),
         "ale_version": _package_version("ale-py"),
         "numpy_version": np.__version__,
+        "cpu_logical_count": os.cpu_count(),
+        "cpu_thread_count": cpu_thread_count,
+        "cpu_interop_thread_count": cpu_interop_thread_count,
         "device": str(resolved_device),
         "requested_device": device_request,
         "resolved_device": str(resolved_device),
@@ -561,6 +621,7 @@ def collect_runtime_metadata(
         "cuda_peak_allocated_bytes": cuda_peak_allocated_bytes,
         "cuda_reserved_bytes": cuda_reserved_bytes,
         "cuda_peak_reserved_bytes": cuda_peak_reserved_bytes,
+        **gpu_sample,
         "wall_clock_seconds": None,
         "steps_per_second": None,
         "seed": int(seed),
