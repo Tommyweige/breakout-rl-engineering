@@ -520,6 +520,7 @@ class DQNTrainer:
         next_update = self.optimizer_updates + 1
         collect_diagnostics = (
             next_update % self.config.diagnostics_interval == 0
+            or self.global_step % self.config.checkpoint_interval == 0
             or self.global_step >= self.config.total_steps
         )
         result = dqn_training_step(

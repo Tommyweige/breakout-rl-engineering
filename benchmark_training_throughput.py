@@ -8,7 +8,7 @@ import math
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
-from breakout_rl.experiments import load_run_report, read_json_object, read_metrics, write_json_object
+from breakout_rl.experiments import load_run_report, read_metrics, write_json_object
 
 
 SYSTEM_ONLY_FIELDS = {

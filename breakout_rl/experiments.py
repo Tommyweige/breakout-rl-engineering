@@ -155,8 +155,10 @@ def _resolve_stage(
     if not isinstance(raw_stage, str) or not raw_stage.strip():
         raise TypeError(f"{source}: stage must be a non-empty string")
     stage = raw_stage.strip().lower()
-    if stage not in {"screening", "main", "other"}:
-        raise ValueError(f"{source}: stage must be screening, main, or other")
+    if stage not in {"screening", "main", "performance", "other"}:
+        raise ValueError(
+            f"{source}: stage must be screening, main, performance, or other"
+        )
     return stage
 
 
@@ -455,12 +457,15 @@ def _milestone_snapshots(
         if (step := _parse_float(row.get("global_step"))) is not None
     ]
     snapshots: dict[str, dict[str, Any] | None] = {}
+    maximum_step = max((step for step, _ in numeric_rows), default=None)
     for target in (25_000, 50_000, 75_000, 100_000):
-        eligible = [(step, row) for step, row in numeric_rows if step <= target]
-        if not eligible:
+        # A shorter or interrupted run must not make an earlier observation
+        # look like evidence for a milestone it never reached.
+        if maximum_step is None or maximum_step < target:
             snapshots[str(target)] = None
             continue
-        step, row = eligible[-1]
+        eligible = [(step, row) for step, row in numeric_rows if step <= target]
+        step, row = eligible[-1] if eligible else numeric_rows[0]
         snapshot: dict[str, Any] = {"global_step": int(step)}
         for field in MILESTONE_FIELDS:
             value = _parse_float(row.get(field))

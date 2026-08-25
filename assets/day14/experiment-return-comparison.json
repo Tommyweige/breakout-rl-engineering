@@ -1,14 +1,14 @@
 {
-  "generated_at_utc": "2026-08-25T07:46:26.953732Z",
+  "generated_at_utc": "2026-08-25T08:46:58.194630Z",
   "command": [
     "visualize_experiment_comparison.py",
-    "experiments/day14-cuda-lr-100k-main/manifest.json",
+    "experiments/day14-cuda-lr-100k-main-final/manifest.json",
     "--output",
     "assets/day14/experiment-return-comparison.png",
     "--metrics",
     "return"
   ],
-  "manifest": "C:\\Users\\tommy\\.codex\\worktrees\\9ea6\\breakout-rl-engineering\\experiments\\day14-cuda-lr-100k-main\\manifest.json",
+  "manifest": "C:\\Users\\tommy\\.codex\\worktrees\\9ea6\\breakout-rl-engineering\\experiments\\day14-cuda-lr-100k-main-final\\manifest.json",
   "output": "C:\\Users\\tommy\\.codex\\worktrees\\9ea6\\breakout-rl-engineering\\assets\\day14\\experiment-return-comparison.png",
   "metadata_output": "C:\\Users\\tommy\\.codex\\worktrees\\9ea6\\breakout-rl-engineering\\assets\\day14\\experiment-return-comparison.json",
   "metrics": [
@@ -17,21 +17,21 @@
   "runs": [
     {
       "label": "baseline",
-      "run_dir": "C:\\Users\\tommy\\.codex\\worktrees\\9ea6\\breakout-rl-engineering\\assets\\day14\\experiment-runs\\day14-cuda-lr-100k-main\\baseline-seed42",
+      "run_dir": "C:\\Users\\tommy\\.codex\\worktrees\\9ea6\\breakout-rl-engineering\\assets\\day14\\experiment-runs\\day14-cuda-lr-100k-main-final\\baseline-seed42",
       "seed": 42,
       "requested_device": "cuda",
       "resolved_device": "cuda:0"
     },
     {
       "label": "learning-rate-low",
-      "run_dir": "C:\\Users\\tommy\\.codex\\worktrees\\9ea6\\breakout-rl-engineering\\assets\\day14\\experiment-runs\\day14-cuda-lr-100k-main\\learning-rate-low-seed42",
+      "run_dir": "C:\\Users\\tommy\\.codex\\worktrees\\9ea6\\breakout-rl-engineering\\assets\\day14\\experiment-runs\\day14-cuda-lr-100k-main-final\\learning-rate-low-seed42",
       "seed": 42,
       "requested_device": "cuda",
       "resolved_device": "cuda:0"
     },
     {
       "label": "learning-rate-high",
-      "run_dir": "C:\\Users\\tommy\\.codex\\worktrees\\9ea6\\breakout-rl-engineering\\assets\\day14\\experiment-runs\\day14-cuda-lr-100k-main\\learning-rate-high-seed42",
+      "run_dir": "C:\\Users\\tommy\\.codex\\worktrees\\9ea6\\breakout-rl-engineering\\assets\\day14\\experiment-runs\\day14-cuda-lr-100k-main-final\\learning-rate-high-seed42",
       "seed": 42,
       "requested_device": "cuda",
       "resolved_device": "cuda:0"

@@ -12,11 +12,11 @@ The 10K screening source artifacts are retained separately:
 
 The main Day 14 source artifacts are:
 
-- `experiments/day14-cuda-lr-100k-main/manifest.json`;
-- `experiments/day14-cuda-lr-100k-main/comparison.json`;
-- `assets/day14/experiment-runs/day14-cuda-lr-100k-main/*/config.json`;
-- `assets/day14/experiment-runs/day14-cuda-lr-100k-main/*/metrics.csv`;
-- `assets/day14/experiment-runs/day14-cuda-lr-100k-main/*/summary.json`.
+- `experiments/day14-cuda-lr-100k-main-final/manifest.json`;
+- `experiments/day14-cuda-lr-100k-main-final/comparison.json`;
+- `assets/day14/experiment-runs/day14-cuda-lr-100k-main-final/*/config.json`;
+- `assets/day14/experiment-runs/day14-cuda-lr-100k-main-final/*/metrics.csv`;
+- `assets/day14/experiment-runs/day14-cuda-lr-100k-main-final/*/summary.json`.
 
 The main batch used seed `42`, `100,000` environment steps per run, `float32`,
 `requested_device=cuda`, and the resolved device `cuda:0` (`NVIDIA GeForce RTX
@@ -24,6 +24,16 @@ The main batch used seed `42`, `100,000` environment steps per run, `float32`,
 CUDA versions, SPS, wall-clock duration, 25K/50K/75K/100K checkpoint paths, and
 peak memory metadata. The 10K batch is retained as screening evidence only and
 must not be used to rank the configs.
+
+The profiling gate is recorded separately from quality comparison:
+
+- `experiments/day14-performance-gate/throughput-comparison.json`;
+- `assets/day14/performance-runs/day14-throughput-before/*/`;
+- `assets/day14/performance-runs/day14-throughput-after/*/`.
+
+It contains the before/after end-to-end SPS, optimizer updates per second,
+wall-clock time, CPU thread setting, sampled GPU utilization, peak VRAM,
+logging cadence, and the 10K regression checks.
 
 Recreate the 100K main batch with:
 
@@ -40,13 +50,13 @@ conda run --name breakout-rl-engineering python run_experiments.py --require-cud
 Recreate the main return PNG from its manifest without entering data manually:
 
 ```powershell
-conda run --name breakout-rl-engineering python visualize_experiment_comparison.py experiments/day14-cuda-lr-100k-main/manifest.json --output assets/day14/experiment-return-comparison.png --metrics return
+conda run --name breakout-rl-engineering python visualize_experiment_comparison.py experiments/day14-cuda-lr-100k-main-final/manifest.json --output assets/day14/experiment-return-comparison.png --metrics return
 ```
 
 Recreate the diagnostic comparison PNG:
 
 ```powershell
-conda run --name breakout-rl-engineering python visualize_experiment_comparison.py experiments/day14-cuda-lr-100k-main/manifest.json --output assets/day14/experiment-diagnostics-comparison.png --metrics loss q target gradient epsilon sps
+conda run --name breakout-rl-engineering python visualize_experiment_comparison.py experiments/day14-cuda-lr-100k-main-final/manifest.json --output assets/day14/experiment-diagnostics-comparison.png --metrics loss q target gradient epsilon sps
 ```
 
 The budget-stage diagram is structural and its editable source is

@@ -271,6 +271,46 @@ class DQNTrainerTests(unittest.TestCase):
             self.assertIn("td_error_max_abs", rows[-1])
             self.assertEqual(float(rows[-1]["replay_occupancy"]), 1.0)
 
+    def test_sparse_diagnostics_still_sample_checkpoint_steps(self) -> None:
+        config = DQNConfig(
+            total_steps=16,
+            batch_size=4,
+            replay_capacity=16,
+            learning_starts=4,
+            train_frequency=2,
+            target_update_interval=4,
+            checkpoint_interval=8,
+            diagnostics_interval=100,
+            metrics_flush_interval=100,
+            device="cpu",
+        )
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            run_dir = Path(temporary_directory) / "sparse-diagnostics"
+            trainer = DQNTrainer(
+                ShortEpisodeEnv(),
+                config,
+                run_dir=run_dir,
+                online_network=TinyImageQNetwork(),
+            )
+            summary = trainer.train()
+
+            with (run_dir / "metrics.csv").open(
+                "r",
+                newline="",
+                encoding="utf-8",
+            ) as stream:
+                rows = list(csv.DictReader(stream))
+
+        diagnostic_steps = [
+            int(row["global_step"])
+            for row in rows
+            if row["loss"]
+        ]
+        self.assertEqual(diagnostic_steps, [8, 16])
+        self.assertEqual(summary["runtime"]["diagnostics_interval"], 100)
+        self.assertEqual(summary["runtime"]["metrics_flush_interval"], 100)
+
     def test_resume_restores_model_state_and_rewarms_replay(self) -> None:
         base_values = {
             "batch_size": 4,

@@ -222,6 +222,22 @@ class CompareRunsTests(unittest.TestCase):
         self.assertEqual(report["expected_steps"], 10)
         self.assertEqual(report["completed_steps"], 4)
 
+    def test_unreached_main_milestones_are_unavailable(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            run_dir = self._write_run(
+                Path(temporary_directory),
+                "interrupted-main",
+                learning_rate=0.1,
+                status="incomplete",
+                total_steps=100_000,
+            )
+            report = load_run_report(run_dir, recent_window=2, rolling_window=2)
+
+        self.assertEqual(
+            report["milestone_snapshots"],
+            {"25000": None, "50000": None, "75000": None, "100000": None},
+        )
+
     def test_unequal_step_budgets_are_exposed_as_a_comparison_condition(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = Path(temporary_directory)
@@ -235,6 +251,47 @@ class CompareRunsTests(unittest.TestCase):
 
         self.assertFalse(comparison["comparison_conditions"]["same_step_budget"])
         self.assertFalse(comparison["comparison_conditions"]["formal_cuda_eligible"])
+
+    def test_screening_and_main_stages_cannot_form_one_comparison(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            self._write_run(root / "runs", "screening", learning_rate=0.1)
+            self._write_run(root / "runs", "main", learning_rate=0.2)
+            manifest_path = root / "experiments" / "mixed" / "manifest.json"
+            manifest_path.parent.mkdir(parents=True)
+            manifest_path.write_text(
+                json.dumps(
+                    {
+                        "experiment_id": "mixed",
+                        "status": "completed",
+                        "base_config": {"values": {"total_steps": 4}},
+                        "variants": [
+                            {
+                                "label": "screening",
+                                "run_dir": "../../runs/screening",
+                                "stage": "screening",
+                            },
+                            {
+                                "label": "main",
+                                "run_dir": "../../runs/main",
+                                "stage": "main",
+                            },
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            comparison = compare_manifest(
+                manifest_path,
+                recent_window=2,
+                rolling_window=2,
+            )
+
+        conditions = comparison["comparison_conditions"]
+        self.assertFalse(conditions["same_stage"])
+        self.assertEqual(conditions["stages"], ["screening", "main"])
+        self.assertFalse(conditions["main_comparison_eligible"])
 
     def test_failed_run_status_is_preserved(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
