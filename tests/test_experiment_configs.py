@@ -73,8 +73,16 @@ class ExperimentConfigTests(unittest.TestCase):
     def test_declared_development_budget_is_recorded(self) -> None:
         config = load_experiment_config(Path("configs/dqn_baseline.json"))
 
-        self.assertEqual(config.budget_level, "development")
-        self.assertEqual(config.config.total_steps, 10_000)
+        self.assertEqual(config.budget_level, "main_day14")
+        self.assertEqual(config.stage, "main")
+        self.assertEqual(config.config.total_steps, 100_000)
+
+        screening = load_experiment_config(
+            Path("configs/screening/dqn_baseline_10k.json")
+        )
+        self.assertEqual(screening.budget_level, "short_screening")
+        self.assertEqual(screening.stage, "screening")
+        self.assertEqual(screening.config.total_steps, 10_000)
 
     def test_require_cuda_rejects_mixed_requested_devices(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:

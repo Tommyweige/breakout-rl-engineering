@@ -144,6 +144,8 @@ class CompareRunsTests(unittest.TestCase):
         self.assertEqual(report["median_recent_episode_return"], 4.0)
         self.assertEqual(report["best_rolling_return"], 4.0)
         self.assertEqual(report["loss_summary"]["count"], 4)
+        self.assertEqual(report["gradient_summary"]["count"], 0)
+        self.assertEqual(report["recent_return_trend"]["direction"], "up")
         self.assertEqual(report["sps"]["runtime"], 50.0)
         self.assertEqual(report["gpu_memory"]["peak_reserved_bytes"], 456)
 

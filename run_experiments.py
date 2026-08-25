@@ -124,6 +124,11 @@ def run_batch(args: argparse.Namespace) -> tuple[int, Path, dict[str, Any]]:
         raise ValueError(
             "config labels/seed pairs must be unique so run directories cannot collide"
         )
+    stages = {config.stage for config in configs}
+    if len(stages) != 1:
+        raise ValueError("one experiment batch cannot mix screening and main stages")
+    if stages == {"main"} and any(config.config.total_steps != 100_000 for config in configs):
+        raise ValueError("main Day 14 comparison configs must use total_steps=100000")
     if args.require_cuda:
         non_cuda = [
             config.label

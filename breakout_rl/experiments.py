@@ -21,7 +21,11 @@ DEFAULT_RECENT_WINDOW = 20
 DEFAULT_ROLLING_WINDOW = 20
 EXPERIMENT_BUDGETS: dict[str, tuple[int, int]] = {
     "smoke": (1_000, 10_000),
+    "short_screening": (10_000, 10_000),
     "development": (10_000, 50_000),
+    "main_day14": (100_000, 100_000),
+    "longer_pilot": (250_000, 1_000_000),
+    # Keep the earlier generic name readable for configs outside Day 14.
     "pilot": (100_000, 1_000_000),
 }
 
@@ -70,6 +74,7 @@ def _config_values(payload: Mapping[str, Any], *, source: Path) -> dict[str, Any
         "overrides",
         "config",
         "budget_level",
+        "stage",
     }
     unknown_top_level = sorted(
         set(payload) - set(CONFIG_FIELD_NAMES) - allowed_metadata
@@ -132,6 +137,29 @@ def _label_for(payload: Mapping[str, Any], source: Path) -> str:
     return raw_label.strip()
 
 
+def _resolve_stage(
+    payload: Mapping[str, Any],
+    *,
+    budget_level: str,
+    inherited: str | None,
+    source: Path,
+) -> str:
+    raw_stage = payload.get("stage")
+    if raw_stage is None and inherited is not None:
+        raw_stage = inherited
+    if raw_stage is None:
+        raw_stage = {
+            "short_screening": "screening",
+            "main_day14": "main",
+        }.get(budget_level, "other")
+    if not isinstance(raw_stage, str) or not raw_stage.strip():
+        raise TypeError(f"{source}: stage must be a non-empty string")
+    stage = raw_stage.strip().lower()
+    if stage not in {"screening", "main", "other"}:
+        raise ValueError(f"{source}: stage must be screening, main, or other")
+    return stage
+
+
 @dataclass(frozen=True)
 class ExperimentConfig:
     """One fully resolved DQN config plus its source/override provenance."""
@@ -142,6 +170,7 @@ class ExperimentConfig:
     base_config_path: Path | None
     overrides: dict[str, Any]
     budget_level: str
+    stage: str
 
     @property
     def values(self) -> dict[str, Any]:
@@ -163,6 +192,7 @@ def load_experiment_config(
     base_path: Path | None = None
     base_values: dict[str, Any] = {}
     inherited_budget_level: str | None = None
+    inherited_stage: str | None = None
     raw_base = payload.get("base_config")
     if raw_base is not None:
         if not isinstance(raw_base, str) or not raw_base.strip():
@@ -171,6 +201,7 @@ def load_experiment_config(
         base = load_experiment_config(base_path, _stack=(*_stack, source))
         base_values.update(base.values)
         inherited_budget_level = base.budget_level
+        inherited_stage = base.stage
 
     explicit_values = _config_values(payload, source=source)
     raw_overrides = payload.get("overrides", {})
@@ -189,6 +220,12 @@ def load_experiment_config(
         inherited=inherited_budget_level,
         source=source,
     )
+    stage = _resolve_stage(
+        payload,
+        budget_level=budget_level,
+        inherited=inherited_stage,
+        source=source,
+    )
     return ExperimentConfig(
         label=_label_for(payload, source),
         source_path=source,
@@ -196,6 +233,7 @@ def load_experiment_config(
         base_config_path=base_path,
         overrides={**overrides, **explicit_values} if base_path is not None else {},
         budget_level=budget_level,
+        stage=stage,
     )
 
 
@@ -249,6 +287,10 @@ def build_manifest(
     if not configs:
         raise ValueError("configs must not be empty")
     base = configs[0]
+    stages = {config.stage for config in configs}
+    if len(stages) != 1:
+        raise ValueError("one experiment batch cannot mix screening and main stages")
+    stage = next(iter(stages))
     manifest_parent = Path(manifest_path).resolve().parent
     variants = []
     for config in configs:
@@ -267,6 +309,7 @@ def build_manifest(
                 "seed": config.config.seed,
                 "step_budget": config.config.total_steps,
                 "budget_level": config.budget_level,
+                "stage": config.stage,
             }
         )
     return {
@@ -279,11 +322,14 @@ def build_manifest(
             "label": base.label,
             "config_path": relative_path(base.source_path, start=manifest_parent),
             "values": base.values,
+            "budget_level": base.budget_level,
+            "stage": base.stage,
         },
         "variants": variants,
         "seeds": sorted({config.config.seed for config in configs}),
         "step_budgets": sorted({config.config.total_steps for config in configs}),
         "budget_levels": sorted({config.budget_level for config in configs}),
+        "stage": stage,
         "status": "running",
         "command": list(command) if command is not None else None,
     }
@@ -358,6 +404,71 @@ def _rolling_means(values: Sequence[float], window: int) -> list[float]:
     return [float(mean(values[index - window : index])) for index in range(window, len(values) + 1)]
 
 
+def _return_trend(values: Sequence[float]) -> dict[str, Any]:
+    if len(values) < 2:
+        return {
+            "count": len(values),
+            "first_half_mean": None,
+            "second_half_mean": None,
+            "delta": None,
+            "direction": "insufficient_data",
+        }
+    midpoint = max(1, len(values) // 2)
+    first_half = values[:midpoint]
+    second_half = values[midpoint:]
+    first_mean = float(mean(first_half))
+    second_mean = float(mean(second_half))
+    delta = second_mean - first_mean
+    direction = "up" if delta > 0 else "down" if delta < 0 else "flat"
+    return {
+        "count": len(values),
+        "first_half_mean": first_mean,
+        "second_half_mean": second_mean,
+        "delta": float(delta),
+        "direction": direction,
+    }
+
+
+MILESTONE_FIELDS: tuple[str, ...] = (
+    "loss",
+    "q_mean",
+    "q_max",
+    "target_mean",
+    "target_max",
+    "gradient_norm",
+    "epsilon",
+    "sps",
+    "raw_episode_return",
+)
+
+
+def _milestone_snapshots(
+    rows: Sequence[Mapping[str, Any]],
+    *,
+    expected_steps: int | None,
+) -> dict[str, dict[str, Any] | None]:
+    if expected_steps is None or expected_steps < 100_000:
+        return {}
+    numeric_rows = [
+        (step, row)
+        for row in rows
+        if (step := _parse_float(row.get("global_step"))) is not None
+    ]
+    snapshots: dict[str, dict[str, Any] | None] = {}
+    for target in (25_000, 50_000, 75_000, 100_000):
+        eligible = [(step, row) for step, row in numeric_rows if step <= target]
+        if not eligible:
+            snapshots[str(target)] = None
+            continue
+        step, row = eligible[-1]
+        snapshot: dict[str, Any] = {"global_step": int(step)}
+        for field in MILESTONE_FIELDS:
+            value = _parse_float(row.get(field))
+            snapshot[field] = value
+        snapshots[str(target)] = snapshot
+    return snapshots
+
+
 def load_run_report(
     run_dir: str | Path,
     *,
@@ -387,6 +498,7 @@ def load_run_report(
     returns = [value for _, value in episode_returns]
     recent = returns[-recent_window:]
     rolling = _rolling_means(returns, rolling_window)
+    recent_trend = _return_trend(recent)
     status = str(summary.get("status", failure.get("status", "incomplete")))
     if status == "completed" and expected_steps is not None and completed_steps < int(expected_steps):
         status = "incomplete"
@@ -406,6 +518,7 @@ def load_run_report(
         "run_id": str(config.get("run_id", path.name)),
         "run_dir": str(path),
         "label": path.name,
+        "stage": "unknown",
         "status": status,
         "error": errors,
         "requested_device": requested_device,
@@ -421,12 +534,18 @@ def load_run_report(
         "recent_window": recent_window,
         "rolling_window": rolling_window,
         "recent_episode_return": _stats(recent),
+        "recent_return_trend": recent_trend,
         "mean_recent_episode_return": float(mean(recent)) if recent else None,
         "median_recent_episode_return": float(median(recent)) if recent else None,
         "best_rolling_return": float(max(rolling)) if rolling else None,
         "rolling_return_count": len(rolling),
         "loss_summary": _stats(_series(rows, "loss")),
+        "gradient_summary": _stats(_series(rows, "gradient_norm")),
         "q_value_summary": q_summary,
+        "milestone_snapshots": _milestone_snapshots(
+            rows,
+            expected_steps=int(expected_steps) if expected_steps is not None else None,
+        ),
         "sps": {
             **_stats(sps_values),
             "runtime": runtime_sps,
@@ -491,6 +610,7 @@ def _comparison_conditions(reports: Sequence[Mapping[str, Any]]) -> dict[str, An
     resolved_devices = [str(report["resolved_device"]) for report in reports]
     expected_steps = [report["expected_steps"] for report in reports]
     statuses = [str(report["status"]) for report in reports]
+    stages = [str(report.get("stage", "unknown")) for report in reports]
     formal_requested = all(
         device == "cuda" or device.startswith("cuda:") for device in requested_devices
     )
@@ -499,6 +619,8 @@ def _comparison_conditions(reports: Sequence[Mapping[str, Any]]) -> dict[str, An
         "same_requested_device": len(set(requested_devices)) == 1,
         "same_resolved_device": len(set(resolved_devices)) == 1,
         "same_step_budget": len(set(expected_steps)) == 1,
+        "same_stage": len(set(stages)) == 1,
+        "stages": stages,
         "requested_devices": requested_devices,
         "resolved_devices": resolved_devices,
         "step_budgets": expected_steps,
@@ -509,6 +631,17 @@ def _comparison_conditions(reports: Sequence[Mapping[str, Any]]) -> dict[str, An
             and len(set(requested_devices)) == 1
             and len(set(resolved_devices)) == 1
             and len(set(expected_steps)) == 1
+        ),
+        "main_comparison_eligible": (
+            all(status == "completed" for status in statuses)
+            and formal_requested
+            and formal_resolved
+            and len(set(requested_devices)) == 1
+            and len(set(resolved_devices)) == 1
+            and len(set(expected_steps)) == 1
+            and expected_steps[0] == 100_000
+            and len(set(stages)) == 1
+            and stages[0] == "main"
         ),
         "quality_and_throughput_are_separate": True,
     }
@@ -530,6 +663,7 @@ def _not_started_report(
         "run_id": entry.get("run_id"),
         "run_dir": None,
         "label": str(entry.get("label", "not-started")),
+        "stage": str(entry.get("stage", "unknown")),
         "status": status,
         "error": entry.get("error"),
         "requested_device": str(entry.get("requested_device", "unavailable")),
@@ -545,12 +679,15 @@ def _not_started_report(
         "recent_window": recent_window,
         "rolling_window": rolling_window,
         "recent_episode_return": _stats([]),
+        "recent_return_trend": _return_trend([]),
         "mean_recent_episode_return": None,
         "median_recent_episode_return": None,
         "best_rolling_return": None,
         "rolling_return_count": 0,
         "loss_summary": _stats([]),
+        "gradient_summary": _stats([]),
         "q_value_summary": {field: _stats([]) for field in ("q_mean", "q_max", "q_min", "target_mean", "target_max")},
+        "milestone_snapshots": {},
         "sps": {**_stats([]), "runtime": None},
         "wall_clock_seconds": None,
         "gpu_memory": {
@@ -649,12 +786,18 @@ def compare_manifest(
             missing["config_diff"] = config_diff(base_values or {}, missing["config"])
             report["runs"].append(missing)
         else:
-            report["runs"].append(reports_by_path[str(path)])
+            available_report = reports_by_path[str(path)]
+            available_report["stage"] = str(
+                entry.get("stage", manifest.get("stage", "unknown"))
+            )
+            report["runs"].append(available_report)
     report["comparison_conditions"] = _comparison_conditions(report["runs"])
     report["experiment_id"] = manifest.get("experiment_id", source.parent.name)
     report["manifest"] = str(source)
     report["manifest_status"] = manifest.get("status")
     report["sequential"] = bool(manifest.get("sequential", True))
+    report["experiment_stage"] = manifest.get("stage", "unknown")
+    report["budget_levels"] = manifest.get("budget_levels", [])
     return report
 
 

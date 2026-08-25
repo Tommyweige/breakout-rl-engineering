@@ -19,6 +19,8 @@ METRIC_SPECS: dict[str, tuple[str, str, str]] = {
     "return": ("raw_episode_return", "Episode return", "Raw episode return"),
     "loss": ("loss", "Loss", "Huber loss"),
     "q": ("q_mean", "Q-value mean", "Q mean"),
+    "target": ("target_mean", "Target mean", "Target mean"),
+    "gradient": ("gradient_norm", "Gradient norm", "Gradient norm"),
     "epsilon": ("epsilon", "Exploration", "Epsilon"),
     "sps": ("sps", "Throughput", "Steps per second"),
 }
@@ -42,6 +44,27 @@ def _paired_series(
             continue
         x_values.append(x_value)
         y_values.append(y_value)
+    return x_values, y_values
+
+
+def _rolling_return_series(
+    rows: Sequence[Mapping[str, Any]],
+    *,
+    window: int = 20,
+) -> tuple[list[float], list[float]]:
+    episodes = [
+        (step, value)
+        for step, value in zip(
+            *_paired_series(rows, "raw_episode_return")
+        )
+    ]
+    if len(episodes) < window:
+        return [], []
+    x_values = [step for step, _ in episodes[window - 1 :]]
+    y_values = [
+        sum(value for _, value in episodes[index - window + 1 : index + 1]) / window
+        for index in range(window - 1, len(episodes))
+    ]
     return x_values, y_values
 
 
@@ -108,12 +131,33 @@ def _render_local(
                 "requested_device", "device?"
             )
             label = f"{label} (seed {seed}, {resolved_device})"
-            if y_values:
+            if y_values and metric == "return":
+                line, = axis.plot(
+                    x_values,
+                    y_values,
+                    linewidth=0.9,
+                    marker="o",
+                    markersize=1.8,
+                    alpha=0.3,
+                    label=f"{label} raw",
+                )
+                rolling_x, rolling_y = _rolling_return_series(rows)
+                if rolling_y:
+                    axis.plot(
+                        rolling_x,
+                        rolling_y,
+                        linewidth=2.0,
+                        color=line.get_color(),
+                        label=f"{label} rolling20",
+                    )
+                plotted = True
+                plotted_labels.append(f"{label} rolling20")
+            elif y_values:
                 axis.plot(
                     x_values,
                     y_values,
                     linewidth=1.2,
-                    marker="o" if metric == "return" else None,
+                    marker=None,
                     markersize=2.5,
                     alpha=0.9,
                     label=label,

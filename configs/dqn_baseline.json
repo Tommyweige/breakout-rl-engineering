@@ -1,8 +1,9 @@
 {
   "name": "baseline",
-  "description": "Day 14 CUDA development baseline; short evidence run, not a final checkpoint.",
-  "budget_level": "development",
-  "total_steps": 10000,
+  "description": "Day 14 main CUDA comparison baseline; 100K development horizon.",
+  "budget_level": "main_day14",
+  "stage": "main",
+  "total_steps": 100000,
   "seed": 42,
   "gamma": 0.99,
   "learning_rate": 0.0001,
@@ -18,5 +19,5 @@
   "gradient_clip_norm": 10.0,
   "device": "cuda",
   "precision": "float32",
-  "checkpoint_interval": 500
+  "checkpoint_interval": 25000
 }

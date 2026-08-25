@@ -1,0 +1,7 @@
+{
+  "name": "screening-learning-rate-high-10k",
+  "base_config": "dqn_baseline_10k.json",
+  "overrides": {
+    "learning_rate": 0.0002
+  }
+}

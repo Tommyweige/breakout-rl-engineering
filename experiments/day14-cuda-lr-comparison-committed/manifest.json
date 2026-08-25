@@ -4,9 +4,10 @@
   "created_at_utc": "2026-08-25T06:15:10.622208Z",
   "updated_at_utc": "2026-08-25T06:18:50.614325Z",
   "sequential": true,
+  "stage": "screening",
   "base_config": {
     "label": "baseline",
-    "config_path": "../../configs/dqn_baseline.json",
+    "config_path": "../../configs/screening/dqn_baseline_10k.json",
     "values": {
       "total_steps": 10000,
       "seed": 42,
@@ -25,12 +26,14 @@
       "device": "cuda",
       "precision": "float32",
       "checkpoint_interval": 500
-    }
+    },
+    "budget_level": "short_screening",
+    "stage": "screening"
   },
   "variants": [
     {
       "label": "baseline",
-      "config_path": "../../configs/dqn_baseline.json",
+      "config_path": "../../configs/screening/dqn_baseline_10k.json",
       "config_values": {
         "total_steps": 10000,
         "seed": 42,
@@ -59,6 +62,8 @@
       "resolved_device": "cuda:0",
       "seed": 42,
       "step_budget": 10000,
+      "budget_level": "short_screening",
+      "stage": "screening",
       "summary": {
         "status": "completed",
         "total_steps": 10000,
@@ -70,7 +75,7 @@
     },
     {
       "label": "learning-rate-low",
-      "config_path": "../../configs/experiments/lr-low.json",
+      "config_path": "../../configs/screening/lr-low-10k.json",
       "config_values": {
         "total_steps": 10000,
         "seed": 42,
@@ -103,6 +108,8 @@
       "resolved_device": "cuda:0",
       "seed": 42,
       "step_budget": 10000,
+      "budget_level": "short_screening",
+      "stage": "screening",
       "summary": {
         "status": "completed",
         "total_steps": 10000,
@@ -114,7 +121,7 @@
     },
     {
       "label": "learning-rate-high",
-      "config_path": "../../configs/experiments/lr-high.json",
+      "config_path": "../../configs/screening/lr-high-10k.json",
       "config_values": {
         "total_steps": 10000,
         "seed": 42,
@@ -147,6 +154,8 @@
       "resolved_device": "cuda:0",
       "seed": 42,
       "step_budget": 10000,
+      "budget_level": "short_screening",
+      "stage": "screening",
       "summary": {
         "status": "completed",
         "total_steps": 10000,
@@ -162,6 +171,9 @@
   ],
   "step_budgets": [
     10000
+  ],
+  "budget_levels": [
+    "short_screening"
   ],
   "status": "completed",
   "command": [
