@@ -1,0 +1,15 @@
+{
+  "article": "docs/day13-debugging-unstable-rl-training.md",
+  "skill": "technical-blog-writer",
+  "skill_source": "technical-blog-writer/SKILL.md",
+  "read_before_draft": true,
+  "review_gates": [
+    "article-ness",
+    "terminology",
+    "evidence",
+    "figure quality",
+    "beginner comprehension"
+  ],
+  "evidence_source": "assets/day13/debug-run",
+  "figure_source": "assets/day13/debugging-workflow.mmd"
+}

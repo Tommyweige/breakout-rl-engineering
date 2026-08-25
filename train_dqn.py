@@ -21,7 +21,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--preset",
-        choices=("development", "smoke"),
+        choices=("development", "smoke", "debug"),
         default=None,
         help="validated configuration preset (default: development)",
     )
@@ -65,6 +65,8 @@ def _load_checkpoint_config(path: Path) -> DQNConfig:
 def _config_from_args(args: argparse.Namespace) -> DQNConfig:
     if args.resume is not None:
         base = _load_checkpoint_config(args.resume)
+    elif args.preset == "debug":
+        base = DQNConfig.debug(device=args.device or "cuda")
     elif args.preset == "smoke":
         base = DQNConfig.smoke(device=args.device or "cpu")
     else:
@@ -99,7 +101,8 @@ def _run_path(args: argparse.Namespace, config: DQNConfig) -> Path:
     if run_id is None:
         timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
         preset_name = args.preset or "development"
-        run_id = f"day12-{preset_name}-seed{config.seed}-{timestamp}"
+        day_prefix = "day13" if preset_name == "debug" else "day12"
+        run_id = f"{day_prefix}-{preset_name}-seed{config.seed}-{timestamp}"
     if not run_id or Path(run_id).name != run_id:
         raise ValueError("run-id must be a single directory name")
     return root / run_id
@@ -126,6 +129,9 @@ def main(argv: list[str] | None = None) -> int:
     except NonFiniteTrainingError as error:
         print(f"Training stopped because a non-finite value was detected: {error}")
         return 1
+    except RuntimeError as error:
+        print(f"Training could not start or was stopped: {error}")
+        return 2
     finally:
         env.close()
 

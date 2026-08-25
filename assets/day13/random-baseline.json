@@ -1,0 +1,29 @@
+{
+  "policy": "random",
+  "seed": 42,
+  "episodes": 5,
+  "returns": [
+    2.0,
+    1.0,
+    5.0,
+    1.0,
+    5.0
+  ],
+  "mean_return": 2.8,
+  "median_return": 2.0,
+  "min_return": 1.0,
+  "max_return": 5.0,
+  "episode_lengths": [
+    235,
+    160,
+    319,
+    215,
+    317
+  ],
+  "action_counts": {
+    "NOOP": 305,
+    "FIRE": 298,
+    "RIGHT": 322,
+    "LEFT": 321
+  }
+}

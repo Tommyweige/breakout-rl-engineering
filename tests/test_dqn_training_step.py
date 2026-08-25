@@ -72,6 +72,9 @@ class DQNTrainingStepTests(unittest.TestCase):
         )
         torch.testing.assert_close(result.targets, torch.tensor([3.0, -1.0]))
         self.assertAlmostEqual(result.loss, 1.5)
+        self.assertAlmostEqual(result.q_mean, 2.5 / 6.0)
+        self.assertAlmostEqual(result.q_max, 4.0)
+        self.assertAlmostEqual(result.q_min, -2.5)
         self.assertTrue(torch.isfinite(torch.tensor(result.gradient_norm)))
 
     def test_optimizer_changes_only_online_network_parameters(self) -> None:

@@ -1,0 +1,8 @@
+flowchart TD
+    A["訓練程式可跑"] --> B["Finite checks"]
+    B -->|失敗| C["定位 NaN / infinity"]
+    B -->|通過| D["固定 batch overfit"]
+    D -->|失敗| E["查 forward、gather、target、optimizer"]
+    D -->|通過| F["檢查 action、epsilon、replay"]
+    F --> G["讀 return、Q、TD error、gradient"]
+    G --> H["最後才調 hyperparameters"]

@@ -96,6 +96,7 @@ dependencies:
   - zlib-ng=2.3.3
   - zstd=1.5.7
   - pip:
+      - --extra-index-url=https://download.pytorch.org/whl/cu130
       - ale-py==0.12.0
       - cloudpickle==3.1.2
       - farama-notifications==0.0.6
@@ -109,6 +110,6 @@ dependencies:
       - numpy==2.5.2
       - opencv-python==5.0.0.93
       - sympy==1.14.0
-      - torch==2.13.0
+      - torch==2.13.0+cu130
       - typing-extensions==4.16.0
 prefix: C:\Users\tommy\anaconda3\envs\breakout-rl-engineering

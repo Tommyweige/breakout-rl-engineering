@@ -389,7 +389,7 @@ Backend
 * Day 10 — [Exploration vs. Exploitation：Epsilon-Greedy 與探索排程](docs/day10-exploration-vs-exploitation.md)
 * Day 11 — [Target Network：讓 Bellman 目標暫時固定下來](docs/day11-target-network.md)
 * Day 12 — [完整 DQN training loop：從一筆 transition 到一次參數更新](docs/day12-complete-dqn-training-loop.md)
-* Day 13 — 除錯不穩定的 RL 訓練
+* Day 13 — [除錯不穩定的 RL 訓練：從 sanity check 到 training diagnostics](docs/day13-debugging-unstable-rl-training.md)
 * Day 14 — Hyperparameter experiments
 * Day 15 — DQN milestone 與 evaluation
 

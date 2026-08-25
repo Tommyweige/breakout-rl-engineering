@@ -232,3 +232,5 @@ Agent 先和 Breakout 互動，產生一筆經驗；經驗進入 Replay Buffer�
 這次 1,000 steps 的短跑證明這條閉環可以運作，沒有證明 Agent 已經會玩 Breakout。
 
 而 Day 13 要接著回答的，就是更棘手的問題：**如果程式一直在跑、模型也一直在更新，但分數就是沒有變好，我們要怎麼知道問題出在哪裡？**
+
+下一篇：[Day 13｜除錯不穩定的 RL 訓練：從 sanity check 到 training diagnostics](day13-debugging-unstable-rl-training.md)
