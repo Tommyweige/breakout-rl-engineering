@@ -18,6 +18,7 @@ class DQNConfigTests(unittest.TestCase):
         self.assertEqual(config.batch_size, 32)
         self.assertEqual(config.learning_starts, 1_000)
         self.assertTrue(config.reward_clip)
+        self.assertFalse(config.profile_stages)
 
         restored = DQNConfig.from_dict(config.to_dict())
 
@@ -113,6 +114,11 @@ class DQNConfigTests(unittest.TestCase):
             DQNConfig(replay_backend="unknown")
         with self.assertRaises(ValueError):
             DQNConfig(replay_backend="gpu", replay_transfer="preallocated")
+
+    def test_stage_profiling_flag_is_boolean(self) -> None:
+        self.assertTrue(DQNConfig(profile_stages=True).profile_stages)
+        with self.assertRaises(TypeError):
+            DQNConfig(profile_stages=1)
 
     def test_auto_can_use_cpu_but_explicit_cuda_never_falls_back(self) -> None:
         with patch("breakout_rl.training.dqn_trainer.torch.cuda.is_available", return_value=False):

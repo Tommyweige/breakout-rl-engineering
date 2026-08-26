@@ -40,6 +40,93 @@ class NonFiniteTrainingError(RuntimeError):
     """Raised when a training value becomes NaN or infinity."""
 
 
+class _StageProfiler:
+    """Optionally collect wall, CPU, and CUDA timings at trainer seams."""
+
+    def __init__(self, *, enabled: bool, device: torch.device) -> None:
+        self.enabled = enabled
+        self.device = device
+        self._records: dict[str, dict[str, Any]] = {}
+        self._cuda_events: dict[str, list[tuple[torch.cuda.Event, torch.cuda.Event]]] = {}
+
+    def _record(self, name: str, wall_seconds: float, cpu_seconds: float) -> None:
+        record = self._records.setdefault(
+            name,
+            {"calls": 0, "wall_seconds": 0.0, "cpu_seconds": 0.0},
+        )
+        record["calls"] += 1
+        record["wall_seconds"] += wall_seconds
+        record["cpu_seconds"] += cpu_seconds
+
+    def measure(self, name: str, operation: Callable[[], Any]) -> Any:
+        if not self.enabled:
+            return operation()
+        wall_start = time.perf_counter()
+        cpu_start = time.process_time()
+        value = operation()
+        self._record(
+            name,
+            time.perf_counter() - wall_start,
+            time.process_time() - cpu_start,
+        )
+        return value
+
+    def measure_cuda(self, name: str, operation: Callable[[], Any]) -> Any:
+        if not self.enabled or self.device.type != "cuda":
+            return self.measure(name, operation)
+        stream = torch.cuda.current_stream(self.device)
+        start_event = torch.cuda.Event(enable_timing=True)
+        end_event = torch.cuda.Event(enable_timing=True)
+        wall_start = time.perf_counter()
+        cpu_start = time.process_time()
+        start_event.record(stream)
+        value = operation()
+        end_event.record(stream)
+        self._record(
+            name,
+            time.perf_counter() - wall_start,
+            time.process_time() - cpu_start,
+        )
+        self._cuda_events.setdefault(name, []).append((start_event, end_event))
+        return value
+
+    def merge_cuda_stage(
+        self,
+        name: str,
+        *,
+        calls: int,
+        wall_seconds: float,
+        cpu_seconds: float,
+        gpu_seconds: float,
+    ) -> None:
+        if not self.enabled:
+            return
+        record = self._records.setdefault(
+            name,
+            {"calls": 0, "wall_seconds": 0.0, "cpu_seconds": 0.0},
+        )
+        record["calls"] += int(calls)
+        record["wall_seconds"] += float(wall_seconds)
+        record["cpu_seconds"] += float(cpu_seconds)
+        record["gpu_seconds"] = record.get("gpu_seconds", 0.0) + float(gpu_seconds)
+
+    def summary(self) -> dict[str, dict[str, Any]]:
+        if not self.enabled:
+            return {}
+        if self.device.type == "cuda" and self._cuda_events:
+            torch.cuda.synchronize(self.device)
+        result: dict[str, dict[str, Any]] = {}
+        for name, record in self._records.items():
+            values = dict(record)
+            events = self._cuda_events.get(name, [])
+            if events:
+                values["gpu_seconds"] = sum(
+                    start.elapsed_time(end) for start, end in events
+                ) / 1000.0
+            result[name] = values
+        return result
+
+
 @dataclass(frozen=True)
 class DQNTrainingStepResult:
     """Inspectable values produced by one online-network optimizer update."""
@@ -195,6 +282,7 @@ def dqn_training_step(
     gradient_clip_norm: float | None,
     loss_fn: nn.Module | None = None,
     collect_diagnostics: bool = True,
+    stage_measure: Callable[[str, Callable[[], Any]], Any] | None = None,
 ) -> DQNTrainingStepResult:
     """Perform one vanilla-DQN Huber-loss update.
 
@@ -218,8 +306,12 @@ def dqn_training_step(
     _ensure_optimizer_excludes_target(optimizer, target_network)
     _validate_gradient_clip_norm(gradient_clip_norm)
     batch_size = _validate_update_batch(batch)
+    measure_stage = stage_measure or (lambda _name, operation: operation())
 
-    all_q_values = online_network(batch.states)
+    all_q_values = measure_stage(
+        "forward",
+        lambda: online_network(batch.states),
+    )
     if not isinstance(all_q_values, torch.Tensor):
         raise TypeError("online_network must return a torch.Tensor")
     if all_q_values.ndim != 2 or int(all_q_values.shape[0]) != batch_size:
@@ -241,62 +333,80 @@ def dqn_training_step(
 
     from breakout_rl.targets import compute_dqn_targets
 
-    targets = compute_dqn_targets(
-        batch.rewards,
-        batch.next_states,
-        batch.terminated,
-        target_network,
-        gamma,
+    targets = measure_stage(
+        "target_forward",
+        lambda: compute_dqn_targets(
+            batch.rewards,
+            batch.next_states,
+            batch.terminated,
+            target_network,
+            gamma,
+        ),
     )
     if collect_diagnostics:
         _require_finite(targets, name="Bellman targets")
 
     criterion = loss_fn if loss_fn is not None else nn.SmoothL1Loss()
-    loss = criterion(selected_q_values, targets)
+    loss = measure_stage(
+        "loss",
+        lambda: criterion(selected_q_values, targets),
+    )
     if not isinstance(loss, torch.Tensor) or loss.ndim != 0:
         raise ValueError("loss_fn must return a scalar tensor")
     if collect_diagnostics:
         _require_finite(loss, name="loss")
 
-    optimizer.zero_grad(set_to_none=True)
-    loss.backward()
+    def backward() -> None:
+        optimizer.zero_grad(set_to_none=True)
+        loss.backward()
+
+    measure_stage("backward", backward)
     gradient_norm: float | None = None
     if collect_diagnostics:
-        gradient_norm = _gradient_norm(online_network.parameters())
-
-    if gradient_clip_norm is not None:
-        returned_norm = nn.utils.clip_grad_norm_(
-            list(online_network.parameters()),
-            max_norm=float(gradient_clip_norm),
+        gradient_norm = measure_stage(
+            "gradient_diagnostics",
+            lambda: _gradient_norm(online_network.parameters()),
         )
-        if collect_diagnostics:
-            _require_finite(returned_norm, name="gradient norm")
-            # ``clip_grad_norm_`` returns the norm before clipping. Keep the
-            # explicit value above as the metric contract even if PyTorch changes
-            # the return scalar's dtype or device.
-            gradient_norm = float(returned_norm.detach().item())
 
-    optimizer.step()
+    def optimizer_step() -> None:
+        nonlocal gradient_norm
+        if gradient_clip_norm is not None:
+            returned_norm = nn.utils.clip_grad_norm_(
+                list(online_network.parameters()),
+                max_norm=float(gradient_clip_norm),
+            )
+            if collect_diagnostics:
+                _require_finite(returned_norm, name="gradient norm")
+                # ``clip_grad_norm_`` returns the norm before clipping. Keep the
+                # explicit value above as the metric contract even if PyTorch
+                # changes the return scalar's dtype or device.
+                gradient_norm = float(returned_norm.detach().item())
+        optimizer.step()
+
+    measure_stage("optimizer_step", optimizer_step)
     if collect_diagnostics:
-        for parameter in online_network.parameters():
-            _require_finite(parameter.data, name="online parameters")
+        def diagnostics() -> DQNTrainingStepResult:
+            for parameter in online_network.parameters():
+                _require_finite(parameter.data, name="online parameters")
 
-        detached_selected_q_values = selected_q_values.detach()
-        detached_targets = targets.detach()
-        absolute_td_errors = (detached_targets - detached_selected_q_values).abs()
-        return DQNTrainingStepResult(
-            loss=float(loss.detach().item()),
-            selected_q_values=detached_selected_q_values.clone(),
-            targets=detached_targets.clone(),
-            q_mean=float(all_q_values.detach().mean().item()),
-            q_max=float(all_q_values.detach().max().item()),
-            q_min=float(all_q_values.detach().min().item()),
-            target_mean=float(detached_targets.mean().item()),
-            target_max=float(detached_targets.max().item()),
-            td_error_mean_abs=float(absolute_td_errors.mean().item()),
-            td_error_max_abs=float(absolute_td_errors.max().item()),
-            gradient_norm=gradient_norm,
-        )
+            detached_selected_q_values = selected_q_values.detach()
+            detached_targets = targets.detach()
+            absolute_td_errors = (detached_targets - detached_selected_q_values).abs()
+            return DQNTrainingStepResult(
+                loss=float(loss.detach().item()),
+                selected_q_values=detached_selected_q_values.clone(),
+                targets=detached_targets.clone(),
+                q_mean=float(all_q_values.detach().mean().item()),
+                q_max=float(all_q_values.detach().max().item()),
+                q_min=float(all_q_values.detach().min().item()),
+                target_mean=float(detached_targets.mean().item()),
+                target_max=float(detached_targets.max().item()),
+                td_error_mean_abs=float(absolute_td_errors.mean().item()),
+                td_error_max_abs=float(absolute_td_errors.max().item()),
+                gradient_norm=gradient_norm,
+            )
+
+        return measure_stage("diagnostics", diagnostics)
 
     return DQNTrainingStepResult(
         loss=None,
@@ -420,6 +530,11 @@ class DQNTrainer:
             raise ValueError(
                 "replay_transfer must be direct when replay_backend='gpu'"
             )
+        self._stage_profiler = _StageProfiler(
+            enabled=config.profile_stages,
+            device=self.device,
+        )
+        self._transfer_timing_merged = False
         if self.device.type == "cuda":
             # This Windows/CUDA build rejects an explicit argument after
             # ``torch.manual_seed``. Switch the current device, then use the
@@ -496,6 +611,9 @@ class DQNTrainer:
         self.episode = 0
         self.global_step = 0
         self.optimizer_updates = 0
+        # Checkpoints deliberately do not serialize replay arrays. A resumed
+        # run must collect a fresh warmup window before issuing updates.
+        self._resume_rewarm_steps_remaining = 0
         # Count the initial synchronization so the summary describes the
         # complete target-network lifecycle. Subsequent values are env steps.
         self.target_sync_count = 1
@@ -554,27 +672,43 @@ class DQNTrainer:
 
     def _update_once(self) -> DQNTrainingStepResult:
         if self.config.replay_backend == "gpu":
-            tensor_batch = self.replay.sample(self.config.batch_size)
+            tensor_batch = self._stage_profiler.measure_cuda(
+                "gpu_replay_gather_cast",
+                lambda: self.replay.sample(self.config.batch_size),
+            )
         else:
-            batch = self.replay.sample(self.config.batch_size, self.rng)
+            batch = self._stage_profiler.measure(
+                "replay_sample",
+                lambda: self.replay.sample(self.config.batch_size, self.rng),
+            )
             if self._replay_transfer is None:
-                tensor_batch = replay_batch_to_tensors(batch, device=self.device)
+                tensor_batch = self._stage_profiler.measure_cuda(
+                    "replay_transfer",
+                    lambda: replay_batch_to_tensors(batch, device=self.device),
+                )
             else:
-                tensor_batch = self._replay_transfer.transfer(batch)
+                tensor_batch = self._stage_profiler.measure_cuda(
+                    "replay_transfer",
+                    lambda: self._replay_transfer.transfer(batch),
+                )
         next_update = self.optimizer_updates + 1
         collect_diagnostics = (
             next_update % self.config.diagnostics_interval == 0
             or self.global_step % self.config.checkpoint_interval == 0
             or self.global_step >= self.config.total_steps
         )
-        result = dqn_training_step(
-            self.online_network,
-            self.target_network,
-            self.optimizer,
-            tensor_batch,
-            gamma=self.config.gamma,
-            gradient_clip_norm=self.config.gradient_clip_norm,
-            collect_diagnostics=collect_diagnostics,
+        result = self._stage_profiler.measure_cuda(
+            "dqn_update",
+            lambda: dqn_training_step(
+                self.online_network,
+                self.target_network,
+                self.optimizer,
+                tensor_batch,
+                gamma=self.config.gamma,
+                gradient_clip_norm=self.config.gradient_clip_norm,
+                collect_diagnostics=collect_diagnostics,
+                stage_measure=self._stage_profiler.measure_cuda,
+            ),
         )
         self.optimizer_updates += 1
         self._last_result = result
@@ -722,6 +856,20 @@ class DQNTrainer:
         return f"cuda:{index}"
 
     def _runtime_metadata(self, elapsed: float) -> dict[str, Any]:
+        if (
+            self.config.profile_stages
+            and not self._transfer_timing_merged
+            and self._replay_transfer is not None
+        ):
+            for name, timing in self._replay_transfer.timing_summary().items():
+                self._stage_profiler.merge_cuda_stage(
+                    name,
+                    calls=int(timing.get("calls", 0)),
+                    wall_seconds=float(timing.get("wall_seconds", 0.0)),
+                    cpu_seconds=float(timing.get("cpu_seconds", 0.0)),
+                    gpu_seconds=float(timing.get("gpu_seconds", 0.0)),
+                )
+            self._transfer_timing_merged = True
         return collect_runtime_metadata(
             seed=self.config.seed,
             device=self._resolved_device_name(),
@@ -744,6 +892,8 @@ class DQNTrainer:
                 if self.config.replay_backend == "gpu"
                 else "cpu",
                 "replay_bytes": int(self.replay.allocated_bytes),
+                "replay_rewarm_steps_remaining": self._resume_rewarm_steps_remaining,
+                "stage_timings": self._stage_profiler.summary(),
             },
         )
 
@@ -762,6 +912,7 @@ class DQNTrainer:
             "replay_backend": self.config.replay_backend,
             "replay_transfer": self.config.replay_transfer,
             "replay_bytes": int(self.replay.allocated_bytes),
+            "replay_rewarm_steps_remaining": self._resume_rewarm_steps_remaining,
             "target_sync_count": self.target_sync_count,
             "last_target_sync_step": self.last_target_sync_step,
             "replay_size": len(self.replay),
@@ -853,6 +1004,7 @@ class DQNTrainer:
             "config": self.config.to_dict(),
             "rng_state": self._rng_state(),
             "replay_saved": False,
+            "replay_rewarm_steps_remaining": self._resume_rewarm_steps_remaining,
         }
         torch.save(payload, temporary_path)
         os.replace(temporary_path, path)
@@ -890,6 +1042,18 @@ class DQNTrainer:
             self._action_counts = [int(count) for count in saved_action_counts]
         self._random_decision_count = int(payload.get("random_decision_count", 0))
         self._greedy_decision_count = int(payload.get("greedy_decision_count", 0))
+        replay_saved = bool(payload.get("replay_saved", False))
+        saved_rewarm = payload.get("replay_rewarm_steps_remaining")
+        if replay_saved:
+            self._resume_rewarm_steps_remaining = max(
+                0,
+                int(saved_rewarm) if isinstance(saved_rewarm, int) else 0,
+            )
+        elif isinstance(saved_rewarm, int) and saved_rewarm > 0:
+            self._resume_rewarm_steps_remaining = saved_rewarm
+        else:
+            # Older checkpoints contain no replay arrays or explicit counter.
+            self._resume_rewarm_steps_remaining = self.config.learning_starts
         self.target_network.eval()
         rng_state = payload.get("rng_state")
         if isinstance(rng_state, dict):
@@ -900,7 +1064,10 @@ class DQNTrainer:
         """Run environment interaction until ``config.total_steps``."""
 
         reset_seed = self.config.seed if self.global_step == 0 else None
-        observation, _ = self.env.reset(seed=reset_seed)
+        observation, _ = self._stage_profiler.measure(
+            "env_reset",
+            lambda: self.env.reset(seed=reset_seed),
+        )
         current_observation = _as_uint8_observation(
             observation,
             expected_shape=self.observation_shape,
@@ -909,16 +1076,24 @@ class DQNTrainer:
         try:
             while self.global_step < self.config.total_steps:
                 epsilon = self.schedule.value(self.global_step)
-                action, action_source = self._select_action(
-                    current_observation,
-                    epsilon,
+                action, action_source = self._stage_profiler.measure(
+                    "action_selection",
+                    lambda: self._select_action(
+                        current_observation,
+                        epsilon,
+                    ),
                 )
                 self._action_counts[action] += 1
                 if action_source == "random":
                     self._random_decision_count += 1
                 elif action_source == "greedy":
                     self._greedy_decision_count += 1
-                next_observation, raw_reward, terminated, truncated, _ = self.env.step(action)
+                next_observation, raw_reward, terminated, truncated, _ = (
+                    self._stage_profiler.measure(
+                        "env_step",
+                        lambda: self.env.step(action),
+                    )
+                )
                 next_observation_array = _as_uint8_observation(
                     next_observation,
                     expected_shape=self.observation_shape,
@@ -930,16 +1105,26 @@ class DQNTrainer:
                 )
                 terminated = bool(terminated)
                 truncated = bool(truncated)
-                self.replay.add(
-                    current_observation,
-                    action,
-                    training_reward,
-                    next_observation_array,
-                    terminated,
-                    truncated,
+                insert_measure = (
+                    self._stage_profiler.measure_cuda
+                    if self.config.replay_backend == "gpu"
+                    else self._stage_profiler.measure
+                )
+                insert_measure(
+                    "replay_insert",
+                    lambda: self.replay.add(
+                        current_observation,
+                        action,
+                        training_reward,
+                        next_observation_array,
+                        terminated,
+                        truncated,
+                    ),
                 )
 
                 self.global_step += 1
+                if self._resume_rewarm_steps_remaining > 0:
+                    self._resume_rewarm_steps_remaining -= 1
                 self._current_raw_episode_return += raw_reward
                 self._current_training_episode_return += training_reward
                 self._current_episode_length += 1
@@ -949,6 +1134,7 @@ class DQNTrainer:
                     self.global_step >= self.config.learning_starts
                     and self.global_step % self.config.train_frequency == 0
                     and len(self.replay) >= self.config.batch_size
+                    and self._resume_rewarm_steps_remaining == 0
                 ):
                     result = self._update_once()
 
@@ -973,7 +1159,10 @@ class DQNTrainer:
                     self._current_raw_episode_return = 0.0
                     self._current_training_episode_return = 0.0
                     self._current_episode_length = 0
-                    reset_observation, _ = self.env.reset()
+                    reset_observation, _ = self._stage_profiler.measure(
+                        "env_reset",
+                        lambda: self.env.reset(),
+                    )
                     current_observation = _as_uint8_observation(
                         reset_observation,
                         expected_shape=self.observation_shape,
@@ -981,26 +1170,35 @@ class DQNTrainer:
                 else:
                     current_observation = next_observation_array
 
-                self.metrics.write(
-                    self._metric_row(
-                        action=action,
-                        epsilon=epsilon,
-                        action_source=action_source,
-                        raw_reward=raw_reward,
-                        training_reward=training_reward,
-                        completed_return=completed_return,
-                        completed_length=completed_length,
-                        result=result,
-                    )
+                self._stage_profiler.measure(
+                    "metrics_write",
+                    lambda: self.metrics.write(
+                        self._metric_row(
+                            action=action,
+                            epsilon=epsilon,
+                            action_source=action_source,
+                            raw_reward=raw_reward,
+                            training_reward=training_reward,
+                            completed_return=completed_return,
+                            completed_length=completed_length,
+                            result=result,
+                        )
+                    ),
                 )
 
                 if self.global_step % self.config.checkpoint_interval == 0:
-                    self.save_checkpoint()
+                    self._stage_profiler.measure(
+                        "checkpoint",
+                        self.save_checkpoint,
+                    )
 
             if self._last_checkpoint is None or self._last_checkpoint.stem != (
                 f"step-{self.global_step:08d}"
             ):
-                self.save_checkpoint()
+                self._stage_profiler.measure(
+                    "checkpoint",
+                    self.save_checkpoint,
+                )
             summary = self._summary()
             self.metrics.update_runtime_metadata(summary["runtime"])
             self.metrics.write_summary(summary)

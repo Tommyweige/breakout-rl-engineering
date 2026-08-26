@@ -445,6 +445,8 @@ MILESTONE_FIELDS: tuple[str, ...] = (
     "q_max",
     "target_mean",
     "target_max",
+    "td_error_mean_abs",
+    "td_error_max_abs",
     "gradient_norm",
     "epsilon",
     "sps",
@@ -520,6 +522,10 @@ def load_run_report(
     errors = summary.get("error", failure.get("error"))
     q_fields = ("q_mean", "q_max", "q_min", "target_mean", "target_max")
     q_summary = {field: _stats(_series(rows, field)) for field in q_fields}
+    td_error_summary = {
+        field: _stats(_series(rows, field))
+        for field in ("td_error_mean_abs", "td_error_max_abs")
+    }
     runtime_sps = _parse_float(runtime.get("steps_per_second"))
     if runtime_sps is None:
         runtime_sps = _parse_float(summary.get("steps_per_second"))
@@ -577,6 +583,7 @@ def load_run_report(
         "rolling_return_count": len(rolling),
         "loss_summary": _stats(_series(rows, "loss")),
         "gradient_summary": _stats(_series(rows, "gradient_norm")),
+        "td_error_summary": td_error_summary,
         "q_value_summary": q_summary,
         "milestone_snapshots": _milestone_snapshots(
             rows,
@@ -751,6 +758,10 @@ def _not_started_report(
         "rolling_return_count": 0,
         "loss_summary": _stats([]),
         "gradient_summary": _stats([]),
+        "td_error_summary": {
+            field: _stats([])
+            for field in ("td_error_mean_abs", "td_error_max_abs")
+        },
         "q_value_summary": {field: _stats([]) for field in ("q_mean", "q_max", "q_min", "target_mean", "target_max")},
         "milestone_snapshots": {},
         "sps": {**_stats([]), "runtime": None},

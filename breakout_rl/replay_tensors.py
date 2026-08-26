@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import time
 
 import numpy as np
 import torch
@@ -45,6 +46,7 @@ class PreallocatedReplayBatchTransfer:
         batch_size: int,
         observation_shape: tuple[int, ...],
         device: torch.device | str,
+        profile_stages: bool = False,
     ) -> None:
         if isinstance(batch_size, bool) or not isinstance(batch_size, int) or batch_size < 1:
             raise ValueError("batch_size must be a positive integer")
@@ -59,7 +61,14 @@ class PreallocatedReplayBatchTransfer:
         self.batch_size = batch_size
         self.observation_shape = tuple(observation_shape)
         self.device = _resolve_device(device)
+        if not isinstance(profile_stages, bool):
+            raise TypeError("profile_stages must be a boolean")
+        self.profile_stages = profile_stages
         self._cuda_buffers = self.device.type == "cuda"
+        self._numpy_to_pinned_calls = 0
+        self._numpy_to_pinned_wall_seconds = 0.0
+        self._numpy_to_pinned_cpu_seconds = 0.0
+        self._h2d_events: list[tuple[torch.cuda.Event, torch.cuda.Event]] = []
         pin_memory = self._cuda_buffers
 
         self._host_states = torch.empty(
@@ -138,12 +147,23 @@ class PreallocatedReplayBatchTransfer:
     def transfer(self, batch: TransitionBatch) -> ReplayTensorBatch:
         """Copy one sampled batch into the reusable model-input buffers."""
 
+        wall_start = time.perf_counter() if self.profile_stages else 0.0
+        cpu_start = time.process_time() if self.profile_stages else 0.0
         self._copy_to_host(batch)
+        if self.profile_stages:
+            self._numpy_to_pinned_calls += 1
+            self._numpy_to_pinned_wall_seconds += time.perf_counter() - wall_start
+            self._numpy_to_pinned_cpu_seconds += time.process_time() - cpu_start
         if not self._cuda_buffers:
             return replay_batch_to_tensors(batch, device=self.device)
 
         torch.cuda.current_stream(self.device).synchronize()
         assert self._device_batch is not None
+        stream = torch.cuda.current_stream(self.device)
+        start_event = torch.cuda.Event(enable_timing=True) if self.profile_stages else None
+        end_event = torch.cuda.Event(enable_timing=True) if self.profile_stages else None
+        if start_event is not None:
+            start_event.record(stream)
         self._device_batch.states.copy_(
             self._host_states, non_blocking=True
         ).div_(255.0)
@@ -156,7 +176,35 @@ class PreallocatedReplayBatchTransfer:
             self._host_terminated, non_blocking=True
         )
         self._device_batch.truncated.copy_(self._host_truncated, non_blocking=True)
+        if start_event is not None and end_event is not None:
+            end_event.record(stream)
+            self._h2d_events.append((start_event, end_event))
         return self._device_batch
+
+    def timing_summary(self) -> dict[str, dict[str, float | int]]:
+        """Return optional transfer-stage timings after the caller synchronized."""
+
+        if not self.profile_stages:
+            return {}
+        h2d_seconds = 0.0
+        if self._h2d_events:
+            torch.cuda.synchronize(self.device)
+            h2d_seconds = sum(
+                start.elapsed_time(end) for start, end in self._h2d_events
+            ) / 1000.0
+        return {
+            "numpy_to_pinned": {
+                "calls": self._numpy_to_pinned_calls,
+                "wall_seconds": self._numpy_to_pinned_wall_seconds,
+                "cpu_seconds": self._numpy_to_pinned_cpu_seconds,
+            },
+            "h2d": {
+                "calls": len(self._h2d_events),
+                "wall_seconds": h2d_seconds,
+                "cpu_seconds": 0.0,
+                "gpu_seconds": h2d_seconds,
+            },
+        }
 
 
 def _resolve_device(device: torch.device | str) -> torch.device:

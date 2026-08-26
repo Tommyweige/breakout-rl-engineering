@@ -400,6 +400,7 @@ def _batch_report(
                 "median_recent_episode_return": run.get("median_recent_episode_return"),
                 "recent_return_trend": run.get("recent_return_trend"),
                 "best_rolling_return": run.get("best_rolling_return"),
+                "td_error_summary": run.get("td_error_summary"),
                 "end_to_end_sps": run.get("sps", {}).get("runtime"),
                 "optimizer_updates": updates,
                 "optimizer_updates_per_second": update_sps,
@@ -408,6 +409,9 @@ def _batch_report(
                 "replay_backend": run.get("replay_backend", "cpu"),
                 "replay_transfer": run.get("replay_transfer", "direct"),
                 "replay_memory": run.get("replay_memory"),
+                "stage_timings": summary.get("runtime", {}).get("stage_timings")
+                if isinstance(summary.get("runtime", {}), Mapping)
+                else None,
                 "gpu_memory": run.get("gpu_memory"),
                 "finite_metric_counts": finite_counts,
                 "regression_guardrails": {

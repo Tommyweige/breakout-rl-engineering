@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
+import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -67,7 +69,13 @@ def _frame_image(frame: np.ndarray, *, width: int, header: str) -> Image.Image:
     return canvas
 
 
-def _save_gif(frames: list[Image.Image], *, output: Path, fps: int) -> dict[str, Any]:
+def _save_gif(
+    frames: list[Image.Image],
+    *,
+    output: Path,
+    fps: int,
+    artifact_path: str,
+) -> dict[str, Any]:
     if not frames:
         raise RuntimeError("no gameplay frames were recorded")
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -91,7 +99,7 @@ def _save_gif(frames: list[Image.Image], *, output: Path, fps: int) -> dict[str,
         disposal=2,
     )
     return {
-        "path": output.as_posix(),
+        "path": artifact_path,
         "frame_count": len(frames),
         "fps": fps,
         "frame_duration_ms": duration_ms,
@@ -99,6 +107,52 @@ def _save_gif(frames: list[Image.Image], *, output: Path, fps: int) -> dict[str,
         "frame_size": list(frames[0].size),
         "file_size_bytes": output.stat().st_size,
     }
+
+
+def _git_root(path: Path) -> Path | None:
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(path), "rev-parse", "--show-toplevel"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    return Path(result.stdout.strip()).resolve()
+
+
+def _git_commit(path: Path | None) -> str | None:
+    if path is None:
+        return None
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(path), "rev-parse", "HEAD"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    return result.stdout.strip() or None
+
+
+def _portable_path(path: Path, *, repo_root: Path | None) -> str:
+    resolved = path.resolve()
+    if repo_root is not None:
+        try:
+            return resolved.relative_to(repo_root).as_posix()
+        except ValueError:
+            pass
+    return resolved.as_posix()
+
+
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def record_checkpoint(
@@ -128,6 +182,12 @@ def record_checkpoint(
     )
     if not isinstance(payload, dict):
         raise ValueError("checkpoint must contain a mapping")
+    repo_root = _git_root(checkpoint_path.parent)
+    checkpoint_artifact_path = _portable_path(checkpoint_path, repo_root=repo_root)
+    output_path = Path(output)
+    metadata_file = Path(metadata_path)
+    output_artifact_path = _portable_path(output_path, repo_root=repo_root)
+    metadata_artifact_path = _portable_path(metadata_file, repo_root=repo_root)
     saved_config = payload.get("config", {})
     if not isinstance(saved_config, dict):
         saved_config = {}
@@ -185,11 +245,16 @@ def record_checkpoint(
     if resolved_device.type == "cuda":
         torch.cuda.synchronize(resolved_device)
 
-    output_path = Path(output)
-    metadata_file = Path(metadata_path)
-    gif_metadata = _save_gif(frames, output=output_path, fps=fps)
+    gif_metadata = _save_gif(
+        frames,
+        output=output_path,
+        fps=fps,
+        artifact_path=output_artifact_path,
+    )
     metadata: dict[str, Any] = {
-        "checkpoint": checkpoint_path.as_posix(),
+        "checkpoint": checkpoint_artifact_path,
+        "checkpoint_sha256": _sha256(checkpoint_path),
+        "source_commit": _git_commit(repo_root),
         "checkpoint_step": actual_step,
         "training_run_id": checkpoint_path.parent.parent.name,
         "training_seed": saved_config.get("seed"),
@@ -213,10 +278,11 @@ def record_checkpoint(
         "render_source": "make_breakout_env(render_mode='rgb_array').render()",
         "reproduction_command": (
             "python record_checkpoint_gameplay.py "
-            f"--checkpoint {checkpoint_path} --output {output_path} "
-            f"--metadata {metadata_file} --device {device} "
+            f"--checkpoint {checkpoint_artifact_path} --output {output_artifact_path} "
+            f"--metadata {metadata_artifact_path} --device {device} "
             f"--evaluation-seed {evaluation_seed} --episodes {episodes} "
-            f"--max-steps {max_steps} --record-every {record_every} --fps {fps}"
+            f"--max-steps {max_steps} --record-every {record_every} --fps {fps} "
+            f"--max-width {max_width}"
         ),
         "gif": gif_metadata,
     }

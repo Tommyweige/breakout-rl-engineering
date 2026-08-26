@@ -62,6 +62,8 @@ class CompareRunsTests(unittest.TestCase):
                     "q_min",
                     "target_mean",
                     "target_max",
+                    "td_error_mean_abs",
+                    "td_error_max_abs",
                     "sps",
                 ],
             )
@@ -77,6 +79,8 @@ class CompareRunsTests(unittest.TestCase):
                         "q_min": 0.0,
                         "target_mean": 0.7,
                         "target_max": 1.2,
+                        "td_error_mean_abs": 0.4,
+                        "td_error_max_abs": 0.8,
                         "sps": 40.0,
                     },
                     {
@@ -88,6 +92,8 @@ class CompareRunsTests(unittest.TestCase):
                         "q_min": 0.1,
                         "target_mean": 0.8,
                         "target_max": 1.3,
+                        "td_error_mean_abs": 0.3,
+                        "td_error_max_abs": 0.7,
                         "sps": 45.0,
                     },
                     {
@@ -99,6 +105,8 @@ class CompareRunsTests(unittest.TestCase):
                         "q_min": 0.2,
                         "target_mean": 0.9,
                         "target_max": 1.4,
+                        "td_error_mean_abs": 0.2,
+                        "td_error_max_abs": 0.6,
                         "sps": 50.0,
                     },
                     {
@@ -110,6 +118,8 @@ class CompareRunsTests(unittest.TestCase):
                         "q_min": 0.3,
                         "target_mean": 1.0,
                         "target_max": 1.5,
+                        "td_error_mean_abs": 0.1,
+                        "td_error_max_abs": 0.5,
                         "sps": 55.0,
                     },
                 ]
@@ -149,6 +159,8 @@ class CompareRunsTests(unittest.TestCase):
         self.assertEqual(report["best_rolling_return"], 4.0)
         self.assertEqual(report["loss_summary"]["count"], 4)
         self.assertEqual(report["gradient_summary"]["count"], 0)
+        self.assertEqual(report["td_error_summary"]["td_error_mean_abs"]["count"], 4)
+        self.assertEqual(report["td_error_summary"]["td_error_max_abs"]["max"], 0.8)
         self.assertEqual(report["recent_return_trend"]["direction"], "up")
         self.assertEqual(report["sps"]["runtime"], 50.0)
         self.assertEqual(report["gpu_memory"]["peak_reserved_bytes"], 456)
