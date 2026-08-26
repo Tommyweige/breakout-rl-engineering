@@ -16,6 +16,8 @@ SYSTEM_ONLY_FIELDS = {
     "diagnostics_interval",
     "metrics_flush_interval",
     "cpu_threads",
+    "replay_backend",
+    "replay_transfer",
 }
 
 
@@ -129,6 +131,9 @@ def _phase(report: Mapping[str, Any]) -> dict[str, Any]:
         "finite_metric_counts": _finite_metric_count(Path(report["run_dir"])),
         "epsilon_summary": _epsilon_summary(Path(report["run_dir"])),
         "replay_occupancy": summary.get("replay_occupancy"),
+        "replay_backend": report.get("replay_backend", "cpu"),
+        "replay_transfer": report.get("replay_transfer", "direct"),
+        "replay_memory": report.get("replay_memory"),
         "target_sync_count": summary.get("target_sync_count"),
         "episodes": report.get("episodes"),
         "mean_recent_episode_return": report.get("mean_recent_episode_return"),

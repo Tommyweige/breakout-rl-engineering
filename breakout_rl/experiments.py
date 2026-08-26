@@ -527,6 +527,19 @@ def load_run_report(
     wall_clock = _parse_float(runtime.get("wall_clock_seconds"))
     if wall_clock is None:
         wall_clock = _parse_float(summary.get("wall_clock_seconds"))
+    batch_size = int(config.get("batch_size", 0) or 0)
+    optimizer_updates = int(summary.get("optimizer_updates", 0) or 0)
+    training_samples_per_second = (
+        float(optimizer_updates * batch_size / wall_clock)
+        if wall_clock and wall_clock > 0 and batch_size > 0
+        else None
+    )
+    replay_backend = str(
+        config.get("replay_backend", summary.get("replay_backend", "cpu"))
+    )
+    replay_transfer = str(
+        config.get("replay_transfer", summary.get("replay_transfer", "direct"))
+    )
     return {
         "run_id": str(config.get("run_id", path.name)),
         "run_dir": str(path),
@@ -544,6 +557,16 @@ def load_run_report(
         "expected_steps": int(expected_steps) if expected_steps is not None else None,
         "completed_steps": completed_steps,
         "episodes": int(summary.get("episodes", len(returns)) or 0),
+        "batch_size": batch_size or None,
+        "optimizer_updates": optimizer_updates,
+        "optimizer_updates_per_second": (
+            float(optimizer_updates / wall_clock)
+            if wall_clock and wall_clock > 0
+            else None
+        ),
+        "training_samples_per_second": training_samples_per_second,
+        "replay_backend": replay_backend,
+        "replay_transfer": replay_transfer,
         "recent_window": recent_window,
         "rolling_window": rolling_window,
         "recent_episode_return": _stats(recent),
@@ -570,7 +593,22 @@ def load_run_report(
             "reserved_bytes": runtime.get("cuda_reserved_bytes"),
             "peak_reserved_bytes": runtime.get("cuda_peak_reserved_bytes"),
         },
-        "config": {name: config.get(name) for name in CONFIG_FIELD_NAMES if name in config},
+        "replay_memory": {
+            "bytes": runtime.get("replay_bytes", summary.get("replay_bytes")),
+            "storage_device": runtime.get(
+                "replay_storage_device",
+                summary.get("replay_storage_device"),
+            ),
+        },
+        "config": {
+            name: config.get(name)
+            for name in CONFIG_FIELD_NAMES
+            if name in config
+        }
+        | {
+            "replay_backend": replay_backend,
+            "replay_transfer": replay_transfer,
+        },
         "runtime": dict(runtime),
         "summary": summary,
         "metrics": rows,
@@ -624,6 +662,8 @@ def _comparison_conditions(reports: Sequence[Mapping[str, Any]]) -> dict[str, An
     expected_steps = [report["expected_steps"] for report in reports]
     statuses = [str(report["status"]) for report in reports]
     stages = [str(report.get("stage", "unknown")) for report in reports]
+    replay_backends = [str(report.get("replay_backend", "cpu")) for report in reports]
+    replay_transfers = [str(report.get("replay_transfer", "direct")) for report in reports]
     formal_requested = all(
         device == "cuda" or device.startswith("cuda:") for device in requested_devices
     )
@@ -633,7 +673,11 @@ def _comparison_conditions(reports: Sequence[Mapping[str, Any]]) -> dict[str, An
         "same_resolved_device": len(set(resolved_devices)) == 1,
         "same_step_budget": len(set(expected_steps)) == 1,
         "same_stage": len(set(stages)) == 1,
+        "same_replay_backend": len(set(replay_backends)) == 1,
+        "same_replay_transfer": len(set(replay_transfers)) == 1,
         "stages": stages,
+        "replay_backends": replay_backends,
+        "replay_transfers": replay_transfers,
         "requested_devices": requested_devices,
         "resolved_devices": resolved_devices,
         "step_budgets": expected_steps,
@@ -652,6 +696,8 @@ def _comparison_conditions(reports: Sequence[Mapping[str, Any]]) -> dict[str, An
             and len(set(requested_devices)) == 1
             and len(set(resolved_devices)) == 1
             and len(set(expected_steps)) == 1
+            and len(set(replay_backends)) == 1
+            and len(set(replay_transfers)) == 1
             and expected_steps[0] == 100_000
             and len(set(stages)) == 1
             and stages[0] == "main"
@@ -689,6 +735,12 @@ def _not_started_report(
         "expected_steps": expected_steps,
         "completed_steps": 0,
         "episodes": 0,
+        "batch_size": config_values.get("batch_size"),
+        "optimizer_updates": 0,
+        "optimizer_updates_per_second": None,
+        "training_samples_per_second": None,
+        "replay_backend": config_values.get("replay_backend", "cpu"),
+        "replay_transfer": config_values.get("replay_transfer", "direct"),
         "recent_window": recent_window,
         "rolling_window": rolling_window,
         "recent_episode_return": _stats([]),
@@ -708,6 +760,10 @@ def _not_started_report(
             "peak_allocated_bytes": None,
             "reserved_bytes": None,
             "peak_reserved_bytes": None,
+        },
+        "replay_memory": {
+            "bytes": None,
+            "storage_device": None,
         },
         "config": dict(config_values),
         "runtime": {},

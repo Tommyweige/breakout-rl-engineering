@@ -97,6 +97,13 @@ class ExperimentConfigTests(unittest.TestCase):
             [32, 64, 128],
         )
 
+        gpu_variant = load_experiment_config(
+            Path("configs/experiments/gpu-lr-high.json")
+        )
+        self.assertEqual(gpu_variant.config.replay_backend, "gpu")
+        self.assertEqual(gpu_variant.config.replay_transfer, "direct")
+        self.assertEqual(gpu_variant.config.learning_rate, 0.0002)
+
     def test_require_cuda_rejects_mixed_requested_devices(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = Path(temporary_directory)

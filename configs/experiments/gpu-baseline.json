@@ -1,0 +1,9 @@
+{
+  "name": "gpu-replay-baseline",
+  "base_config": "../final/day14-vanilla-dqn.json",
+  "overrides": {
+    "learning_rate": 0.0001,
+    "replay_backend": "gpu",
+    "replay_transfer": "direct"
+  }
+}

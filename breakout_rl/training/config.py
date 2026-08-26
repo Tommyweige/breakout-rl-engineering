@@ -60,6 +60,24 @@ def _device_request(value: str, *, name: str) -> str:
     )
 
 
+def _replay_transfer_request(value: str, *, name: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{name} must be direct or preallocated")
+    normalized = value.strip().lower()
+    if normalized not in {"direct", "preallocated"}:
+        raise ValueError(f"{name} must be direct or preallocated")
+    return normalized
+
+
+def _replay_backend_request(value: str, *, name: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{name} must be cpu or gpu")
+    normalized = value.strip().lower()
+    if normalized not in {"cpu", "gpu"}:
+        raise ValueError(f"{name} must be cpu or gpu")
+    return normalized
+
+
 @dataclass(frozen=True)
 class DQNConfig:
     """Development defaults for one reproducible DQN training run.
@@ -89,6 +107,8 @@ class DQNConfig:
     diagnostics_interval: int = 1
     metrics_flush_interval: int = 1
     cpu_threads: int | None = None
+    replay_transfer: str = "direct"
+    replay_backend: str = "cpu"
 
     def __post_init__(self) -> None:
         _validated_int(self.total_steps, name="total_steps", minimum=1)
@@ -155,6 +175,18 @@ class DQNConfig:
         )
         if self.cpu_threads is not None:
             _validated_int(self.cpu_threads, name="cpu_threads", minimum=1)
+        object.__setattr__(
+            self,
+            "replay_transfer",
+            _replay_transfer_request(self.replay_transfer, name="replay_transfer"),
+        )
+        object.__setattr__(
+            self,
+            "replay_backend",
+            _replay_backend_request(self.replay_backend, name="replay_backend"),
+        )
+        if self.replay_backend == "gpu" and self.replay_transfer != "direct":
+            raise ValueError("replay_transfer must be direct when replay_backend='gpu'")
         _validated_int(
             self.checkpoint_interval,
             name="checkpoint_interval",

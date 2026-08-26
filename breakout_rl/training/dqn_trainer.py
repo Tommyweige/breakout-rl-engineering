@@ -19,7 +19,12 @@ from torch import nn
 from breakout_rl.exploration import LinearEpsilonSchedule, select_epsilon_greedy_action
 from breakout_rl.models.dqn import DQNNetwork
 from breakout_rl.replay import ReplayBuffer
-from breakout_rl.replay_tensors import ReplayTensorBatch, replay_batch_to_tensors
+from breakout_rl.replay_gpu import GPUReplayBuffer
+from breakout_rl.replay_tensors import (
+    PreallocatedReplayBatchTransfer,
+    ReplayTensorBatch,
+    replay_batch_to_tensors,
+)
 from breakout_rl.targets import hard_update, should_update_target
 from breakout_rl.tensors import observation_to_tensor
 from breakout_rl.training.config import DQNConfig
@@ -407,6 +412,14 @@ class DQNTrainer:
 
         self.requested_device = config.requested_device
         self.device = resolve_device(self.requested_device)
+        if config.replay_backend == "gpu" and self.device.type != "cuda":
+            raise RuntimeError(
+                "replay_backend='gpu' requires CUDA; refusing to fall back to CPU"
+            )
+        if config.replay_backend == "gpu" and config.replay_transfer != "direct":
+            raise ValueError(
+                "replay_transfer must be direct when replay_backend='gpu'"
+            )
         if self.device.type == "cuda":
             # This Windows/CUDA build rejects an explicit argument after
             # ``torch.manual_seed``. Switch the current device, then use the
@@ -451,9 +464,28 @@ class DQNTrainer:
         )
         _ensure_optimizer_excludes_target(self.optimizer, self.target_network)
 
-        self.replay = ReplayBuffer(
-            config.replay_capacity,
-            observation_shape=self.observation_shape,
+        if config.replay_backend == "gpu":
+            self.replay = GPUReplayBuffer(
+                config.replay_capacity,
+                observation_shape=self.observation_shape,
+                device=self.device,
+            )
+        else:
+            self.replay = ReplayBuffer(
+                config.replay_capacity,
+                observation_shape=self.observation_shape,
+            )
+        self._replay_transfer = (
+            PreallocatedReplayBatchTransfer(
+                batch_size=config.batch_size,
+                observation_shape=self.observation_shape,
+                device=self.device,
+            )
+            if (
+                config.replay_backend == "cpu"
+                and config.replay_transfer == "preallocated"
+            )
+            else None
         )
         self.schedule = LinearEpsilonSchedule(
             config.epsilon_start,
@@ -493,6 +525,12 @@ class DQNTrainer:
                 "metrics_flush_interval": self.config.metrics_flush_interval,
                 "metrics_row_cadence": 1,
                 "configured_cpu_threads": self.config.cpu_threads,
+                "replay_transfer": self.config.replay_transfer,
+                "replay_backend": self.config.replay_backend,
+                "replay_storage_device": str(self.device)
+                if self.config.replay_backend == "gpu"
+                else "cpu",
+                "replay_bytes": int(self.replay.allocated_bytes),
             },
         )
 
@@ -515,8 +553,14 @@ class DQNTrainer:
         return action, source
 
     def _update_once(self) -> DQNTrainingStepResult:
-        batch = self.replay.sample(self.config.batch_size, self.rng)
-        tensor_batch = replay_batch_to_tensors(batch, device=self.device)
+        if self.config.replay_backend == "gpu":
+            tensor_batch = self.replay.sample(self.config.batch_size)
+        else:
+            batch = self.replay.sample(self.config.batch_size, self.rng)
+            if self._replay_transfer is None:
+                tensor_batch = replay_batch_to_tensors(batch, device=self.device)
+            else:
+                tensor_batch = self._replay_transfer.transfer(batch)
         next_update = self.optimizer_updates + 1
         collect_diagnostics = (
             next_update % self.config.diagnostics_interval == 0
@@ -694,6 +738,12 @@ class DQNTrainer:
                 "metrics_flush_interval": self.config.metrics_flush_interval,
                 "metrics_row_cadence": 1,
                 "configured_cpu_threads": self.config.cpu_threads,
+                "replay_transfer": self.config.replay_transfer,
+                "replay_backend": self.config.replay_backend,
+                "replay_storage_device": str(self.device)
+                if self.config.replay_backend == "gpu"
+                else "cpu",
+                "replay_bytes": int(self.replay.allocated_bytes),
             },
         )
 
@@ -709,6 +759,9 @@ class DQNTrainer:
             "total_steps": self.global_step,
             "episodes": self.episode,
             "optimizer_updates": self.optimizer_updates,
+            "replay_backend": self.config.replay_backend,
+            "replay_transfer": self.config.replay_transfer,
+            "replay_bytes": int(self.replay.allocated_bytes),
             "target_sync_count": self.target_sync_count,
             "last_target_sync_step": self.last_target_sync_step,
             "replay_size": len(self.replay),

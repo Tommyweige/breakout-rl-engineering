@@ -1,28 +1,20 @@
 {
-  "generated_at_utc": "2026-08-26T09:25:08.469685Z",
+  "generated_at_utc": "2026-08-26T09:24:57.970704Z",
   "command": [
     "visualize_experiment_comparison.py",
     "experiments/day14-gpu-replay-lr-100k-v2/manifest.json",
     "--output",
-    "assets/day14/experiment-diagnostics-comparison.png",
+    "assets/day14/experiment-q-target-comparison.png",
     "--metrics",
-    "loss",
     "q",
-    "target",
-    "gradient",
-    "epsilon",
-    "sps"
+    "target"
   ],
   "manifest": "C:\\Users\\tommy\\.codex\\worktrees\\9ea6\\breakout-rl-engineering\\experiments\\day14-gpu-replay-lr-100k-v2\\manifest.json",
-  "output": "C:\\Users\\tommy\\.codex\\worktrees\\9ea6\\breakout-rl-engineering\\assets\\day14\\experiment-diagnostics-comparison.png",
-  "metadata_output": "C:\\Users\\tommy\\.codex\\worktrees\\9ea6\\breakout-rl-engineering\\assets\\day14\\experiment-diagnostics-comparison.json",
+  "output": "C:\\Users\\tommy\\.codex\\worktrees\\9ea6\\breakout-rl-engineering\\assets\\day14\\experiment-q-target-comparison.png",
+  "metadata_output": "C:\\Users\\tommy\\.codex\\worktrees\\9ea6\\breakout-rl-engineering\\assets\\day14\\experiment-q-target-comparison.json",
   "metrics": [
-    "loss",
     "q",
-    "target",
-    "gradient",
-    "epsilon",
-    "sps"
+    "target"
   ],
   "runs": [
     {

@@ -1,0 +1,241 @@
+{
+  "schema_version": 1,
+  "experiment_id": "day14-gpu-replay-ab-profiled-v2",
+  "created_at_utc": "2026-08-26T09:07:17.747434Z",
+  "updated_at_utc": "2026-08-26T09:08:16.704639Z",
+  "sequential": true,
+  "base_config": {
+    "label": "preallocated-batch-32",
+    "config_path": "../../configs/performance/throughput-preallocated-batch-32.json",
+    "values": {
+      "total_steps": 10000,
+      "seed": 42,
+      "gamma": 0.99,
+      "learning_rate": 0.0001,
+      "batch_size": 32,
+      "replay_capacity": 10000,
+      "learning_starts": 2048,
+      "train_frequency": 4,
+      "target_update_interval": 500,
+      "epsilon_start": 0.9,
+      "epsilon_end": 0.05,
+      "epsilon_decay_steps": 10000,
+      "gradient_clip_norm": 10.0,
+      "reward_clip": true,
+      "device": "cuda",
+      "precision": "float32",
+      "checkpoint_interval": 500,
+      "diagnostics_interval": 100,
+      "metrics_flush_interval": 100,
+      "cpu_threads": 2,
+      "replay_transfer": "preallocated",
+      "replay_backend": "cpu"
+    },
+    "budget_level": "short_screening",
+    "stage": "performance"
+  },
+  "variants": [
+    {
+      "label": "preallocated-batch-32",
+      "config_path": "../../configs/performance/throughput-preallocated-batch-32.json",
+      "config_values": {
+        "total_steps": 10000,
+        "seed": 42,
+        "gamma": 0.99,
+        "learning_rate": 0.0001,
+        "batch_size": 32,
+        "replay_capacity": 10000,
+        "learning_starts": 2048,
+        "train_frequency": 4,
+        "target_update_interval": 500,
+        "epsilon_start": 0.9,
+        "epsilon_end": 0.05,
+        "epsilon_decay_steps": 10000,
+        "gradient_clip_norm": 10.0,
+        "reward_clip": true,
+        "device": "cuda",
+        "precision": "float32",
+        "checkpoint_interval": 500,
+        "diagnostics_interval": 100,
+        "metrics_flush_interval": 100,
+        "cpu_threads": 2,
+        "replay_transfer": "preallocated",
+        "replay_backend": "cpu"
+      },
+      "overrides": {
+        "batch_size": 32,
+        "learning_starts": 2048,
+        "cpu_threads": 2,
+        "replay_transfer": "preallocated"
+      },
+      "changed_fields": [],
+      "status": "completed",
+      "run_dir": "../../assets/day14/gpu-replay-ab-profiled-v2-runs/day14-gpu-replay-ab-profiled-v2/preallocated-batch-32-seed42",
+      "run_id": "preallocated-batch-32-seed42",
+      "requested_device": "cuda",
+      "resolved_device": "cuda:0",
+      "seed": 42,
+      "step_budget": 10000,
+      "budget_level": "short_screening",
+      "stage": "performance",
+      "summary": {
+        "status": "completed",
+        "total_steps": 10000,
+        "episodes": 51,
+        "optimizer_updates": 1989,
+        "steps_per_second": 361.6093290101851,
+        "wall_clock_seconds": 27.654153800103813
+      },
+      "profiling": {
+        "sample_csv": "../../assets/day14/gpu-replay-ab-profiled-v2-profiling/day14-gpu-replay-ab-profiled-v2/preallocated-batch-32/runtime-samples.csv",
+        "sample_summary": "../../assets/day14/gpu-replay-ab-profiled-v2-profiling/day14-gpu-replay-ab-profiled-v2/preallocated-batch-32/runtime-samples-summary.json",
+        "sampling_method": "in-process fixed-interval sampler; nvidia-smi query per sample",
+        "sampling_interval_seconds": 1.0,
+        "process_cpu_percent_method": "time.process_time normalized by wall time and logical CPU count",
+        "cpu_logical_count": 16,
+        "sample_count": 30,
+        "gpu_sample_count": 30,
+        "gpu_utilization_percent": {
+          "mean": 23.866666666666667,
+          "p50": 25.5,
+          "p95": 29.549999999999997,
+          "max": 30.0
+        },
+        "gpu_power_watts": {
+          "mean": 25.074333333333335,
+          "p50": 25.915,
+          "p95": 26.7335,
+          "max": 26.96
+        },
+        "gpu_memory_used_bytes": {
+          "mean": 2097781145.6,
+          "peak": 2120220672.0
+        },
+        "gpu_memory_total_bytes": 8585740288.0,
+        "process_cpu_percent": {
+          "mean": 10.091485110323173,
+          "p50": 11.434032090564719,
+          "p95": 12.155185043367528,
+          "max": 12.286781653566063
+        },
+        "available": true
+      }
+    },
+    {
+      "label": "throughput-gpu-replay-batch-32",
+      "config_path": "../../configs/performance/throughput-gpu-replay-batch-32.json",
+      "config_values": {
+        "total_steps": 10000,
+        "seed": 42,
+        "gamma": 0.99,
+        "learning_rate": 0.0001,
+        "batch_size": 32,
+        "replay_capacity": 10000,
+        "learning_starts": 2048,
+        "train_frequency": 4,
+        "target_update_interval": 500,
+        "epsilon_start": 0.9,
+        "epsilon_end": 0.05,
+        "epsilon_decay_steps": 10000,
+        "gradient_clip_norm": 10.0,
+        "reward_clip": true,
+        "device": "cuda",
+        "precision": "float32",
+        "checkpoint_interval": 500,
+        "diagnostics_interval": 100,
+        "metrics_flush_interval": 100,
+        "cpu_threads": 2,
+        "replay_transfer": "direct",
+        "replay_backend": "gpu"
+      },
+      "overrides": {
+        "replay_backend": "gpu",
+        "replay_transfer": "direct"
+      },
+      "changed_fields": [
+        "replay_backend",
+        "replay_transfer"
+      ],
+      "status": "completed",
+      "run_dir": "../../assets/day14/gpu-replay-ab-profiled-v2-runs/day14-gpu-replay-ab-profiled-v2/throughput-gpu-replay-batch-32-seed42",
+      "run_id": "throughput-gpu-replay-batch-32-seed42",
+      "requested_device": "cuda",
+      "resolved_device": "cuda:0",
+      "seed": 42,
+      "step_budget": 10000,
+      "budget_level": "short_screening",
+      "stage": "performance",
+      "summary": {
+        "status": "completed",
+        "total_steps": 10000,
+        "episodes": 46,
+        "optimizer_updates": 1989,
+        "steps_per_second": 338.1292549929328,
+        "wall_clock_seconds": 29.57448920002207
+      },
+      "profiling": {
+        "sample_csv": "../../assets/day14/gpu-replay-ab-profiled-v2-profiling/day14-gpu-replay-ab-profiled-v2/throughput-gpu-replay-batch-32/runtime-samples.csv",
+        "sample_summary": "../../assets/day14/gpu-replay-ab-profiled-v2-profiling/day14-gpu-replay-ab-profiled-v2/throughput-gpu-replay-batch-32/runtime-samples-summary.json",
+        "sampling_method": "in-process fixed-interval sampler; nvidia-smi query per sample",
+        "sampling_interval_seconds": 1.0,
+        "process_cpu_percent_method": "time.process_time normalized by wall time and logical CPU count",
+        "cpu_logical_count": 16,
+        "sample_count": 30,
+        "gpu_sample_count": 30,
+        "gpu_utilization_percent": {
+          "mean": 24.633333333333333,
+          "p50": 25.0,
+          "p95": 29.0,
+          "max": 29.0
+        },
+        "gpu_power_watts": {
+          "mean": 25.71666666666667,
+          "p50": 26.22,
+          "p95": 26.93,
+          "max": 28.95
+        },
+        "gpu_memory_used_bytes": {
+          "mean": 2623537152.0,
+          "peak": 2683305984.0
+        },
+        "gpu_memory_total_bytes": 8585740288.0,
+        "process_cpu_percent": {
+          "mean": 9.142512061739989,
+          "p50": 5.7908293635318095,
+          "p95": 6.5061496499744855,
+          "max": 105.33517652346029
+        },
+        "available": true
+      }
+    }
+  ],
+  "seeds": [
+    42
+  ],
+  "step_budgets": [
+    10000
+  ],
+  "budget_levels": [
+    "short_screening"
+  ],
+  "stage": "performance",
+  "status": "completed",
+  "command": [
+    "profile_batch_size_experiment.py",
+    "--experiment-id",
+    "day14-gpu-replay-ab-profiled-v2",
+    "--experiments-root",
+    "experiments",
+    "--runs-root",
+    "assets/day14/gpu-replay-ab-profiled-v2-runs",
+    "--samples-root",
+    "assets/day14/gpu-replay-ab-profiled-v2-profiling",
+    "--sample-interval",
+    "1",
+    "--gpu-index",
+    "0",
+    "--require-cuda",
+    "configs/performance/throughput-preallocated-batch-32.json",
+    "configs/performance/throughput-gpu-replay-batch-32.json"
+  ]
+}

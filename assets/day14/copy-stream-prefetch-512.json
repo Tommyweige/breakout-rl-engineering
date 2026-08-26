@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "device": "cuda:0",
+  "cuda_device_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+  "torch_version": "2.13.0+cu130",
+  "result": {
+    "batch_size": 512,
+    "iterations": 10,
+    "overlapped_ms_per_update": 12.485940009355545,
+    "training_samples_per_second": 41006.12365719885,
+    "peak_allocated_bytes": 406523904,
+    "peak_reserved_bytes": 499122176,
+    "cpu_sampling_and_host_staging_included": false
+  }
+}

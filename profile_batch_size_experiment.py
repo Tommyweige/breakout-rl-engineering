@@ -405,6 +405,9 @@ def _batch_report(
                 "optimizer_updates_per_second": update_sps,
                 "training_samples_per_second": samples_sps,
                 "wall_clock_seconds": wall,
+                "replay_backend": run.get("replay_backend", "cpu"),
+                "replay_transfer": run.get("replay_transfer", "direct"),
+                "replay_memory": run.get("replay_memory"),
                 "gpu_memory": run.get("gpu_memory"),
                 "finite_metric_counts": finite_counts,
                 "regression_guardrails": {

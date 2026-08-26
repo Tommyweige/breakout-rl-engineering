@@ -22,6 +22,7 @@ class DQNConfigTests(unittest.TestCase):
         restored = DQNConfig.from_dict(config.to_dict())
 
         self.assertEqual(restored, config)
+        self.assertEqual(config.replay_backend, "cpu")
 
     def test_smoke_preset_keeps_real_training_order_but_is_small(self) -> None:
         config = DQNConfig.smoke(total_steps=1000, device="cpu")
@@ -86,6 +87,32 @@ class DQNConfigTests(unittest.TestCase):
         self.assertEqual(config.requested_device, "auto")
         self.assertEqual(config.precision, "float32")
         self.assertEqual(config.to_dict()["device"], "auto")
+
+    def test_replay_transfer_mode_is_normalized_and_validated(self) -> None:
+        config = DQNConfig(replay_transfer="PREALLOCATED")
+
+        self.assertEqual(config.replay_transfer, "preallocated")
+        self.assertEqual(
+            DQNConfig.from_dict(config.to_dict()).replay_transfer,
+            "preallocated",
+        )
+
+        with self.assertRaises(ValueError):
+            DQNConfig(replay_transfer="unknown")
+
+    def test_replay_backend_is_normalized_and_validated(self) -> None:
+        config = DQNConfig(replay_backend="GPU")
+
+        self.assertEqual(config.replay_backend, "gpu")
+        self.assertEqual(
+            DQNConfig.from_dict(config.to_dict()).replay_backend,
+            "gpu",
+        )
+
+        with self.assertRaises(ValueError):
+            DQNConfig(replay_backend="unknown")
+        with self.assertRaises(ValueError):
+            DQNConfig(replay_backend="gpu", replay_transfer="preallocated")
 
     def test_auto_can_use_cpu_but_explicit_cuda_never_falls_back(self) -> None:
         with patch("breakout_rl.training.dqn_trainer.torch.cuda.is_available", return_value=False):

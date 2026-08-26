@@ -12,6 +12,7 @@ import numpy as np
 import torch
 from torch import nn
 
+from breakout_rl.replay_gpu import GPUReplayBuffer
 from breakout_rl.training.config import DQNConfig
 from breakout_rl.training.dqn_trainer import DQNTrainer, TrainingStepSnapshot
 
@@ -64,6 +65,54 @@ class TinyImageQNetwork(nn.Module):
 
 
 class DQNTrainerTests(unittest.TestCase):
+    @unittest.skipUnless(torch.cuda.is_available(), "CUDA is required for GPU replay integration")
+    def test_gpu_replay_backend_runs_real_trainer_update(self) -> None:
+        config = DQNConfig(
+            total_steps=8,
+            batch_size=4,
+            replay_capacity=8,
+            learning_starts=4,
+            train_frequency=2,
+            target_update_interval=4,
+            checkpoint_interval=8,
+            diagnostics_interval=2,
+            device="cuda",
+            replay_backend="gpu",
+        )
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            trainer = DQNTrainer(
+                ShortEpisodeEnv(),
+                config,
+                run_dir=Path(temporary_directory) / "gpu-replay-smoke",
+                online_network=TinyImageQNetwork(),
+            )
+            summary = trainer.train()
+
+        self.assertIsInstance(trainer.replay, GPUReplayBuffer)
+        self.assertGreater(summary["optimizer_updates"], 0)
+        self.assertEqual(summary["replay_backend"], "gpu")
+        self.assertEqual(summary["runtime"]["replay_backend"], "gpu")
+        self.assertEqual(summary["runtime"]["replay_storage_device"], "cuda:0")
+
+    def test_gpu_replay_backend_rejects_non_cuda_trainer_device(self) -> None:
+        config = DQNConfig(
+            total_steps=1,
+            batch_size=1,
+            replay_capacity=2,
+            learning_starts=1,
+            device="cpu",
+            replay_backend="gpu",
+        )
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            with self.assertRaisesRegex(RuntimeError, "requires CUDA"):
+                DQNTrainer(
+                    ShortEpisodeEnv(),
+                    config,
+                    run_dir=Path(temporary_directory) / "gpu-replay-cpu",
+                )
+
     def test_step_callback_receives_runtime_snapshot_and_rendered_frame(self) -> None:
         snapshots: list[TrainingStepSnapshot] = []
         frames: list[np.ndarray] = []

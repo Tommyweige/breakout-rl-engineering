@@ -32,6 +32,9 @@ class CompareRunsTests(unittest.TestCase):
                     "total_steps": total_steps,
                     "seed": 42,
                     "learning_rate": learning_rate,
+                    "batch_size": 2,
+                    "replay_backend": "cpu",
+                    "replay_transfer": "direct",
                     "device": device,
                     "precision": "float32",
                     "runtime": {
@@ -117,6 +120,7 @@ class CompareRunsTests(unittest.TestCase):
                     "status": status,
                     "total_steps": 4,
                     "episodes": 2,
+                    "optimizer_updates": 2,
                     "steps_per_second": 50.0,
                     "runtime": {
                         "requested_device": device,
@@ -148,6 +152,9 @@ class CompareRunsTests(unittest.TestCase):
         self.assertEqual(report["recent_return_trend"]["direction"], "up")
         self.assertEqual(report["sps"]["runtime"], 50.0)
         self.assertEqual(report["gpu_memory"]["peak_reserved_bytes"], 456)
+        self.assertEqual(report["replay_backend"], "cpu")
+        self.assertEqual(report["replay_transfer"], "direct")
+        self.assertEqual(report["training_samples_per_second"], 50.0)
 
     def test_manifest_compare_reports_config_diff_and_cuda_condition(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
@@ -198,6 +205,7 @@ class CompareRunsTests(unittest.TestCase):
 
         self.assertEqual(report["experiment_id"], "demo")
         self.assertTrue(report["comparison_conditions"]["formal_cuda_eligible"])
+        self.assertTrue(report["comparison_conditions"]["same_replay_backend"])
         self.assertEqual(report["runs"][1]["label"], "lr-low")
         self.assertEqual(
             report["runs"][1]["config_diff"]["learning_rate"],
