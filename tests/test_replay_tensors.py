@@ -57,6 +57,31 @@ class PreallocatedReplayBatchTransferTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             transfer.transfer(invalid)
 
+    @unittest.skipUnless(torch.cuda.is_available(), "CUDA is required for transfer profiling")
+    def test_cuda_profile_separates_host_copy_and_h2d(self) -> None:
+        batch = TransitionBatch(
+            states=np.zeros((2, 4, 84, 84), dtype=np.uint8),
+            actions=np.array([0, 1], dtype=np.int64),
+            rewards=np.array([0.0, 1.0], dtype=np.float32),
+            next_states=np.ones((2, 4, 84, 84), dtype=np.uint8),
+            terminated=np.array([False, True], dtype=np.bool_),
+            truncated=np.array([False, False], dtype=np.bool_),
+        )
+        transfer = PreallocatedReplayBatchTransfer(
+            batch_size=2,
+            observation_shape=(4, 84, 84),
+            device="cuda",
+            profile_stages=True,
+        )
+        transfer.transfer(batch)
+        torch.cuda.synchronize()
+        timings = transfer.timing_summary()
+
+        self.assertEqual(timings["numpy_to_pinned"]["calls"], 1)
+        self.assertGreater(timings["numpy_to_pinned"]["wall_seconds"], 0.0)
+        self.assertEqual(timings["h2d"]["calls"], 1)
+        self.assertGreater(timings["h2d"]["gpu_seconds"], 0.0)
+
 
 if __name__ == "__main__":
     unittest.main()
