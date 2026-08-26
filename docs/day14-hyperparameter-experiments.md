@@ -86,7 +86,7 @@ GPU enabled 不等於整條訓練管線都由 GPU 主導。這個 DQN（用神�
 
 這張圖回答的是：**在相同 100K steps 下，三個 learning-rate run 的 raw return 是否開始沿著不同的 learning curve 前進？** 淡色點是每局實際完成時的 raw episode return；粗線是固定 20-episode rolling mean。x 軸仍然是 environment step，而不是 episode index。
 
-[![100K main comparison 中三個 GPU replay learning-rate run 的 raw return 與 20-episode rolling mean](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/codex/issue-16-day14/assets/day14/experiment-return-comparison.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/codex/issue-16-day14/assets/day14/experiment-return-comparison.png)
+[![100K main comparison 中三個 GPU replay learning-rate run 的 raw return 與 20-episode rolling mean](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/experiment-return-comparison.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/experiment-return-comparison.png)
 
 圖中 high 的 rolling curve 在後段維持較高，baseline 次之，low 較低；這支持「100K 比 10K 更能看出候選差異」這個觀察。它不能支持「`2e-4` 在所有 seed 都最佳」，也不能排除更長訓練後排名改變。SPS 是每秒完成多少 environment transitions 的 throughput，wall-clock 是實際經過的時間；它們是執行成本，不是遊戲品質。GPU replay 的 optimizer-side microbenchmark 約 39K–41K samples/s，也不能被寫成這三個完整 trainer 的 SPS。
 
@@ -104,7 +104,7 @@ Q-value 是模型對 action 長期價值的估計；Target mean 是另一個較�
 
 下圖把同一批 run 的 loss、Q mean、Target mean、gradient norm、epsilon 和 SPS 放在相同的 environment-step 軸上。它的用途不是製造另一個 winner，而是檢查 return 差異是否伴隨非有限值、持續增大的梯度，或完全不同的執行成本。
 
-[![100K main comparison 的 loss、Q、Target、gradient、epsilon 與 throughput diagnostics](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/codex/issue-16-day14/assets/day14/experiment-diagnostics-comparison.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/codex/issue-16-day14/assets/day14/experiment-diagnostics-comparison.png)
+[![100K main comparison 的 loss、Q、Target、gradient、epsilon 與 throughput diagnostics](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/experiment-diagnostics-comparison.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/experiment-diagnostics-comparison.png)
 
 epsilon 在這組 config 中於前 10K steps 下降到 `0.05`，之後 90K 大多在低探索機率下執行。這是現有 epsilon schedule 的設計條件，不是這次 learning-rate comparison 的變因；如果下一輪要研究探索速度，應另開一個只改 epsilon decay 的 batch。
 
@@ -114,13 +114,13 @@ epsilon 在這組 config 中於前 10K steps 下降到 `0.05`，之後 90K 大�
 
 1K 和 10K 的 greedy episode 都得到 `0`，這不是失敗的錄影，而是重要限制：training return 仍包含探索行為，不能直接等同 greedy evaluation policy。50K 與 100K checkpoint 在同一個 evaluation contract 下分別得到 return `4` 與 `7`；這是單一 seed、單一 evaluation episode 的 limited evidence，不能取代 Day 15 的多 episode evaluation。
 
-[![1K checkpoint 的真實 Breakout gameplay](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/codex/issue-16-day14/assets/day14/gameplay-step-001k.gif?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/codex/issue-16-day14/assets/day14/gameplay-step-001k.gif)
+[![1K checkpoint 的真實 Breakout gameplay](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/gameplay-step-001k.gif?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/gameplay-step-001k.gif)
 
-[![10K checkpoint 的真實 Breakout gameplay](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/codex/issue-16-day14/assets/day14/gameplay-step-010k.gif?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/codex/issue-16-day14/assets/day14/gameplay-step-010k.gif)
+[![10K checkpoint 的真實 Breakout gameplay](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/gameplay-step-010k.gif?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/gameplay-step-010k.gif)
 
-[![50K checkpoint 的真實 Breakout gameplay](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/codex/issue-16-day14/assets/day14/gameplay-step-050k.gif?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/codex/issue-16-day14/assets/day14/gameplay-step-050k.gif)
+[![50K checkpoint 的真實 Breakout gameplay](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/gameplay-step-050k.gif?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/gameplay-step-050k.gif)
 
-[![100K checkpoint 的真實 Breakout gameplay](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/codex/issue-16-day14/assets/day14/gameplay-step-100k.gif?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/codex/issue-16-day14/assets/day14/gameplay-step-100k.gif)
+[![100K checkpoint 的真實 Breakout gameplay](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/gameplay-step-100k.gif?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/gameplay-step-100k.gif)
 
 每個 GIF 的 checkpoint step、training run、evaluation seed、實際 frame 數與重現命令保存在同名 JSON metadata。影片回答的是「這個 checkpoint 能做出什麼行為」，不回答「這個配置在多個 seed 下是否有較高 final policy quality」。
 
@@ -140,7 +140,7 @@ LR comparison 選出的 development candidate 是 `2e-4`，但它還沒有回答
 
 所以這次沒有把 batch64 或 batch128 硬送進 100K：它們沒有實際的 end-to-end efficiency gain；batch32 則沿用已完成的長程 reference。這是有意義的 negative result——增加 samples/s 並沒有降低 wall-clock，也沒有理由只因 GPU utilization 上升就改變正式 training config。
 
-[![Day 14 batch size 32、64、128 的 throughput、GPU utilization、power、VRAM 與短跑 learning guardrails](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/codex/issue-16-day14/assets/day14/batch-size-efficiency.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/codex/issue-16-day14/assets/day14/batch-size-efficiency.png)
+[![Day 14 batch size 32、64、128 的 throughput、GPU utilization、power、VRAM 與短跑 learning guardrails](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/batch-size-efficiency.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/batch-size-efficiency.png)
 
 ## 用 1/2/4 threads 凍結系統設定，再交給 Day 15
 
