@@ -1,0 +1,32 @@
+{
+  "sampling_method": "in-process fixed-interval sampler; nvidia-smi query per sample",
+  "sampling_interval_seconds": 1.0,
+  "process_cpu_percent_method": "time.process_time normalized by wall time and logical CPU count",
+  "cpu_logical_count": 16,
+  "sample_count": 27,
+  "gpu_sample_count": 27,
+  "gpu_utilization_percent": {
+    "mean": 15.925925925925926,
+    "p50": 16.0,
+    "p95": 19.0,
+    "max": 19.0
+  },
+  "gpu_power_watts": {
+    "mean": 23.35851851851852,
+    "p50": 23.72,
+    "p95": 24.372,
+    "max": 24.53
+  },
+  "gpu_memory_used_bytes": {
+    "mean": 2601206366.814815,
+    "peak": 2622488576.0
+  },
+  "gpu_memory_total_bytes": 8585740288.0,
+  "process_cpu_percent": {
+    "mean": 5.649213500504741,
+    "p50": 5.800483964469518,
+    "p95": 6.2909878144195535,
+    "max": 7.126943489751836
+  },
+  "available": true
+}

@@ -18,3 +18,6 @@ candidate. It keeps the same batch, schedule, learning rate, and CUDA
 training contract while selecting `replay_backend=gpu`. Its 100K evidence is
 stored under `experiments/day14-gpu-replay-lr-100k-v2/`; the CPU-replay config
 above remains the reference and is not silently replaced by the GPU result.
+The fixed-batch full-trainer timing evidence is recorded under
+`experiments/day14-gpu-replay-ab-profiled-v5/`; it is a systems-performance
+candidate, not proof of better DQN sample efficiency or final policy quality.

@@ -219,6 +219,8 @@ class CompareRunsTests(unittest.TestCase):
         self.assertTrue(report["comparison_conditions"]["formal_cuda_eligible"])
         self.assertTrue(report["comparison_conditions"]["same_replay_backend"])
         self.assertEqual(report["runs"][1]["label"], "lr-low")
+        self.assertFalse(Path(report["manifest"]).is_absolute())
+        self.assertFalse(Path(report["runs"][0]["run_dir"]).is_absolute())
         self.assertEqual(
             report["runs"][1]["config_diff"]["learning_rate"],
             {"base": 0.1, "variant": 0.05},

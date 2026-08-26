@@ -48,7 +48,7 @@
   "runs": [
     {
       "run_id": "gpu-replay-baseline-seed42",
-      "run_dir": "C:\\Users\\tommy\\.codex\\worktrees\\9ea6\\breakout-rl-engineering\\assets\\day14\\gpu-replay-lr-100k-v2-runs\\day14-gpu-replay-lr-100k-v2\\gpu-replay-baseline-seed42",
+      "run_dir": "../../assets/day14/gpu-replay-lr-100k-v2-runs/day14-gpu-replay-lr-100k-v2/gpu-replay-baseline-seed42",
       "label": "gpu-replay-baseline",
       "stage": "main",
       "status": "completed",
@@ -103,6 +103,22 @@
         "min": 0.0027308028656989336,
         "max": 0.8237185478210449
       },
+      "td_error_summary": {
+        "td_error_mean_abs": {
+          "count": 251,
+          "mean": 0.0396461816656726,
+          "median": 0.039904460310935974,
+          "min": 0.003025661688297987,
+          "max": 0.09775863587856293
+        },
+        "td_error_max_abs": {
+          "count": 251,
+          "mean": 0.24747723919818126,
+          "median": 0.19753217697143555,
+          "min": 0.008338533341884613,
+          "max": 1.0083078145980835
+        }
+      },
       "q_value_summary": {
         "q_mean": {
           "count": 251,
@@ -148,6 +164,8 @@
           "q_max": 2.359177350997925,
           "target_mean": 0.7309229969978333,
           "target_max": 2.314147472381592,
+          "td_error_mean_abs": 0.03943422809243202,
+          "td_error_max_abs": 0.13335466384887695,
           "gradient_norm": 0.2017768770456314,
           "epsilon": 0.05,
           "sps": 322.49023221581945,
@@ -160,6 +178,8 @@
           "q_max": 2.265000343322754,
           "target_mean": 1.0226860046386719,
           "target_max": 2.27028226852417,
+          "td_error_mean_abs": 0.02897336147725582,
+          "td_error_max_abs": 0.15636104345321655,
           "gradient_norm": 0.11852272599935532,
           "epsilon": 0.05,
           "sps": 332.32279355435753,
@@ -172,6 +192,8 @@
           "q_max": 2.6098039150238037,
           "target_mean": 1.291182041168213,
           "target_max": 2.5112762451171875,
+          "td_error_mean_abs": 0.04686663672327995,
+          "td_error_max_abs": 0.23142313957214355,
           "gradient_norm": 0.4718744158744812,
           "epsilon": 0.05,
           "sps": 349.0512878146514,
@@ -184,6 +206,8 @@
           "q_max": 2.5750956535339355,
           "target_mean": 1.3730041980743408,
           "target_max": 2.6462321281433105,
+          "td_error_mean_abs": 0.053556475788354874,
+          "td_error_max_abs": 0.2113713026046753,
           "gradient_norm": 0.19581595063209534,
           "epsilon": 0.05,
           "sps": 358.4995830666635,
@@ -282,7 +306,7 @@
       "summary": {
         "status": "completed",
         "run_id": "gpu-replay-baseline-seed42",
-        "run_dir": "C:\\Users\\tommy\\.codex\\worktrees\\9ea6\\breakout-rl-engineering\\assets\\day14\\gpu-replay-lr-100k-v2-runs\\day14-gpu-replay-lr-100k-v2\\gpu-replay-baseline-seed42",
+        "run_dir": "../../assets/day14/gpu-replay-lr-100k-v2-runs/day14-gpu-replay-lr-100k-v2/gpu-replay-baseline-seed42",
         "seed": 42,
         "total_steps": 100000,
         "episodes": 364,
@@ -362,13 +386,13 @@
         "random_decision_count": 9283,
         "greedy_decision_count": 90717,
         "random_decision_ratio": 0.09283,
-        "last_checkpoint": "C:\\Users\\tommy\\.codex\\worktrees\\9ea6\\breakout-rl-engineering\\assets\\day14\\gpu-replay-lr-100k-v2-runs\\day14-gpu-replay-lr-100k-v2\\gpu-replay-baseline-seed42\\checkpoints\\step-00100000.pt"
+        "last_checkpoint": "../../assets/day14/gpu-replay-lr-100k-v2-runs/day14-gpu-replay-lr-100k-v2/gpu-replay-baseline-seed42/checkpoints/step-00100000.pt"
       },
       "config_diff": {}
     },
     {
       "run_id": "gpu-replay-learning-rate-low-seed42",
-      "run_dir": "C:\\Users\\tommy\\.codex\\worktrees\\9ea6\\breakout-rl-engineering\\assets\\day14\\gpu-replay-lr-100k-v2-runs\\day14-gpu-replay-lr-100k-v2\\gpu-replay-learning-rate-low-seed42",
+      "run_dir": "../../assets/day14/gpu-replay-lr-100k-v2-runs/day14-gpu-replay-lr-100k-v2/gpu-replay-learning-rate-low-seed42",
       "label": "gpu-replay-learning-rate-low",
       "stage": "main",
       "status": "completed",
@@ -423,6 +447,22 @@
         "min": 0.005403694696724415,
         "max": 0.6366691589355469
       },
+      "td_error_summary": {
+        "td_error_mean_abs": {
+          "count": 251,
+          "mean": 0.035836337544246616,
+          "median": 0.03509168326854706,
+          "min": 0.003247315064072609,
+          "max": 0.09023457020521164
+        },
+        "td_error_max_abs": {
+          "count": 251,
+          "mean": 0.24668583018608778,
+          "median": 0.18047916889190674,
+          "min": 0.007840052247047424,
+          "max": 1.0038824081420898
+        }
+      },
       "q_value_summary": {
         "q_mean": {
           "count": 251,
@@ -468,6 +508,8 @@
           "q_max": 0.778930127620697,
           "target_mean": 0.5528257489204407,
           "target_max": 0.7084609270095825,
+          "td_error_mean_abs": 0.04048057645559311,
+          "td_error_max_abs": 0.5814242362976074,
           "gradient_norm": 0.06274629384279251,
           "epsilon": 0.05,
           "sps": 393.42691332366786,
@@ -480,6 +522,8 @@
           "q_max": 2.2000629901885986,
           "target_mean": 1.2447633743286133,
           "target_max": 2.272512912750244,
+          "td_error_mean_abs": 0.05063147470355034,
+          "td_error_max_abs": 0.35455334186553955,
           "gradient_norm": 0.45144009590148926,
           "epsilon": 0.05,
           "sps": 388.668676299401,
@@ -492,6 +536,8 @@
           "q_max": 1.597261667251587,
           "target_mean": 1.082021951675415,
           "target_max": 1.608417272567749,
+          "td_error_mean_abs": 0.03746752440929413,
+          "td_error_max_abs": 0.308465838432312,
           "gradient_norm": 0.19647864997386932,
           "epsilon": 0.05,
           "sps": 387.11038629333456,
@@ -504,6 +550,8 @@
           "q_max": 2.6445717811584473,
           "target_mean": 1.1934422254562378,
           "target_max": 2.695068359375,
+          "td_error_mean_abs": 0.02787179872393608,
+          "td_error_max_abs": 0.07326453924179077,
           "gradient_norm": 0.18994873762130737,
           "epsilon": 0.05,
           "sps": 387.9619423906998,
@@ -602,7 +650,7 @@
       "summary": {
         "status": "completed",
         "run_id": "gpu-replay-learning-rate-low-seed42",
-        "run_dir": "C:\\Users\\tommy\\.codex\\worktrees\\9ea6\\breakout-rl-engineering\\assets\\day14\\gpu-replay-lr-100k-v2-runs\\day14-gpu-replay-lr-100k-v2\\gpu-replay-learning-rate-low-seed42",
+        "run_dir": "../../assets/day14/gpu-replay-lr-100k-v2-runs/day14-gpu-replay-lr-100k-v2/gpu-replay-learning-rate-low-seed42",
         "seed": 42,
         "total_steps": 100000,
         "episodes": 389,
@@ -682,7 +730,7 @@
         "random_decision_count": 9283,
         "greedy_decision_count": 90717,
         "random_decision_ratio": 0.09283,
-        "last_checkpoint": "C:\\Users\\tommy\\.codex\\worktrees\\9ea6\\breakout-rl-engineering\\assets\\day14\\gpu-replay-lr-100k-v2-runs\\day14-gpu-replay-lr-100k-v2\\gpu-replay-learning-rate-low-seed42\\checkpoints\\step-00100000.pt"
+        "last_checkpoint": "../../assets/day14/gpu-replay-lr-100k-v2-runs/day14-gpu-replay-lr-100k-v2/gpu-replay-learning-rate-low-seed42/checkpoints/step-00100000.pt"
       },
       "config_diff": {
         "learning_rate": {
@@ -693,7 +741,7 @@
     },
     {
       "run_id": "gpu-replay-learning-rate-high-seed42",
-      "run_dir": "C:\\Users\\tommy\\.codex\\worktrees\\9ea6\\breakout-rl-engineering\\assets\\day14\\gpu-replay-lr-100k-v2-runs\\day14-gpu-replay-lr-100k-v2\\gpu-replay-learning-rate-high-seed42",
+      "run_dir": "../../assets/day14/gpu-replay-lr-100k-v2-runs/day14-gpu-replay-lr-100k-v2/gpu-replay-learning-rate-high-seed42",
       "label": "gpu-replay-learning-rate-high",
       "stage": "main",
       "status": "completed",
@@ -748,6 +796,22 @@
         "min": 0.0038639712147414684,
         "max": 1.0134704113006592
       },
+      "td_error_summary": {
+        "td_error_mean_abs": {
+          "count": 251,
+          "mean": 0.044326519463730764,
+          "median": 0.045160550624132156,
+          "min": 0.004590948577970266,
+          "max": 0.1267743557691574
+        },
+        "td_error_max_abs": {
+          "count": 251,
+          "mean": 0.24617205437020476,
+          "median": 0.1919029951095581,
+          "min": 0.008696496486663818,
+          "max": 1.181897521018982
+        }
+      },
       "q_value_summary": {
         "q_mean": {
           "count": 251,
@@ -793,6 +857,8 @@
           "q_max": 1.5065648555755615,
           "target_mean": 0.499211847782135,
           "target_max": 1.5017764568328857,
+          "td_error_mean_abs": 0.024213328957557678,
+          "td_error_max_abs": 0.14668124914169312,
           "gradient_norm": 0.08122017979621887,
           "epsilon": 0.05,
           "sps": 396.56747626300455,
@@ -805,6 +871,8 @@
           "q_max": 2.4044265747070312,
           "target_mean": 1.4282424449920654,
           "target_max": 2.5408518314361572,
+          "td_error_mean_abs": 0.053753629326820374,
+          "td_error_max_abs": 0.15188801288604736,
           "gradient_norm": 0.19726049900054932,
           "epsilon": 0.05,
           "sps": 390.24934841625503,
@@ -817,6 +885,8 @@
           "q_max": 2.7097909450531006,
           "target_mean": 1.5977106094360352,
           "target_max": 2.5848984718322754,
+          "td_error_mean_abs": 0.05212748795747757,
+          "td_error_max_abs": 0.2207493782043457,
           "gradient_norm": 0.1750006377696991,
           "epsilon": 0.05,
           "sps": 389.7442761839377,
@@ -829,6 +899,8 @@
           "q_max": 3.0904321670532227,
           "target_mean": 1.7552226781845093,
           "target_max": 3.140155076980591,
+          "td_error_mean_abs": 0.038936860859394073,
+          "td_error_max_abs": 0.09776961803436279,
           "gradient_norm": 0.2260896861553192,
           "epsilon": 0.05,
           "sps": 390.63850846273994,
@@ -927,7 +999,7 @@
       "summary": {
         "status": "completed",
         "run_id": "gpu-replay-learning-rate-high-seed42",
-        "run_dir": "C:\\Users\\tommy\\.codex\\worktrees\\9ea6\\breakout-rl-engineering\\assets\\day14\\gpu-replay-lr-100k-v2-runs\\day14-gpu-replay-lr-100k-v2\\gpu-replay-learning-rate-high-seed42",
+        "run_dir": "../../assets/day14/gpu-replay-lr-100k-v2-runs/day14-gpu-replay-lr-100k-v2/gpu-replay-learning-rate-high-seed42",
         "seed": 42,
         "total_steps": 100000,
         "episodes": 308,
@@ -1007,7 +1079,7 @@
         "random_decision_count": 9283,
         "greedy_decision_count": 90717,
         "random_decision_ratio": 0.09283,
-        "last_checkpoint": "C:\\Users\\tommy\\.codex\\worktrees\\9ea6\\breakout-rl-engineering\\assets\\day14\\gpu-replay-lr-100k-v2-runs\\day14-gpu-replay-lr-100k-v2\\gpu-replay-learning-rate-high-seed42\\checkpoints\\step-00100000.pt"
+        "last_checkpoint": "../../assets/day14/gpu-replay-lr-100k-v2-runs/day14-gpu-replay-lr-100k-v2/gpu-replay-learning-rate-high-seed42/checkpoints/step-00100000.pt"
       },
       "config_diff": {
         "learning_rate": {
@@ -1018,7 +1090,7 @@
     }
   ],
   "experiment_id": "day14-gpu-replay-lr-100k-v2",
-  "manifest": "C:\\Users\\tommy\\.codex\\worktrees\\9ea6\\breakout-rl-engineering\\experiments\\day14-gpu-replay-lr-100k-v2\\manifest.json",
+  "manifest": "experiments/day14-gpu-replay-lr-100k-v2/manifest.json",
   "manifest_status": "completed",
   "sequential": true,
   "experiment_stage": "main",

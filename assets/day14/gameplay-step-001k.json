@@ -1,5 +1,7 @@
 {
-  "checkpoint": "C:/Users/tommy/.codex/worktrees/9ea6/breakout-rl-engineering/assets/day14/gpu-replay-high-10k-v2-runs/day14-gpu-replay-high-10k-screening-v2/gpu-replay-high-10k-screening-seed42/checkpoints/step-00001000.pt",
+  "checkpoint": "assets/day14/gpu-replay-high-10k-v2-runs/day14-gpu-replay-high-10k-screening-v2/gpu-replay-high-10k-screening-seed42/checkpoints/step-00001000.pt",
+  "checkpoint_sha256": "6e688e18e198b267226c3e47a261c9580572353214bfc992a0e19891f61f7722",
+  "source_commit": "f0a213a143fe5483793dbf6a037b8857d130dc3e",
   "checkpoint_step": 1000,
   "training_run_id": "gpu-replay-high-10k-screening-seed42",
   "training_seed": 42,
@@ -50,7 +52,7 @@
   "record_every": 4,
   "source_script": "record_checkpoint_gameplay.py",
   "render_source": "make_breakout_env(render_mode='rgb_array').render()",
-  "reproduction_command": "python record_checkpoint_gameplay.py --checkpoint C:\\Users\\tommy\\.codex\\worktrees\\9ea6\\breakout-rl-engineering\\assets\\day14\\gpu-replay-high-10k-v2-runs\\day14-gpu-replay-high-10k-screening-v2\\gpu-replay-high-10k-screening-seed42\\checkpoints\\step-00001000.pt --output assets\\day14\\gameplay-step-001k.gif --metadata assets\\day14\\gameplay-step-001k.json --device cuda --evaluation-seed 10000 --episodes 1 --max-steps 500 --record-every 4 --fps 10",
+  "reproduction_command": "python record_checkpoint_gameplay.py --checkpoint assets/day14/gpu-replay-high-10k-v2-runs/day14-gpu-replay-high-10k-screening-v2/gpu-replay-high-10k-screening-seed42/checkpoints/step-00001000.pt --output assets/day14/gameplay-step-001k.gif --metadata assets/day14/gameplay-step-001k.json --device cuda --evaluation-seed 10000 --episodes 1 --max-steps 500 --record-every 4 --fps 10 --max-width 240",
   "gif": {
     "path": "assets/day14/gameplay-step-001k.gif",
     "frame_count": 126,

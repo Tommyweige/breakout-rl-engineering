@@ -11,7 +11,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
-from breakout_rl.experiments import load_manifest_run_paths, read_metrics, write_json_object
+from breakout_rl.experiments import (
+    load_manifest_run_paths,
+    read_metrics,
+    relative_path,
+    write_json_object,
+)
 from breakout_rl.training.diagnostics import parse_numeric_value
 
 
@@ -75,19 +80,20 @@ def _metadata_payload(
     selected: Sequence[str],
     entries: Sequence[tuple[Mapping[str, Any], Path]],
 ) -> dict[str, Any]:
+    manifest_source = Path(manifest_path).resolve()
     return {
         "generated_at_utc": datetime.now(timezone.utc).isoformat().replace(
             "+00:00", "Z"
         ),
         "command": list(sys.argv),
-        "manifest": str(Path(manifest_path).resolve()),
-        "output": str(destination.resolve()),
-        "metadata_output": str(metadata_destination.resolve()),
+        "manifest": relative_path(manifest_source, start=Path.cwd()),
+        "output": relative_path(destination, start=Path.cwd()),
+        "metadata_output": relative_path(metadata_destination, start=Path.cwd()),
         "metrics": list(selected),
         "runs": [
             {
                 "label": entry.get("label", run_dir.name),
-                "run_dir": str(run_dir),
+                "run_dir": relative_path(run_dir, start=manifest_source.parent),
                 "seed": entry.get("seed"),
                 "requested_device": entry.get("requested_device"),
                 "resolved_device": entry.get("resolved_device"),

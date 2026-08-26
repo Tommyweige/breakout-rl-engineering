@@ -1,0 +1,7 @@
+{
+  "name": "profiled-preallocated-batch-32",
+  "base_config": "throughput-preallocated-batch-32.json",
+  "overrides": {
+    "profile_stages": true
+  }
+}

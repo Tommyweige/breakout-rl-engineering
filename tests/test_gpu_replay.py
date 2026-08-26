@@ -80,6 +80,20 @@ class GPUReplayBufferTests(unittest.TestCase):
         self.assertEqual(len(set(first_indices.tolist())), 6)
         torch.testing.assert_close(first_indices, second_indices)
 
+    def test_sampling_is_uniform_over_active_slots(self) -> None:
+        replay = self.make_buffer(capacity=6)
+        for index in range(6):
+            replay.add(*self.transition(index))
+
+        generator = torch.Generator(device="cpu").manual_seed(19)
+        counts = np.zeros(6, dtype=np.int64)
+        for _ in range(6_000):
+            index = int(replay.sample_indices(1, generator=generator)[0].item())
+            counts[index] += 1
+
+        self.assertTrue(np.all(counts > 700), counts)
+        self.assertTrue(np.all(counts < 1_300), counts)
+
     def test_fixed_index_batch_matches_numpy_replay_contract(self) -> None:
         cpu = ReplayBuffer(capacity=6, observation_shape=self.SHAPE)
         gpu = self.make_buffer(capacity=6)
@@ -88,7 +102,7 @@ class GPUReplayBufferTests(unittest.TestCase):
             cpu.add(*transition)
             gpu.add(*transition)
 
-        indices = np.array([4, 1, 5], dtype=np.int64)
+        indices = np.array([2, 3, 5], dtype=np.int64)
         gpu_batch = gpu.gather(torch.from_numpy(indices))
 
         # The fixed physical-index comparison is the semantic seam: both
@@ -112,6 +126,33 @@ class GPUReplayBufferTests(unittest.TestCase):
             cpu.truncated[indices],
         )
         self.assertEqual(gpu_batch.states.dtype, torch.float32)
+
+    @unittest.skipUnless(torch.cuda.is_available(), "CUDA is required for storage integration")
+    def test_cuda_storage_preserves_full_transition_tensor_contract(self) -> None:
+        replay = GPUReplayBuffer(
+            capacity=4,
+            observation_shape=self.SHAPE,
+            device="cuda",
+        )
+        for index in range(2):
+            replay.add(*self.transition(index))
+
+        batch = replay.sample(
+            2,
+            generator=torch.Generator(device="cuda").manual_seed(11),
+        )
+        self.assertEqual(batch.states.device.type, "cuda")
+        self.assertEqual(batch.next_states.device.type, "cuda")
+        self.assertEqual(batch.states.shape, (2, *self.SHAPE))
+        self.assertEqual(batch.next_states.shape, (2, *self.SHAPE))
+        self.assertEqual(batch.states.dtype, torch.float32)
+        self.assertEqual(batch.next_states.dtype, torch.float32)
+        self.assertEqual(batch.actions.dtype, torch.int64)
+        self.assertEqual(batch.rewards.dtype, torch.float32)
+        self.assertEqual(batch.terminated.dtype, torch.bool)
+        self.assertEqual(batch.truncated.dtype, torch.bool)
+        self.assertTrue(torch.all(batch.states >= 0.0).item())
+        self.assertTrue(torch.all(batch.states <= 1.0).item())
 
 
 if __name__ == "__main__":

@@ -348,19 +348,22 @@ def _batch_report(
         config = config if isinstance(config, Mapping) else {}
         summary = run.get("summary", {})
         summary = summary if isinstance(summary, Mapping) else {}
+        run_path = Path(str(run["run_dir"])) if run.get("run_dir") else None
+        if run_path is not None and not run_path.is_absolute():
+            run_path = (manifest_path.parent / run_path).resolve()
         wall = _finite(run.get("wall_clock_seconds"))
         updates = int(summary.get("optimizer_updates", 0) or 0)
         batch_size = int(config.get("batch_size", 0) or 0)
         update_sps = updates / wall if wall and wall > 0 else None
         samples_sps = update_sps * batch_size if update_sps is not None else None
         finite_counts = (
-            _finite_metric_counts(Path(str(run["run_dir"])))
-            if run.get("run_dir")
+            _finite_metric_counts(run_path)
+            if run_path is not None
             else {}
         )
         metric_rows = (
-            read_metrics(Path(str(run["run_dir"])))
-            if run.get("run_dir")
+            read_metrics(run_path)
+            if run_path is not None
             else []
         )
         epsilon_values = [
@@ -387,7 +390,13 @@ def _batch_report(
             {
                 "label": label,
                 "run_id": run.get("run_id"),
-                "run_dir": run.get("run_dir"),
+                # Keep the durable report portable. The path is relative to
+                # the manifest directory, matching each manifest variant.
+                "run_dir": (
+                    relative_path(run_path, start=manifest_path.parent)
+                    if run_path is not None
+                    else None
+                ),
                 "stage": run.get("stage"),
                 "status": run.get("status"),
                 "batch_size": batch_size,
@@ -465,7 +474,7 @@ def _batch_report(
     return {
         "schema_version": 1,
         "experiment_id": comparison.get("experiment_id", manifest_path.parent.name),
-        "manifest": str(manifest_path.resolve()),
+        "manifest": relative_path(manifest_path, start=Path.cwd()),
         "manifest_status": comparison.get("manifest_status"),
         "stage": comparison.get("experiment_stage", "unknown"),
         "comparison_conditions": comparison.get("comparison_conditions", {}),

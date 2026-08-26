@@ -1,0 +1,7 @@
+{
+  "name": "profiled-gpu-replay-batch-32",
+  "base_config": "throughput-gpu-replay-batch-32.json",
+  "overrides": {
+    "profile_stages": true
+  }
+}

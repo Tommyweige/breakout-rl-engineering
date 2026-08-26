@@ -396,6 +396,32 @@ def _stats(values: Sequence[float]) -> dict[str, Any]:
     }
 
 
+def _portable_embedded_path(value: Any, *, path_base: str | Path | None) -> Any:
+    """Make serialized artifact paths portable when a report has a base path."""
+
+    if path_base is None or not isinstance(value, str) or not value:
+        return value
+    candidate = Path(value)
+    if not candidate.is_absolute():
+        return value
+    return relative_path(candidate, start=path_base)
+
+
+def _portable_metadata(
+    values: Mapping[str, Any],
+    *,
+    path_base: str | Path | None,
+) -> dict[str, Any]:
+    result = dict(values)
+    for field in ("run_dir", "last_checkpoint", "diagnostic_checkpoint"):
+        if field in result:
+            result[field] = _portable_embedded_path(
+                result[field],
+                path_base=path_base,
+            )
+    return result
+
+
 def _episode_returns(rows: Sequence[Mapping[str, Any]]) -> list[tuple[float, float]]:
     result: list[tuple[float, float]] = []
     for row in rows:
@@ -489,6 +515,7 @@ def load_run_report(
     *,
     recent_window: int = DEFAULT_RECENT_WINDOW,
     rolling_window: int = DEFAULT_ROLLING_WINDOW,
+    path_base: str | Path | None = None,
 ) -> dict[str, Any]:
     """Read one run, including incomplete/failed runs without hiding them."""
 
@@ -546,9 +573,22 @@ def load_run_report(
     replay_transfer = str(
         config.get("replay_transfer", summary.get("replay_transfer", "direct"))
     )
+    display_runtime = _portable_metadata(runtime, path_base=path_base)
+    display_summary = _portable_metadata(summary, path_base=path_base)
+    summary_runtime = summary.get("runtime")
+    if isinstance(summary_runtime, Mapping):
+        display_summary["runtime"] = _portable_metadata(
+            summary_runtime,
+            path_base=path_base,
+        )
+    display_run_dir = (
+        relative_path(path, start=path_base)
+        if path_base is not None
+        else str(path)
+    )
     return {
         "run_id": str(config.get("run_id", path.name)),
-        "run_dir": str(path),
+        "run_dir": display_run_dir,
         "label": path.name,
         "stage": "unknown",
         "status": status,
@@ -616,8 +656,8 @@ def load_run_report(
             "replay_backend": replay_backend,
             "replay_transfer": replay_transfer,
         },
-        "runtime": dict(runtime),
-        "summary": summary,
+        "runtime": display_runtime,
+        "summary": display_summary,
         "metrics": rows,
     }
 
@@ -789,6 +829,7 @@ def compare_run_dirs(
     labels: Sequence[str] | None = None,
     recent_window: int = DEFAULT_RECENT_WINDOW,
     rolling_window: int = DEFAULT_ROLLING_WINDOW,
+    path_base: str | Path | None = None,
 ) -> dict[str, Any]:
     if not run_dirs:
         raise ValueError("at least one run directory is required")
@@ -797,6 +838,7 @@ def compare_run_dirs(
             run_dir,
             recent_window=recent_window,
             rolling_window=rolling_window,
+            path_base=path_base,
         )
         for run_dir in run_dirs
     ]
@@ -832,15 +874,18 @@ def compare_manifest(
         base_values = None
     available = [(entry, path) for entry, path in entries if path is not None]
     if available:
+        available_paths = [path for _, path in available if path is not None]
         available_report = compare_run_dirs(
-            [path for _, path in available if path is not None],
+            available_paths,
             base_values=base_values,
             labels=[str(entry.get("label", path.name)) for entry, path in available],
             recent_window=recent_window,
             rolling_window=rolling_window,
+            path_base=source.parent,
         )
         reports_by_path = {
-            str(report["run_dir"]): report for report in available_report["runs"]
+            str(path): report
+            for path, report in zip(available_paths, available_report["runs"])
         }
         report = {
             **available_report,
@@ -873,7 +918,7 @@ def compare_manifest(
             report["runs"].append(available_report)
     report["comparison_conditions"] = _comparison_conditions(report["runs"])
     report["experiment_id"] = manifest.get("experiment_id", source.parent.name)
-    report["manifest"] = str(source)
+    report["manifest"] = relative_path(source, start=Path.cwd())
     report["manifest_status"] = manifest.get("status")
     report["sequential"] = bool(manifest.get("sequential", True))
     report["experiment_stage"] = manifest.get("stage", "unknown")
