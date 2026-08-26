@@ -595,6 +595,7 @@ class DQNTrainer:
                 batch_size=config.batch_size,
                 observation_shape=self.observation_shape,
                 device=self.device,
+                profile_stages=config.profile_stages,
             )
             if (
                 config.replay_backend == "cpu"
