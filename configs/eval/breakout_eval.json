@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "name": "day15-breakout-evaluation",
+  "environment_id": "ALE/Breakout-v5",
+  "seeds": [101, 202, 303],
+  "episodes_per_seed": 5,
+  "epsilon": 0.0,
+  "source_day14_manifest": "experiments/day14-final-frozen-100k/manifest.json",
+  "checkpoint_rule": "final checkpoint at the completed 100000 environment-step budget"
+}

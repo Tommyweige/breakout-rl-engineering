@@ -1,0 +1,11 @@
+stateDiagram-v2
+    [*] --> Reset
+    Reset --> Acting: fixed concrete seed
+    Acting --> Stepping: legal action
+    Stepping --> Accumulating: raw reward + flags
+    Accumulating --> Acting: no done
+    Accumulating --> EnvironmentTerminated: terminated
+    Accumulating --> EnvironmentTruncated: truncated
+    EnvironmentTerminated --> Recorded: preserve env flags
+    EnvironmentTruncated --> Recorded: preserve env flags
+    Recorded --> [*]

@@ -1,0 +1,583 @@
+{
+  "schema_version": 1,
+  "created_at_utc": "2026-08-27T09:39:07.393974Z",
+  "evaluation_id": "day15-dqn-cuda",
+  "policy_type": "dqn",
+  "model_id": "day14-final-vanilla-dqn-seed42@step-00100000",
+  "environment_id": "ALE/Breakout-v5",
+  "environment": {
+    "id": "ALE/Breakout-v5",
+    "observation_shape": [
+      4,
+      84,
+      84
+    ],
+    "action_count": 4,
+    "action_names": [
+      "NOOP",
+      "FIRE",
+      "RIGHT",
+      "LEFT"
+    ]
+  },
+  "observation_shape": [
+    4,
+    84,
+    84
+  ],
+  "action_count": 4,
+  "action_names": [
+    "NOOP",
+    "FIRE",
+    "RIGHT",
+    "LEFT"
+  ],
+  "evaluation_seeds": [
+    101,
+    202,
+    303
+  ],
+  "episodes_per_seed": 5,
+  "total_episodes": 15,
+  "evaluation_epsilon": 0.0,
+  "requested_device": "cuda",
+  "resolved_device": "cuda:0",
+  "runtime": {
+    "python_version": "3.12.13",
+    "pytorch_version": "2.13.0+cu130",
+    "torch_cuda_version": "13.0",
+    "requested_device": "cuda",
+    "resolved_device": "cuda:0",
+    "cuda_available": true,
+    "evaluation_steps": 271970,
+    "wall_clock_seconds": 417.8865396999754,
+    "steps_per_second": 650.8225897758343,
+    "cuda_device_index": 0,
+    "gpu_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "cuda_device_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "gpu_model": "NVIDIA GeForce RTX 4060 Laptop GPU"
+  },
+  "training": {
+    "source_day14_run_id": "day14-final-vanilla-dqn-seed42",
+    "training_seed": 42,
+    "training_budget": 100000,
+    "learning_rate": 0.0002,
+    "batch_size": 32,
+    "train_frequency": 4,
+    "replay_backend": "cpu",
+    "training_device": "cuda",
+    "training_precision": "float32",
+    "training_config": {
+      "total_steps": 100000,
+      "seed": 42,
+      "gamma": 0.99,
+      "learning_rate": 0.0002,
+      "batch_size": 32,
+      "replay_capacity": 10000,
+      "learning_starts": 1000,
+      "train_frequency": 4,
+      "target_update_interval": 500,
+      "epsilon_start": 0.9,
+      "epsilon_end": 0.05,
+      "epsilon_decay_steps": 10000,
+      "gradient_clip_norm": 10.0,
+      "reward_clip": true,
+      "device": "cuda",
+      "precision": "float32",
+      "checkpoint_interval": 25000,
+      "diagnostics_interval": 100,
+      "metrics_flush_interval": 100,
+      "cpu_threads": 2
+    },
+    "config_reference": "configs/final/day14-vanilla-dqn.json",
+    "source_day14_manifest": "experiments/day14-final-frozen-100k/manifest.json",
+    "source_of_truth": "latest Day 14 final manifest and referenced run artifacts",
+    "selection_rule": "final checkpoint at 100000 environment steps",
+    "selection_rationale": {
+      "short_stage": "candidate requires completed 10K, finite metrics, and end-to-end SPS strictly above batch 32",
+      "long_stage": "validate every short-stage candidate with 100K learning metrics before freezing",
+      "quality_over_speed": "do not select a batch size from GPU utilization alone when return or numerical guardrails regress"
+    },
+    "day14_experiment_id": "day14-final-frozen-100k",
+    "day14_run_artifact_dir": "assets/day14/final-runs/day14-final-frozen-100k/day14-final-vanilla-dqn-seed42",
+    "trainer_runtime": {
+      "python_version": "3.12.13",
+      "pytorch_version": "2.13.0+cu130",
+      "torch_cuda_version": "13.0",
+      "gymnasium_version": "1.3.0",
+      "ale_version": "0.12.0",
+      "numpy_version": "2.5.1",
+      "cpu_logical_count": 16,
+      "cpu_thread_count": 2,
+      "cpu_interop_thread_count": 12,
+      "device": "cuda:0",
+      "requested_device": "cuda",
+      "resolved_device": "cuda:0",
+      "precision": "float32",
+      "cuda_device_index": 0,
+      "cuda_available": true,
+      "cuda_device_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+      "gpu_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+      "gpu_model": "NVIDIA GeForce RTX 4060 Laptop GPU",
+      "cuda_allocated_bytes": 51090432,
+      "cuda_peak_allocated_bytes": 70963200,
+      "cuda_reserved_bytes": 90177536,
+      "cuda_peak_reserved_bytes": 90177536,
+      "gpu_utilization_percent": 31.0,
+      "gpu_memory_total_bytes": 8585740288,
+      "gpu_utilization_source": "nvidia-smi",
+      "wall_clock_seconds": 452.3894775999943,
+      "steps_per_second": 221.04846587174745,
+      "seed": 42,
+      "git_commit_sha": "8696d6eaf8a8f3cab18f75661e83113ad5025102",
+      "environment_id": "ALE/Breakout-v5",
+      "observation_shape": [
+        4,
+        84,
+        84
+      ],
+      "action_count": 4,
+      "diagnostics_interval": 100,
+      "metrics_flush_interval": 100,
+      "metrics_row_cadence": 1,
+      "configured_cpu_threads": 2
+    },
+    "gpu_profiling_summary": {
+      "source": "experiments/day14-batch-size-profiling-final/batch-size-comparison.json",
+      "selected_batch_size": 32,
+      "selection_rule": {
+        "short_stage": "candidate requires completed 10K, finite metrics, and end-to-end SPS strictly above batch 32",
+        "long_stage": "validate every short-stage candidate with 100K learning metrics before freezing",
+        "quality_over_speed": "do not select a batch size from GPU utilization alone when return or numerical guardrails regress"
+      },
+      "selected_run_id": "batch-size-32-seed42",
+      "end_to_end_sps": 235.73711983468988,
+      "training_samples_per_second": 1698.061621593238,
+      "profiling": {
+        "sample_csv": "assets/day14/batch-size-profiling/day14-batch-size-profiling-final/batch-size-32/runtime-samples.csv",
+        "sampling_method": "in-process fixed-interval sampler; nvidia-smi query per sample",
+        "gpu_utilization_percent": {
+          "mean": 30.133333333333333,
+          "p50": 32.0,
+          "p95": 36.0,
+          "max": 38.0
+        },
+        "gpu_power_watts": {
+          "mean": 25.59111111111111,
+          "p50": 26.55,
+          "p95": 27.434,
+          "max": 27.63
+        },
+        "gpu_memory_used_bytes": {
+          "mean": 1837874107.7333333,
+          "peak": 1885339648.0
+        },
+        "gpu_memory_total_bytes": 8585740288.0
+      }
+    }
+  },
+  "checkpoint": {
+    "path": "assets/day14/final-runs/day14-final-frozen-100k/day14-final-vanilla-dqn-seed42/checkpoints/step-00100000.pt",
+    "sha256": "022bda1ea5bb1ebcb0535ebb522fc954af11fd43607e124d5e5dc7a2aec3b79b",
+    "step": 100000,
+    "source_day14_run_id": "day14-final-vanilla-dqn-seed42",
+    "source_day14_manifest": "experiments/day14-final-frozen-100k/manifest.json",
+    "format_version": 1,
+    "model_config": {
+      "num_actions": 4,
+      "input_shape": [
+        4,
+        84,
+        84
+      ],
+      "hidden_dim": 512
+    },
+    "requested_device": "cuda",
+    "resolved_device": "cuda:0",
+    "selection_rule": "final checkpoint at 100000 environment steps",
+    "manifest_run_id": "day14-final-vanilla-dqn-seed42"
+  },
+  "per_episode": [
+    {
+      "evaluation_seed": 101,
+      "seed": 101,
+      "episode_seed": 101,
+      "seed_index": 0,
+      "episode_index": 1,
+      "episode_return": 1.0,
+      "return": 1.0,
+      "episode_length": 26998,
+      "terminated": false,
+      "truncated": true,
+      "complete": true,
+      "stop_reason": "truncated",
+      "action_distribution": {
+        "NOOP": 38,
+        "FIRE": 42,
+        "RIGHT": 25978,
+        "LEFT": 940
+      }
+    },
+    {
+      "evaluation_seed": 101,
+      "seed": 102,
+      "episode_seed": 102,
+      "seed_index": 0,
+      "episode_index": 2,
+      "episode_return": 7.0,
+      "return": 7.0,
+      "episode_length": 405,
+      "terminated": true,
+      "truncated": false,
+      "complete": true,
+      "stop_reason": "terminated",
+      "action_distribution": {
+        "NOOP": 32,
+        "FIRE": 47,
+        "RIGHT": 213,
+        "LEFT": 113
+      }
+    },
+    {
+      "evaluation_seed": 101,
+      "seed": 103,
+      "episode_seed": 103,
+      "seed_index": 0,
+      "episode_index": 3,
+      "episode_return": 1.0,
+      "return": 1.0,
+      "episode_length": 26995,
+      "terminated": false,
+      "truncated": true,
+      "complete": true,
+      "stop_reason": "truncated",
+      "action_distribution": {
+        "NOOP": 41,
+        "FIRE": 23,
+        "RIGHT": 26115,
+        "LEFT": 816
+      }
+    },
+    {
+      "evaluation_seed": 101,
+      "seed": 104,
+      "episode_seed": 104,
+      "seed_index": 0,
+      "episode_index": 4,
+      "episode_return": 10.0,
+      "return": 10.0,
+      "episode_length": 516,
+      "terminated": true,
+      "truncated": false,
+      "complete": true,
+      "stop_reason": "terminated",
+      "action_distribution": {
+        "NOOP": 38,
+        "FIRE": 29,
+        "RIGHT": 307,
+        "LEFT": 142
+      }
+    },
+    {
+      "evaluation_seed": 101,
+      "seed": 105,
+      "episode_seed": 105,
+      "seed_index": 0,
+      "episode_index": 5,
+      "episode_return": 5.0,
+      "return": 5.0,
+      "episode_length": 27000,
+      "terminated": false,
+      "truncated": true,
+      "complete": true,
+      "stop_reason": "truncated",
+      "action_distribution": {
+        "NOOP": 65,
+        "FIRE": 332,
+        "RIGHT": 25991,
+        "LEFT": 612
+      }
+    },
+    {
+      "evaluation_seed": 202,
+      "seed": 202,
+      "episode_seed": 202,
+      "seed_index": 1,
+      "episode_index": 1,
+      "episode_return": 1.0,
+      "return": 1.0,
+      "episode_length": 26999,
+      "terminated": false,
+      "truncated": true,
+      "complete": true,
+      "stop_reason": "truncated",
+      "action_distribution": {
+        "NOOP": 38,
+        "FIRE": 41,
+        "RIGHT": 25980,
+        "LEFT": 940
+      }
+    },
+    {
+      "evaluation_seed": 202,
+      "seed": 203,
+      "episode_seed": 203,
+      "seed_index": 1,
+      "episode_index": 2,
+      "episode_return": 5.0,
+      "return": 5.0,
+      "episode_length": 26997,
+      "terminated": false,
+      "truncated": true,
+      "complete": true,
+      "stop_reason": "truncated",
+      "action_distribution": {
+        "NOOP": 62,
+        "FIRE": 273,
+        "RIGHT": 26048,
+        "LEFT": 614
+      }
+    },
+    {
+      "evaluation_seed": 202,
+      "seed": 204,
+      "episode_seed": 204,
+      "seed_index": 1,
+      "episode_index": 3,
+      "episode_return": 5.0,
+      "return": 5.0,
+      "episode_length": 26993,
+      "terminated": false,
+      "truncated": true,
+      "complete": true,
+      "stop_reason": "truncated",
+      "action_distribution": {
+        "NOOP": 69,
+        "FIRE": 331,
+        "RIGHT": 25978,
+        "LEFT": 615
+      }
+    },
+    {
+      "evaluation_seed": 202,
+      "seed": 205,
+      "episode_seed": 205,
+      "seed_index": 1,
+      "episode_index": 4,
+      "episode_return": 4.0,
+      "return": 4.0,
+      "episode_length": 26999,
+      "terminated": false,
+      "truncated": true,
+      "complete": true,
+      "stop_reason": "truncated",
+      "action_distribution": {
+        "NOOP": 16271,
+        "FIRE": 332,
+        "RIGHT": 9539,
+        "LEFT": 857
+      }
+    },
+    {
+      "evaluation_seed": 202,
+      "seed": 206,
+      "episode_seed": 206,
+      "seed_index": 1,
+      "episode_index": 5,
+      "episode_return": 3.0,
+      "return": 3.0,
+      "episode_length": 26995,
+      "terminated": false,
+      "truncated": true,
+      "complete": true,
+      "stop_reason": "truncated",
+      "action_distribution": {
+        "NOOP": 286,
+        "FIRE": 46,
+        "RIGHT": 25731,
+        "LEFT": 932
+      }
+    },
+    {
+      "evaluation_seed": 303,
+      "seed": 303,
+      "episode_seed": 303,
+      "seed_index": 2,
+      "episode_index": 1,
+      "episode_return": 1.0,
+      "return": 1.0,
+      "episode_length": 26996,
+      "terminated": false,
+      "truncated": true,
+      "complete": true,
+      "stop_reason": "truncated",
+      "action_distribution": {
+        "NOOP": 38,
+        "FIRE": 31,
+        "RIGHT": 26005,
+        "LEFT": 922
+      }
+    },
+    {
+      "evaluation_seed": 303,
+      "seed": 304,
+      "episode_seed": 304,
+      "seed_index": 2,
+      "episode_index": 2,
+      "episode_return": 2.0,
+      "return": 2.0,
+      "episode_length": 26997,
+      "terminated": false,
+      "truncated": true,
+      "complete": true,
+      "stop_reason": "truncated",
+      "action_distribution": {
+        "NOOP": 41,
+        "FIRE": 41,
+        "RIGHT": 26090,
+        "LEFT": 825
+      }
+    },
+    {
+      "evaluation_seed": 303,
+      "seed": 305,
+      "episode_seed": 305,
+      "seed_index": 2,
+      "episode_index": 3,
+      "episode_return": 6.0,
+      "return": 6.0,
+      "episode_length": 319,
+      "terminated": true,
+      "truncated": false,
+      "complete": true,
+      "stop_reason": "terminated",
+      "action_distribution": {
+        "NOOP": 103,
+        "FIRE": 49,
+        "RIGHT": 79,
+        "LEFT": 88
+      }
+    },
+    {
+      "evaluation_seed": 303,
+      "seed": 306,
+      "episode_seed": 306,
+      "seed_index": 2,
+      "episode_index": 4,
+      "episode_return": 6.0,
+      "return": 6.0,
+      "episode_length": 335,
+      "terminated": true,
+      "truncated": false,
+      "complete": true,
+      "stop_reason": "terminated",
+      "action_distribution": {
+        "NOOP": 52,
+        "FIRE": 33,
+        "RIGHT": 130,
+        "LEFT": 120
+      }
+    },
+    {
+      "evaluation_seed": 303,
+      "seed": 307,
+      "episode_seed": 307,
+      "seed_index": 2,
+      "episode_index": 5,
+      "episode_return": 11.0,
+      "return": 11.0,
+      "episode_length": 426,
+      "terminated": true,
+      "truncated": false,
+      "complete": true,
+      "stop_reason": "terminated",
+      "action_distribution": {
+        "NOOP": 45,
+        "FIRE": 44,
+        "RIGHT": 249,
+        "LEFT": 88
+      }
+    }
+  ],
+  "per_episode_returns": [
+    1.0,
+    7.0,
+    1.0,
+    10.0,
+    5.0,
+    1.0,
+    5.0,
+    5.0,
+    4.0,
+    3.0,
+    1.0,
+    2.0,
+    6.0,
+    6.0,
+    11.0
+  ],
+  "per_episode_lengths": [
+    26998,
+    405,
+    26995,
+    516,
+    27000,
+    26999,
+    26997,
+    26993,
+    26999,
+    26995,
+    26996,
+    26997,
+    319,
+    335,
+    426
+  ],
+  "action_distribution": {
+    "NOOP": 17219,
+    "FIRE": 1694,
+    "RIGHT": 244433,
+    "LEFT": 8624
+  },
+  "summary": {
+    "count": 15,
+    "mean_return": 4.533333333333333,
+    "median_return": 5.0,
+    "std_return": 3.0739045022396008,
+    "min_return": 1.0,
+    "max_return": 11.0,
+    "mean_episode_length": 18131.333333333332,
+    "complete_episodes": 15
+  },
+  "metadata": {
+    "evaluation_config_path": "configs/eval/breakout_eval.json",
+    "evaluation_config": {
+      "schema_version": 1,
+      "seeds": [
+        101,
+        202,
+        303
+      ],
+      "episodes_per_seed": 5,
+      "epsilon": 0.0,
+      "environment_id": "ALE/Breakout-v5",
+      "source_day14_manifest": "experiments/day14-final-frozen-100k/manifest.json",
+      "checkpoint_rule": "final checkpoint at the completed 100000 environment-step budget"
+    },
+    "command": [
+      "evaluate_dqn.py",
+      "--checkpoint",
+      "assets/day14/final-runs/day14-final-frozen-100k/day14-final-vanilla-dqn-seed42/checkpoints/step-00100000.pt",
+      "--config",
+      "configs/eval/breakout_eval.json",
+      "--device",
+      "cuda"
+    ],
+    "raw_reward": true,
+    "policy_protocol": "shared environment construction, seed handling, episode loop, and schema"
+  },
+  "artifacts": {
+    "results_json": "results.json",
+    "episodes_csv": "episodes.csv"
+  }
+}

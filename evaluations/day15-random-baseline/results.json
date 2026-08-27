@@ -1,0 +1,452 @@
+{
+  "schema_version": 1,
+  "created_at_utc": "2026-08-27T09:31:58.068291Z",
+  "evaluation_id": "day15-random-baseline",
+  "policy_type": "random",
+  "model_id": "random-policy",
+  "environment_id": "ALE/Breakout-v5",
+  "environment": {
+    "id": "ALE/Breakout-v5",
+    "observation_shape": [
+      4,
+      84,
+      84
+    ],
+    "action_count": 4,
+    "action_names": [
+      "NOOP",
+      "FIRE",
+      "RIGHT",
+      "LEFT"
+    ]
+  },
+  "observation_shape": [
+    4,
+    84,
+    84
+  ],
+  "action_count": 4,
+  "action_names": [
+    "NOOP",
+    "FIRE",
+    "RIGHT",
+    "LEFT"
+  ],
+  "evaluation_seeds": [
+    101,
+    202,
+    303
+  ],
+  "episodes_per_seed": 5,
+  "total_episodes": 15,
+  "evaluation_epsilon": 0.0,
+  "requested_device": "cpu",
+  "resolved_device": "cpu",
+  "runtime": {
+    "python_version": "3.12.13",
+    "pytorch_version": "2.13.0+cu130",
+    "torch_cuda_version": "13.0",
+    "requested_device": "cpu",
+    "resolved_device": "cpu",
+    "cuda_available": true,
+    "evaluation_steps": 2786,
+    "wall_clock_seconds": 2.442242000019178,
+    "steps_per_second": 1140.7550930571674,
+    "cuda_device_index": null,
+    "gpu_name": null,
+    "cuda_device_name": null,
+    "gpu_model": null
+  },
+  "training": {
+    "training_seed": null,
+    "training_budget": null,
+    "learning_rate": null,
+    "batch_size": null,
+    "train_frequency": null,
+    "replay_backend": null,
+    "config_reference": null,
+    "source_day14_manifest": null
+  },
+  "checkpoint": {},
+  "per_episode": [
+    {
+      "evaluation_seed": 101,
+      "seed": 101,
+      "episode_seed": 101,
+      "seed_index": 0,
+      "episode_index": 1,
+      "episode_return": 1.0,
+      "return": 1.0,
+      "episode_length": 162,
+      "terminated": true,
+      "truncated": false,
+      "complete": true,
+      "stop_reason": "terminated",
+      "action_distribution": {
+        "NOOP": 43,
+        "FIRE": 46,
+        "RIGHT": 30,
+        "LEFT": 43
+      }
+    },
+    {
+      "evaluation_seed": 101,
+      "seed": 102,
+      "episode_seed": 102,
+      "seed_index": 0,
+      "episode_index": 2,
+      "episode_return": 0.0,
+      "return": 0.0,
+      "episode_length": 140,
+      "terminated": true,
+      "truncated": false,
+      "complete": true,
+      "stop_reason": "terminated",
+      "action_distribution": {
+        "NOOP": 29,
+        "FIRE": 35,
+        "RIGHT": 35,
+        "LEFT": 41
+      }
+    },
+    {
+      "evaluation_seed": 101,
+      "seed": 103,
+      "episode_seed": 103,
+      "seed_index": 0,
+      "episode_index": 3,
+      "episode_return": 2.0,
+      "return": 2.0,
+      "episode_length": 216,
+      "terminated": true,
+      "truncated": false,
+      "complete": true,
+      "stop_reason": "terminated",
+      "action_distribution": {
+        "NOOP": 62,
+        "FIRE": 50,
+        "RIGHT": 57,
+        "LEFT": 47
+      }
+    },
+    {
+      "evaluation_seed": 101,
+      "seed": 104,
+      "episode_seed": 104,
+      "seed_index": 0,
+      "episode_index": 4,
+      "episode_return": 1.0,
+      "return": 1.0,
+      "episode_length": 180,
+      "terminated": true,
+      "truncated": false,
+      "complete": true,
+      "stop_reason": "terminated",
+      "action_distribution": {
+        "NOOP": 32,
+        "FIRE": 59,
+        "RIGHT": 47,
+        "LEFT": 42
+      }
+    },
+    {
+      "evaluation_seed": 101,
+      "seed": 105,
+      "episode_seed": 105,
+      "seed_index": 0,
+      "episode_index": 5,
+      "episode_return": 5.0,
+      "return": 5.0,
+      "episode_length": 322,
+      "terminated": true,
+      "truncated": false,
+      "complete": true,
+      "stop_reason": "terminated",
+      "action_distribution": {
+        "NOOP": 68,
+        "FIRE": 84,
+        "RIGHT": 95,
+        "LEFT": 75
+      }
+    },
+    {
+      "evaluation_seed": 202,
+      "seed": 202,
+      "episode_seed": 202,
+      "seed_index": 1,
+      "episode_index": 1,
+      "episode_return": 1.0,
+      "return": 1.0,
+      "episode_length": 179,
+      "terminated": true,
+      "truncated": false,
+      "complete": true,
+      "stop_reason": "terminated",
+      "action_distribution": {
+        "NOOP": 52,
+        "FIRE": 52,
+        "RIGHT": 45,
+        "LEFT": 30
+      }
+    },
+    {
+      "evaluation_seed": 202,
+      "seed": 203,
+      "episode_seed": 203,
+      "seed_index": 1,
+      "episode_index": 2,
+      "episode_return": 1.0,
+      "return": 1.0,
+      "episode_length": 154,
+      "terminated": true,
+      "truncated": false,
+      "complete": true,
+      "stop_reason": "terminated",
+      "action_distribution": {
+        "NOOP": 37,
+        "FIRE": 43,
+        "RIGHT": 34,
+        "LEFT": 40
+      }
+    },
+    {
+      "evaluation_seed": 202,
+      "seed": 204,
+      "episode_seed": 204,
+      "seed_index": 1,
+      "episode_index": 3,
+      "episode_return": 3.0,
+      "return": 3.0,
+      "episode_length": 260,
+      "terminated": true,
+      "truncated": false,
+      "complete": true,
+      "stop_reason": "terminated",
+      "action_distribution": {
+        "NOOP": 64,
+        "FIRE": 63,
+        "RIGHT": 65,
+        "LEFT": 68
+      }
+    },
+    {
+      "evaluation_seed": 202,
+      "seed": 205,
+      "episode_seed": 205,
+      "seed_index": 1,
+      "episode_index": 4,
+      "episode_return": 1.0,
+      "return": 1.0,
+      "episode_length": 182,
+      "terminated": true,
+      "truncated": false,
+      "complete": true,
+      "stop_reason": "terminated",
+      "action_distribution": {
+        "NOOP": 40,
+        "FIRE": 52,
+        "RIGHT": 42,
+        "LEFT": 48
+      }
+    },
+    {
+      "evaluation_seed": 202,
+      "seed": 206,
+      "episode_seed": 206,
+      "seed_index": 1,
+      "episode_index": 5,
+      "episode_return": 1.0,
+      "return": 1.0,
+      "episode_length": 180,
+      "terminated": true,
+      "truncated": false,
+      "complete": true,
+      "stop_reason": "terminated",
+      "action_distribution": {
+        "NOOP": 36,
+        "FIRE": 43,
+        "RIGHT": 48,
+        "LEFT": 53
+      }
+    },
+    {
+      "evaluation_seed": 303,
+      "seed": 303,
+      "episode_seed": 303,
+      "seed_index": 2,
+      "episode_index": 1,
+      "episode_return": 0.0,
+      "return": 0.0,
+      "episode_length": 127,
+      "terminated": true,
+      "truncated": false,
+      "complete": true,
+      "stop_reason": "terminated",
+      "action_distribution": {
+        "NOOP": 32,
+        "FIRE": 32,
+        "RIGHT": 27,
+        "LEFT": 36
+      }
+    },
+    {
+      "evaluation_seed": 303,
+      "seed": 304,
+      "episode_seed": 304,
+      "seed_index": 2,
+      "episode_index": 2,
+      "episode_return": 0.0,
+      "return": 0.0,
+      "episode_length": 142,
+      "terminated": true,
+      "truncated": false,
+      "complete": true,
+      "stop_reason": "terminated",
+      "action_distribution": {
+        "NOOP": 39,
+        "FIRE": 38,
+        "RIGHT": 37,
+        "LEFT": 28
+      }
+    },
+    {
+      "evaluation_seed": 303,
+      "seed": 305,
+      "episode_seed": 305,
+      "seed_index": 2,
+      "episode_index": 3,
+      "episode_return": 2.0,
+      "return": 2.0,
+      "episode_length": 199,
+      "terminated": true,
+      "truncated": false,
+      "complete": true,
+      "stop_reason": "terminated",
+      "action_distribution": {
+        "NOOP": 48,
+        "FIRE": 58,
+        "RIGHT": 54,
+        "LEFT": 39
+      }
+    },
+    {
+      "evaluation_seed": 303,
+      "seed": 306,
+      "episode_seed": 306,
+      "seed_index": 2,
+      "episode_index": 4,
+      "episode_return": 0.0,
+      "return": 0.0,
+      "episode_length": 141,
+      "terminated": true,
+      "truncated": false,
+      "complete": true,
+      "stop_reason": "terminated",
+      "action_distribution": {
+        "NOOP": 36,
+        "FIRE": 40,
+        "RIGHT": 33,
+        "LEFT": 32
+      }
+    },
+    {
+      "evaluation_seed": 303,
+      "seed": 307,
+      "episode_seed": 307,
+      "seed_index": 2,
+      "episode_index": 5,
+      "episode_return": 2.0,
+      "return": 2.0,
+      "episode_length": 202,
+      "terminated": true,
+      "truncated": false,
+      "complete": true,
+      "stop_reason": "terminated",
+      "action_distribution": {
+        "NOOP": 47,
+        "FIRE": 43,
+        "RIGHT": 60,
+        "LEFT": 52
+      }
+    }
+  ],
+  "per_episode_returns": [
+    1.0,
+    0.0,
+    2.0,
+    1.0,
+    5.0,
+    1.0,
+    1.0,
+    3.0,
+    1.0,
+    1.0,
+    0.0,
+    0.0,
+    2.0,
+    0.0,
+    2.0
+  ],
+  "per_episode_lengths": [
+    162,
+    140,
+    216,
+    180,
+    322,
+    179,
+    154,
+    260,
+    182,
+    180,
+    127,
+    142,
+    199,
+    141,
+    202
+  ],
+  "action_distribution": {
+    "NOOP": 665,
+    "FIRE": 738,
+    "RIGHT": 709,
+    "LEFT": 674
+  },
+  "summary": {
+    "count": 15,
+    "mean_return": 1.3333333333333333,
+    "median_return": 1.0,
+    "std_return": 1.2995725793078619,
+    "min_return": 0.0,
+    "max_return": 5.0,
+    "mean_episode_length": 185.73333333333332,
+    "complete_episodes": 15
+  },
+  "metadata": {
+    "evaluation_config_path": "configs/eval/breakout_eval.json",
+    "evaluation_config": {
+      "schema_version": 1,
+      "seeds": [
+        101,
+        202,
+        303
+      ],
+      "episodes_per_seed": 5,
+      "epsilon": 0.0,
+      "environment_id": "ALE/Breakout-v5",
+      "source_day14_manifest": "experiments/day14-final-frozen-100k/manifest.json",
+      "checkpoint_rule": "final checkpoint at the completed 100000 environment-step budget"
+    },
+    "command": [
+      "evaluate_dqn.py",
+      "--policy",
+      "random",
+      "--config",
+      "configs/eval/breakout_eval.json"
+    ],
+    "raw_reward": true,
+    "policy_protocol": "shared environment construction, seed handling, episode loop, and schema"
+  },
+  "artifacts": {
+    "results_json": "results.json",
+    "episodes_csv": "episodes.csv"
+  }
+}

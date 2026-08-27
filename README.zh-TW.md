@@ -391,12 +391,12 @@ Backend
 * Day 12 — [完整 DQN training loop：從一筆 transition 到一次參數更新](docs/day12-complete-dqn-training-loop.md)
 * Day 13 — [除錯不穩定的 RL 訓練：從 sanity check 到 training diagnostics](docs/day13-debugging-unstable-rl-training.md)
 * Day 14 — [超參數實驗：用受控比較取代「改一個數字試試看」](docs/day14-hyperparameter-experiments.md)
-* Day 15 — DQN milestone 與 evaluation
+* Day 15 — [DQN milestone 與 evaluation](docs/day15-dqn-milestone-and-evaluation.md)
 
-### Phase 3 — 改進代理人
+### Phase 3 — 訓練系統與 DQN 改進
 
-* Day 16 — Q-value overestimation
-* Day 17 — Double DQN
+* Day 16 — Vectorized DQN Training：多環境、批次 action inference 與批次 GPU Replay
+* Day 17 — Q-value overestimation 與 Double DQN
 * Day 18 — DQN vs. Double DQN
 * Day 19 — Dueling Network Architecture
 * Day 20 — 完整 DQN family comparison
