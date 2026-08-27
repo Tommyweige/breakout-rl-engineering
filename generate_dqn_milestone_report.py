@@ -13,6 +13,12 @@ from typing import Any, Mapping, Sequence
 from breakout_rl.evaluation import read_evaluation_results
 
 
+DAY15_FIGURE_BLOB_URL = (
+    "https://github.com/Tommyweige/breakout-rl-engineering-private/blob/"
+    "bcd9c5b/assets/day15/random-vs-dqn-returns.png"
+)
+
+
 def _display_path(path: Path) -> str:
     if not path.is_absolute():
         return path.as_posix()
@@ -327,7 +333,7 @@ def build_report(
         "菱形是 mean，短線是 median。右圖再把同一個 evaluation seed group 的平均與 spread 分開，"
         "方便觀察結果是否只由某一組 seed 推高。",
         "",
-        "[![Random 與凍結 DQN 的每局回報分布，以及各 evaluation seed group 的平均與 spread](../assets/day15/random-vs-dqn-returns.png)](../assets/day15/random-vs-dqn-returns.png)",
+        f"[![Random 與凍結 DQN 的每局回報分布，以及各 evaluation seed group 的平均與 spread]({DAY15_FIGURE_BLOB_URL}?raw=1)]({DAY15_FIGURE_BLOB_URL})",
         "",
         "這張圖支持的結論是「本次 samples 中兩個 policy 的回報中心與分布如何重疊」，"
         "不能單獨證明 DQN 對所有未來 Breakout 起始狀態都更好，也不能把 Random CPU 與 DQN CUDA 的執行時間拿來比較。",
