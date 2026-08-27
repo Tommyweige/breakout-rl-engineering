@@ -1,173 +1,272 @@
-# Day 14｜為什麼 10K 不夠：把超參數比較拉長到 100K
+# Day 14｜從 GPU Replay 到 100K：讓 DQN 實驗更快，也更可信
 
-[Day 13](day13-debugging-unstable-rl-training.md) 的 10,000 environment steps 已經回答了一個重要問題：程式有沒有壞。這裡的 environment step 是 agent 執行一次 action、環境回傳一次結果的互動單位。那次 CUDA（讓 PyTorch 使用 NVIDIA GPU 的介面）diagnostic run 完成 48 局遊戲；一局在環境結束時才算完成，這種完整回合稱為 episode，該局累積的分數就是 raw return。
+[Day 13](day13-debugging-unstable-rl-training.md) 已經證明目前這套 DQN trainer 能正常收集經驗、更新模型，也沒有立刻出現 NaN、無限大或明顯的梯度失控。
 
-診斷也確認訓練真的有在動：模型從一批經驗計算梯度並更新權重一次，稱為一次 optimizer update；經驗先放在 Replay Buffer，也就是用來重播過往互動的記憶區；Target Network 則是暫時固定的價值估計副本，用來讓學習目標不要每一步都跟著主模型晃動；epsilon schedule 是隨步數降低隨機探索比例的規則。不過，這些檢查只代表程式能正常執行，不代表 10K 已經足以比較超參數。
+但它沒有回答另一個更重要的問題：**Agent 真的開始學會 Breakout 了嗎？**
 
-這個結果很容易被誤讀。10K 足以發現訓練誤差、價值估計或權重調整量變成非有限值、模型根本沒有更新，或 CUDA 設定錯誤；卻不代表 10K 足以判斷三個超參數設定（hyperparameter config）誰比較好。baseline 是未改動的參考設定，variant 是只改一個因素的比較設定；如果 baseline 的短期平均是 `1.15`、另一個 variant 是 `1.75`，差異可能只是遊戲回合剛好落在不同的隨機波動，而不是 learning rate（每次模型更新調整權重的步幅）真的造成了穩定改變。
+Day 13 的 10,000 environment steps 只跑出 48 個完整 episode。這裡的 environment step，就是 Agent 做一次 action、環境回傳一次新狀態與 reward 的互動單位；episode 則是一整局遊戲。10K 足以抓出「程式有沒有壞」，卻很容易把幾局遊戲的隨機波動誤認成模型真的變強。
 
-所以 Day 14 的問題被重新寫得更精確：**先用 10K 做 health screening（只驗證訓練流程能正常運作），再把相同的 learning-rate comparison 拉長到 100K，觀察 learning curve（回報隨訓練步數變化的曲線）和數值診斷是否開始分化。** 100K 仍然不是保證學會 Breakout 的數字；它只是比 Day 13 長十倍的 observation horizon，也就是能觀察到的訓練時間尺度，讓我們有機會看到短跑看不到的變化。
+所以 Day 14 同時面對兩個問題：
 
-## 10K 能證明什麼，不能證明什麼？
+1. 如果訓練要從 10K 拉到 100K，甚至之後跑到更長，現在這條 RTX 4060 的訓練管線夠有效率嗎？
+2. 當訓練真的跑得更久，不同 learning rate 的差異會不會才開始出現？
 
-10,000 steps 可以當成一個便宜的 short screening：如果 loss（模型預測與學習目標的差距）、Q-value（模型估計某個 action 長期價值的數字）、gradient（告訴模型權重應往哪裡調整的方向與幅度），或 Replay Buffer occupancy（記憶區目前存了多少互動）立刻異常，就不用浪費更長時間；如果 CUDA request 無法解析，也應該在這一層被擋下來。
+這一天因此不只是「調參數」。我先把 Replay 與 GPU 資料路徑拆開量測，再凍結 systems 設定，最後才跑 100K 的受控實驗。這樣看到 Return 變化時，才比較知道自己到底改了什麼。
 
-但「沒有立即爆掉」和「這個設定比較好」是兩個不同命題。Breakout 的 reward 很稀疏，一局的長度也會變化；10K 只涵蓋有限的遊戲互動，最後幾個 episode 的分數很容易支配平均值。把這樣的 final return 排名，會把 health check 偽裝成 model comparison。
+## 10K 是健康檢查，不是成績排名
 
-這也是為什麼新的 workflow 把 screening 和 main comparison 分成不同的 stage。screening 只回答「能不能正常跑」；main comparison 才回答「在更長的訓練時間內，曲線是否出現可解釋的差異」。
+10K 很適合當 short screening。它可以快速回答：Replay Buffer 有沒有累積資料、optimizer 有沒有真的更新、Target Network 有沒有同步、epsilon 探索比例有沒有下降，以及 loss、Q-value、gradient 是否維持有限值。
+
+但「沒有壞掉」和「這個設定比較好」是兩件不同的事。
+
+Breakout 的 reward 不會每一步都出現，而且每一局長度不同。假設 baseline 在 10K 的短期平均 Return 是 `1.15`，另一組設定是 `1.75`，這個差距可能只是最後幾局剛好打得比較好，而不是 learning rate 已經產生穩定效果。
+
+因此 Day 14 把兩種用途分開：
+
+- **10K screening**：確認設定能正常訓練。
+- **100K main comparison**：觀察整條 learning curve 是否開始分化。
+
+100K 也不是「一定能學會 Breakout」的神奇門檻。它只是把 Day 13 的觀察時間拉長十倍，讓短期隨機波動比較不容易支配整個結論。
 
 [![從 Day 13 的 10K diagnostic、10K screening 到 Day 14 100K main comparison 的決策流程](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/25fee37/assets/day14/budget-stages.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/25fee37/assets/day14/budget-stages.png)
 
-圖中的分支是實際實驗規則，而不是某次 run 的裝飾性流程圖：10K 通過 health checks 才能進入 100K；100K 之後若仍沒有可靠 signal，合法的結論是「目前無法分辨」，不是強行挑一個 winner。
+圖中的重點不是「100K 一定要挑出 winner」，而是反過來：如果 100K 仍然沒有可靠差異，**「目前無法分辨」本身就是合法的實驗結果。**
 
-## 一次只改一個因素，100K 只延長 observation horizon
+## 要跑到 100K，先看看時間都花去哪裡
 
-這次仍然採用 one-factor-at-a-time。baseline 是未改動的參考設定；variant 是只覆寫一個 hyperparameter 的比較設定。三個設定只改 learning rate，並且全部使用同一個 GPU-resident replay（把 replay storage 放在顯卡上的資料路徑）：
+如果長跑前完全不看系統瓶頸，很可能只是把同一套低效率流程重複十倍。
 
-| run | learning rate | 其他條件 |
-|---|---:|---|
-| baseline | `1e-4` | 固定 GPU replay、seed、environment、epsilon、target update、reward clipping、device、precision |
-| learning-rate-low | `5e-5` | 同上 |
-| learning-rate-high | `2e-4` | 同上 |
+DQN 的 CNN 雖然在 GPU 上計算，但一個完整 training step 不只有神經網路。環境要先產生下一個 observation，transition 要寫進 Replay Buffer，訓練時還要抽樣 batch、整理資料，再把模型需要的 tensor 送進 GPU。
 
-learning rate 是每次模型更新調整權重的步幅；它太小可能讓學習變慢，太大可能讓 Q-value 或 gradient 變得更躁動。這次不是同時改 epsilon decay 或 Target Network interval，所以即使結果只是一個初步訊號，也還能回答比較單純的問題：在同一個 100K horizon 下，learning rate 的差異是否值得繼續追蹤？
+也就是說：**CUDA 有啟用，不代表 GPU 就會一直忙。**
 
-三個 run 固定 seed `42`。seed 是控制初始化與抽樣的整數起點，能讓實驗條件更容易重現；它不是把 CUDA 執行變成跨硬體 bit-exact deterministic 的保證。三個 run 也都使用 `requested_device=cuda`，解析成同一張 `cuda:0` 的 NVIDIA GeForce RTX 4060 Laptop GPU，precision 是 `float32`（32-bit 浮點數格式）。
+Day 14 先從 Replay 的資料路徑開始。
 
-## GPU replay 從「搬資料」變成另一個資料路徑
+## GPU-resident Replay：microbenchmark 很快，完整 trainer 卻沒有贏
 
-原本的 Replay Buffer 把每筆畫面以 `uint8`（每個像素一個 byte）保存在 NumPy 陣列；更新時才抽樣、轉成 `float32`，再送進 GPU。GPU-resident replay 則把相同欄位直接存到 GPU，讓抽樣與 gather（依 index 收集指定 transition）也在 GPU 完成。這是 systems backend 的改變，只有在兩條路徑對同一種 transition 做出相同處理時，才不會同時改到 DQN 演算法。
+原本的 Replay Buffer 把過去的互動存在 CPU 的 NumPy 陣列。模型要更新時，流程大致是：抽樣 transition、複製到 host buffer，再傳到 GPU。
 
-這次先做固定 batch32 的完整 trainer A/B。兩個 run 都是 10K environment transitions、`train_frequency=4`、`learning_starts=2048`、同一個 model 與 seed；差別只有 CPU preallocated transfer 和 GPU replay。CPU 路徑的 replay storage 約 `564.6 MB` 在 RAM，GPU 路徑則把它放進 `cuda:0`。
+GPU-resident replay 的想法更直接：**讓 Replay 本身常駐 GPU。** 抽樣 index、gather transition、把影像從 `uint8` 轉成模型使用的 `float32`，都在 GPU 上完成，接著直接進 DQN update。
 
-| path | environment SPS | optimizer updates/s | training samples/s | wall-clock | GPU util. mean | replay storage |
-|---|---:|---:|---:|---:|---:|---|
-| CPU + preallocated | 361.61 | 71.92 | 2,302 | 27.65 s | 23.87% | CPU, 564.6 MB |
-| GPU-resident replay | 338.13 | 67.25 | 2,152 | 29.57 s | 24.63% | GPU, 564.6 MB |
+從資料路徑看，它少掉了訓練 batch 的 CPU sampling → host staging → H2D transfer。先前的 optimizer-side microbenchmark 也確實顯示 GPU replay 可以做到約 39K–41K training samples/s，看起來非常漂亮。
 
-這個結果沒有支持「GPU replay 一定讓完整 trainer 更快」。在目前的單環境、batch32 workload 中，GPU replay 每次 environment transition 仍要把新 observation 寫入 GPU；GPU 抽樣的好處不足以抵銷這個成本。這與 optimizer-side microbenchmark 不矛盾：microbenchmark 沒有 `env.step`、replay insertion 或 episode bookkeeping，所以它只能回答 GPU update path 的上限，不能代表完整 Breakout trainer。
+但 microbenchmark 不是完整遊戲訓練。
 
-獨立的 profiled run 進一步把等待拆開。CPU-preallocated path 的 10K run 花約 `8.83 s` 在單狀態 action selection、`5.28 s` 在環境互動；它的 replay sample 約 `0.41 s`，NumPy 複製到 pinned host buffer 約 `0.26 s`，H2D 約 `0.68 s`。GPU-replay path 的 action selection 與 `env.step` 幾乎相同，但 replay insertion 約 `2.31 s`，其中 CUDA event 量到約 `2.12 s` 的 GPU copy；GPU gather/cast 約 `0.76 s`。這表示本例的主要差異是「每筆 transition 寫入 GPU」的成本，而不是 GPU gather 本身。
+我固定 batch32、`train_frequency=4`、`learning_starts=2048`、同一個模型與 seed，只改 Replay backend，跑了一次真正的 10K trainer A/B：
 
-這些 stage 時間是一次受控 profile run 的分解，不應把各 stage 簡單相加成 wall-clock：CUDA 工作可以排隊，profiling 也會增加少量成本。它的用途是定位瓶頸；真正比較 end-to-end throughput，仍以沒有細粒度 instrumentation 的 A/B wall-clock 為準。
+| Replay path | Environment SPS | Optimizer updates/s | Training samples/s | Wall-clock | GPU utilization mean |
+|---|---:|---:|---:|---:|---:|
+| CPU + preallocated | **361.61** | **71.92** | **2,302** | **27.65 s** | 23.87% |
+| GPU-resident replay | 338.13 | 67.25 | 2,152 | 29.57 s | 24.63% |
 
-GPU replay 也沒有直接複製 NumPy 的完全相同隨機序列（bit-exact RNG）。CPU replay 只從「目前已寫入的筆數」中均勻抽樣，而且同一個 batch 不重複 slot（uniform sampling without replacement）；正式 GPU backend 保留這兩個 contract，但使用 CUDA RNG。checkpoint 仍然不保存 replay，resume 之後會重新收集完整的 warmup transitions，再恢復 optimizer update。這些條件讓它成為可比較的 storage/backend 變因，而不是悄悄換掉訓練資料規則。
+SPS（steps per second）代表每秒真正完成多少 environment transitions。這張表得到一個很重要的負面結果：**在目前單一 environment、batch32 的完整 trainer 裡，GPU replay 沒有比較快。**
 
-## 正式 100K 前先量測資料管線
+原因不是 GPU gather 太慢，而是 Replay 換到 GPU 後，每一筆新 transition 也要被寫進 GPU。獨立 profiling 顯示，CPU-preallocated path 的主要等待仍在單狀態 action selection 與 environment interaction；GPU-replay path 則多出明顯的 replay insertion copy 成本。GPU sampling 的優勢，在這個 workload 裡還不足以抵銷逐筆寫入的代價。
 
-GPU enabled 不等於整條訓練管線都由 GPU 主導。這個 DQN（用神經網路估計 action 價值的深度 Q-learning）每一步仍要由 Python 環境產生下一個 observation，再把 replay batch 送進 GPU；如果每次更新都把完整診斷統計同步回 Python，並立刻把一列 CSV（以逗號分隔的表格記錄）寫到磁碟，GPU 會在等待環境、同步或磁碟輸入輸出（I/O），而不是持續計算。這些每一步都會經過的耗時路徑稱為 hot path。這正是這一輪先做 throughput gate 的原因：先量測「整個訓練流程每秒完成多少 environment steps」，這個速度稱為 SPS（steps per second）；wall-clock 則是從開始到結束實際經過的時間，再開始昂貴的 100K comparison。
+這並不推翻前面的 39K–41K samples/s。兩個 benchmark 回答的是不同問題：
+
+- optimizer-side microbenchmark：**如果資料已經在 GPU，更新本身可以多快？**
+- full trainer A/B：**真正玩 Breakout、寫 Replay、選 action、更新模型時，整體可以多快？**
+
+不能把前者直接當成後者。
+
+### 為什麼我仍然保留 GPU Replay？
+
+因為這次 A/B 沒有證明 GPU replay 是現在的 throughput winner，但它仍然是一條值得保留的 systems backend。
+
+正式 GPU backend 已經維持 Replay 的核心 contract：只從目前已寫入的有效範圍均勻抽樣，同一 batch 不重複 slot，並保留 ring buffer、warmup、`terminated` / `truncated` 與 transition dtype。CPU 與 GPU 不要求產生 bit-exact 相同亂數序列，但 sampling 規則不能偷偷改掉。
+
+更重要的是，GPU replay 把「訓練 batch 已經在 GPU 上」這件事變成固定前提。當後續進入 batched rollout、vectorized environments 或更高的 training throughput 時，這條架構比每個 batch 都經過 CPU staging 更容易繼續往前優化。
+
+所以目前最精確的結論不是「GPU replay 比 CPU replay 快」，而是：
+
+> **GPU replay 在目前單環境、batch32 下尚未贏得完整 trainer A/B；它的主要待解問題是逐筆 transition insertion 成本，但它仍是後續 GPU-oriented training architecture 的候選 backend。**
+
+## 真正先拿到 1.50× 的，是 hot path 整理
+
+除了 Replay，我也檢查了每一步都會經過的 hot path，也就是「只要多做一點，就會在數萬甚至數十萬 steps 被放大的成本」。
+
+原本 trainer 每一步都做較頻繁的 diagnostics、CSV flush，PyTorch CPU threads 也沿用較大的預設值。這些事情本身不改 DQN 方程，卻會讓 Python、CPU 與 GPU 不斷同步。
+
+固定同一個 learning config、同一個 10K seed，比較調整前後：
 
 | 10K gate | 原始 hot path | 調整後 hot path |
 |---|---:|---:|
-| end-to-end SPS（每秒 environment steps） | 145.94 | 218.99 |
-| optimizer updates/s | 32.85 | 49.29 |
-| wall-clock（實際經過時間） | 68.52 s | 45.66 s |
+| End-to-end SPS | 145.94 | **218.99** |
+| Optimizer updates/s | 32.85 | **49.29** |
+| Wall-clock | 68.52 s | **45.66 s** |
 | CPU thread count | 12 | 1 |
-| GPU utilization sample | 28% | 35% |
-| diagnostics / CSV flush interval（把記錄寫入磁碟的間隔） | 1 / 1 | 100 / 100 |
+| Diagnostics / CSV flush interval | 1 / 1 | 100 / 100 |
 
-這些是同一台機器、同一個 learning config、同一個 10K seed 的 before/after 量測；GPU utilization 是 `nvidia-smi` 取到的樣本，不是整段 run 的平均值。調整只減少非必要的每步統計同步、把 CSV flush 改成批次處理，並測試 CPU thread count；沒有改 batch size 或 train frequency。端到端 SPS 提升 `1.50×`，達到這次的工程目標；兩邊都完成 `2,251` 次 optimizer update、target sync 次數相同、有限值診斷存在。這不是 bit-exact 曲線的要求，因為效能調整可能改變非關鍵的執行順序，但它保留了訓練邏輯的回歸檢查。
+兩邊都完成 `2,251` 次 optimizer update，Target Network sync 與有限值檢查也維持正常。端到端 SPS 提升約 **1.50×**。
 
-峰值保留的 GPU 記憶體約 `90 MiB`；MiB 與 GiB 是以 2 的次方計算的記憶體單位，headroom 是距離顯存上限刻意保留的安全餘裕。相對於約 `8 GiB` 顯存仍有充分 headroom，所以沒有為了速度引入 pinned memory（方便 CPU/GPU 傳輸的記憶體配置）或 vectorized environment（一次並行執行多個環境）。這個結果反而說明瓶頸不在顯存容量：CUDA 確實啟用，但單次模型更新太小，環境與 Python/記錄管線的等待時間更值得先處理。
+這次改善很能說明系統最佳化和 RL 調參的差別：我沒有增加 batch size、沒有降低 update 次數，也沒有偷偷少做訓練工作，只是把不需要每一步同步的事情移出 hot path。
 
-## 100K 不只看最後一個數字
+## GPU utilization 不是目標，batch size 也不是免費加速
 
-100K 的價值不在於最後一列 summary 比 10K 更大，而在於可以回頭問「變化何時開始」。因此每 25,000 steps 保存一次 checkpoint（保存當時模型與 optimizer 狀態的快照），並保留每個 environment step 的 metrics。比較時取 25K、50K、75K、100K 附近的實際 row，同時觀察 loss、Q、Target、gradient、TD error、epsilon 和 SPS。
+看到 GPU utilization 不高，很自然會想：那就把 batch 放大。
 
-回合分數仍然只在 episode 完成時出現，所以 return 曲線的每個點都是實際完成的 episode，不會把缺少的值補成零。為了避免看到結果後改規則，這次固定使用最後 20 個 completed episodes 的 mean/median，以及所有 20-episode rolling windows 中的最高平均值。recent trend 則把最後 20 局分成前後兩半，報告後半平均減去前半平均的變化。
+但 batch size 不只是硬體設定。它代表一次 optimizer update 使用多少 Replay transitions，會同時改變 gradient 的估計方式與 learning dynamics。因此它不能只用「GPU 吃得比較滿」來選。
 
-## 100K GPU replay main comparison 的真實結果
+固定 learning rate、`train_frequency=4`、seed、Replay、epsilon、Target update 與 CUDA device，只比較 batch `32 / 64 / 128` 的 10K profiling：
 
-下表來自正式 GPU replay 100K comparison report。三個 run 都完成 100,000 transitions，使用相同 `replay_backend=gpu`、相同 batch32 與 schedule；report 確認 stage 是 `main`、三個 requested/resolved device 相同，符合正式 CUDA main comparison 條件。
+| Batch size | Environment SPS | Training samples/s | GPU utilization mean | Device memory peak |
+|---:|---:|---:|---:|---:|
+| 32 | **235.74** | 1,698 | 30.13% | 1.76 GiB |
+| 64 | 203.32 | 2,929 | 32.22% | 1.89 GiB |
+| 128 | 177.36 | **5,110** | **34.88%** | 1.97 GiB |
 
-| run | episodes | 最近 20 局 mean | median | 最佳 rolling20 mean | recent trend Δ | SPS | wall-clock |
-|---|---:|---:|---:|---:|---:|---:|---:|
-| baseline | 364 | 5.15 | 5.50 | 5.15 | -0.30 | 358.47 | 278.96 s |
-| learning-rate-low | 389 | 1.80 | 2.00 | 2.90 | -0.20 | 387.92 | 257.78 s |
-| learning-rate-high | 308 | 9.15 | 8.00 | 9.15 | -0.10 | 390.60 | 256.02 s |
+batch128 的 GPU utilization 和 training samples/s 都最高，但 environment SPS 反而最低。這正是「GPU utilization 越高，不代表整體訓練越快」的實例。
 
-這次 100K 和 10K 的差異不是「終於得到一個永遠正確的排名」，而是曲線開始提供更長時間尺度的 evidence。GPU replay 條件下，high learning rate 的 rolling return 高於 low 與 baseline；這讓 high 成為值得交給 multi-seed evaluation（用多個不同 seed 重複同一設定）的 candidate。這次 high 的 recent trend Δ 為 `-0.10`，但單一 seed 仍不足以宣稱它是最終最佳 learning rate。
+原因也很直觀：目前仍然只有一個 Breakout environment，action inference 大部分時間一次只處理一個 state。把 optimizer batch 放大，只是讓每次 update 做更多工作，並沒有消除單環境 rollout 與 Python 控制流程的等待。
 
-這張圖回答的是：**在相同 100K steps 下，三個 learning-rate run 的 raw return 是否開始沿著不同的 learning curve 前進？** 淡色點是每局實際完成時的 raw episode return；粗線是固定 20-episode rolling mean。x 軸仍然是 environment step，而不是 episode index。
-
-[![100K main comparison 中三個 GPU replay learning-rate run 的 raw return 與 20-episode rolling mean](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/experiment-return-comparison.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/experiment-return-comparison.png)
-
-圖中 high 的 rolling curve 在後段維持較高，baseline 次之，low 較低；這支持「100K 比 10K 更能看出候選差異」這個觀察。它不能支持「`2e-4` 在所有 seed 都最佳」，也不能排除更長訓練後排名改變。SPS 是每秒完成多少 environment transitions 的 throughput，wall-clock 是實際經過的時間；它們是執行成本，不是遊戲品質。GPU replay 的 optimizer-side microbenchmark 約 39K–41K samples/s，也不能被寫成這三個完整 trainer 的 SPS。
-
-## Q、Target、gradient 在較長 horizon 下怎麼走？
-
-Q-value 是模型對 action 長期價值的估計；Target mean 是另一個較穩定的參考估計，用來形成模型要追近的學習目標（Bellman target）；gradient norm 則是一次更新中梯度總量的大小。這些診斷不能單獨判斷策略好壞，但能幫助區分「學得慢」和「數值開始不穩定」。
-
-| run | Q mean：25K → 100K | Target mean：25K → 100K | loss max | gradient max |
-|---|---:|---:|---:|---:|
-| baseline | 0.751 → 1.364 | 0.731 → 1.373 | 0.0172 | 0.8237 |
-| learning-rate-low | 0.555 → 1.155 | 0.553 → 1.193 | 0.0192 | 0.6367 |
-| learning-rate-high | 0.513 → 1.722 | 0.499 → 1.755 | 0.0325 | 1.0135 |
-
-三個 run 的 Q 與 Target 都隨 horizon 增加，且 report 沒有非有限值；因此不能把「Q 變大」直接稱為爆炸。low 在 50K 的 gradient norm 約為 `0.883`，高於 baseline 的 `0.075` 與 high 的 `0.331`，但後續又回到較低尺度。合理的判讀是：high learning rate 讓價值估計在後段發展得更快，也值得持續監看；這還不是「已經不穩定」或「一定更好」的證明。
-
-TD error 是「目前 Q 預測和 Bellman target 相差多少」。這次 report 也保存它，而不只保存 loss：三個 run 在 100K 附近的 `td_error_mean_abs` 約為 baseline `0.054`、low `0.033`、high `0.044`；high 的全程最大 `td_error_max_abs` 約 `1.18`。這些數字沒有形成一路放大的鏈，因此支持「目前沒有明確數值失控」；它們仍不是策略品質的替代指標。
-
-下圖把同一批 run 的 loss、Q mean、Target mean、gradient norm、epsilon 和 SPS 放在相同的 environment-step 軸上。它的用途不是製造另一個 winner，而是檢查 return 差異是否伴隨非有限值、持續增大的梯度，或完全不同的執行成本。
-
-[![100K main comparison 的 loss、Q、Target、gradient、epsilon 與 throughput diagnostics](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/experiment-diagnostics-comparison.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/experiment-diagnostics-comparison.png)
-
-epsilon 在這組 config 中於前 10K steps 下降到 `0.05`，之後 90K 大多在低探索機率下執行。這是現有 epsilon schedule 的設計條件，不是這次 learning-rate comparison 的變因；如果下一輪要研究探索速度，應另開一個只改 epsilon decay 的 batch。
-
-## 從 checkpoint 看見真實遊戲行為
-
-曲線告訴我們數值如何變化，GIF 則讓我們確認 checkpoint 真的能驅動環境。以下四段影片都從實際 checkpoint 載入 online network，以同一個 evaluation seed、`evaluation epsilon=0`、相同 preprocessing 和最多 500 個 evaluation steps 錄製。1K 與 10K 使用 short-screening checkpoints；50K 與 100K 使用同一個 100K main run 的 checkpoints。
-
-1K 和 10K 的 greedy episode 都得到 `0`，這不是失敗的錄影，而是重要限制：training return 仍包含探索行為，不能直接等同 greedy evaluation policy。50K 與 100K checkpoint 在同一個 evaluation contract 下分別得到 return `4` 與 `7`；這是單一 seed、單一 evaluation episode 的 limited evidence，不能取代 Day 15 的多 episode evaluation。
-
-從畫面可以做有限但具體的觀察：1K 與 10K 沒有形成可重複得分的行為；50K 的畫面可看到磚塊出現缺口；100K 顯示更多磚塊被清掉，並在 363 個 evaluation steps 結束。這支持「行為可能開始改善」的 qualitative signal，卻不證明跨 seed 的 policy quality。
-
-[![1K checkpoint 的真實 Breakout gameplay](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/gameplay-step-001k.gif?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/gameplay-step-001k.gif)
-
-[![10K checkpoint 的真實 Breakout gameplay](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/gameplay-step-010k.gif?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/gameplay-step-010k.gif)
-
-[![50K checkpoint 的真實 Breakout gameplay](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/gameplay-step-050k.gif?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/gameplay-step-050k.gif)
-
-[![100K checkpoint 的真實 Breakout gameplay](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/gameplay-step-100k.gif?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/gameplay-step-100k.gif)
-
-每個 GIF 的 checkpoint step、training run、evaluation seed、實際 frame 數與重現命令保存在同名 JSON metadata。影片回答的是「這個 checkpoint 能做出什麼行為」，不回答「這個配置在多個 seed 下是否有較高 final policy quality」。
-
-## Batch size 同時是硬體效率與學習變因
-
-LR comparison 選出的 development candidate 是 `2e-4`，但它還沒有回答另一個問題：GPU 每次收到的工作是否太小。batch size 是一次 optimizer update 使用的 replay transitions 數量；它變大時，每次更新的 GPU 工作與 training samples/s 可能增加，但也會改變梯度估計與 learning dynamics，所以不能把它當成純效能開關。
-
-因此 Day 14C 先固定 learning rate、`train_frequency=4`、環境、seed、replay、epsilon、target update、precision 和 CUDA device，只比較 batch size `32/64/128`。Stage 1 每個設定跑 10K，並以固定 1 秒間隔保存 GPU utilization、power、device memory、process CPU 和 sampling method；Stage 2 只對 Stage 1 中實際提高 environment SPS 且通過數值 guardrails（攔截 replay、epsilon、episode 與有限值異常的安全檢查）的候選跑 100K。training samples/s 代表每秒送進 optimizer update 的 transitions 數量。
-
-| batch size | environment SPS | wall-clock | optimizer updates/s | training samples/s | GPU utilization mean | GPU power mean | device memory peak |
-|---:|---:|---:|---:|---:|---:|---:|---:|
-| 32 | 235.74 | 42.42 s | 53.06 | 1,698 | 30.13% | 25.59 W | 1.76 GiB |
-| 64 | 203.32 | 49.18 s | 45.77 | 2,929 | 32.22% | 27.11 W | 1.89 GiB |
-| 128 | 177.36 | 56.38 s | 39.92 | 5,110 | 34.88% | 30.33 W | 1.97 GiB |
-
-這組真實量測展示了「GPU 利用率越高不一定越快」：batch128 的 GPU utilization 和 training samples/s 都最高，但 environment SPS 最低；因為單一 Breakout environment 的 action inference 仍是 batch=1，環境互動、replay 和小型 GPU update 之間仍然串行等待。batch64 也沒有帶來 environment throughput 的收益。三組的 process CPU 約為 `5.55%`、`5.66%`、`5.77%`（以 16 logical CPUs 歸一化），顯示前一輪 CPU path optimization 已把瓶頸推向更細小的 GPU work，而不是 CUDA 沒有啟用。
-
-所以這次沒有把 batch64 或 batch128 硬送進 100K：它們沒有實際的 end-to-end efficiency gain；batch32 則沿用已完成的長程 reference。這是有意義的 negative result——增加 samples/s 並沒有降低 wall-clock，也沒有理由只因 GPU utilization 上升就改變正式 training config。換句話說，batch128 目前只能叫作 systems-performance candidate，不能叫作 recommended DQN training configuration。
+所以 Day 14 沒有因為 batch128 看起來比較會「吃 GPU」就把它升成正式訓練設定。
 
 [![Day 14 batch size 32、64、128 的 throughput、GPU utilization、power、VRAM 與短跑 learning guardrails](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/batch-size-efficiency.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/batch-size-efficiency.png)
 
-## 用 1/2/4 threads 凍結系統設定，再交給 Day 15
+最後再固定 batch32 測 `1 / 2 / 4` 個 PyTorch CPU threads，SPS 分別是 `290.08 / 306.79 / 304.15`，因此後續使用 **2 threads**。差距不巨大，但至少這個選擇來自實測，而不是沿用預設值。
 
-batch-size profiling 之後，仍要決定 PyTorch CPU thread count。固定 batch32、同一個 10K config 實測 1、2、4 threads，end-to-end SPS 分別為 `290.08`、`306.79`、`304.15`；因此選 2，而不是沿用預設約 12 threads。這個選擇同樣以實際 SPS 為主，同時保留 GPU power、VRAM、process CPU 和 finite metrics 作 guardrails。
+到這裡，Day 14 的 systems 目標就先凍結：不要一邊做 learning-rate experiment，一邊又改 Replay、batch、thread count，否則最後無法知道 learning curve 的差異到底從哪裡來。
 
-最後保留 CPU replay reference 與 GPU replay candidate 兩條 Vanilla DQN path。GPU replay high run 的 100K evidence 完成 308 個 episodes，最近 20 局 mean `9.15`、最佳 rolling20 mean `9.15`、recent trend Δ `-0.10`，wall-clock `256.02 s`；四個 milestone 都有 finite loss/Q/Target/gradient。這是 single-seed development evidence，不是 final policy selection。下一篇應使用固定 evaluation contract 和多 seed，比較兩份 path 是否真的在相同 wall-clock 下得到相同或更高 Return。
+## 系統設定凍結後，100K 才開始比較 learning rate
 
-## 不同 observation horizon 必須分開判讀
+接下來回到真正的 RL 問題。
 
-10K learning-rate runs 是 `stage=screening`、`budget_level=short_screening`：它們可以回答設定是否能正常啟動、更新、寫出 metrics 和完成 CUDA metadata；它們不能拿來和 100K recent mean 放在同一張 ranking table 裡。
+learning rate 是每次模型更新時，權重往 gradient 指示方向移動多大一步。太小可能學得很慢；太大則可能讓 Q-value、Target 或 gradient 變得不穩定。
 
-100K comparison 則要求三個 run 的 step budget、stage、requested/resolved device 與 replay backend 一致。這個分層解決了一個常見的實驗錯誤：把不同 observation horizon 的 final return 當成同尺度數字比較。
+這次採用 one-factor-at-a-time：一次只改一個因素。
 
-## 100K 之後仍然不能把單一 seed 當成答案
+| Run | Learning rate | 其他主要條件 |
+|---|---:|---|
+| baseline | `1e-4` | GPU replay、batch32、seed42、environment、epsilon、Target update、reward clipping、FP32 固定 |
+| learning-rate-low | `5e-5` | 同上 |
+| learning-rate-high | `2e-4` | 同上 |
 
-這次的 GPU replay 100K evidence 支持 high learning rate 成為下一輪候選，也支持 low 在這組條件下暫時落後；但這仍然是 single-seed development evidence。不同 seed 可能改變 episode 結束時間、Replay Buffer 內容與每次 update 的抽樣，CUDA 和不同硬體也可能產生細微數值差異。
+10K 只做 screening；三組都通過後，才進入 100K main comparison。
 
-如果下一輪 multi-seed 仍然看到 high 的 return curve 高於其他設定，而且 Q/Target/gradient 沒有出現不可接受的失控，再把它交給更正式的 milestone evaluation 才合理。如果 100K 後的差異在多 seed 消失，或所有 config 都沒有可靠 trend，也應該保留「目前無法分辨」這個結果；只有在 100K 已經提供清楚但仍不足的 signal 時，才值得把少數候選延長到 250K 或更長。
+而且 100K 不是只看最後一局。訓練過程保留 checkpoint 與 metrics，讓 25K、50K、75K、100K 都能回頭檢查。episode Return 只在一局真正結束時記錄，不會把中間缺少的值補成 0。
 
-Day 14 因此沒有把調參變成「跑得久就一定找到答案」。它建立的是一個可分層的判讀方式：10K 負責健康檢查與 systems profiling，100K 負責觀察 learning dynamics，GPU replay A/B 負責回答 backend 的完整 trainer 成本，25K 到 100K 的 diagnostics 與真實 GIF 負責揭露行為邊界，最後仍由多 seed evaluation 決定這個 signal 是否值得相信。GPU utilization、microbenchmark samples/s 和 training return 各自回答不同問題，不能互相代替。
+為了避免看完結果才改統計規則，這次固定使用：
 
-下一篇會把這個 reference/candidate distinction 放進固定的 milestone evaluation，加入 random baseline，檢查 100K 觀察到的差異是否能在更嚴格的 protocol 下重現。
+- 最近 20 個 completed episodes 的 mean / median。
+- 20-episode rolling mean。
+- recent trend：最後 20 局的後半平均減去前半平均。
+
+## 100K 之後，learning rate 的差異終於開始出現
+
+三個 GPU replay run 都完整跑到 100,000 transitions：
+
+| Run | Episodes | 最近 20 局 mean | Median | 最佳 rolling20 mean | Recent trend Δ | SPS | Wall-clock |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| baseline | 364 | 5.15 | 5.50 | 5.15 | -0.30 | 358.47 | 278.96 s |
+| learning-rate-low | 389 | 1.80 | 2.00 | 2.90 | -0.20 | 387.92 | 257.78 s |
+| learning-rate-high | 308 | **9.15** | **8.00** | **9.15** | -0.10 | 390.60 | 256.02 s |
+
+這次 `2e-4` 的 high run 在後段明顯高於 baseline 與 low。這已經比 10K 的短跑排名更有資訊，因為我們看到的是一段更長的 learning curve，而不是幾局遊戲的 final mean。
+
+但它仍然只能得到這個結論：
+
+> **在 seed 42、100K budget、目前 GPU replay 與固定 schedule 下，`2e-4` 是值得進一步驗證的 development candidate。**
+
+它還不能被叫作「最佳 learning rate」。下一步仍然需要多個 training seeds 與正式 evaluation protocol。
+
+[![100K main comparison 中三個 GPU replay learning-rate run 的 raw return 與 20-episode rolling mean](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/experiment-return-comparison.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/experiment-return-comparison.png)
+
+淡色點是每個實際完成 episode 的 raw Return，粗線是固定 20-episode rolling mean。x 軸使用 environment step，而不是 episode index，因為不同設定可能讓每局遊戲長度不同。
+
+這張圖最重要的不是「high 贏了」，而是 **100K 開始讓三條曲線真正分開**。這正是 Day 13 的 10K 做不到的事情。
+
+## Q-value 與 Target 變大，不等於已經數值爆炸
+
+Return 告訴我們 Agent 得了多少分，但要判斷「學得慢」和「訓練開始不穩定」，還需要看模型內部的數值。
+
+Q-value 是模型估計「在目前 state 做某個 action，長期大概值多少」；Target 是計算 Bellman learning target 時使用的參考值；gradient norm 則反映一次更新想把模型參數推動多大。
+
+100K 期間三組的 Q 與 Target 都往上建立更大的價值尺度：
+
+| Run | Q mean：25K → 100K | Target mean：25K → 100K |
+|---|---:|---:|
+| baseline | 0.751 → 1.364 | 0.731 → 1.373 |
+| learning-rate-low | 0.555 → 1.155 | 0.553 → 1.193 |
+| learning-rate-high | 0.513 → **1.722** | 0.499 → **1.755** |
+
+high 的價值尺度成長最快，這和它較大的 learning rate 一致：更新步幅更大，Q 與 Target 也更快離開接近零的初始區間。
+
+但「Q 變大」本身不是錯誤。真正值得警戒的是：Q / Target 持續失控、TD error 越拉越大、loss 基線一路抬升、gradient 也同步加速，最後出現極端值或 non-finite。
+
+這次 100K 沒看到完整的失控鏈。100K 附近的 `td_error_mean_abs` 約為 baseline `0.054`、low `0.033`、high `0.044`；high 全程最大的 `td_error_max_abs` 約 `1.18`。所有主要 diagnostics 都維持 finite。
+
+因此目前最合理的判讀是：**high learning rate 讓價值估計發展得更快，值得監看，但還沒有足夠證據把它判成數值不穩定。**
+
+[![100K main comparison 的 loss、Q、Target、gradient、epsilon 與 throughput diagnostics](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/experiment-diagnostics-comparison.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/experiment-diagnostics-comparison.png)
+
+這張圖的用途不是再製造一個 ranking，而是確認 Return 差異沒有伴隨明顯的 NaN、持續 gradient explosion 或完全不同的執行成本。
+
+另外，這組設定的 epsilon 在前 10K steps 就降到 `0.05`，之後 90K 大多處在低探索機率。這不是這次 learning-rate comparison 的變因；如果後續要研究探索速度，應該另外做只改 epsilon decay 的受控實驗。
+
+## 從 1K 到 100K，畫面終於開始出現行為差異
+
+Learning curve 是數值證據，但它看不到 Agent 到底在畫面上做了什麼。
+
+因此 Day 14 另外從不同訓練階段的真實 checkpoint 載入 online network，以同一個 evaluation seed、相同 preprocessing、`evaluation epsilon=0` 的 greedy policy 實際執行 Breakout，再把畫面錄成 GIF。
+
+這裡刻意把 evaluation 的探索關掉，因為如果 1K 和 100K 錄影使用不同的隨機 action，畫面差異可能只是 exploration，而不是 policy 本身變了。
+
+1K 與 10K 的 greedy episode 都得到 `0`。50K 與 100K checkpoint 在同一套 evaluation contract 下，分別得到 Return `4` 與 `7`。
+
+這四個數字不能取代正式 evaluation：它們都只是單一 seed、單一 episode。但畫面仍然提供有用的 qualitative evidence。
+
+1K 與 10K 還看不到可重複得分的行為；50K 已經可以看到磚塊出現缺口；100K 則清掉更多磚塊，並在 363 個 evaluation steps 後結束。至少在這個固定 evaluation episode 裡，checkpoint 的行為確實隨訓練進度出現了可觀察變化。
+
+### 1K steps
+
+[![1K checkpoint 的真實 Breakout gameplay](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/gameplay-step-001k.gif?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/gameplay-step-001k.gif)
+
+### 10K steps
+
+[![10K checkpoint 的真實 Breakout gameplay](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/gameplay-step-010k.gif?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/gameplay-step-010k.gif)
+
+### 50K steps
+
+[![50K checkpoint 的真實 Breakout gameplay](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/gameplay-step-050k.gif?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/gameplay-step-050k.gif)
+
+### 100K steps
+
+[![100K checkpoint 的真實 Breakout gameplay](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/gameplay-step-100k.gif?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/gameplay-step-100k.gif)
+
+這裡要把兩種 evidence 分開：
+
+- **GIF**：回答「這個 checkpoint 實際會做出什麼行為？」
+- **Return curve / 正式 evaluation**：回答「這個 policy 是否真的比較強，而且差異是否能重現？」
+
+看起來比較會玩，不等於已經通過評估。
+
+## 低 Return 不等於模型太小
+
+跑到 100K 之後，很容易產生下一個直覺：如果分數還不夠高，是不是 CNN 或 hidden layer 太小？
+
+這個結論不能太早下。
+
+如果 Return 在 50K → 100K 還持續上升，第一個合理動作通常是延長 training horizon，而不是立刻放大模型。只有當較長訓練開始形成 plateau、數值 diagnostics 又維持正常，而且多個合理 learning-rate 設定都卡在相近的低水平時，才比較有理由懷疑 model capacity。
+
+也就是說，未來若要做容量實驗，應該先固定其他條件，只改一個 architecture 參數，例如比較 hidden dimension `256 / 512 / 1024`。如果 larger model 在相同 training budget 下真的得到更低的 TD error、更高且可重現的 evaluation Return，才有證據說原本的 512 可能限制了模型。
+
+Day 14 目前沒有這種證據。現在看到的是：100K 的 high learning-rate run 仍比 10K 顯示出更明顯的學習訊號，所以「模型太小」還不是第一個應該下的診斷。
+
+## Day 14 真正得到的答案
+
+這一天最後沒有得到一句簡單的「GPU replay 最快」或「`2e-4` 就是最佳參數」。反而得到幾個更有用的工程結論。
+
+第一，**10K 適合做健康檢查，100K 才開始有資格談 learning dynamics。** Day 13 的短跑沒有錯，只是它回答的是 correctness，不是 model selection。
+
+第二，**GPU-resident replay 的 microbenchmark 優勢沒有直接轉成單環境、batch32 的完整 trainer 優勢。** 現在的主要問題是逐筆 transition insertion、單狀態 action inference 與 environment 仍然讓整條 pipeline 保持高度串行。GPU replay 因此是後續架構候選，不是這次 A/B 的 throughput winner。
+
+第三，**GPU utilization 不能單獨當效率指標。** batch128 確實讓 GPU 更忙，也提高 training samples/s，但完整 environment throughput 反而更低。
+
+第四，**100K 讓 learning-rate 差異開始變得可觀察。** 在目前 seed 42 下，`2e-4` 的後段 Return 高於 baseline 與 low，因此它值得交給下一階段驗證；但 single-seed development evidence 仍然不能替代正式 evaluation。
+
+第五，**真實 gameplay GIF 補上了曲線看不到的行為證據。** 1K、10K、50K、100K 的固定 evaluation episode 顯示 policy 行為確實開始改變，但真正判斷模型是否比 random policy 更強，仍然需要多 episode、固定 seeds 的評估流程。
+
+所以 Day 14 最後凍結的不是「最佳模型」，而是一個比較乾淨的下一步：保留 CPU replay reference 與 GPU replay candidate，固定已量測過的 systems 設定，再把 100K 得到的 candidate 交給 Day 15。
+
+Day 15 不再看 training curve 猜模型有沒有學會，而是會把 model 凍結，用固定 evaluation seeds、greedy policy 與 raw Atari score，正式比較 **Random Policy vs DQN**。
