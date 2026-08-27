@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at_utc": "2026-08-27T09:39:16.958142Z",
+  "generated_at_utc": "2026-08-27T09:48:21.579889Z",
   "command": [
     "visualize_day15_evaluation.py",
     "evaluations/day15-random-baseline/results.json",
@@ -15,7 +15,7 @@
     "random_results": "evaluations/day15-random-baseline/results.json",
     "random_results_sha256": "08dcf19c839a92f11a2847fd4baf46c808ba29036bedbc1c113a137d5c081b1d",
     "dqn_results": "evaluations/day15-dqn-cuda/results.json",
-    "dqn_results_sha256": "7d4146e133a4ee01eab60803989df559b829e0e4602ac0fbcfd0212b6ccada42"
+    "dqn_results_sha256": "3589b4bc7461a767ed5530e513161afba159bc95b7113d6518d1d523b778b397"
   },
   "dqn_provenance": {
     "model_id": "day14-final-vanilla-dqn-seed42@step-00100000",

@@ -25,6 +25,7 @@ from torch import nn
 from breakout_env import ENVIRONMENT_ID, make_breakout_env
 from breakout_rl.models.dqn import DQNNetwork
 from breakout_rl.tensors import observation_to_tensor
+from breakout_rl.experiments import load_experiment_config
 from breakout_rl.training.diagnostics import ATARI_ACTION_NAMES
 from breakout_rl.training.dqn_trainer import resolve_device
 
@@ -862,7 +863,6 @@ def load_day14_provenance(path: str | Path) -> dict[str, Any]:
     if not isinstance(raw_config, Mapping):
         raw_config = {}
     config_values = dict(raw_config)
-    config_values.setdefault("replay_backend", "cpu")
     expected_step = variant.get("step_budget", config_values.get("total_steps"))
     expected_step = _integer(expected_step, name="Day 14 step budget", minimum=1)
 
@@ -872,14 +872,21 @@ def load_day14_provenance(path: str | Path) -> dict[str, Any]:
         if isinstance(base_config, Mapping):
             raw_config_reference = base_config.get("config_path")
     config_reference = None
+    config_path: Path | None = None
     if isinstance(raw_config_reference, str):
         candidate = Path(raw_config_reference)
-        candidate = (
+        config_path = (
             candidate
             if candidate.is_absolute()
             else source.parent / candidate
         ).resolve()
-        config_reference = _repository_path(candidate)
+        config_reference = _repository_path(config_path)
+        if config_path.is_file():
+            effective_config = load_experiment_config(config_path)
+            effective_values = dict(effective_config.values)
+            effective_values.update(config_values)
+            config_values = effective_values
+    config_values.setdefault("replay_backend", None)
 
     run_dir: Path | None = None
     raw_run_dir = variant.get("run_dir")

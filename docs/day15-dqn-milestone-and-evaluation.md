@@ -8,7 +8,7 @@ Day 14 的訓練曲線和 100K checkpoint GIF 已經出現值得追蹤的行為�
 
 如果看完評估結果才回頭挑最好看的 checkpoint，評估就不再是對預先選定模型的檢查。因此 Day 15 先遵守 Day 14 final manifest 裡的規則：使用 `day14-final-vanilla-dqn-seed42` 在 `100,000` 個環境步數完成時保存的 final checkpoint。
 
-這裡的 manifest 是記錄實驗配置、完成狀態和來源 artifact 的 JSON；checkpoint 則是保存某個訓練時刻模型權重的檔案。最新的 Day 14 final manifest 是本次 provenance（來源追蹤）的依據。它實際記錄的候選設定是 training seed `42`、learning rate `2e-4`、batch size `32`、train frequency `4` 和 `100K` budget；有效的 replay backend 是 `cpu`。GPU-resident replay 的其他實驗仍是 Day 14 的系統效能證據，沒有在 Day 15 被偷偷換成另一個 checkpoint。
+這裡的 manifest 是記錄實驗配置、完成狀態和來源 artifact 的 JSON；checkpoint 則是保存某個訓練時刻模型權重的檔案。最新的 Day 14 final manifest 是本次 provenance（來源追蹤）的依據。它實際記錄的候選設定是 training seed `42`、learning rate `2e-4`、batch size `32`（每次模型更新一起處理的資料筆數）、train frequency `4` 和 `100K` budget；有效的 replay backend 是 `cpu`。GPU-resident replay 的其他實驗仍是 Day 14 的系統效能證據，沒有在 Day 15 被偷偷換成另一個 checkpoint。
 
 training seed 會影響模型初始化、探索和 Replay 抽樣；evaluation seed 則控制凍結模型在遊戲環境中遇到的隨機性。這次刻意把兩者分開：模型來自 training seed `42`，評估使用 `101`、`202`、`303` 三個 evaluation seed group，每組五局，共 15 局。每個 group 的第 1～5 局用 `seed + episode_index` 形成實際 reset seed，例如 `101`～`105`，所以每一局都能在 artifact 中追查。
 
@@ -44,7 +44,7 @@ Random policy 的作用是提供一個容易解釋的 baseline：如果凍結 DQ
 
 下面的結構圖顯示這個匯合點：DQN 先載入 Day 14 checkpoint 並驗證 CUDA，Random 直接建立 CPU policy；兩者之後走同一條 evaluation path。
 
-[![Day 15 evaluation contract：DQN 與 Random 進入同一個 episode harness](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/codex/issue-17-day15/assets/day15/evaluation-contract.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/codex/issue-17-day15/assets/day15/evaluation-contract.png)
+[![Day 15 evaluation contract：DQN 與 Random 進入同一個 episode harness](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/3f599ba/assets/day15/evaluation-contract.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/3f599ba/assets/day15/evaluation-contract.png)
 
 圖中的流程是依照實際 CLI 和 `evaluate_policy` 的結構整理出的 structural diagram，不是某一次 rollout 的畫面截圖。它回答的是「哪些條件在兩種 policy 之間保持不變」，而不是預測分數。
 
@@ -54,7 +54,7 @@ Random policy 的作用是提供一個容易解釋的 baseline：如果凍結 DQ
 
 Day 15 沒有另外加一個會改變正式分數的 evaluator cap，而是讓 ALE/Breakout-v5 使用自己的 episode 邊界。實際結果中，DQN 的 15 局全部有環境終止訊號：5 局是 `terminated`，10 局是 ALE 的 `truncated`；Random 則是 15 局 `terminated`。因此結果中的每一局都是完整的 environment episode，但報告仍保留是哪一種結束方式。
 
-[![Day 15 episode loop：分開保存 terminated 與 truncated 狀態](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/codex/issue-17-day15/assets/day15/evaluation-episode-loop.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/codex/issue-17-day15/assets/day15/evaluation-episode-loop.png)
+[![Day 15 episode loop：分開保存 terminated 與 truncated 狀態](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/3f599ba/assets/day15/evaluation-episode-loop.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/3f599ba/assets/day15/evaluation-episode-loop.png)
 
 這個區分也解釋了為什麼 DQN 的平均 episode length 約為 `18,131`，遠高於 Random 的約 `186`：部分 DQN rollout 能長時間維持遊戲，最後由 ALE 的環境限制截斷。這是一個行為觀察，不等於模型已經清除更多磚塊；回報和結束原因必須一起看。
 
@@ -69,7 +69,7 @@ Day 15 沒有另外加一個會改變正式分數的 evaluator cap，而是讓 A
 
 如果只畫兩根 mean bar，會看見 DQN `4.53` 高於 Random `1.33`，卻看不見每一局的差異。下面的圖直接讀取兩份 evaluation JSON：每個點是一局，箱型圖保留中間分布，菱形是 mean，短線是 median；右側則按 evaluation seed group 畫出平均和 population std。population std 把這次收集到的 episodes 當成要描述的整體，不把它包裝成多 training seeds 的不確定性估計。
 
-[![Random 與凍結 DQN 的每局 raw return 分布，以及各 evaluation seed group 的平均與 spread](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/codex/issue-17-day15/assets/day15/random-vs-dqn-returns.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/codex/issue-17-day15/assets/day15/random-vs-dqn-returns.png)
+[![Random 與凍結 DQN 的每局 raw return 分布，以及各 evaluation seed group 的平均與 spread](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/3f599ba/assets/day15/random-vs-dqn-returns.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/3f599ba/assets/day15/random-vs-dqn-returns.png)
 
 圖中可以同時看到兩件事：DQN 在三個 evaluation seed group 的平均都高於 Random，median 也從 `1` 提高到 `5`；另一方面，DQN 的 spread 更大，且有許多長時間才由 ALE `truncated` 的局。這份 evidence 支持「Day 14 checkpoint 在這批固定 episodes 中展現較高回報」，但不能單獨證明所有未來起始狀態都會得到同樣結果。
 
@@ -81,7 +81,7 @@ Day 15 沒有另外加一個會改變正式分數的 evaluator cap，而是讓 A
 
 ## Day 15 留下的是一把可重用的尺
 
-Day 16 會把 single-environment training 改成多環境、批次 action inference（一次替多個 observation 選 action）和批次 GPU Replay insertion。系統最佳化可能提高 throughput，但也可能因 autoreset、global step、done semantics 或 Replay ordering 改變 policy quality。
+Day 16 會把 single-environment training 改成多環境、批次 action inference（一次替多個 observation 選 action）和批次 GPU Replay insertion。系統最佳化可能提高 throughput，但也可能因 autoreset（一局結束後自動開始下一局）、global step（已走過的環境步數）、done semantics（如何解讀 terminated/truncated 結束訊號）或 Replay ordering（資料寫入 Replay 的先後順序）改變 policy quality。
 
 因此 Day 16、Day 18 和 Day 20 都應重用本日的 evaluation contract：相同的 Breakout preprocessing、evaluation seeds、每組 episode 數、greedy epsilon、raw reward、`terminated`／`truncated` semantics 和 JSON/CSV schema。這樣下一次比較的差異才主要來自 training system 或 DQN variant，而不是評估規則被換掉。
 

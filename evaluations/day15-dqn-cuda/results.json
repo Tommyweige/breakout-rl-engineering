@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "created_at_utc": "2026-08-27T09:39:07.393974Z",
+  "created_at_utc": "2026-08-27T09:48:09.846375Z",
   "evaluation_id": "day15-dqn-cuda",
   "policy_type": "dqn",
   "model_id": "day14-final-vanilla-dqn-seed42@step-00100000",
@@ -50,8 +50,8 @@
     "resolved_device": "cuda:0",
     "cuda_available": true,
     "evaluation_steps": 271970,
-    "wall_clock_seconds": 417.8865396999754,
-    "steps_per_second": 650.8225897758343,
+    "wall_clock_seconds": 336.8584333001636,
+    "steps_per_second": 807.3718010724593,
     "cuda_device_index": 0,
     "gpu_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
     "cuda_device_name": "NVIDIA GeForce RTX 4060 Laptop GPU",

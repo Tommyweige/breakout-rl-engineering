@@ -341,6 +341,15 @@ class EvaluationTests(unittest.TestCase):
             random_path, _ = write_evaluation_artifacts(random_result, root / "random")
             dqn_path, _ = write_evaluation_artifacts(dqn_result, root / "dqn")
             report = build_report(random_path, dqn_path, require_cuda=False)
+            tampered = json.loads(dqn_path.read_text(encoding="utf-8"))
+            tampered["summary"]["mean_return"] = 999.0
+            tampered_path = root / "tampered.json"
+            tampered_path.write_text(
+                json.dumps(tampered),
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ValueError, "does not match"):
+                build_report(random_path, tampered_path, require_cuda=False)
             output = root / "returns.png"
             metadata = root / "returns.json"
             render_evaluation_comparison(

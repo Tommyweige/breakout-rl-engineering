@@ -65,7 +65,7 @@ DQN 的模型推論確實在 NVIDIA CUDA 上執行；Random 沒有 neural-networ
 
 下圖的每個點都是 raw evaluation artifact 裡的一局；箱型圖顯示中間分布，菱形是 mean，短線是 median。右側則按 evaluation seed group 顯示平均與 spread，避免只看一個總平均。
 
-[![Random 與凍結 DQN 的每局回報分布，以及各 evaluation seed group 的平均與 spread](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/codex/issue-17-day15/assets/day15/random-vs-dqn-returns.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/codex/issue-17-day15/assets/day15/random-vs-dqn-returns.png)
+[![Random 與凍結 DQN 的每局回報分布，以及各 evaluation seed group 的平均與 spread](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/3f599ba/assets/day15/random-vs-dqn-returns.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/3f599ba/assets/day15/random-vs-dqn-returns.png)
 
 每個 seed group 的完整 raw return 如下：
 
@@ -106,4 +106,4 @@ Day 16 會把 single-environment training 改成多環境、批次 action infere
 - 圖表由 `visualize_day15_evaluation.py` 從兩份 JSON 重新產生。
 - 結果由 `evaluate_dqn.py` 使用 `configs/eval/breakout_eval.json` 產生；正式 DQN 命令指定 `--device cuda`。
 
-Report generated at `2026-08-27T09:39:35.513760Z`。
+Report generated at `2026-08-27T09:48:30.604303Z`。

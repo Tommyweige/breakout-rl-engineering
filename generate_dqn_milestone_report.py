@@ -16,7 +16,7 @@ from breakout_rl.evaluation import read_evaluation_results, summarize_returns
 
 DAY15_FIGURE_BLOB_URL = (
     "https://github.com/Tommyweige/breakout-rl-engineering-private/blob/"
-    "codex/issue-17-day15/assets/day15/random-vs-dqn-returns.png"
+    "3f599ba/assets/day15/random-vs-dqn-returns.png"
 )
 
 
