@@ -1,0 +1,314 @@
+{
+  "schema_version": 1,
+  "experiment_id": "day14-thread-selection",
+  "created_at_utc": "2026-08-25T09:07:20.302741Z",
+  "updated_at_utc": "2026-08-25T09:09:02.128204Z",
+  "sequential": true,
+  "base_config": {
+    "label": "threads-1",
+    "config_path": "../../configs/performance/throughput-threads-1.json",
+    "values": {
+      "total_steps": 10000,
+      "seed": 42,
+      "gamma": 0.99,
+      "learning_rate": 0.0001,
+      "batch_size": 32,
+      "replay_capacity": 10000,
+      "learning_starts": 1000,
+      "train_frequency": 4,
+      "target_update_interval": 500,
+      "epsilon_start": 0.9,
+      "epsilon_end": 0.05,
+      "epsilon_decay_steps": 10000,
+      "gradient_clip_norm": 10.0,
+      "reward_clip": true,
+      "device": "cuda",
+      "precision": "float32",
+      "checkpoint_interval": 500,
+      "diagnostics_interval": 100,
+      "metrics_flush_interval": 100,
+      "cpu_threads": 1
+    },
+    "budget_level": "short_screening",
+    "stage": "performance"
+  },
+  "variants": [
+    {
+      "label": "threads-1",
+      "config_path": "../../configs/performance/throughput-threads-1.json",
+      "config_values": {
+        "total_steps": 10000,
+        "seed": 42,
+        "gamma": 0.99,
+        "learning_rate": 0.0001,
+        "batch_size": 32,
+        "replay_capacity": 10000,
+        "learning_starts": 1000,
+        "train_frequency": 4,
+        "target_update_interval": 500,
+        "epsilon_start": 0.9,
+        "epsilon_end": 0.05,
+        "epsilon_decay_steps": 10000,
+        "gradient_clip_norm": 10.0,
+        "reward_clip": true,
+        "device": "cuda",
+        "precision": "float32",
+        "checkpoint_interval": 500,
+        "diagnostics_interval": 100,
+        "metrics_flush_interval": 100,
+        "cpu_threads": 1
+      },
+      "overrides": {
+        "cpu_threads": 1
+      },
+      "changed_fields": [],
+      "status": "completed",
+      "run_dir": "../../assets/day14/thread-runs/day14-thread-selection/threads-1-seed42",
+      "run_id": "threads-1-seed42",
+      "requested_device": "cuda",
+      "resolved_device": "cuda:0",
+      "seed": 42,
+      "step_budget": 10000,
+      "budget_level": "short_screening",
+      "stage": "performance",
+      "summary": {
+        "status": "completed",
+        "total_steps": 10000,
+        "episodes": 47,
+        "optimizer_updates": 2251,
+        "steps_per_second": 290.0826906813899,
+        "wall_clock_seconds": 34.472929000039585
+      },
+      "profiling": {
+        "sample_csv": "../../assets/day14/thread-profiling/day14-thread-selection/threads-1/runtime-samples.csv",
+        "sample_summary": "../../assets/day14/thread-profiling/day14-thread-selection/threads-1/runtime-samples-summary.json",
+        "sampling_method": "in-process fixed-interval sampler; nvidia-smi query per sample",
+        "sampling_interval_seconds": 1.0,
+        "process_cpu_percent_method": "time.process_time normalized by wall time and logical CPU count",
+        "cpu_logical_count": 16,
+        "sample_count": 36,
+        "gpu_sample_count": 36,
+        "gpu_utilization_percent": {
+          "mean": 25.694444444444443,
+          "p50": 28.0,
+          "p95": 30.0,
+          "max": 33.0
+        },
+        "gpu_power_watts": {
+          "mean": 24.817777777777778,
+          "p50": 25.165,
+          "p95": 27.2425,
+          "max": 33.67
+        },
+        "gpu_memory_used_bytes": {
+          "mean": 1812754887.1111112,
+          "peak": 1848639488.0
+        },
+        "gpu_memory_total_bytes": 8585740288.0,
+        "process_cpu_percent": {
+          "mean": 5.714599914912522,
+          "p50": 5.9148796367287115,
+          "p95": 6.195626424302786,
+          "max": 6.309349526719569
+        },
+        "available": true
+      }
+    },
+    {
+      "label": "threads-2",
+      "config_path": "../../configs/performance/throughput-threads-2.json",
+      "config_values": {
+        "total_steps": 10000,
+        "seed": 42,
+        "gamma": 0.99,
+        "learning_rate": 0.0001,
+        "batch_size": 32,
+        "replay_capacity": 10000,
+        "learning_starts": 1000,
+        "train_frequency": 4,
+        "target_update_interval": 500,
+        "epsilon_start": 0.9,
+        "epsilon_end": 0.05,
+        "epsilon_decay_steps": 10000,
+        "gradient_clip_norm": 10.0,
+        "reward_clip": true,
+        "device": "cuda",
+        "precision": "float32",
+        "checkpoint_interval": 500,
+        "diagnostics_interval": 100,
+        "metrics_flush_interval": 100,
+        "cpu_threads": 2
+      },
+      "overrides": {
+        "cpu_threads": 2
+      },
+      "changed_fields": [
+        "cpu_threads"
+      ],
+      "status": "completed",
+      "run_dir": "../../assets/day14/thread-runs/day14-thread-selection/threads-2-seed42",
+      "run_id": "threads-2-seed42",
+      "requested_device": "cuda",
+      "resolved_device": "cuda:0",
+      "seed": 42,
+      "step_budget": 10000,
+      "budget_level": "short_screening",
+      "stage": "performance",
+      "summary": {
+        "status": "completed",
+        "total_steps": 10000,
+        "episodes": 44,
+        "optimizer_updates": 2251,
+        "steps_per_second": 306.7909003329257,
+        "wall_clock_seconds": 32.595490899984725
+      },
+      "profiling": {
+        "sample_csv": "../../assets/day14/thread-profiling/day14-thread-selection/threads-2/runtime-samples.csv",
+        "sample_summary": "../../assets/day14/thread-profiling/day14-thread-selection/threads-2/runtime-samples-summary.json",
+        "sampling_method": "in-process fixed-interval sampler; nvidia-smi query per sample",
+        "sampling_interval_seconds": 1.0,
+        "process_cpu_percent_method": "time.process_time normalized by wall time and logical CPU count",
+        "cpu_logical_count": 16,
+        "sample_count": 33,
+        "gpu_sample_count": 33,
+        "gpu_utilization_percent": {
+          "mean": 28.060606060606062,
+          "p50": 29.0,
+          "p95": 31.4,
+          "max": 33.0
+        },
+        "gpu_power_watts": {
+          "mean": 25.672121212121212,
+          "p50": 26.23,
+          "p95": 27.166,
+          "max": 27.48
+        },
+        "gpu_memory_used_bytes": {
+          "mean": 1812924353.939394,
+          "peak": 1823473664.0
+        },
+        "gpu_memory_total_bytes": 8585740288.0,
+        "process_cpu_percent": {
+          "mean": 10.883521390839533,
+          "p50": 11.56632373757373,
+          "p95": 12.059163715342942,
+          "max": 12.181265172695783
+        },
+        "available": true
+      }
+    },
+    {
+      "label": "threads-4",
+      "config_path": "../../configs/performance/throughput-threads-4.json",
+      "config_values": {
+        "total_steps": 10000,
+        "seed": 42,
+        "gamma": 0.99,
+        "learning_rate": 0.0001,
+        "batch_size": 32,
+        "replay_capacity": 10000,
+        "learning_starts": 1000,
+        "train_frequency": 4,
+        "target_update_interval": 500,
+        "epsilon_start": 0.9,
+        "epsilon_end": 0.05,
+        "epsilon_decay_steps": 10000,
+        "gradient_clip_norm": 10.0,
+        "reward_clip": true,
+        "device": "cuda",
+        "precision": "float32",
+        "checkpoint_interval": 500,
+        "diagnostics_interval": 100,
+        "metrics_flush_interval": 100,
+        "cpu_threads": 4
+      },
+      "overrides": {
+        "cpu_threads": 4
+      },
+      "changed_fields": [
+        "cpu_threads"
+      ],
+      "status": "completed",
+      "run_dir": "../../assets/day14/thread-runs/day14-thread-selection/threads-4-seed42",
+      "run_id": "threads-4-seed42",
+      "requested_device": "cuda",
+      "resolved_device": "cuda:0",
+      "seed": 42,
+      "step_budget": 10000,
+      "budget_level": "short_screening",
+      "stage": "performance",
+      "summary": {
+        "status": "completed",
+        "total_steps": 10000,
+        "episodes": 48,
+        "optimizer_updates": 2251,
+        "steps_per_second": 304.1488583835936,
+        "wall_clock_seconds": 32.87863729998935
+      },
+      "profiling": {
+        "sample_csv": "../../assets/day14/thread-profiling/day14-thread-selection/threads-4/runtime-samples.csv",
+        "sample_summary": "../../assets/day14/thread-profiling/day14-thread-selection/threads-4/runtime-samples-summary.json",
+        "sampling_method": "in-process fixed-interval sampler; nvidia-smi query per sample",
+        "sampling_interval_seconds": 1.0,
+        "process_cpu_percent_method": "time.process_time normalized by wall time and logical CPU count",
+        "cpu_logical_count": 16,
+        "sample_count": 34,
+        "gpu_sample_count": 34,
+        "gpu_utilization_percent": {
+          "mean": 29.176470588235293,
+          "p50": 29.0,
+          "p95": 34.699999999999996,
+          "max": 37.0
+        },
+        "gpu_power_watts": {
+          "mean": 26.171470588235294,
+          "p50": 26.405,
+          "p95": 28.298000000000002,
+          "max": 29.81
+        },
+        "gpu_memory_used_bytes": {
+          "mean": 1811106635.2941177,
+          "peak": 1826619392.0
+        },
+        "gpu_memory_total_bytes": 8585740288.0,
+        "process_cpu_percent": {
+          "mean": 21.924629985310254,
+          "p50": 23.495530678383346,
+          "p95": 24.40666337053298,
+          "max": 24.570569656480647
+        },
+        "available": true
+      }
+    }
+  ],
+  "seeds": [
+    42
+  ],
+  "step_budgets": [
+    10000
+  ],
+  "budget_levels": [
+    "short_screening"
+  ],
+  "stage": "performance",
+  "status": "completed",
+  "command": [
+    "profile_batch_size_experiment.py",
+    "--experiment-id",
+    "day14-thread-selection",
+    "--experiments-root",
+    "experiments",
+    "--runs-root",
+    "assets/day14/thread-runs",
+    "--samples-root",
+    "assets/day14/thread-profiling",
+    "--sample-interval",
+    "1",
+    "--gpu-index",
+    "0",
+    "--require-cuda",
+    "configs/performance/throughput-threads-1.json",
+    "configs/performance/throughput-threads-2.json",
+    "configs/performance/throughput-threads-4.json"
+  ]
+}

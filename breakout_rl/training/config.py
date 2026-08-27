@@ -45,6 +45,39 @@ def _probability(value: float, *, name: str) -> float:
     return parsed
 
 
+def _device_request(value: str, *, name: str) -> str:
+    """Validate the user-facing device request without resolving hardware."""
+
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{name} must be one of auto, cpu, or cuda")
+    normalized = value.strip().lower()
+    if normalized in {"auto", "cpu", "cuda"}:
+        return normalized
+    if normalized.startswith("cuda:") and normalized[5:].isdigit():
+        return normalized
+    raise ValueError(
+        f"{name} must be one of auto, cpu, cuda, or cuda:<index>"
+    )
+
+
+def _replay_transfer_request(value: str, *, name: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{name} must be direct or preallocated")
+    normalized = value.strip().lower()
+    if normalized not in {"direct", "preallocated"}:
+        raise ValueError(f"{name} must be direct or preallocated")
+    return normalized
+
+
+def _replay_backend_request(value: str, *, name: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{name} must be cpu or gpu")
+    normalized = value.strip().lower()
+    if normalized not in {"cpu", "gpu"}:
+        raise ValueError(f"{name} must be cpu or gpu")
+    return normalized
+
+
 @dataclass(frozen=True)
 class DQNConfig:
     """Development defaults for one reproducible DQN training run.
@@ -69,7 +102,14 @@ class DQNConfig:
     gradient_clip_norm: float | None = 10.0
     reward_clip: bool = True
     device: str = "cpu"
+    precision: str = "float32"
     checkpoint_interval: int = 1_000
+    diagnostics_interval: int = 1
+    metrics_flush_interval: int = 1
+    cpu_threads: int | None = None
+    replay_transfer: str = "direct"
+    replay_backend: str = "cpu"
+    profile_stages: bool = False
 
     def __post_init__(self) -> None:
         _validated_int(self.total_steps, name="total_steps", minimum=1)
@@ -113,8 +153,43 @@ class DQNConfig:
 
         if not isinstance(self.reward_clip, bool):
             raise TypeError("reward_clip must be a boolean")
-        if not isinstance(self.device, str) or not self.device.strip():
-            raise ValueError("device must be a non-empty string")
+        object.__setattr__(self, "device", _device_request(self.device, name="device"))
+        if not isinstance(self.precision, str) or not self.precision.strip():
+            raise ValueError("precision must be a non-empty string")
+        precision = self.precision.strip().lower()
+        if precision == "fp32":
+            precision = "float32"
+        if precision != "float32":
+            raise ValueError(
+                "precision must be float32; mixed-precision training is not implemented"
+            )
+        object.__setattr__(self, "precision", precision)
+        _validated_int(
+            self.diagnostics_interval,
+            name="diagnostics_interval",
+            minimum=1,
+        )
+        _validated_int(
+            self.metrics_flush_interval,
+            name="metrics_flush_interval",
+            minimum=1,
+        )
+        if self.cpu_threads is not None:
+            _validated_int(self.cpu_threads, name="cpu_threads", minimum=1)
+        if not isinstance(self.profile_stages, bool):
+            raise TypeError("profile_stages must be a boolean")
+        object.__setattr__(
+            self,
+            "replay_transfer",
+            _replay_transfer_request(self.replay_transfer, name="replay_transfer"),
+        )
+        object.__setattr__(
+            self,
+            "replay_backend",
+            _replay_backend_request(self.replay_backend, name="replay_backend"),
+        )
+        if self.replay_backend == "gpu" and self.replay_transfer != "direct":
+            raise ValueError("replay_transfer must be direct when replay_backend='gpu'")
         _validated_int(
             self.checkpoint_interval,
             name="checkpoint_interval",
@@ -161,6 +236,12 @@ class DQNConfig:
         """Return a JSON-compatible mapping of the configuration fields."""
 
         return asdict(self)
+
+    @property
+    def requested_device(self) -> str:
+        """Return the hardware request before runtime resolution."""
+
+        return self.device
 
     @classmethod
     def from_dict(cls, values: Mapping[str, Any]) -> "DQNConfig":

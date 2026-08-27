@@ -1,0 +1,343 @@
+{
+  "schema_version": 1,
+  "source_report": "C:\\Users\\tommy\\.codex\\worktrees\\9ea6\\breakout-rl-engineering\\experiments\\day14-thread-selection\\batch-size-comparison.json",
+  "profiles": [
+    {
+      "label": "threads-1",
+      "run_id": "threads-1-seed42",
+      "run_dir": "C:\\Users\\tommy\\.codex\\worktrees\\9ea6\\breakout-rl-engineering\\assets\\day14\\thread-runs\\day14-thread-selection\\threads-1-seed42",
+      "stage": "performance",
+      "status": "completed",
+      "batch_size": 32,
+      "cpu_threads": 1,
+      "learning_rate": 0.0001,
+      "expected_steps": 10000,
+      "completed_steps": 10000,
+      "episodes": 47,
+      "mean_recent_episode_return": 2.1,
+      "median_recent_episode_return": 1.5,
+      "recent_return_trend": {
+        "count": 20,
+        "first_half_mean": 2.8,
+        "second_half_mean": 1.4,
+        "delta": -1.4,
+        "direction": "down"
+      },
+      "best_rolling_return": 2.4,
+      "end_to_end_sps": 290.0826906813899,
+      "optimizer_updates": 2251,
+      "optimizer_updates_per_second": 65.29761367238088,
+      "training_samples_per_second": 2089.523637516188,
+      "wall_clock_seconds": 34.472929000039585,
+      "gpu_memory": {
+        "allocated_bytes": 51090432,
+        "peak_allocated_bytes": 70963200,
+        "reserved_bytes": 90177536,
+        "peak_reserved_bytes": 90177536
+      },
+      "finite_metric_counts": {
+        "loss": 41,
+        "q_mean": 41,
+        "target_mean": 41,
+        "gradient_norm": 41,
+        "epsilon": 10000
+      },
+      "regression_guardrails": {
+        "replay_occupancy": {
+          "size": 10000,
+          "capacity": 10000,
+          "ratio": 1.0
+        },
+        "target_sync_count": 21,
+        "action_distribution": {
+          "NOOP": 2605,
+          "FIRE": 2690,
+          "RIGHT": 2499,
+          "LEFT": 2206
+        },
+        "epsilon": {
+          "finite_count": 10000,
+          "first": 0.9,
+          "last": 0.050085000000000046,
+          "minimum": 0.050085000000000046,
+          "maximum": 0.9
+        },
+        "episode_behavior": {
+          "episodes": 47,
+          "mean_recent_episode_return": 2.1,
+          "recent_return_trend": {
+            "count": 20,
+            "first_half_mean": 2.8,
+            "second_half_mean": 1.4,
+            "delta": -1.4,
+            "direction": "down"
+          }
+        }
+      },
+      "milestone_snapshots": {},
+      "profiling": {
+        "sample_csv": "../../assets/day14/thread-profiling/day14-thread-selection/threads-1/runtime-samples.csv",
+        "sample_summary": "../../assets/day14/thread-profiling/day14-thread-selection/threads-1/runtime-samples-summary.json",
+        "sampling_method": "in-process fixed-interval sampler; nvidia-smi query per sample",
+        "sampling_interval_seconds": 1.0,
+        "process_cpu_percent_method": "time.process_time normalized by wall time and logical CPU count",
+        "cpu_logical_count": 16,
+        "sample_count": 36,
+        "gpu_sample_count": 36,
+        "gpu_utilization_percent": {
+          "mean": 25.694444444444443,
+          "p50": 28.0,
+          "p95": 30.0,
+          "max": 33.0
+        },
+        "gpu_power_watts": {
+          "mean": 24.817777777777778,
+          "p50": 25.165,
+          "p95": 27.2425,
+          "max": 33.67
+        },
+        "gpu_memory_used_bytes": {
+          "mean": 1812754887.1111112,
+          "peak": 1848639488.0
+        },
+        "gpu_memory_total_bytes": 8585740288.0,
+        "process_cpu_percent": {
+          "mean": 5.714599914912522,
+          "p50": 5.9148796367287115,
+          "p95": 6.195626424302786,
+          "max": 6.309349526719569
+        },
+        "available": true
+      },
+      "efficiency_gain_vs_batch32": 0.0,
+      "candidate_for_100k_validation": false
+    },
+    {
+      "label": "threads-2",
+      "run_id": "threads-2-seed42",
+      "run_dir": "C:\\Users\\tommy\\.codex\\worktrees\\9ea6\\breakout-rl-engineering\\assets\\day14\\thread-runs\\day14-thread-selection\\threads-2-seed42",
+      "stage": "performance",
+      "status": "completed",
+      "batch_size": 32,
+      "cpu_threads": 2,
+      "learning_rate": 0.0001,
+      "expected_steps": 10000,
+      "completed_steps": 10000,
+      "episodes": 44,
+      "mean_recent_episode_return": 1.95,
+      "median_recent_episode_return": 1.5,
+      "recent_return_trend": {
+        "count": 20,
+        "first_half_mean": 1.8,
+        "second_half_mean": 2.1,
+        "delta": 0.30000000000000004,
+        "direction": "up"
+      },
+      "best_rolling_return": 2.05,
+      "end_to_end_sps": 306.7909003329257,
+      "optimizer_updates": 2251,
+      "optimizer_updates_per_second": 69.05863166494157,
+      "training_samples_per_second": 2209.8762132781303,
+      "wall_clock_seconds": 32.595490899984725,
+      "gpu_memory": {
+        "allocated_bytes": 51090432,
+        "peak_allocated_bytes": 69758976,
+        "reserved_bytes": 90177536,
+        "peak_reserved_bytes": 90177536
+      },
+      "finite_metric_counts": {
+        "loss": 41,
+        "q_mean": 41,
+        "target_mean": 41,
+        "gradient_norm": 41,
+        "epsilon": 10000
+      },
+      "regression_guardrails": {
+        "replay_occupancy": {
+          "size": 10000,
+          "capacity": 10000,
+          "ratio": 1.0
+        },
+        "target_sync_count": 21,
+        "action_distribution": {
+          "NOOP": 2446,
+          "FIRE": 1990,
+          "RIGHT": 3074,
+          "LEFT": 2490
+        },
+        "epsilon": {
+          "finite_count": 10000,
+          "first": 0.9,
+          "last": 0.050085000000000046,
+          "minimum": 0.050085000000000046,
+          "maximum": 0.9
+        },
+        "episode_behavior": {
+          "episodes": 44,
+          "mean_recent_episode_return": 1.95,
+          "recent_return_trend": {
+            "count": 20,
+            "first_half_mean": 1.8,
+            "second_half_mean": 2.1,
+            "delta": 0.30000000000000004,
+            "direction": "up"
+          }
+        }
+      },
+      "milestone_snapshots": {},
+      "profiling": {
+        "sample_csv": "../../assets/day14/thread-profiling/day14-thread-selection/threads-2/runtime-samples.csv",
+        "sample_summary": "../../assets/day14/thread-profiling/day14-thread-selection/threads-2/runtime-samples-summary.json",
+        "sampling_method": "in-process fixed-interval sampler; nvidia-smi query per sample",
+        "sampling_interval_seconds": 1.0,
+        "process_cpu_percent_method": "time.process_time normalized by wall time and logical CPU count",
+        "cpu_logical_count": 16,
+        "sample_count": 33,
+        "gpu_sample_count": 33,
+        "gpu_utilization_percent": {
+          "mean": 28.060606060606062,
+          "p50": 29.0,
+          "p95": 31.4,
+          "max": 33.0
+        },
+        "gpu_power_watts": {
+          "mean": 25.672121212121212,
+          "p50": 26.23,
+          "p95": 27.166,
+          "max": 27.48
+        },
+        "gpu_memory_used_bytes": {
+          "mean": 1812924353.939394,
+          "peak": 1823473664.0
+        },
+        "gpu_memory_total_bytes": 8585740288.0,
+        "process_cpu_percent": {
+          "mean": 10.883521390839533,
+          "p50": 11.56632373757373,
+          "p95": 12.059163715342942,
+          "max": 12.181265172695783
+        },
+        "available": true
+      },
+      "efficiency_gain_vs_batch32": 0.057598092503516884,
+      "candidate_for_100k_validation": false
+    },
+    {
+      "label": "threads-4",
+      "run_id": "threads-4-seed42",
+      "run_dir": "C:\\Users\\tommy\\.codex\\worktrees\\9ea6\\breakout-rl-engineering\\assets\\day14\\thread-runs\\day14-thread-selection\\threads-4-seed42",
+      "stage": "performance",
+      "status": "completed",
+      "batch_size": 32,
+      "cpu_threads": 4,
+      "learning_rate": 0.0001,
+      "expected_steps": 10000,
+      "completed_steps": 10000,
+      "episodes": 48,
+      "mean_recent_episode_return": 1.55,
+      "median_recent_episode_return": 1.0,
+      "recent_return_trend": {
+        "count": 20,
+        "first_half_mean": 1.7,
+        "second_half_mean": 1.4,
+        "delta": -0.30000000000000004,
+        "direction": "down"
+      },
+      "best_rolling_return": 2.0,
+      "end_to_end_sps": 304.1488583835936,
+      "optimizer_updates": 2251,
+      "optimizer_updates_per_second": 68.46390802214692,
+      "training_samples_per_second": 2190.8450567087016,
+      "wall_clock_seconds": 32.87863729998935,
+      "gpu_memory": {
+        "allocated_bytes": 51090432,
+        "peak_allocated_bytes": 70963200,
+        "reserved_bytes": 90177536,
+        "peak_reserved_bytes": 90177536
+      },
+      "finite_metric_counts": {
+        "loss": 41,
+        "q_mean": 41,
+        "target_mean": 41,
+        "gradient_norm": 41,
+        "epsilon": 10000
+      },
+      "regression_guardrails": {
+        "replay_occupancy": {
+          "size": 10000,
+          "capacity": 10000,
+          "ratio": 1.0
+        },
+        "target_sync_count": 21,
+        "action_distribution": {
+          "NOOP": 2414,
+          "FIRE": 2510,
+          "RIGHT": 2618,
+          "LEFT": 2458
+        },
+        "epsilon": {
+          "finite_count": 10000,
+          "first": 0.9,
+          "last": 0.050085000000000046,
+          "minimum": 0.050085000000000046,
+          "maximum": 0.9
+        },
+        "episode_behavior": {
+          "episodes": 48,
+          "mean_recent_episode_return": 1.55,
+          "recent_return_trend": {
+            "count": 20,
+            "first_half_mean": 1.7,
+            "second_half_mean": 1.4,
+            "delta": -0.30000000000000004,
+            "direction": "down"
+          }
+        }
+      },
+      "milestone_snapshots": {},
+      "profiling": {
+        "sample_csv": "../../assets/day14/thread-profiling/day14-thread-selection/threads-4/runtime-samples.csv",
+        "sample_summary": "../../assets/day14/thread-profiling/day14-thread-selection/threads-4/runtime-samples-summary.json",
+        "sampling_method": "in-process fixed-interval sampler; nvidia-smi query per sample",
+        "sampling_interval_seconds": 1.0,
+        "process_cpu_percent_method": "time.process_time normalized by wall time and logical CPU count",
+        "cpu_logical_count": 16,
+        "sample_count": 34,
+        "gpu_sample_count": 34,
+        "gpu_utilization_percent": {
+          "mean": 29.176470588235293,
+          "p50": 29.0,
+          "p95": 34.699999999999996,
+          "max": 37.0
+        },
+        "gpu_power_watts": {
+          "mean": 26.171470588235294,
+          "p50": 26.405,
+          "p95": 28.298000000000002,
+          "max": 29.81
+        },
+        "gpu_memory_used_bytes": {
+          "mean": 1811106635.2941177,
+          "peak": 1826619392.0
+        },
+        "gpu_memory_total_bytes": 8585740288.0,
+        "process_cpu_percent": {
+          "mean": 21.924629985310254,
+          "p50": 23.495530678383346,
+          "p95": 24.40666337053298,
+          "max": 24.570569656480647
+        },
+        "available": true
+      },
+      "efficiency_gain_vs_batch32": 0.04849020005007176,
+      "candidate_for_100k_validation": false
+    }
+  ],
+  "selection": {
+    "rule": "select the completed 1/2/4 setting with the highest end-to-end SPS; retain learning and memory guardrails",
+    "selected_cpu_threads": 2,
+    "selected_run_id": "threads-2-seed42",
+    "selected_end_to_end_sps": 306.7909003329257,
+    "selected_wall_clock_seconds": 32.595490899984725
+  }
+}

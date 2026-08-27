@@ -1,0 +1,8 @@
+{
+  "name": "throughput-gpu-replay-batch-32",
+  "base_config": "throughput-preallocated-batch-32.json",
+  "overrides": {
+    "replay_backend": "gpu",
+    "replay_transfer": "direct"
+  }
+}

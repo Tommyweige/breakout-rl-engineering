@@ -1,0 +1,9 @@
+{
+  "name": "batch-size-128",
+  "base_config": "bs32-10k.json",
+  "overrides": {
+    "batch_size": 128
+  },
+  "budget_level": "short_screening",
+  "stage": "batch_profiling"
+}

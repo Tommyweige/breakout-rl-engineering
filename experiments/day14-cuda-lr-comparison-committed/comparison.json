@@ -1,0 +1,731 @@
+{
+  "schema_version": 1,
+  "aggregate_windows": {
+    "recent_episode_returns": 20,
+    "rolling_episode_returns": 20
+  },
+  "comparison_conditions": {
+    "same_requested_device": true,
+    "same_resolved_device": true,
+    "same_step_budget": true,
+    "same_stage": true,
+    "stages": [
+      "screening",
+      "screening",
+      "screening"
+    ],
+    "requested_devices": [
+      "cuda",
+      "cuda",
+      "cuda"
+    ],
+    "resolved_devices": [
+      "cuda:0",
+      "cuda:0",
+      "cuda:0"
+    ],
+    "step_budgets": [
+      10000,
+      10000,
+      10000
+    ],
+    "formal_cuda_eligible": true,
+    "main_comparison_eligible": false,
+    "quality_and_throughput_are_separate": true
+  },
+  "runs": [
+    {
+      "run_id": "baseline-seed42",
+      "run_dir": "C:\\Users\\tommy\\.codex\\worktrees\\9ea6\\breakout-rl-engineering\\assets\\day14\\experiment-runs\\day14-cuda-lr-comparison-committed\\baseline-seed42",
+      "label": "baseline",
+      "stage": "screening",
+      "status": "completed",
+      "error": null,
+      "requested_device": "cuda",
+      "resolved_device": "cuda:0",
+      "precision": "float32",
+      "gpu_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+      "cuda_device_index": 0,
+      "pytorch_version": "2.13.0+cu130",
+      "torch_cuda_version": "13.0",
+      "expected_steps": 10000,
+      "completed_steps": 10000,
+      "episodes": 48,
+      "recent_window": 20,
+      "rolling_window": 20,
+      "recent_episode_return": {
+        "count": 20,
+        "mean": 1.15,
+        "median": 1.0,
+        "min": 0.0,
+        "max": 5.0
+      },
+      "recent_return_trend": {
+        "count": 20,
+        "first_half_mean": 1.7,
+        "second_half_mean": 0.6,
+        "delta": -1.1,
+        "direction": "down"
+      },
+      "mean_recent_episode_return": 1.15,
+      "median_recent_episode_return": 1.0,
+      "best_rolling_return": 1.6,
+      "rolling_return_count": 29,
+      "loss_summary": {
+        "count": 2251,
+        "mean": 0.0032417389063241326,
+        "median": 8.399370562983677e-05,
+        "min": 1.0616568033583462e-06,
+        "max": 0.0469469353556633
+      },
+      "gradient_summary": {
+        "count": 2251,
+        "mean": 0.023817213758032293,
+        "median": 0.01442827470600605,
+        "min": 0.0013190936297178268,
+        "max": 0.2663223147392273
+      },
+      "q_value_summary": {
+        "q_mean": {
+          "count": 2251,
+          "mean": 0.16362734908082488,
+          "median": 0.16213783621788025,
+          "min": -0.011156514286994934,
+          "max": 0.30123811960220337
+        },
+        "q_max": {
+          "count": 2251,
+          "mean": 0.18268180090598082,
+          "median": 0.17291291058063507,
+          "min": 0.027967479079961777,
+          "max": 0.6136389970779419
+        },
+        "q_min": {
+          "count": 2251,
+          "mean": 0.15101140324210047,
+          "median": 0.15274004638195038,
+          "min": -0.03184661641716957,
+          "max": 0.27587631344795227
+        },
+        "target_mean": {
+          "count": 2251,
+          "mean": 0.16459319205985287,
+          "median": 0.16775572299957275,
+          "min": 0.02580258622765541,
+          "max": 0.35533198714256287
+        },
+        "target_max": {
+          "count": 2251,
+          "mean": 0.3521327800231211,
+          "median": 0.19939523935317993,
+          "min": 0.027659328654408455,
+          "max": 1.3630688190460205
+        }
+      },
+      "milestone_snapshots": {},
+      "sps": {
+        "count": 10000,
+        "mean": 151.74650067880378,
+        "median": 136.71893880884227,
+        "min": 2.749940739446294,
+        "max": 283.1883412806485,
+        "runtime": 127.85563335611205
+      },
+      "wall_clock_seconds": 78.21321389998775,
+      "gpu_memory": {
+        "allocated_bytes": 51090432,
+        "peak_allocated_bytes": 70963200,
+        "reserved_bytes": 90177536,
+        "peak_reserved_bytes": 90177536
+      },
+      "config": {
+        "total_steps": 10000,
+        "seed": 42,
+        "gamma": 0.99,
+        "learning_rate": 0.0001,
+        "batch_size": 32,
+        "replay_capacity": 10000,
+        "learning_starts": 1000,
+        "train_frequency": 4,
+        "target_update_interval": 500,
+        "epsilon_start": 0.9,
+        "epsilon_end": 0.05,
+        "epsilon_decay_steps": 10000,
+        "gradient_clip_norm": 10.0,
+        "reward_clip": true,
+        "device": "cuda",
+        "precision": "float32",
+        "checkpoint_interval": 500
+      },
+      "runtime": {
+        "python_version": "3.12.13",
+        "pytorch_version": "2.13.0+cu130",
+        "torch_cuda_version": "13.0",
+        "gymnasium_version": "1.3.0",
+        "ale_version": "0.12.0",
+        "numpy_version": "2.5.1",
+        "device": "cuda:0",
+        "requested_device": "cuda",
+        "resolved_device": "cuda:0",
+        "precision": "float32",
+        "cuda_device_index": 0,
+        "cuda_available": true,
+        "cuda_device_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+        "gpu_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+        "gpu_model": "NVIDIA GeForce RTX 4060 Laptop GPU",
+        "cuda_allocated_bytes": 51090432,
+        "cuda_peak_allocated_bytes": 70963200,
+        "cuda_reserved_bytes": 90177536,
+        "cuda_peak_reserved_bytes": 90177536,
+        "wall_clock_seconds": 78.21321389998775,
+        "steps_per_second": 127.85563335611205,
+        "seed": 42,
+        "git_commit_sha": "e4d081b9809c955fac476dd47247b0e508bbf3ec",
+        "environment_id": "ALE/Breakout-v5",
+        "observation_shape": [
+          4,
+          84,
+          84
+        ],
+        "action_count": 4
+      },
+      "summary": {
+        "status": "completed",
+        "run_id": "baseline-seed42",
+        "run_dir": "C:\\Users\\tommy\\.codex\\worktrees\\9ea6\\breakout-rl-engineering\\assets\\day14\\experiment-runs\\day14-cuda-lr-comparison-committed\\baseline-seed42",
+        "seed": 42,
+        "total_steps": 10000,
+        "episodes": 48,
+        "optimizer_updates": 2251,
+        "target_sync_count": 21,
+        "last_target_sync_step": 10000,
+        "replay_size": 10000,
+        "replay_occupancy": {
+          "size": 10000,
+          "capacity": 10000,
+          "ratio": 1.0
+        },
+        "steps_per_second": 127.85563335611205,
+        "runtime": {
+          "python_version": "3.12.13",
+          "pytorch_version": "2.13.0+cu130",
+          "torch_cuda_version": "13.0",
+          "gymnasium_version": "1.3.0",
+          "ale_version": "0.12.0",
+          "numpy_version": "2.5.1",
+          "device": "cuda:0",
+          "requested_device": "cuda",
+          "resolved_device": "cuda:0",
+          "precision": "float32",
+          "cuda_device_index": 0,
+          "cuda_available": true,
+          "cuda_device_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+          "gpu_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+          "gpu_model": "NVIDIA GeForce RTX 4060 Laptop GPU",
+          "cuda_allocated_bytes": 51090432,
+          "cuda_peak_allocated_bytes": 70963200,
+          "cuda_reserved_bytes": 90177536,
+          "cuda_peak_reserved_bytes": 90177536,
+          "wall_clock_seconds": 78.21321389998775,
+          "steps_per_second": 127.85563335611205,
+          "seed": 42,
+          "git_commit_sha": "e4d081b9809c955fac476dd47247b0e508bbf3ec",
+          "environment_id": "ALE/Breakout-v5",
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "action_count": 4
+        },
+        "last_loss": 0.012337489984929562,
+        "last_q_mean": 0.2888329029083252,
+        "last_q_max": 0.4617391526699066,
+        "last_q_min": 0.24290615320205688,
+        "last_target_mean": 0.3030966818332672,
+        "last_target_max": 1.3179875612258911,
+        "last_td_error_mean_abs": 0.04697536677122116,
+        "last_td_error_max_abs": 0.879900336265564,
+        "action_distribution": {
+          "NOOP": 2753,
+          "FIRE": 2358,
+          "RIGHT": 2631,
+          "LEFT": 2258
+        },
+        "random_decision_count": 4754,
+        "greedy_decision_count": 5246,
+        "random_decision_ratio": 0.4754,
+        "last_checkpoint": "C:\\Users\\tommy\\.codex\\worktrees\\9ea6\\breakout-rl-engineering\\assets\\day14\\experiment-runs\\day14-cuda-lr-comparison-committed\\baseline-seed42\\checkpoints\\step-00010000.pt"
+      },
+      "config_diff": {}
+    },
+    {
+      "run_id": "learning-rate-low-seed42",
+      "run_dir": "C:\\Users\\tommy\\.codex\\worktrees\\9ea6\\breakout-rl-engineering\\assets\\day14\\experiment-runs\\day14-cuda-lr-comparison-committed\\learning-rate-low-seed42",
+      "label": "learning-rate-low",
+      "stage": "screening",
+      "status": "completed",
+      "error": null,
+      "requested_device": "cuda",
+      "resolved_device": "cuda:0",
+      "precision": "float32",
+      "gpu_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+      "cuda_device_index": 0,
+      "pytorch_version": "2.13.0+cu130",
+      "torch_cuda_version": "13.0",
+      "expected_steps": 10000,
+      "completed_steps": 10000,
+      "episodes": 45,
+      "recent_window": 20,
+      "rolling_window": 20,
+      "recent_episode_return": {
+        "count": 20,
+        "mean": 1.75,
+        "median": 2.0,
+        "min": 0.0,
+        "max": 5.0
+      },
+      "recent_return_trend": {
+        "count": 20,
+        "first_half_mean": 2.0,
+        "second_half_mean": 1.5,
+        "delta": -0.5,
+        "direction": "down"
+      },
+      "mean_recent_episode_return": 1.75,
+      "median_recent_episode_return": 2.0,
+      "best_rolling_return": 2.0,
+      "rolling_return_count": 26,
+      "loss_summary": {
+        "count": 2251,
+        "mean": 0.004182492364307052,
+        "median": 0.00010449164255987853,
+        "min": 6.625865580645041e-07,
+        "max": 0.04671703279018402
+      },
+      "gradient_summary": {
+        "count": 2251,
+        "mean": 0.023284110516523432,
+        "median": 0.013916688971221447,
+        "min": 0.0006201938958838582,
+        "max": 0.14273503422737122
+      },
+      "q_value_summary": {
+        "q_mean": {
+          "count": 2251,
+          "mean": 0.1426802444009757,
+          "median": 0.1301034688949585,
+          "min": -0.011156514286994934,
+          "max": 0.26331761479377747
+        },
+        "q_max": {
+          "count": 2251,
+          "mean": 0.15507887174163937,
+          "median": 0.13948184251785278,
+          "min": 0.02831638604402542,
+          "max": 0.29333949089050293
+        },
+        "q_min": {
+          "count": 2251,
+          "mean": 0.13104384679757705,
+          "median": 0.12071679532527924,
+          "min": -0.03184661641716957,
+          "max": 0.24883094429969788
+        },
+        "target_mean": {
+          "count": 2251,
+          "mean": 0.14369913147740077,
+          "median": 0.13020119071006775,
+          "min": 0.026517201215028763,
+          "max": 0.3034551739692688
+        },
+        "target_max": {
+          "count": 2251,
+          "mean": 0.37435122448181457,
+          "median": 0.15920212864875793,
+          "min": 0.028434397652745247,
+          "max": 1.248125672340393
+        }
+      },
+      "milestone_snapshots": {},
+      "sps": {
+        "count": 10000,
+        "mean": 153.78588155123478,
+        "median": 134.70689603120525,
+        "min": 3.9102870656183795,
+        "max": 319.1892822469289,
+        "runtime": 135.26057945219446
+      },
+      "wall_clock_seconds": 73.93137040000875,
+      "gpu_memory": {
+        "allocated_bytes": 51090432,
+        "peak_allocated_bytes": 69758976,
+        "reserved_bytes": 90177536,
+        "peak_reserved_bytes": 90177536
+      },
+      "config": {
+        "total_steps": 10000,
+        "seed": 42,
+        "gamma": 0.99,
+        "learning_rate": 5e-05,
+        "batch_size": 32,
+        "replay_capacity": 10000,
+        "learning_starts": 1000,
+        "train_frequency": 4,
+        "target_update_interval": 500,
+        "epsilon_start": 0.9,
+        "epsilon_end": 0.05,
+        "epsilon_decay_steps": 10000,
+        "gradient_clip_norm": 10.0,
+        "reward_clip": true,
+        "device": "cuda",
+        "precision": "float32",
+        "checkpoint_interval": 500
+      },
+      "runtime": {
+        "python_version": "3.12.13",
+        "pytorch_version": "2.13.0+cu130",
+        "torch_cuda_version": "13.0",
+        "gymnasium_version": "1.3.0",
+        "ale_version": "0.12.0",
+        "numpy_version": "2.5.1",
+        "device": "cuda:0",
+        "requested_device": "cuda",
+        "resolved_device": "cuda:0",
+        "precision": "float32",
+        "cuda_device_index": 0,
+        "cuda_available": true,
+        "cuda_device_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+        "gpu_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+        "gpu_model": "NVIDIA GeForce RTX 4060 Laptop GPU",
+        "cuda_allocated_bytes": 51090432,
+        "cuda_peak_allocated_bytes": 69758976,
+        "cuda_reserved_bytes": 90177536,
+        "cuda_peak_reserved_bytes": 90177536,
+        "wall_clock_seconds": 73.93137040000875,
+        "steps_per_second": 135.26057945219446,
+        "seed": 42,
+        "git_commit_sha": "e4d081b9809c955fac476dd47247b0e508bbf3ec",
+        "environment_id": "ALE/Breakout-v5",
+        "observation_shape": [
+          4,
+          84,
+          84
+        ],
+        "action_count": 4
+      },
+      "summary": {
+        "status": "completed",
+        "run_id": "learning-rate-low-seed42",
+        "run_dir": "C:\\Users\\tommy\\.codex\\worktrees\\9ea6\\breakout-rl-engineering\\assets\\day14\\experiment-runs\\day14-cuda-lr-comparison-committed\\learning-rate-low-seed42",
+        "seed": 42,
+        "total_steps": 10000,
+        "episodes": 45,
+        "optimizer_updates": 2251,
+        "target_sync_count": 21,
+        "last_target_sync_step": 10000,
+        "replay_size": 10000,
+        "replay_occupancy": {
+          "size": 10000,
+          "capacity": 10000,
+          "ratio": 1.0
+        },
+        "steps_per_second": 135.26057945219446,
+        "runtime": {
+          "python_version": "3.12.13",
+          "pytorch_version": "2.13.0+cu130",
+          "torch_cuda_version": "13.0",
+          "gymnasium_version": "1.3.0",
+          "ale_version": "0.12.0",
+          "numpy_version": "2.5.1",
+          "device": "cuda:0",
+          "requested_device": "cuda",
+          "resolved_device": "cuda:0",
+          "precision": "float32",
+          "cuda_device_index": 0,
+          "cuda_available": true,
+          "cuda_device_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+          "gpu_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+          "gpu_model": "NVIDIA GeForce RTX 4060 Laptop GPU",
+          "cuda_allocated_bytes": 51090432,
+          "cuda_peak_allocated_bytes": 69758976,
+          "cuda_reserved_bytes": 90177536,
+          "cuda_peak_reserved_bytes": 90177536,
+          "wall_clock_seconds": 73.93137040000875,
+          "steps_per_second": 135.26057945219446,
+          "seed": 42,
+          "git_commit_sha": "e4d081b9809c955fac476dd47247b0e508bbf3ec",
+          "environment_id": "ALE/Breakout-v5",
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "action_count": 4
+        },
+        "last_loss": 0.0012312420876696706,
+        "last_q_mean": 0.25956177711486816,
+        "last_q_max": 0.2785516679286957,
+        "last_q_min": 0.23549942672252655,
+        "last_target_mean": 0.23196162283420563,
+        "last_target_max": 0.2449328601360321,
+        "last_td_error_mean_abs": 0.029410723596811295,
+        "last_td_error_max_abs": 0.24891068041324615,
+        "action_distribution": {
+          "NOOP": 2161,
+          "FIRE": 2338,
+          "RIGHT": 2805,
+          "LEFT": 2696
+        },
+        "random_decision_count": 4754,
+        "greedy_decision_count": 5246,
+        "random_decision_ratio": 0.4754,
+        "last_checkpoint": "C:\\Users\\tommy\\.codex\\worktrees\\9ea6\\breakout-rl-engineering\\assets\\day14\\experiment-runs\\day14-cuda-lr-comparison-committed\\learning-rate-low-seed42\\checkpoints\\step-00010000.pt"
+      },
+      "config_diff": {
+        "learning_rate": {
+          "base": 0.0001,
+          "variant": 5e-05
+        }
+      }
+    },
+    {
+      "run_id": "learning-rate-high-seed42",
+      "run_dir": "C:\\Users\\tommy\\.codex\\worktrees\\9ea6\\breakout-rl-engineering\\assets\\day14\\experiment-runs\\day14-cuda-lr-comparison-committed\\learning-rate-high-seed42",
+      "label": "learning-rate-high",
+      "stage": "screening",
+      "status": "completed",
+      "error": null,
+      "requested_device": "cuda",
+      "resolved_device": "cuda:0",
+      "precision": "float32",
+      "gpu_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+      "cuda_device_index": 0,
+      "pytorch_version": "2.13.0+cu130",
+      "torch_cuda_version": "13.0",
+      "expected_steps": 10000,
+      "completed_steps": 10000,
+      "episodes": 46,
+      "recent_window": 20,
+      "rolling_window": 20,
+      "recent_episode_return": {
+        "count": 20,
+        "mean": 1.6,
+        "median": 1.5,
+        "min": 0.0,
+        "max": 4.0
+      },
+      "recent_return_trend": {
+        "count": 20,
+        "first_half_mean": 1.9,
+        "second_half_mean": 1.3,
+        "delta": -0.5999999999999999,
+        "direction": "down"
+      },
+      "mean_recent_episode_return": 1.6,
+      "median_recent_episode_return": 1.5,
+      "best_rolling_return": 1.85,
+      "rolling_return_count": 27,
+      "loss_summary": {
+        "count": 2251,
+        "mean": 0.0031403305619466305,
+        "median": 0.00014867997379042208,
+        "min": 3.561992514278245e-07,
+        "max": 0.033054813742637634
+      },
+      "gradient_summary": {
+        "count": 2251,
+        "mean": 0.03277657196415577,
+        "median": 0.01656208373606205,
+        "min": 0.0004517629276961088,
+        "max": 0.632507860660553
+      },
+      "q_value_summary": {
+        "q_mean": {
+          "count": 2251,
+          "mean": 0.14481058666339414,
+          "median": 0.14107556641101837,
+          "min": -0.011156514286994934,
+          "max": 0.34119927883148193
+        },
+        "q_max": {
+          "count": 2251,
+          "mean": 0.24824768887201398,
+          "median": 0.15642045438289642,
+          "min": 0.026929814368486404,
+          "max": 2.149722099304199
+        },
+        "q_min": {
+          "count": 2251,
+          "mean": 0.12110593063762616,
+          "median": 0.12748406827449799,
+          "min": -0.03184661641716957,
+          "max": 0.2369159758090973
+        },
+        "target_mean": {
+          "count": 2251,
+          "mean": 0.14592789052950442,
+          "median": 0.13922971487045288,
+          "min": 0.025993242859840393,
+          "max": 0.32725924253463745
+        },
+        "target_max": {
+          "count": 2251,
+          "mean": 0.3913426231030211,
+          "median": 0.15660643577575684,
+          "min": 0.02809101901948452,
+          "max": 1.8424409627914429
+        }
+      },
+      "milestone_snapshots": {},
+      "sps": {
+        "count": 10000,
+        "mean": 197.2674417447673,
+        "median": 160.11217617995038,
+        "min": 4.75679686962771,
+        "max": 466.1774917218666,
+        "runtime": 152.82360312376366
+      },
+      "wall_clock_seconds": 65.43491840001661,
+      "gpu_memory": {
+        "allocated_bytes": 51090432,
+        "peak_allocated_bytes": 70963200,
+        "reserved_bytes": 90177536,
+        "peak_reserved_bytes": 90177536
+      },
+      "config": {
+        "total_steps": 10000,
+        "seed": 42,
+        "gamma": 0.99,
+        "learning_rate": 0.0002,
+        "batch_size": 32,
+        "replay_capacity": 10000,
+        "learning_starts": 1000,
+        "train_frequency": 4,
+        "target_update_interval": 500,
+        "epsilon_start": 0.9,
+        "epsilon_end": 0.05,
+        "epsilon_decay_steps": 10000,
+        "gradient_clip_norm": 10.0,
+        "reward_clip": true,
+        "device": "cuda",
+        "precision": "float32",
+        "checkpoint_interval": 500
+      },
+      "runtime": {
+        "python_version": "3.12.13",
+        "pytorch_version": "2.13.0+cu130",
+        "torch_cuda_version": "13.0",
+        "gymnasium_version": "1.3.0",
+        "ale_version": "0.12.0",
+        "numpy_version": "2.5.1",
+        "device": "cuda:0",
+        "requested_device": "cuda",
+        "resolved_device": "cuda:0",
+        "precision": "float32",
+        "cuda_device_index": 0,
+        "cuda_available": true,
+        "cuda_device_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+        "gpu_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+        "gpu_model": "NVIDIA GeForce RTX 4060 Laptop GPU",
+        "cuda_allocated_bytes": 51090432,
+        "cuda_peak_allocated_bytes": 70963200,
+        "cuda_reserved_bytes": 90177536,
+        "cuda_peak_reserved_bytes": 90177536,
+        "wall_clock_seconds": 65.43491840001661,
+        "steps_per_second": 152.82360312376366,
+        "seed": 42,
+        "git_commit_sha": "e4d081b9809c955fac476dd47247b0e508bbf3ec",
+        "environment_id": "ALE/Breakout-v5",
+        "observation_shape": [
+          4,
+          84,
+          84
+        ],
+        "action_count": 4
+      },
+      "summary": {
+        "status": "completed",
+        "run_id": "learning-rate-high-seed42",
+        "run_dir": "C:\\Users\\tommy\\.codex\\worktrees\\9ea6\\breakout-rl-engineering\\assets\\day14\\experiment-runs\\day14-cuda-lr-comparison-committed\\learning-rate-high-seed42",
+        "seed": 42,
+        "total_steps": 10000,
+        "episodes": 46,
+        "optimizer_updates": 2251,
+        "target_sync_count": 21,
+        "last_target_sync_step": 10000,
+        "replay_size": 10000,
+        "replay_occupancy": {
+          "size": 10000,
+          "capacity": 10000,
+          "ratio": 1.0
+        },
+        "steps_per_second": 152.82360312376366,
+        "runtime": {
+          "python_version": "3.12.13",
+          "pytorch_version": "2.13.0+cu130",
+          "torch_cuda_version": "13.0",
+          "gymnasium_version": "1.3.0",
+          "ale_version": "0.12.0",
+          "numpy_version": "2.5.1",
+          "device": "cuda:0",
+          "requested_device": "cuda",
+          "resolved_device": "cuda:0",
+          "precision": "float32",
+          "cuda_device_index": 0,
+          "cuda_available": true,
+          "cuda_device_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+          "gpu_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+          "gpu_model": "NVIDIA GeForce RTX 4060 Laptop GPU",
+          "cuda_allocated_bytes": 51090432,
+          "cuda_peak_allocated_bytes": 70963200,
+          "cuda_reserved_bytes": 90177536,
+          "cuda_peak_reserved_bytes": 90177536,
+          "wall_clock_seconds": 65.43491840001661,
+          "steps_per_second": 152.82360312376366,
+          "seed": 42,
+          "git_commit_sha": "e4d081b9809c955fac476dd47247b0e508bbf3ec",
+          "environment_id": "ALE/Breakout-v5",
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "action_count": 4
+        },
+        "last_loss": 0.00047880332567729056,
+        "last_q_mean": 0.2501589059829712,
+        "last_q_max": 1.0130635499954224,
+        "last_q_min": 0.17704613506793976,
+        "last_target_mean": 0.23836295306682587,
+        "last_target_max": 0.9361053109169006,
+        "last_td_error_mean_abs": 0.019284551963210106,
+        "last_td_error_max_abs": 0.13265979290008545,
+        "action_distribution": {
+          "NOOP": 2652,
+          "FIRE": 1960,
+          "RIGHT": 2974,
+          "LEFT": 2414
+        },
+        "random_decision_count": 4754,
+        "greedy_decision_count": 5246,
+        "random_decision_ratio": 0.4754,
+        "last_checkpoint": "C:\\Users\\tommy\\.codex\\worktrees\\9ea6\\breakout-rl-engineering\\assets\\day14\\experiment-runs\\day14-cuda-lr-comparison-committed\\learning-rate-high-seed42\\checkpoints\\step-00010000.pt"
+      },
+      "config_diff": {
+        "learning_rate": {
+          "base": 0.0001,
+          "variant": 0.0002
+        }
+      }
+    }
+  ],
+  "experiment_id": "day14-cuda-lr-comparison-committed",
+  "manifest": "C:\\Users\\tommy\\.codex\\worktrees\\9ea6\\breakout-rl-engineering\\experiments\\day14-cuda-lr-comparison-committed\\manifest.json",
+  "manifest_status": "completed",
+  "sequential": true,
+  "experiment_stage": "screening",
+  "budget_levels": [
+    "short_screening"
+  ]
+}

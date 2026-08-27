@@ -12,6 +12,7 @@ import numpy as np
 import torch
 from torch import nn
 
+from breakout_rl.replay_gpu import GPUReplayBuffer
 from breakout_rl.training.config import DQNConfig
 from breakout_rl.training.dqn_trainer import DQNTrainer, TrainingStepSnapshot
 
@@ -64,6 +65,111 @@ class TinyImageQNetwork(nn.Module):
 
 
 class DQNTrainerTests(unittest.TestCase):
+    def test_optional_stage_profile_records_training_boundaries(self) -> None:
+        config = DQNConfig(
+            total_steps=8,
+            batch_size=4,
+            replay_capacity=8,
+            learning_starts=4,
+            train_frequency=2,
+            target_update_interval=4,
+            checkpoint_interval=8,
+            device="cpu",
+            profile_stages=True,
+        )
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            trainer = DQNTrainer(
+                ShortEpisodeEnv(),
+                config,
+                run_dir=Path(temporary_directory) / "stage-profile",
+                online_network=TinyImageQNetwork(),
+            )
+            summary = trainer.train()
+
+        timings = summary["runtime"]["stage_timings"]
+        for name in (
+            "action_selection",
+            "env_step",
+            "replay_insert",
+            "replay_sample",
+            "replay_transfer",
+            "forward",
+            "target_forward",
+            "loss",
+            "backward",
+            "optimizer_step",
+            "diagnostics",
+            "dqn_update",
+        ):
+            self.assertGreater(timings[name]["calls"], 0)
+            self.assertGreater(timings[name]["wall_seconds"], 0.0)
+            self.assertGreaterEqual(timings[name]["cpu_seconds"], 0.0)
+
+    @unittest.skipUnless(torch.cuda.is_available(), "CUDA is required for GPU replay integration")
+    def test_gpu_replay_backend_runs_real_trainer_update(self) -> None:
+        config = DQNConfig(
+            total_steps=8,
+            batch_size=4,
+            replay_capacity=8,
+            learning_starts=4,
+            train_frequency=2,
+            target_update_interval=4,
+            checkpoint_interval=8,
+            diagnostics_interval=2,
+            device="cuda",
+            replay_backend="gpu",
+            profile_stages=True,
+        )
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            trainer = DQNTrainer(
+                ShortEpisodeEnv(),
+                config,
+                run_dir=Path(temporary_directory) / "gpu-replay-smoke",
+                online_network=TinyImageQNetwork(),
+            )
+            summary = trainer.train()
+
+        self.assertIsInstance(trainer.replay, GPUReplayBuffer)
+        self.assertGreater(summary["optimizer_updates"], 0)
+        self.assertEqual(summary["replay_backend"], "gpu")
+        self.assertEqual(summary["runtime"]["replay_backend"], "gpu")
+        self.assertEqual(summary["runtime"]["replay_storage_device"], "cuda:0")
+        self.assertGreater(
+            summary["runtime"]["stage_timings"]["gpu_replay_gather_cast"][
+                "gpu_seconds"
+            ],
+            0.0,
+        )
+        self.assertGreater(
+            summary["runtime"]["stage_timings"]["dqn_update"]["gpu_seconds"],
+            0.0,
+        )
+        for name in ("forward", "target_forward", "backward", "optimizer_step"):
+            self.assertGreater(
+                summary["runtime"]["stage_timings"][name]["gpu_seconds"],
+                0.0,
+            )
+
+    def test_gpu_replay_backend_rejects_non_cuda_trainer_device(self) -> None:
+        config = DQNConfig(
+            total_steps=1,
+            batch_size=1,
+            replay_capacity=2,
+            learning_starts=1,
+            device="cpu",
+            replay_backend="gpu",
+        )
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            with self.assertRaisesRegex(RuntimeError, "requires CUDA"):
+                DQNTrainer(
+                    ShortEpisodeEnv(),
+                    config,
+                    run_dir=Path(temporary_directory) / "gpu-replay-cpu",
+                )
+
     def test_step_callback_receives_runtime_snapshot_and_rendered_frame(self) -> None:
         snapshots: list[TrainingStepSnapshot] = []
         frames: list[np.ndarray] = []
@@ -271,6 +377,46 @@ class DQNTrainerTests(unittest.TestCase):
             self.assertIn("td_error_max_abs", rows[-1])
             self.assertEqual(float(rows[-1]["replay_occupancy"]), 1.0)
 
+    def test_sparse_diagnostics_still_sample_checkpoint_steps(self) -> None:
+        config = DQNConfig(
+            total_steps=16,
+            batch_size=4,
+            replay_capacity=16,
+            learning_starts=4,
+            train_frequency=2,
+            target_update_interval=4,
+            checkpoint_interval=8,
+            diagnostics_interval=100,
+            metrics_flush_interval=100,
+            device="cpu",
+        )
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            run_dir = Path(temporary_directory) / "sparse-diagnostics"
+            trainer = DQNTrainer(
+                ShortEpisodeEnv(),
+                config,
+                run_dir=run_dir,
+                online_network=TinyImageQNetwork(),
+            )
+            summary = trainer.train()
+
+            with (run_dir / "metrics.csv").open(
+                "r",
+                newline="",
+                encoding="utf-8",
+            ) as stream:
+                rows = list(csv.DictReader(stream))
+
+        diagnostic_steps = [
+            int(row["global_step"])
+            for row in rows
+            if row["loss"].strip()
+        ]
+        self.assertEqual(diagnostic_steps, [8, 16])
+        self.assertEqual(summary["runtime"]["diagnostics_interval"], 100)
+        self.assertEqual(summary["runtime"]["metrics_flush_interval"], 100)
+
     def test_resume_restores_model_state_and_rewarms_replay(self) -> None:
         base_values = {
             "batch_size": 4,
@@ -308,6 +454,20 @@ class DQNTrainerTests(unittest.TestCase):
                 first_summary["optimizer_updates"],
             )
             self.assertEqual(resumed_summary["replay_size"], 8)
+
+            with (run_dir / "metrics.csv").open(
+                "r",
+                newline="",
+                encoding="utf-8",
+            ) as stream:
+                rows = list(csv.DictReader(stream))
+            resumed_warmup_rows = [
+                row for row in rows if 9 <= int(row["global_step"]) <= 11
+            ]
+            self.assertEqual(
+                [int(row["optimizer_updates"]) for row in resumed_warmup_rows],
+                [first_summary["optimizer_updates"]] * 3,
+            )
 
 
 if __name__ == "__main__":

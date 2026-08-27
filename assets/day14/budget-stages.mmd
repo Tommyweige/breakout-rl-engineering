@@ -1,0 +1,10 @@
+flowchart LR
+    A[Day 13: 10K diagnostic] --> B[10K short screening]
+    B --> C{Health checks pass?}
+    C -->|no| D[Fix or reject config]
+    C -->|yes| E[100K main comparison]
+    E --> F[25K / 50K / 75K / 100K diagnostics]
+    F --> G[Compare curves and stability]
+    G --> H{Reliable signal?}
+    H -->|yes| I[Keep candidate for multi-seed evaluation]
+    H -->|no| J[Report that ranking is unresolved]

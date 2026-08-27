@@ -1,0 +1,515 @@
+{
+  "schema_version": 1,
+  "experiment_id": "day14-gpu-replay-ab-profiled-v5",
+  "manifest": "experiments/day14-gpu-replay-ab-profiled-v5/manifest.json",
+  "manifest_status": "completed",
+  "stage": "performance",
+  "comparison_conditions": {
+    "same_requested_device": true,
+    "same_resolved_device": true,
+    "same_step_budget": true,
+    "same_stage": true,
+    "same_replay_backend": false,
+    "same_replay_transfer": false,
+    "stages": [
+      "performance",
+      "performance"
+    ],
+    "replay_backends": [
+      "cpu",
+      "gpu"
+    ],
+    "replay_transfers": [
+      "preallocated",
+      "direct"
+    ],
+    "requested_devices": [
+      "cuda",
+      "cuda"
+    ],
+    "resolved_devices": [
+      "cuda:0",
+      "cuda:0"
+    ],
+    "step_budgets": [
+      10000,
+      10000
+    ],
+    "formal_cuda_eligible": true,
+    "main_comparison_eligible": false,
+    "quality_and_throughput_are_separate": true
+  },
+  "sampling": {
+    "source": "profiling samples are stored beside each run",
+    "no_manual_values": true
+  },
+  "runs": [
+    {
+      "label": "profiled-preallocated-batch-32",
+      "run_id": "profiled-preallocated-batch-32-seed42",
+      "run_dir": "../../assets/day14/gpu-replay-ab-profiled-v5-runs/day14-gpu-replay-ab-profiled-v5/profiled-preallocated-batch-32-seed42",
+      "stage": "performance",
+      "status": "completed",
+      "batch_size": 32,
+      "cpu_threads": 2,
+      "learning_rate": 0.0001,
+      "expected_steps": 10000,
+      "completed_steps": 10000,
+      "episodes": 48,
+      "mean_recent_episode_return": 1.35,
+      "median_recent_episode_return": 1.0,
+      "recent_return_trend": {
+        "count": 20,
+        "first_half_mean": 1.9,
+        "second_half_mean": 0.8,
+        "delta": -1.0999999999999999,
+        "direction": "down"
+      },
+      "best_rolling_return": 1.55,
+      "td_error_summary": {
+        "td_error_mean_abs": {
+          "count": 35,
+          "mean": 0.012413452685411488,
+          "median": 0.007646595593541861,
+          "min": 0.0005910305771976709,
+          "max": 0.04373534768819809
+        },
+        "td_error_max_abs": {
+          "count": 35,
+          "mean": 0.16799380279013088,
+          "median": 0.01823415234684944,
+          "min": 0.0016496405005455017,
+          "max": 0.9943497776985168
+        }
+      },
+      "end_to_end_sps": 408.1802439395034,
+      "optimizer_updates": 1989,
+      "optimizer_updates_per_second": 81.18705051956722,
+      "training_samples_per_second": 2597.985616626151,
+      "wall_clock_seconds": 24.49898089992348,
+      "replay_backend": "cpu",
+      "replay_transfer": "preallocated",
+      "replay_memory": {
+        "bytes": 564620000,
+        "storage_device": "cpu"
+      },
+      "stage_timings": {
+        "env_reset": {
+          "calls": 49,
+          "wall_seconds": 0.36976509960368276,
+          "cpu_seconds": 0.609375
+        },
+        "action_selection": {
+          "calls": 10000,
+          "wall_seconds": 8.828039807849564,
+          "cpu_seconds": 16.78125
+        },
+        "env_step": {
+          "calls": 10000,
+          "wall_seconds": 5.282797695719637,
+          "cpu_seconds": 7.1875
+        },
+        "replay_insert": {
+          "calls": 10000,
+          "wall_seconds": 0.34305620414670557,
+          "cpu_seconds": 0.40625
+        },
+        "metrics_write": {
+          "calls": 10000,
+          "wall_seconds": 0.3166795987635851,
+          "cpu_seconds": 0.453125
+        },
+        "checkpoint": {
+          "calls": 20,
+          "wall_seconds": 0.45134299993515015,
+          "cpu_seconds": 0.78125
+        },
+        "replay_sample": {
+          "calls": 1989,
+          "wall_seconds": 0.4083581984741613,
+          "cpu_seconds": 0.359375
+        },
+        "replay_transfer": {
+          "calls": 1989,
+          "wall_seconds": 0.7348082063253969,
+          "cpu_seconds": 1.34375,
+          "gpu_seconds": 1.032516864389181
+        },
+        "forward": {
+          "calls": 1989,
+          "wall_seconds": 0.9765893984586,
+          "cpu_seconds": 1.6875,
+          "gpu_seconds": 0.7953216023892165
+        },
+        "target_forward": {
+          "calls": 1989,
+          "wall_seconds": 1.0692420998821035,
+          "cpu_seconds": 2.546875,
+          "gpu_seconds": 1.0423956801891328
+        },
+        "loss": {
+          "calls": 1989,
+          "wall_seconds": 0.21554409805685282,
+          "cpu_seconds": 0.390625,
+          "gpu_seconds": 0.1910785287739709
+        },
+        "backward": {
+          "calls": 1989,
+          "wall_seconds": 2.621298199519515,
+          "cpu_seconds": 5.546875,
+          "gpu_seconds": 2.604444768488407
+        },
+        "optimizer_step": {
+          "calls": 1989,
+          "wall_seconds": 1.7158435988239944,
+          "cpu_seconds": 1.765625,
+          "gpu_seconds": 1.7868161266744136
+        },
+        "dqn_update": {
+          "calls": 1989,
+          "wall_seconds": 7.293083296623081,
+          "cpu_seconds": 12.984375,
+          "gpu_seconds": 7.0271241762638095
+        },
+        "gradient_diagnostics": {
+          "calls": 35,
+          "wall_seconds": 0.055780099937692285,
+          "cpu_seconds": 0.015625,
+          "gpu_seconds": 0.055295679807662965
+        },
+        "diagnostics": {
+          "calls": 35,
+          "wall_seconds": 0.04950260033365339,
+          "cpu_seconds": 0.078125,
+          "gpu_seconds": 0.048101119637489316
+        },
+        "numpy_to_pinned": {
+          "calls": 1989,
+          "wall_seconds": 0.26051339763216674,
+          "cpu_seconds": 0.625,
+          "gpu_seconds": 0.0
+        },
+        "h2d": {
+          "calls": 1989,
+          "wall_seconds": 0.6752697911262512,
+          "cpu_seconds": 0.0,
+          "gpu_seconds": 0.6752697911262512
+        }
+      },
+      "gpu_memory": {
+        "allocated_bytes": 59554816,
+        "peak_allocated_bytes": 70962176,
+        "reserved_bytes": 90177536,
+        "peak_reserved_bytes": 90177536
+      },
+      "finite_metric_counts": {
+        "loss": 35,
+        "q_mean": 35,
+        "target_mean": 35,
+        "gradient_norm": 35,
+        "epsilon": 10000
+      },
+      "regression_guardrails": {
+        "replay_occupancy": {
+          "size": 10000,
+          "capacity": 10000,
+          "ratio": 1.0
+        },
+        "replay_guardrail": true,
+        "target_sync_count": 21,
+        "action_distribution": {
+          "NOOP": 2807,
+          "FIRE": 2439,
+          "RIGHT": 2496,
+          "LEFT": 2258
+        },
+        "epsilon": {
+          "finite_count": 10000,
+          "first": 0.9,
+          "last": 0.050085000000000046,
+          "minimum": 0.050085000000000046,
+          "maximum": 0.9
+        },
+        "episode_behavior": {
+          "episodes": 48,
+          "mean_recent_episode_return": 1.35,
+          "recent_return_trend": {
+            "count": 20,
+            "first_half_mean": 1.9,
+            "second_half_mean": 0.8,
+            "delta": -1.0999999999999999,
+            "direction": "down"
+          }
+        },
+        "epsilon_guardrail": true,
+        "episode_guardrail": true,
+        "guardrails_passed": true
+      },
+      "milestone_snapshots": {},
+      "profiling": {
+        "sample_csv": "../../assets/day14/gpu-replay-ab-profiled-v5-profiling/day14-gpu-replay-ab-profiled-v5/profiled-preallocated-batch-32/runtime-samples.csv",
+        "sample_summary": "../../assets/day14/gpu-replay-ab-profiled-v5-profiling/day14-gpu-replay-ab-profiled-v5/profiled-preallocated-batch-32/runtime-samples-summary.json",
+        "sampling_method": "in-process fixed-interval sampler; nvidia-smi query per sample",
+        "sampling_interval_seconds": 1.0,
+        "process_cpu_percent_method": "time.process_time normalized by wall time and logical CPU count",
+        "cpu_logical_count": 16,
+        "sample_count": 26,
+        "gpu_sample_count": 26,
+        "gpu_utilization_percent": {
+          "mean": 15.76923076923077,
+          "p50": 18.0,
+          "p95": 21.0,
+          "max": 21.0
+        },
+        "gpu_power_watts": {
+          "mean": 22.80846153846154,
+          "p50": 23.880000000000003,
+          "p95": 24.325,
+          "max": 24.45
+        },
+        "gpu_memory_used_bytes": {
+          "mean": 2034600408.6153846,
+          "peak": 2054160384.0
+        },
+        "gpu_memory_total_bytes": 8585740288.0,
+        "process_cpu_percent": {
+          "mean": 9.990096180031996,
+          "p50": 11.179477612743861,
+          "p95": 11.84020387502521,
+          "max": 11.964324317728842
+        },
+        "available": true
+      },
+      "efficiency_gain_vs_batch32": 0.0,
+      "candidate_for_100k_validation": false
+    },
+    {
+      "label": "profiled-gpu-replay-batch-32",
+      "run_id": "profiled-gpu-replay-batch-32-seed42",
+      "run_dir": "../../assets/day14/gpu-replay-ab-profiled-v5-runs/day14-gpu-replay-ab-profiled-v5/profiled-gpu-replay-batch-32-seed42",
+      "stage": "performance",
+      "status": "completed",
+      "batch_size": 32,
+      "cpu_threads": 2,
+      "learning_rate": 0.0001,
+      "expected_steps": 10000,
+      "completed_steps": 10000,
+      "episodes": 48,
+      "mean_recent_episode_return": 1.25,
+      "median_recent_episode_return": 1.0,
+      "recent_return_trend": {
+        "count": 20,
+        "first_half_mean": 1.4,
+        "second_half_mean": 1.1,
+        "delta": -0.2999999999999998,
+        "direction": "down"
+      },
+      "best_rolling_return": 1.65,
+      "td_error_summary": {
+        "td_error_mean_abs": {
+          "count": 35,
+          "mean": 0.016968614887446165,
+          "median": 0.009707167744636536,
+          "min": 0.00132770836353302,
+          "max": 0.08652124553918839
+        },
+        "td_error_max_abs": {
+          "count": 35,
+          "mean": 0.2246631614331688,
+          "median": 0.02409946918487549,
+          "min": 0.004328232258558273,
+          "max": 1.000043511390686
+        }
+      },
+      "end_to_end_sps": 379.94795199399647,
+      "optimizer_updates": 1989,
+      "optimizer_updates_per_second": 75.5716476516059,
+      "training_samples_per_second": 2418.292724851389,
+      "wall_clock_seconds": 26.319394399994053,
+      "replay_backend": "gpu",
+      "replay_transfer": "direct",
+      "replay_memory": {
+        "bytes": 564620000,
+        "storage_device": "cuda:0"
+      },
+      "stage_timings": {
+        "env_reset": {
+          "calls": 49,
+          "wall_seconds": 0.37192990037146956,
+          "cpu_seconds": 0.390625
+        },
+        "action_selection": {
+          "calls": 10000,
+          "wall_seconds": 8.74464539741166,
+          "cpu_seconds": 7.921875
+        },
+        "env_step": {
+          "calls": 10000,
+          "wall_seconds": 5.328112301765941,
+          "cpu_seconds": 4.765625
+        },
+        "replay_insert": {
+          "calls": 10000,
+          "wall_seconds": 2.3111666959011927,
+          "cpu_seconds": 2.609375,
+          "gpu_seconds": 2.12055932764709
+        },
+        "metrics_write": {
+          "calls": 10000,
+          "wall_seconds": 0.3280979988630861,
+          "cpu_seconds": 0.21875
+        },
+        "checkpoint": {
+          "calls": 20,
+          "wall_seconds": 0.4617254000622779,
+          "cpu_seconds": 0.453125
+        },
+        "gpu_replay_gather_cast": {
+          "calls": 1989,
+          "wall_seconds": 0.7827969988575205,
+          "cpu_seconds": 0.796875,
+          "gpu_seconds": 0.7604871693402528
+        },
+        "forward": {
+          "calls": 1989,
+          "wall_seconds": 1.0025345005560666,
+          "cpu_seconds": 1.421875,
+          "gpu_seconds": 0.9758349785506726
+        },
+        "target_forward": {
+          "calls": 1989,
+          "wall_seconds": 1.0748403042089194,
+          "cpu_seconds": 0.828125,
+          "gpu_seconds": 1.0478810879588127
+        },
+        "loss": {
+          "calls": 1989,
+          "wall_seconds": 0.19966039957944304,
+          "cpu_seconds": 0.203125,
+          "gpu_seconds": 0.1762885132227093
+        },
+        "backward": {
+          "calls": 1989,
+          "wall_seconds": 2.635279599460773,
+          "cpu_seconds": 3.328125,
+          "gpu_seconds": 2.6167855995297433
+        },
+        "optimizer_step": {
+          "calls": 1989,
+          "wall_seconds": 1.6138623036677018,
+          "cpu_seconds": 0.484375,
+          "gpu_seconds": 1.6809464960694314
+        },
+        "dqn_update": {
+          "calls": 1989,
+          "wall_seconds": 7.2220684989588335,
+          "cpu_seconds": 6.6875,
+          "gpu_seconds": 7.243580055475235
+        },
+        "gradient_diagnostics": {
+          "calls": 35,
+          "wall_seconds": 0.061931599862873554,
+          "cpu_seconds": 0.015625,
+          "gpu_seconds": 0.06141772782802582
+        },
+        "diagnostics": {
+          "calls": 35,
+          "wall_seconds": 0.05541340005584061,
+          "cpu_seconds": 0.0625,
+          "gpu_seconds": 0.054366175770759584
+        }
+      },
+      "gpu_memory": {
+        "allocated_bytes": 627733504,
+        "peak_allocated_bytes": 639419392,
+        "reserved_bytes": 658505728,
+        "peak_reserved_bytes": 658505728
+      },
+      "finite_metric_counts": {
+        "loss": 35,
+        "q_mean": 35,
+        "target_mean": 35,
+        "gradient_norm": 35,
+        "epsilon": 10000
+      },
+      "regression_guardrails": {
+        "replay_occupancy": {
+          "size": 10000,
+          "capacity": 10000,
+          "ratio": 1.0
+        },
+        "replay_guardrail": true,
+        "target_sync_count": 21,
+        "action_distribution": {
+          "NOOP": 2073,
+          "FIRE": 2845,
+          "RIGHT": 2915,
+          "LEFT": 2167
+        },
+        "epsilon": {
+          "finite_count": 10000,
+          "first": 0.9,
+          "last": 0.050085000000000046,
+          "minimum": 0.050085000000000046,
+          "maximum": 0.9
+        },
+        "episode_behavior": {
+          "episodes": 48,
+          "mean_recent_episode_return": 1.25,
+          "recent_return_trend": {
+            "count": 20,
+            "first_half_mean": 1.4,
+            "second_half_mean": 1.1,
+            "delta": -0.2999999999999998,
+            "direction": "down"
+          }
+        },
+        "epsilon_guardrail": true,
+        "episode_guardrail": true,
+        "guardrails_passed": true
+      },
+      "milestone_snapshots": {},
+      "profiling": {
+        "sample_csv": "../../assets/day14/gpu-replay-ab-profiled-v5-profiling/day14-gpu-replay-ab-profiled-v5/profiled-gpu-replay-batch-32/runtime-samples.csv",
+        "sample_summary": "../../assets/day14/gpu-replay-ab-profiled-v5-profiling/day14-gpu-replay-ab-profiled-v5/profiled-gpu-replay-batch-32/runtime-samples-summary.json",
+        "sampling_method": "in-process fixed-interval sampler; nvidia-smi query per sample",
+        "sampling_interval_seconds": 1.0,
+        "process_cpu_percent_method": "time.process_time normalized by wall time and logical CPU count",
+        "cpu_logical_count": 16,
+        "sample_count": 27,
+        "gpu_sample_count": 27,
+        "gpu_utilization_percent": {
+          "mean": 15.925925925925926,
+          "p50": 16.0,
+          "p95": 19.0,
+          "max": 19.0
+        },
+        "gpu_power_watts": {
+          "mean": 23.35851851851852,
+          "p50": 23.72,
+          "p95": 24.372,
+          "max": 24.53
+        },
+        "gpu_memory_used_bytes": {
+          "mean": 2601206366.814815,
+          "peak": 2622488576.0
+        },
+        "gpu_memory_total_bytes": 8585740288.0,
+        "process_cpu_percent": {
+          "mean": 5.649213500504741,
+          "p50": 5.800483964469518,
+          "p95": 6.2909878144195535,
+          "max": 7.126943489751836
+        },
+        "available": true
+      },
+      "efficiency_gain_vs_batch32": -0.06916623811340372,
+      "candidate_for_100k_validation": false
+    }
+  ],
+  "selection_rule": {
+    "short_stage": "candidate requires completed 10K, finite metrics, and end-to-end SPS strictly above batch 32",
+    "long_stage": "validate every short-stage candidate with 100K learning metrics before freezing",
+    "quality_over_speed": "do not select a batch size from GPU utilization alone when return or numerical guardrails regress"
+  }
+}

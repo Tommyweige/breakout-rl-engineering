@@ -1,0 +1,11 @@
+{
+  "name": "day14-gpu-replay-vanilla-dqn",
+  "description": "GPU-resident replay candidate frozen after the Day 14 GPU replay A/B and 100K LR comparison.",
+  "base_config": "day14-vanilla-dqn.json",
+  "overrides": {
+    "replay_backend": "gpu",
+    "replay_transfer": "direct"
+  },
+  "budget_level": "main_day14",
+  "stage": "main"
+}

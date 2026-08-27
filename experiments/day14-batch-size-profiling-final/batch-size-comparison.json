@@ -1,0 +1,389 @@
+{
+  "schema_version": 1,
+  "experiment_id": "day14-batch-size-profiling-final",
+  "manifest": "C:\\Users\\tommy\\.codex\\worktrees\\9ea6\\breakout-rl-engineering\\experiments\\day14-batch-size-profiling-final\\manifest.json",
+  "manifest_status": "completed",
+  "stage": "batch_profiling",
+  "comparison_conditions": {
+    "same_requested_device": true,
+    "same_resolved_device": true,
+    "same_step_budget": true,
+    "same_stage": true,
+    "stages": [
+      "batch_profiling",
+      "batch_profiling",
+      "batch_profiling"
+    ],
+    "requested_devices": [
+      "cuda",
+      "cuda",
+      "cuda"
+    ],
+    "resolved_devices": [
+      "cuda:0",
+      "cuda:0",
+      "cuda:0"
+    ],
+    "step_budgets": [
+      10000,
+      10000,
+      10000
+    ],
+    "formal_cuda_eligible": true,
+    "main_comparison_eligible": false,
+    "quality_and_throughput_are_separate": true
+  },
+  "sampling": {
+    "source": "profiling samples are stored beside each run",
+    "no_manual_values": true
+  },
+  "runs": [
+    {
+      "label": "batch-size-32",
+      "run_id": "batch-size-32-seed42",
+      "run_dir": "C:\\Users\\tommy\\.codex\\worktrees\\9ea6\\breakout-rl-engineering\\assets\\day14\\batch-size-runs\\day14-batch-size-profiling-final\\batch-size-32-seed42",
+      "stage": "batch_profiling",
+      "status": "completed",
+      "batch_size": 32,
+      "cpu_threads": 1,
+      "learning_rate": 0.0002,
+      "expected_steps": 10000,
+      "completed_steps": 10000,
+      "episodes": 47,
+      "mean_recent_episode_return": 1.5,
+      "median_recent_episode_return": 1.0,
+      "recent_return_trend": {
+        "count": 20,
+        "first_half_mean": 1.2,
+        "second_half_mean": 1.8,
+        "delta": 0.6000000000000001,
+        "direction": "up"
+      },
+      "best_rolling_return": 1.5,
+      "end_to_end_sps": 235.73711983468988,
+      "optimizer_updates": 2251,
+      "optimizer_updates_per_second": 53.06442567478869,
+      "training_samples_per_second": 1698.061621593238,
+      "wall_clock_seconds": 42.42013310000766,
+      "gpu_memory": {
+        "allocated_bytes": 51090432,
+        "peak_allocated_bytes": 70963200,
+        "reserved_bytes": 90177536,
+        "peak_reserved_bytes": 90177536
+      },
+      "finite_metric_counts": {
+        "loss": 32,
+        "q_mean": 32,
+        "target_mean": 32,
+        "gradient_norm": 32,
+        "epsilon": 10000
+      },
+      "regression_guardrails": {
+        "replay_occupancy": {
+          "size": 10000,
+          "capacity": 10000,
+          "ratio": 1.0
+        },
+        "replay_guardrail": true,
+        "target_sync_count": 21,
+        "action_distribution": {
+          "NOOP": 2928,
+          "FIRE": 2132,
+          "RIGHT": 2417,
+          "LEFT": 2523
+        },
+        "epsilon": {
+          "finite_count": 10000,
+          "first": 0.9,
+          "last": 0.050085000000000046,
+          "minimum": 0.050085000000000046,
+          "maximum": 0.9
+        },
+        "episode_behavior": {
+          "episodes": 47,
+          "mean_recent_episode_return": 1.5,
+          "recent_return_trend": {
+            "count": 20,
+            "first_half_mean": 1.2,
+            "second_half_mean": 1.8,
+            "delta": 0.6000000000000001,
+            "direction": "up"
+          }
+        },
+        "epsilon_guardrail": true,
+        "episode_guardrail": true,
+        "guardrails_passed": true
+      },
+      "milestone_snapshots": {},
+      "profiling": {
+        "sample_csv": "../../assets/day14/batch-size-profiling/day14-batch-size-profiling-final/batch-size-32/runtime-samples.csv",
+        "sample_summary": "../../assets/day14/batch-size-profiling/day14-batch-size-profiling-final/batch-size-32/runtime-samples-summary.json",
+        "sampling_method": "in-process fixed-interval sampler; nvidia-smi query per sample",
+        "sampling_interval_seconds": 1.0,
+        "process_cpu_percent_method": "time.process_time normalized by wall time and logical CPU count",
+        "cpu_logical_count": 16,
+        "sample_count": 45,
+        "gpu_sample_count": 45,
+        "gpu_utilization_percent": {
+          "mean": 30.133333333333333,
+          "p50": 32.0,
+          "p95": 36.0,
+          "max": 38.0
+        },
+        "gpu_power_watts": {
+          "mean": 25.59111111111111,
+          "p50": 26.55,
+          "p95": 27.434,
+          "max": 27.63
+        },
+        "gpu_memory_used_bytes": {
+          "mean": 1837874107.7333333,
+          "peak": 1885339648.0
+        },
+        "gpu_memory_total_bytes": 8585740288.0,
+        "process_cpu_percent": {
+          "mean": 5.545971545954163,
+          "p50": 5.674525758446198,
+          "p95": 6.072174338226413,
+          "max": 6.199256624487798
+        },
+        "available": true
+      },
+      "efficiency_gain_vs_batch32": 0.0,
+      "candidate_for_100k_validation": false
+    },
+    {
+      "label": "batch-size-64",
+      "run_id": "batch-size-64-seed42",
+      "run_dir": "C:\\Users\\tommy\\.codex\\worktrees\\9ea6\\breakout-rl-engineering\\assets\\day14\\batch-size-runs\\day14-batch-size-profiling-final\\batch-size-64-seed42",
+      "stage": "batch_profiling",
+      "status": "completed",
+      "batch_size": 64,
+      "cpu_threads": 1,
+      "learning_rate": 0.0002,
+      "expected_steps": 10000,
+      "completed_steps": 10000,
+      "episodes": 48,
+      "mean_recent_episode_return": 1.5,
+      "median_recent_episode_return": 1.5,
+      "recent_return_trend": {
+        "count": 20,
+        "first_half_mean": 1.3,
+        "second_half_mean": 1.7,
+        "delta": 0.3999999999999999,
+        "direction": "up"
+      },
+      "best_rolling_return": 1.9,
+      "end_to_end_sps": 203.31687655346892,
+      "optimizer_updates": 2251,
+      "optimizer_updates_per_second": 45.76662891218585,
+      "training_samples_per_second": 2929.0642503798945,
+      "wall_clock_seconds": 49.18430860002991,
+      "gpu_memory": {
+        "allocated_bytes": 51090432,
+        "peak_allocated_bytes": 83616768,
+        "reserved_bytes": 111149056,
+        "peak_reserved_bytes": 111149056
+      },
+      "finite_metric_counts": {
+        "loss": 32,
+        "q_mean": 32,
+        "target_mean": 32,
+        "gradient_norm": 32,
+        "epsilon": 10000
+      },
+      "regression_guardrails": {
+        "replay_occupancy": {
+          "size": 10000,
+          "capacity": 10000,
+          "ratio": 1.0
+        },
+        "replay_guardrail": true,
+        "target_sync_count": 21,
+        "action_distribution": {
+          "NOOP": 1975,
+          "FIRE": 2498,
+          "RIGHT": 3053,
+          "LEFT": 2474
+        },
+        "epsilon": {
+          "finite_count": 10000,
+          "first": 0.9,
+          "last": 0.050085000000000046,
+          "minimum": 0.050085000000000046,
+          "maximum": 0.9
+        },
+        "episode_behavior": {
+          "episodes": 48,
+          "mean_recent_episode_return": 1.5,
+          "recent_return_trend": {
+            "count": 20,
+            "first_half_mean": 1.3,
+            "second_half_mean": 1.7,
+            "delta": 0.3999999999999999,
+            "direction": "up"
+          }
+        },
+        "epsilon_guardrail": true,
+        "episode_guardrail": true,
+        "guardrails_passed": true
+      },
+      "milestone_snapshots": {},
+      "profiling": {
+        "sample_csv": "../../assets/day14/batch-size-profiling/day14-batch-size-profiling-final/batch-size-64/runtime-samples.csv",
+        "sample_summary": "../../assets/day14/batch-size-profiling/day14-batch-size-profiling-final/batch-size-64/runtime-samples-summary.json",
+        "sampling_method": "in-process fixed-interval sampler; nvidia-smi query per sample",
+        "sampling_interval_seconds": 1.0,
+        "process_cpu_percent_method": "time.process_time normalized by wall time and logical CPU count",
+        "cpu_logical_count": 16,
+        "sample_count": 50,
+        "gpu_sample_count": 50,
+        "gpu_utilization_percent": {
+          "mean": 32.22,
+          "p50": 33.0,
+          "p95": 36.55,
+          "max": 38.0
+        },
+        "gpu_power_watts": {
+          "mean": 27.1096,
+          "p50": 27.855,
+          "p95": 28.822499999999998,
+          "max": 31.29
+        },
+        "gpu_memory_used_bytes": {
+          "mean": 1897796730.88,
+          "peak": 2024800256.0
+        },
+        "gpu_memory_total_bytes": 8585740288.0,
+        "process_cpu_percent": {
+          "mean": 5.658154215939645,
+          "p50": 5.786539002217915,
+          "p95": 6.097713129402196,
+          "max": 6.192608087266378
+        },
+        "available": true
+      },
+      "efficiency_gain_vs_batch32": -0.13752710351240227,
+      "candidate_for_100k_validation": false
+    },
+    {
+      "label": "batch-size-128",
+      "run_id": "batch-size-128-seed42",
+      "run_dir": "C:\\Users\\tommy\\.codex\\worktrees\\9ea6\\breakout-rl-engineering\\assets\\day14\\batch-size-runs\\day14-batch-size-profiling-final\\batch-size-128-seed42",
+      "stage": "batch_profiling",
+      "status": "completed",
+      "batch_size": 128,
+      "cpu_threads": 1,
+      "learning_rate": 0.0002,
+      "expected_steps": 10000,
+      "completed_steps": 10000,
+      "episodes": 49,
+      "mean_recent_episode_return": 0.95,
+      "median_recent_episode_return": 1.0,
+      "recent_return_trend": {
+        "count": 20,
+        "first_half_mean": 1.2,
+        "second_half_mean": 0.7,
+        "delta": -0.5,
+        "direction": "down"
+      },
+      "best_rolling_return": 1.7,
+      "end_to_end_sps": 177.35797350410155,
+      "optimizer_updates": 2251,
+      "optimizer_updates_per_second": 39.92327983577326,
+      "training_samples_per_second": 5110.179818978977,
+      "wall_clock_seconds": 56.383143099956214,
+      "gpu_memory": {
+        "allocated_bytes": 51090432,
+        "peak_allocated_bytes": 111004160,
+        "reserved_bytes": 146800640,
+        "peak_reserved_bytes": 146800640
+      },
+      "finite_metric_counts": {
+        "loss": 32,
+        "q_mean": 32,
+        "target_mean": 32,
+        "gradient_norm": 32,
+        "epsilon": 10000
+      },
+      "regression_guardrails": {
+        "replay_occupancy": {
+          "size": 10000,
+          "capacity": 10000,
+          "ratio": 1.0
+        },
+        "replay_guardrail": true,
+        "target_sync_count": 21,
+        "action_distribution": {
+          "NOOP": 2149,
+          "FIRE": 2389,
+          "RIGHT": 2849,
+          "LEFT": 2613
+        },
+        "epsilon": {
+          "finite_count": 10000,
+          "first": 0.9,
+          "last": 0.050085000000000046,
+          "minimum": 0.050085000000000046,
+          "maximum": 0.9
+        },
+        "episode_behavior": {
+          "episodes": 49,
+          "mean_recent_episode_return": 0.95,
+          "recent_return_trend": {
+            "count": 20,
+            "first_half_mean": 1.2,
+            "second_half_mean": 0.7,
+            "delta": -0.5,
+            "direction": "down"
+          }
+        },
+        "epsilon_guardrail": true,
+        "episode_guardrail": true,
+        "guardrails_passed": true
+      },
+      "milestone_snapshots": {},
+      "profiling": {
+        "sample_csv": "../../assets/day14/batch-size-profiling/day14-batch-size-profiling-final/batch-size-128/runtime-samples.csv",
+        "sample_summary": "../../assets/day14/batch-size-profiling/day14-batch-size-profiling-final/batch-size-128/runtime-samples-summary.json",
+        "sampling_method": "in-process fixed-interval sampler; nvidia-smi query per sample",
+        "sampling_interval_seconds": 1.0,
+        "process_cpu_percent_method": "time.process_time normalized by wall time and logical CPU count",
+        "cpu_logical_count": 16,
+        "sample_count": 57,
+        "gpu_sample_count": 57,
+        "gpu_utilization_percent": {
+          "mean": 34.87719298245614,
+          "p50": 36.0,
+          "p95": 39.0,
+          "max": 42.0
+        },
+        "gpu_power_watts": {
+          "mean": 30.330350877192984,
+          "p50": 30.26,
+          "p95": 33.638,
+          "max": 45.02
+        },
+        "gpu_memory_used_bytes": {
+          "mean": 2027044576.5614035,
+          "peak": 2119172096.0
+        },
+        "gpu_memory_total_bytes": 8585740288.0,
+        "process_cpu_percent": {
+          "mean": 5.769373062595863,
+          "p50": 5.894815218050507,
+          "p95": 6.26499143847028,
+          "max": 6.298034664430865
+        },
+        "available": true
+      },
+      "efficiency_gain_vs_batch32": -0.24764511576083803,
+      "candidate_for_100k_validation": false
+    }
+  ],
+  "selection_rule": {
+    "short_stage": "candidate requires completed 10K, finite metrics, and end-to-end SPS strictly above batch 32",
+    "long_stage": "validate every short-stage candidate with 100K learning metrics before freezing",
+    "quality_over_speed": "do not select a batch size from GPU utilization alone when return or numerical guardrails regress"
+  }
+}

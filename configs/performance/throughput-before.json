@@ -1,0 +1,12 @@
+{
+  "name": "throughput-before-10k",
+  "description": "10K end-to-end throughput baseline before hot-path optimization.",
+  "base_config": "../screening/dqn_baseline_10k.json",
+  "stage": "performance",
+  "budget_level": "short_screening",
+  "overrides": {
+    "diagnostics_interval": 1,
+    "metrics_flush_interval": 1,
+    "cpu_threads": 12
+  }
+}

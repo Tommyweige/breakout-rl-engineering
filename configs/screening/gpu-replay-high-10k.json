@@ -1,0 +1,10 @@
+{
+  "name": "gpu-replay-high-10k-screening",
+  "base_config": "../experiments/gpu-lr-high.json",
+  "budget_level": "short_screening",
+  "stage": "screening",
+  "overrides": {
+    "total_steps": 10000,
+    "checkpoint_interval": 1000
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "name": "preallocated-batch-32",
+  "base_config": "throughput-after.json",
+  "overrides": {
+    "batch_size": 32,
+    "learning_starts": 2048,
+    "cpu_threads": 2,
+    "replay_transfer": "preallocated"
+  },
+  "stage": "performance"
+}

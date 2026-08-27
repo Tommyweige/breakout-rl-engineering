@@ -1,0 +1,126 @@
+{
+  "schema_version": 1,
+  "experiment_id": "day14-batch-size-validation",
+  "created_at_utc": "2026-08-25T09:18:40.700944Z",
+  "updated_at_utc": "2026-08-25T09:18:41.784940Z",
+  "sequential": true,
+  "base_config": {
+    "label": "batch-size-32-validation",
+    "config_path": "../../configs/batch-size/bs32-100k.json",
+    "values": {
+      "total_steps": 100000,
+      "seed": 42,
+      "gamma": 0.99,
+      "learning_rate": 0.0002,
+      "batch_size": 32,
+      "replay_capacity": 10000,
+      "learning_starts": 1000,
+      "train_frequency": 4,
+      "target_update_interval": 500,
+      "epsilon_start": 0.9,
+      "epsilon_end": 0.05,
+      "epsilon_decay_steps": 10000,
+      "gradient_clip_norm": 10.0,
+      "reward_clip": true,
+      "device": "cuda",
+      "precision": "float32",
+      "checkpoint_interval": 25000,
+      "diagnostics_interval": 100,
+      "metrics_flush_interval": 100,
+      "cpu_threads": 2
+    },
+    "budget_level": "main_day14",
+    "stage": "batch_validation"
+  },
+  "variants": [
+    {
+      "label": "batch-size-32-validation",
+      "config_path": "../../configs/batch-size/bs32-100k.json",
+      "config_values": {
+        "total_steps": 100000,
+        "seed": 42,
+        "gamma": 0.99,
+        "learning_rate": 0.0002,
+        "batch_size": 32,
+        "replay_capacity": 10000,
+        "learning_starts": 1000,
+        "train_frequency": 4,
+        "target_update_interval": 500,
+        "epsilon_start": 0.9,
+        "epsilon_end": 0.05,
+        "epsilon_decay_steps": 10000,
+        "gradient_clip_norm": 10.0,
+        "reward_clip": true,
+        "device": "cuda",
+        "precision": "float32",
+        "checkpoint_interval": 25000,
+        "diagnostics_interval": 100,
+        "metrics_flush_interval": 100,
+        "cpu_threads": 2
+      },
+      "overrides": {
+        "total_steps": 100000,
+        "learning_rate": 0.0002,
+        "batch_size": 32,
+        "checkpoint_interval": 25000,
+        "diagnostics_interval": 100,
+        "metrics_flush_interval": 100,
+        "cpu_threads": 2
+      },
+      "changed_fields": [],
+      "status": "completed",
+      "run_dir": "../../assets/day14/final-runs/day14-final-frozen-100k/day14-final-vanilla-dqn-seed42",
+      "run_id": "day14-final-vanilla-dqn-seed42",
+      "requested_device": "cuda",
+      "resolved_device": "cuda:0",
+      "seed": 42,
+      "step_budget": 100000,
+      "budget_level": "main_day14",
+      "stage": "batch_validation",
+      "summary": {
+        "status": "completed",
+        "total_steps": 100000,
+        "episodes": 329,
+        "optimizer_updates": 24751,
+        "steps_per_second": 221.04846587174745,
+        "wall_clock_seconds": 452.3894775999943
+      },
+      "profiling": {
+        "reused_run": true,
+        "sample_csv": null,
+        "sample_summary": null,
+        "available": false
+      }
+    }
+  ],
+  "seeds": [
+    42
+  ],
+  "step_budgets": [
+    100000
+  ],
+  "budget_levels": [
+    "main_day14"
+  ],
+  "stage": "batch_validation",
+  "status": "completed",
+  "command": [
+    "profile_batch_size_experiment.py",
+    "--experiment-id",
+    "day14-batch-size-validation",
+    "--experiments-root",
+    "experiments",
+    "--runs-root",
+    "assets/day14/batch-validation-runs",
+    "--samples-root",
+    "assets/day14/batch-validation-profiling",
+    "--sample-interval",
+    "1",
+    "--gpu-index",
+    "0",
+    "--require-cuda",
+    "--reuse-run",
+    "batch-size-32-validation=C:\\Users\\tommy\\.codex\\worktrees\\9ea6\\breakout-rl-engineering\\assets\\day14\\final-runs\\day14-final-frozen-100k\\day14-final-vanilla-dqn-seed42",
+    "configs/batch-size/bs32-100k.json"
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "generated_at_utc": "2026-08-26T09:59:01.130906Z",
+  "command": [
+    "visualize_experiment_comparison.py",
+    "experiments/day14-gpu-replay-lr-100k-v2/manifest.json",
+    "--output",
+    "assets/day14/experiment-q-target-comparison.png",
+    "--metrics",
+    "q",
+    "target"
+  ],
+  "manifest": "experiments/day14-gpu-replay-lr-100k-v2/manifest.json",
+  "output": "assets/day14/experiment-q-target-comparison.png",
+  "metadata_output": "assets/day14/experiment-q-target-comparison.json",
+  "metrics": [
+    "q",
+    "target"
+  ],
+  "runs": [
+    {
+      "label": "gpu-replay-baseline",
+      "run_dir": "../../assets/day14/gpu-replay-lr-100k-v2-runs/day14-gpu-replay-lr-100k-v2/gpu-replay-baseline-seed42",
+      "seed": 42,
+      "requested_device": "cuda",
+      "resolved_device": "cuda:0"
+    },
+    {
+      "label": "gpu-replay-learning-rate-low",
+      "run_dir": "../../assets/day14/gpu-replay-lr-100k-v2-runs/day14-gpu-replay-lr-100k-v2/gpu-replay-learning-rate-low-seed42",
+      "seed": 42,
+      "requested_device": "cuda",
+      "resolved_device": "cuda:0"
+    },
+    {
+      "label": "gpu-replay-learning-rate-high",
+      "run_dir": "../../assets/day14/gpu-replay-lr-100k-v2-runs/day14-gpu-replay-lr-100k-v2/gpu-replay-learning-rate-high-seed42",
+      "seed": 42,
+      "requested_device": "cuda",
+      "resolved_device": "cuda:0"
+    }
+  ]
+}

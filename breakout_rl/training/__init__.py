@@ -17,6 +17,7 @@ __all__ = [
     "TrainingStepCallback",
     "TrainingStepSnapshot",
     "dqn_training_step",
+    "resolve_device",
     "seed_everything",
 ]
 
@@ -29,6 +30,7 @@ def __getattr__(name: str):
         "TrainingStepCallback",
         "TrainingStepSnapshot",
         "dqn_training_step",
+        "resolve_device",
         "seed_everything",
     }:
         raise AttributeError(name)

@@ -1,0 +1,14 @@
+{
+  "name": "screening-baseline-10k",
+  "description": "Day 14 short health screening only; not a config-ranking run.",
+  "base_config": "../dqn_baseline.json",
+  "budget_level": "short_screening",
+  "stage": "screening",
+  "overrides": {
+    "total_steps": 10000,
+    "checkpoint_interval": 500,
+    "diagnostics_interval": 100,
+    "metrics_flush_interval": 100,
+    "cpu_threads": 1
+  }
+}

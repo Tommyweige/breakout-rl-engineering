@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "experiment_id": "day14-throughput-before",
+  "created_at_utc": "2026-08-25T08:02:34.539902Z",
+  "updated_at_utc": "2026-08-25T08:03:44.771691Z",
+  "sequential": true,
+  "base_config": {
+    "label": "throughput-before-10k",
+    "config_path": "../../configs/performance/throughput-before.json",
+    "values": {
+      "total_steps": 10000,
+      "seed": 42,
+      "gamma": 0.99,
+      "learning_rate": 0.0001,
+      "batch_size": 32,
+      "replay_capacity": 10000,
+      "learning_starts": 1000,
+      "train_frequency": 4,
+      "target_update_interval": 500,
+      "epsilon_start": 0.9,
+      "epsilon_end": 0.05,
+      "epsilon_decay_steps": 10000,
+      "gradient_clip_norm": 10.0,
+      "reward_clip": true,
+      "device": "cuda",
+      "precision": "float32",
+      "checkpoint_interval": 500,
+      "diagnostics_interval": 1,
+      "metrics_flush_interval": 1,
+      "cpu_threads": 12
+    },
+    "budget_level": "short_screening",
+    "stage": "performance"
+  },
+  "variants": [
+    {
+      "label": "throughput-before-10k",
+      "config_path": "../../configs/performance/throughput-before.json",
+      "config_values": {
+        "total_steps": 10000,
+        "seed": 42,
+        "gamma": 0.99,
+        "learning_rate": 0.0001,
+        "batch_size": 32,
+        "replay_capacity": 10000,
+        "learning_starts": 1000,
+        "train_frequency": 4,
+        "target_update_interval": 500,
+        "epsilon_start": 0.9,
+        "epsilon_end": 0.05,
+        "epsilon_decay_steps": 10000,
+        "gradient_clip_norm": 10.0,
+        "reward_clip": true,
+        "device": "cuda",
+        "precision": "float32",
+        "checkpoint_interval": 500,
+        "diagnostics_interval": 1,
+        "metrics_flush_interval": 1,
+        "cpu_threads": 12
+      },
+      "overrides": {
+        "diagnostics_interval": 1,
+        "metrics_flush_interval": 1,
+        "cpu_threads": 12
+      },
+      "changed_fields": [],
+      "status": "completed",
+      "run_dir": "../../assets/day14/performance-runs/day14-throughput-before/throughput-before-10k-seed42",
+      "run_id": "throughput-before-10k-seed42",
+      "requested_device": "cuda",
+      "resolved_device": "cuda:0",
+      "seed": 42,
+      "step_budget": 10000,
+      "budget_level": "short_screening",
+      "stage": "performance",
+      "summary": {
+        "status": "completed",
+        "total_steps": 10000,
+        "episodes": 50,
+        "optimizer_updates": 2251,
+        "steps_per_second": 145.94407734117976,
+        "wall_clock_seconds": 68.51939579995815
+      }
+    }
+  ],
+  "seeds": [
+    42
+  ],
+  "step_budgets": [
+    10000
+  ],
+  "budget_levels": [
+    "short_screening"
+  ],
+  "stage": "performance",
+  "status": "completed",
+  "command": [
+    "run_experiments.py",
+    "--require-cuda",
+    "--experiment-id",
+    "day14-throughput-before",
+    "--runs-root",
+    "assets/day14/performance-runs",
+    "configs/performance/throughput-before.json"
+  ]
+}

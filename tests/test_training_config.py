@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import unittest
+from unittest.mock import patch
 
 from train_dqn import _config_from_args, build_parser
 from breakout_rl.training.config import DQNConfig
+from breakout_rl.training.dqn_trainer import resolve_device
 
 
 class DQNConfigTests(unittest.TestCase):
@@ -16,10 +18,12 @@ class DQNConfigTests(unittest.TestCase):
         self.assertEqual(config.batch_size, 32)
         self.assertEqual(config.learning_starts, 1_000)
         self.assertTrue(config.reward_clip)
+        self.assertFalse(config.profile_stages)
 
         restored = DQNConfig.from_dict(config.to_dict())
 
         self.assertEqual(restored, config)
+        self.assertEqual(config.replay_backend, "cpu")
 
     def test_smoke_preset_keeps_real_training_order_but_is_small(self) -> None:
         config = DQNConfig.smoke(total_steps=1000, device="cpu")
@@ -77,6 +81,50 @@ class DQNConfigTests(unittest.TestCase):
             with self.subTest(overrides=overrides):
                 with self.assertRaises((TypeError, ValueError)):
                     DQNConfig(**overrides)
+
+    def test_device_request_and_precision_are_normalized_for_metadata(self) -> None:
+        config = DQNConfig(device="AUTO", precision="fp32")
+
+        self.assertEqual(config.requested_device, "auto")
+        self.assertEqual(config.precision, "float32")
+        self.assertEqual(config.to_dict()["device"], "auto")
+
+    def test_replay_transfer_mode_is_normalized_and_validated(self) -> None:
+        config = DQNConfig(replay_transfer="PREALLOCATED")
+
+        self.assertEqual(config.replay_transfer, "preallocated")
+        self.assertEqual(
+            DQNConfig.from_dict(config.to_dict()).replay_transfer,
+            "preallocated",
+        )
+
+        with self.assertRaises(ValueError):
+            DQNConfig(replay_transfer="unknown")
+
+    def test_replay_backend_is_normalized_and_validated(self) -> None:
+        config = DQNConfig(replay_backend="GPU")
+
+        self.assertEqual(config.replay_backend, "gpu")
+        self.assertEqual(
+            DQNConfig.from_dict(config.to_dict()).replay_backend,
+            "gpu",
+        )
+
+        with self.assertRaises(ValueError):
+            DQNConfig(replay_backend="unknown")
+        with self.assertRaises(ValueError):
+            DQNConfig(replay_backend="gpu", replay_transfer="preallocated")
+
+    def test_stage_profiling_flag_is_boolean(self) -> None:
+        self.assertTrue(DQNConfig(profile_stages=True).profile_stages)
+        with self.assertRaises(TypeError):
+            DQNConfig(profile_stages=1)
+
+    def test_auto_can_use_cpu_but_explicit_cuda_never_falls_back(self) -> None:
+        with patch("breakout_rl.training.dqn_trainer.torch.cuda.is_available", return_value=False):
+            self.assertEqual(str(resolve_device("auto")), "cpu")
+            with self.assertRaisesRegex(RuntimeError, "refusing to fall back to CPU"):
+                resolve_device("cuda")
 
 
 if __name__ == "__main__":
