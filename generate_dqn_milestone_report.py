@@ -130,6 +130,13 @@ def build_report(
     validate_embedded_summary(random_payload, random_summary, source=random_source)
     validate_embedded_summary(dqn_payload, dqn_summary, source=dqn_source)
 
+    dqn_training = _mapping(dqn_payload.get("training"))
+    dqn_gate = _mapping(dqn_training.get("day14_gate"))
+    if require_cuda and dqn_gate.get("status") != "passed":
+        raise ValueError(
+            "formal Day 15 report requires Day 14 Gate A to be passed; "
+            f"got {dqn_gate.get('status', 'missing')}"
+        )
     dqn_resolved_device = str(dqn_payload.get("resolved_device", ""))
     if require_cuda and not dqn_resolved_device.startswith("cuda:"):
         raise ValueError(
@@ -146,12 +153,14 @@ def build_report(
         "C": "DQN 與 Random 的差異不明顯",
         "D": "DQN 低於 Random",
     }[classification]
-    dqn_training = _mapping(dqn_payload.get("training"))
     dqn_checkpoint = _mapping(dqn_payload.get("checkpoint"))
     dqn_environment = _mapping(dqn_payload.get("environment"))
     trainer_runtime = _mapping(dqn_training.get("trainer_runtime"))
     gpu_profile = _mapping(dqn_training.get("gpu_profiling_summary"))
     profile_details = _mapping(gpu_profile.get("profiling"))
+    gate_criteria = _mapping(dqn_gate.get("criteria"))
+    gate_returns = _mapping(dqn_gate.get("return_signal"))
+    gate_diagnostics = _mapping(dqn_gate.get("diagnostics"))
     delta = float(dqn_summary["mean_return"]) - float(random_summary["mean_return"])
     random_groups = _group_by_seed(random_episodes)
     dqn_groups = _group_by_seed(dqn_episodes)
@@ -199,6 +208,21 @@ def build_report(
         f"| selected batch end-to-end SPS | {_number(gpu_profile.get('end_to_end_sps'))} |",
         f"| selected GPU utilization mean | {_number(profile_details.get('gpu_utilization_percent', {}).get('mean') if isinstance(profile_details.get('gpu_utilization_percent'), Mapping) else None)}% |",
         f"| selection rationale | {_rationale(dqn_training.get('selection_rationale'))} |",
+        "",
+        "### Day 14 Gate A evidence",
+        "",
+        "正式 milestone 不是因為 checkpoint 檔案存在就自動成立；這裡把 Day 14 的長跑結果與選擇依據明確列出。",
+        "",
+        "| Gate A 條件 | 實際證據 |",
+        "|---|---|",
+        f"| status | `{dqn_gate.get('status', '—')}` |",
+        f"| 10K reference recent mean | {_number(gate_returns.get('reference_10k_recent_mean'))} ({gate_returns.get('reference_recent_episode_count', '—')} episodes) |",
+        f"| 100K final recent mean | {_number(gate_returns.get('final_100k_recent_mean'))} |",
+        f"| return signal | `{gate_criteria.get('return_signal', '—')}` |",
+        f"| diagnostics healthy | `{gate_criteria.get('diagnostics_healthy', '—')}` |",
+        f"| selection not single best episode | `{gate_criteria.get('selection_not_single_best_episode', '—')}` |",
+        f"| checkpoint provenance complete | `{gate_criteria.get('checkpoint_provenance_complete', '—')}` |",
+        f"| metrics diagnostics finite | `{gate_diagnostics.get('metrics_values_finite', '—')}` |",
         "",
         "## 固定的評估規則",
         "",

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at_utc": "2026-08-27T10:13:37.903648Z",
+  "generated_at_utc": "2026-08-27T13:47:49.845085Z",
   "command": [
     "visualize_day15_evaluation.py",
     "evaluations/day15-random-baseline/results.json",
@@ -13,9 +13,9 @@
   "question": "固定 evaluation seeds 與 raw reward 下，DQN 的每局分布是否高於 Random？",
   "source_artifacts": {
     "random_results": "evaluations/day15-random-baseline/results.json",
-    "random_results_sha256": "74cee228edc67c9acebd3c22482d27d193c6f70ea2de4b7a27b02f43c8b636a3",
+    "random_results_sha256": "e3af07206e409cd2c0a196ac1da9e610bc58e4d9b4591228b382c8dfafb29c57",
     "dqn_results": "evaluations/day15-dqn-cuda/results.json",
-    "dqn_results_sha256": "b7ddc40449f8ff8020b4d7e32a130ba9e580f2ce35e907fec66d9fdc60b4681e"
+    "dqn_results_sha256": "eb0713650673f67413eabe361ba6d8124636f9fcf109c96946fcc8fe7491e2aa"
   },
   "dqn_provenance": {
     "model_id": "day14-final-vanilla-dqn-seed42@step-00100000",
@@ -135,6 +135,9 @@
         },
         "selected_run_id": "batch-size-32-seed42",
         "selected_run_status": "completed",
+        "baseline_recent_episode_return": 1.5,
+        "baseline_recent_episode_count": 20,
+        "regression_guardrails_passed": true,
         "end_to_end_sps": 235.73711983468988,
         "training_samples_per_second": 1698.061621593238,
         "profiling": {
@@ -159,7 +162,85 @@
           "gpu_memory_total_bytes": 8585740288.0
         }
       },
-      "source_day14_profiling_report": "experiments/day14-batch-size-profiling-final/batch-size-comparison.json"
+      "source_day14_profiling_report": "experiments/day14-batch-size-profiling-final/batch-size-comparison.json",
+      "day14_gate": {
+        "status": "passed",
+        "criteria": {
+          "return_signal": true,
+          "diagnostics_healthy": true,
+          "selection_not_single_best_episode": true,
+          "checkpoint_provenance_complete": true
+        },
+        "return_signal": {
+          "reference_10k_recent_mean": 1.5,
+          "reference_recent_episode_count": 20,
+          "final_100k_recent_mean": 6.15,
+          "improvement": 4.65
+        },
+        "diagnostics": {
+          "summary_status": "completed",
+          "summary_values_finite": true,
+          "metrics_values_finite": true,
+          "field_counts": {
+            "loss": {
+              "observed": 251,
+              "finite": 251
+            },
+            "q_mean": {
+              "observed": 251,
+              "finite": 251
+            },
+            "q_max": {
+              "observed": 251,
+              "finite": 251
+            },
+            "q_min": {
+              "observed": 251,
+              "finite": 251
+            },
+            "target_mean": {
+              "observed": 251,
+              "finite": 251
+            },
+            "target_max": {
+              "observed": 251,
+              "finite": 251
+            },
+            "td_error_mean_abs": {
+              "observed": 251,
+              "finite": 251
+            },
+            "td_error_max_abs": {
+              "observed": 251,
+              "finite": 251
+            },
+            "gradient_norm": {
+              "observed": 251,
+              "finite": 251
+            }
+          },
+          "summary_source": "assets/day14/final-runs/day14-final-frozen-100k/day14-final-vanilla-dqn-seed42/summary.json",
+          "metrics_source": "assets/day14/final-runs/day14-final-frozen-100k/day14-final-vanilla-dqn-seed42/metrics.csv"
+        },
+        "selection": {
+          "rationale": {
+            "short_stage": "candidate requires completed 10K, finite metrics, and end-to-end SPS strictly above batch 32",
+            "long_stage": "validate every short-stage candidate with 100K learning metrics before freezing",
+            "quality_over_speed": "do not select a batch size from GPU utilization alone when return or numerical guardrails regress"
+          },
+          "selected_profile_run_id": "batch-size-32-seed42",
+          "regression_guardrails_passed": true,
+          "final_run_episode_count": 329
+        },
+        "provenance": {
+          "run_id": "day14-final-vanilla-dqn-seed42",
+          "expected_step": 100000,
+          "summary_step": 100000,
+          "config_reference": "../../configs/final/day14-vanilla-dqn.json",
+          "run_dir": "assets/day14/final-runs/day14-final-frozen-100k/day14-final-vanilla-dqn-seed42"
+        },
+        "reasons": []
+      }
     }
   },
   "evaluation_protocol": {

@@ -34,6 +34,21 @@ Day 14 的 100K 曲線和單局 GIF 是 development evidence：它們顯示模�
 | selected GPU utilization mean | 30.13% |
 | selection rationale | candidate requires completed 10K, finite metrics, and end-to-end SPS strictly above batch 32；validate every short-stage candidate with 100K learning metrics before freezing；do not select a batch size from GPU utilization alone when return or numerical guardrails regress |
 
+### Day 14 Gate A evidence
+
+正式 milestone 不是因為 checkpoint 檔案存在就自動成立；這裡把 Day 14 的長跑結果與選擇依據明確列出。
+
+| Gate A 條件 | 實際證據 |
+|---|---|
+| status | `passed` |
+| 10K reference recent mean | 1.50 (20 episodes) |
+| 100K final recent mean | 6.15 |
+| return signal | `True` |
+| diagnostics healthy | `True` |
+| selection not single best episode | `True` |
+| checkpoint provenance complete | `True` |
+| metrics diagnostics finite | `True` |
+
 ## 固定的評估規則
 
 評估只讓 policy 讀取 observation、選 action，再把 raw reward 累積到該局結束。Random 與 DQN 共用 environment construction、seed handling、episode loop、terminated/truncated 判斷、統計與輸出 schema；差別只有 action 如何產生。
@@ -106,4 +121,4 @@ Day 16 會把 single-environment training 改成多環境、批次 action infere
 - 圖表由 `visualize_day15_evaluation.py` 從兩份 JSON 重新產生。
 - 結果由 `evaluate_dqn.py` 使用 `configs/eval/breakout_eval.json` 產生；正式 DQN 命令指定 `--device cuda`。
 
-Report generated at `2026-08-27T10:13:44.814645Z`。
+Report generated at `2026-08-27T13:47:52.924128Z`。

@@ -12,6 +12,8 @@ Day 14 的訓練曲線和 100K checkpoint GIF 已經出現值得追蹤的行為�
 
 training seed 會影響模型初始化、探索和 Replay 抽樣；evaluation seed 則控制凍結模型在遊戲環境中遇到的隨機性。這次刻意把兩者分開：模型來自 training seed `42`，評估使用 `101`、`202`、`303` 三個 evaluation seed group，每組五局，共 15 局。每個 group 的第 1～5 局用 `seed + episode_index` 形成實際 reset seed，例如 `101`～`105`，所以每一局都能在 artifact 中追查。
 
+這個候選也通過了 Day 14 的 Gate A（進入正式評估前的檢查）。用 batch size 32 的 10K profiling（量測訓練效能與品質的實驗）結果作為基準，最近 20 局平均 raw return 是 `1.50`；100K final run 的最後 20 局平均是 `6.15`。final summary 與 metrics 裡的必要 diagnostics 都是有限數值，選擇依據也保留了品質護欄（quality guardrails）；100K run 共記錄 329 局，不是只挑一局最高分。因此 Day 15 有理由驗證這個 candidate，但仍要把「訓練訊號變好」和「獨立 evaluation 一定更強」分開。
+
 這種「先選模型，再選評估條件」的順序，是避免資料洩漏（data leakage）的基本界線：evaluation 結果可以告訴我們模型表現如何，但不能反過來改寫模型選擇規則。
 
 ## 凍結模型，也凍結評估時的行為

@@ -20,6 +20,9 @@ checkpoint at `100000` environment steps. The checkpoint is intentionally
 not tracked because local training runs are ignored; its repository-relative
 path and SHA-256 are recorded in the DQN result and report. The final manifest
 is authoritative for the effective replay backend and frozen configuration.
+The formal DQN CLI also checks Day 14 Gate A from the final run summary,
+metrics, and explicit batch-size profiling source before writing the CUDA
+evaluation artifact; it refuses to label an unverified run as the milestone.
 
 Recreate the evaluation artifacts from a local copy of that checkpoint:
 

@@ -186,6 +186,12 @@ def run_evaluation(args: argparse.Namespace) -> tuple[Path, Path, dict[str, Any]
             manifest_path,
             profiling_report_path=profiling_path,
         )
+        day14_gate = provenance.get("day14_gate", {})
+        if not isinstance(day14_gate, Mapping) or day14_gate.get("status") != "passed":
+            raise ValueError(
+                "Day 14 Gate A is not satisfied; refusing to label this as the "
+                f"formal Day 15 DQN evaluation: {day14_gate.get('reasons', []) if isinstance(day14_gate, Mapping) else day14_gate}"
+            )
         loaded = load_dqn_checkpoint(
             args.checkpoint,
             device=requested_device,
@@ -212,6 +218,7 @@ def run_evaluation(args: argparse.Namespace) -> tuple[Path, Path, dict[str, Any]
             "source_day14_profiling_report": provenance.get(
                 "source_day14_profiling_report"
             ),
+            "day14_gate": day14_gate,
         }
         checkpoint_metadata = {
             **dict(loaded.checkpoint_metadata),
