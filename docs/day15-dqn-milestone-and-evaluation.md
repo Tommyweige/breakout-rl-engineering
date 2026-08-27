@@ -8,7 +8,7 @@ Day 14 的訓練曲線和 100K checkpoint GIF 已經出現值得追蹤的行為�
 
 如果看完評估結果才回頭挑最好看的 checkpoint，評估就不再是對預先選定模型的檢查。因此 Day 15 先遵守 Day 14 final manifest 裡的規則：使用 `day14-final-vanilla-dqn-seed42` 在 `100,000` 個環境步數完成時保存的 final checkpoint。
 
-這裡的 manifest 是記錄實驗配置、完成狀態和來源 artifact 的 JSON；checkpoint 則是保存某個訓練時刻模型權重的檔案。最新的 Day 14 final manifest 是本次 provenance（來源追蹤）的依據。它實際記錄的候選設定是 training seed `42`、learning rate `2e-4`、batch size `32`（每次模型更新一起處理的資料筆數）、train frequency `4` 和 `100K` budget；有效的 replay backend 是 `cpu`。GPU-resident replay 的其他實驗仍是 Day 14 的系統效能證據，沒有在 Day 15 被偷偷換成另一個 checkpoint。
+這裡的 manifest 是記錄實驗配置、完成狀態和來源 artifact 的 JSON；checkpoint 則是保存某個訓練時刻模型權重的檔案。最新的 Day 14 final manifest 是本次 provenance（來源追蹤）的依據。它實際記錄的候選設定是 training seed `42`、learning rate `2e-4`、batch size `32`（每次模型更新一起處理的資料筆數）、train frequency `4` 和 `100K` budget；有效的 replay backend 是 `cpu`。把 Replay 直接放在 GPU 記憶體中的其他實驗仍是 Day 14 的系統效能證據，沒有在 Day 15 被偷偷換成另一個 checkpoint。
 
 training seed 會影響模型初始化、探索和 Replay 抽樣；evaluation seed 則控制凍結模型在遊戲環境中遇到的隨機性。這次刻意把兩者分開：模型來自 training seed `42`，評估使用 `101`、`202`、`303` 三個 evaluation seed group，每組五局，共 15 局。每個 group 的第 1～5 局用 `seed + episode_index` 形成實際 reset seed，例如 `101`～`105`，所以每一局都能在 artifact 中追查。
 
@@ -52,7 +52,7 @@ Random policy 的作用是提供一個容易解釋的 baseline：如果凍結 DQ
 
 一局遊戲結束時，Gymnasium 會回傳兩個不同的訊號。`terminated` 表示環境本身達到了終止條件；`truncated` 表示環境或 wrapper 因外部限制截斷了這局。對統計來說，兩者都代表 episode loop 可以進入下一局，但原因不能被混成一個模糊的 `done`。
 
-Day 15 沒有另外加一個會改變正式分數的 evaluator cap，而是讓 ALE/Breakout-v5 使用自己的 episode 邊界。實際結果中，DQN 的 15 局全部有環境終止訊號：5 局是 `terminated`，10 局是 ALE 的 `truncated`；Random 則是 15 局 `terminated`。因此結果中的每一局都是完整的 environment episode，但報告仍保留是哪一種結束方式。
+Day 15 沒有另外加一個會改變正式分數的評估器步數上限（evaluator cap），而是讓 Arcade Learning Environment（ALE）的 Breakout-v5 使用自己的 episode 邊界。實際結果中，DQN 的 15 局全部有環境終止訊號：5 局是 `terminated`，10 局是 ALE 的 `truncated`；Random 則是 15 局 `terminated`。因此結果中的每一局都是完整的 environment episode，但報告仍保留是哪一種結束方式。
 
 [![Day 15 episode loop：分開保存 terminated 與 truncated 狀態](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/3f599ba/assets/day15/evaluation-episode-loop.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/3f599ba/assets/day15/evaluation-episode-loop.png)
 
@@ -75,9 +75,9 @@ Day 15 沒有另外加一個會改變正式分數的 evaluator cap，而是讓 A
 
 ## 這次的答案是「有訊號，但還不能過度宣稱」
 
-在 15 局固定 evaluation episodes 中，DQN 的 mean 和 median 都高於 Random，因此 Day 14 的 100K checkpoint 確實保留了可觀察的行動訊號。以 Issue 的四種描述來看，這次比較接近 **B：DQN 稍高，但 spread 仍有重疊**，而不是只因平均值較高就宣布 A。
+在 15 局固定 evaluation episodes 中，DQN 的 mean 和 median 都高於 Random，因此 Day 14 的 100K checkpoint 確實保留了可觀察的行動訊號。本次最準確的描述是：**DQN 的中心值較高，但 spread 仍有重疊**；不能只因平均值較高，就宣稱它已經在所有完整遊戲中穩定勝過 Random。
 
-限制同樣清楚：目前只有一個 training seed（42），不是 multi-training-seed robustness study；DQN 和 Random 的結束方式也不同，DQN 有 10 局由環境時間限制截斷。這些限制不會讓 evaluation infrastructure 失效，但會限制我們能對模型下的結論強度。如果未來 DQN 沒有高於 Random，也不應立刻斷言 CNN 容量不足；還需要更長 training horizon、多個 training seeds 或後續模型比較。
+限制同樣清楚：目前只有一個 training seed（42），不是使用多個 training seeds 檢查穩健性的研究；DQN 和 Random 的結束方式也不同，DQN 有 10 局由環境時間限制截斷。這些限制不會讓 evaluation infrastructure 失效，但會限制我們能對模型下的結論強度。如果未來 DQN 沒有高於 Random，也不應立刻斷言卷積神經網路容量不足；還需要更長 training horizon、多個 training seeds 或後續模型比較。
 
 ## Day 15 留下的是一把可重用的尺
 
@@ -85,18 +85,6 @@ Day 16 會把 single-environment training 改成多環境、批次 action infere
 
 因此 Day 16、Day 18 和 Day 20 都應重用本日的 evaluation contract：相同的 Breakout preprocessing、evaluation seeds、每組 episode 數、greedy epsilon、raw reward、`terminated`／`truncated` semantics 和 JSON/CSV schema。這樣下一次比較的差異才主要來自 training system 或 DQN variant，而不是評估規則被換掉。
 
-可重建的原始結果保存在 `evaluations/day15-random-baseline/` 和 `evaluations/day15-dqn-cuda/`；圖表由兩份 `results.json` 重新產生，完整 provenance 和 GPU metadata 則保存在 DQN result 與 milestone report 中。正式入口是：
-
-```powershell
-python evaluate_dqn.py --policy random --config configs/eval/breakout_eval.json
-python evaluate_dqn.py `
-  --checkpoint assets/day14/final-runs/day14-final-frozen-100k/day14-final-vanilla-dqn-seed42/checkpoints/step-00100000.pt `
-  --config configs/eval/breakout_eval.json `
-  --device cuda
-python visualize_day15_evaluation.py `
-  evaluations/day15-random-baseline/results.json `
-  evaluations/day15-dqn-cuda/results.json `
-  --output assets/day15/random-vs-dqn-returns.png
-```
+可重建的原始結果保存在 `evaluations/day15-random-baseline/` 和 `evaluations/day15-dqn-cuda/`；圖表由兩份 `results.json` 重新產生，完整 provenance 和 GPU metadata 則保存在 DQN result 與 milestone report 中。這些 artifacts 讓後續比較可以重新使用同一份 evaluation contract。
 
 Day 15 真正完成的不是替模型頒發「已學會」的稱號，而是先把「怎麼知道它真的變好」這件事固定下來。下一個問題才是：向量化訓練能不能提高系統效率，同時保住這份 policy-quality baseline？

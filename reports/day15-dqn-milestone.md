@@ -89,7 +89,7 @@ DQN 的模型推論確實在 NVIDIA CUDA 上執行；Random 沒有 neural-networ
 
 ## 這次結果能說到哪裡
 
-在這組固定條件下，DQN 平均回報比 Random 高 3.20 分，中位數 也較高。這支持「Day 14 checkpoint 在這批獨立 evaluation episodes 中展現較高回報」；它不支持「所有未來起始狀態都會更好」或「已完成 multi-training-seed robustness」。
+在這組固定條件下，DQN 平均回報高於 Random 3.20 分，中位數也較高。這支持「Day 14 checkpoint 在這批獨立 evaluation episodes 中展現較高回報」；它不支持「所有未來起始狀態都會更好」或「已完成 multi-training-seed robustness」。
 
 目前正式驗證的仍是一個 training seed（42）訓練出的 checkpoint；evaluation seed 101、202、303只改變凍結 policy 面對的環境隨機性。後續若要談訓練穩定性，還需要多個 training seeds。
 
@@ -106,4 +106,4 @@ Day 16 會把 single-environment training 改成多環境、批次 action infere
 - 圖表由 `visualize_day15_evaluation.py` 從兩份 JSON 重新產生。
 - 結果由 `evaluate_dqn.py` 使用 `configs/eval/breakout_eval.json` 產生；正式 DQN 命令指定 `--device cuda`。
 
-Report generated at `2026-08-27T09:48:30.604303Z`。
+Report generated at `2026-08-27T10:13:44.814645Z`。

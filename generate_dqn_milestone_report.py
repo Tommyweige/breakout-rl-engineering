@@ -8,91 +8,20 @@ import math
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from statistics import fmean, median, pstdev
 from typing import Any, Mapping, Sequence
 
-from breakout_rl.evaluation import read_evaluation_results, summarize_returns
+from breakout_rl.evaluation_artifacts import (
+    read_evaluation_results,
+    summary_from_episode_rows,
+    validate_embedded_summary,
+    validate_episode_rows,
+)
 
 
 DAY15_FIGURE_BLOB_URL = (
     "https://github.com/Tommyweige/breakout-rl-engineering-private/blob/"
     "3f599ba/assets/day15/random-vs-dqn-returns.png"
 )
-
-
-def _episodes(payload: Mapping[str, Any], *, source: Path) -> list[dict[str, Any]]:
-    raw_episodes = payload.get("per_episode")
-    if not isinstance(raw_episodes, list) or not raw_episodes:
-        raise ValueError(f"{source}: per_episode must be a non-empty array")
-    rows: list[dict[str, Any]] = []
-    for raw_episode in raw_episodes:
-        if not isinstance(raw_episode, Mapping):
-            raise ValueError(f"{source}: every episode must be an object")
-        raw_return = raw_episode.get("episode_return", raw_episode.get("return"))
-        raw_seed = raw_episode.get("episode_seed", raw_episode.get("seed"))
-        if raw_return is None or raw_seed is None:
-            raise ValueError(f"{source}: episode is missing return or seed")
-        try:
-            rows.append(
-                {
-                    "evaluation_seed": int(raw_episode["evaluation_seed"]),
-                    "episode_index": int(raw_episode["episode_index"]),
-                    "episode_seed": int(raw_seed),
-                    "episode_return": float(raw_return),
-                    "episode_length": int(raw_episode["episode_length"]),
-                    "terminated": bool(raw_episode.get("terminated", False)),
-                    "truncated": bool(raw_episode.get("truncated", False)),
-                    "complete": bool(
-                        raw_episode.get(
-                            "complete",
-                            bool(raw_episode.get("terminated"))
-                            or bool(raw_episode.get("truncated")),
-                        )
-                    ),
-                    "stop_reason": str(raw_episode.get("stop_reason", "unknown")),
-                }
-            )
-        except (KeyError, TypeError, ValueError) as error:
-            raise ValueError(f"{source}: malformed per_episode item") from error
-    return rows
-
-
-def _summary_from_rows(rows: Sequence[Mapping[str, Any]]) -> dict[str, float | int]:
-    values = [float(row["episode_return"]) for row in rows]
-    lengths = [int(row["episode_length"]) for row in rows]
-    summary = summarize_returns(values)
-    summary["mean_episode_length"] = float(fmean(lengths))
-    summary["complete_episodes"] = sum(bool(row["complete"]) for row in rows)
-    return summary
-
-
-def _validate_summary(
-    payload: Mapping[str, Any],
-    computed: Mapping[str, Any],
-    *,
-    source: Path,
-) -> None:
-    embedded = payload.get("summary")
-    if not isinstance(embedded, Mapping):
-        raise ValueError(f"{source}: summary is required")
-    for field in (
-        "count",
-        "mean_return",
-        "median_return",
-        "std_return",
-        "min_return",
-        "max_return",
-        "mean_episode_length",
-        "complete_episodes",
-    ):
-        if field not in embedded:
-            raise ValueError(f"{source}: summary is missing {field}")
-        expected = float(computed[field])
-        actual = float(embedded[field])
-        if not math.isclose(actual, expected, rel_tol=1e-9, abs_tol=1e-9):
-            raise ValueError(
-                f"{source}: summary.{field} does not match per_episode artifacts"
-            )
 
 
 def _group_by_seed(rows: Sequence[Mapping[str, Any]]) -> dict[int, list[Mapping[str, Any]]]:
@@ -173,19 +102,33 @@ def build_report(
         raise ValueError("Random and DQN results must use the same evaluation seeds")
     if random_payload.get("episodes_per_seed") != dqn_payload.get("episodes_per_seed"):
         raise ValueError("Random and DQN results must use the same episodes_per_seed")
-    expected_episodes = len(dqn_payload["evaluation_seeds"]) * int(
-        dqn_payload["episodes_per_seed"]
+    raw_seeds = dqn_payload.get("evaluation_seeds")
+    if not isinstance(raw_seeds, list) or not raw_seeds:
+        raise ValueError("evaluation_seeds must be a non-empty array")
+    try:
+        seeds = tuple(int(seed) for seed in raw_seeds)
+        episodes_per_seed = int(dqn_payload["episodes_per_seed"])
+    except (KeyError, TypeError, ValueError) as error:
+        raise ValueError("evaluation protocol contains invalid seeds or episode count") from error
+    expected_episodes = len(seeds) * episodes_per_seed
+    random_episodes = validate_episode_rows(
+        random_payload,
+        source=random_source,
+        expected_seeds=seeds,
+        expected_episodes_per_seed=episodes_per_seed,
+        require_complete=True,
     )
-    random_episodes = _episodes(random_payload, source=random_source)
-    dqn_episodes = _episodes(dqn_payload, source=dqn_source)
-    if len(random_episodes) != expected_episodes or len(dqn_episodes) != expected_episodes:
-        raise ValueError("evaluation results do not contain the configured number of episodes")
-    random_summary = _summary_from_rows(random_episodes)
-    dqn_summary = _summary_from_rows(dqn_episodes)
-    _validate_summary(random_payload, random_summary, source=random_source)
-    _validate_summary(dqn_payload, dqn_summary, source=dqn_source)
-    if not all(bool(row["complete"]) for row in random_episodes + dqn_episodes):
-        raise ValueError("formal Day 15 report requires every episode to end naturally or by env truncation")
+    dqn_episodes = validate_episode_rows(
+        dqn_payload,
+        source=dqn_source,
+        expected_seeds=seeds,
+        expected_episodes_per_seed=episodes_per_seed,
+        require_complete=True,
+    )
+    random_summary = summary_from_episode_rows(random_episodes)
+    dqn_summary = summary_from_episode_rows(dqn_episodes)
+    validate_embedded_summary(random_payload, random_summary, source=random_source)
+    validate_embedded_summary(dqn_payload, dqn_summary, source=dqn_source)
 
     dqn_resolved_device = str(dqn_payload.get("resolved_device", ""))
     if require_cuda and not dqn_resolved_device.startswith("cuda:"):
@@ -212,7 +155,7 @@ def build_report(
     delta = float(dqn_summary["mean_return"]) - float(random_summary["mean_return"])
     random_groups = _group_by_seed(random_episodes)
     dqn_groups = _group_by_seed(dqn_episodes)
-    seeds = [int(seed) for seed in dqn_payload["evaluation_seeds"]]
+    seeds = list(seeds)
 
     lines = [
         "# Day 15｜DQN milestone evaluation",
@@ -321,8 +264,9 @@ def build_report(
             "",
             "## 這次結果能說到哪裡",
             "",
-            f"在這組固定條件下，DQN 平均回報比 Random 高 {_number(abs(delta))} 分，"
-            f"中位數 {'也較高' if dqn_summary['median_return'] > random_summary['median_return'] else '沒有較高'}。"
+            f"在這組固定條件下，DQN 平均回報{'高於' if delta > 0 else '低於' if delta < 0 else '等於'} Random "
+            f"{_number(abs(delta))} 分，"
+            f"中位數{'也較高' if dqn_summary['median_return'] > random_summary['median_return'] else '較低' if dqn_summary['median_return'] < random_summary['median_return'] else '相同'}。"
             f"這支持「Day 14 checkpoint 在這批獨立 evaluation episodes 中展現較高回報」；"
             "它不支持「所有未來起始狀態都會更好」或「已完成 multi-training-seed robustness」。",
             "",

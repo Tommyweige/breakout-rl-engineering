@@ -24,10 +24,14 @@ OUTPUT_DIRS: dict[PolicyName, Path] = {
     "random": Path("evaluations/day15-random-baseline"),
     "dqn": Path("evaluations/day15-dqn-cuda"),
 }
+FORMAL_DQN_OUTPUT_DIR = OUTPUT_DIRS["dqn"]
+DQN_REFERENCE_OUTPUT_DIR = Path("evaluations/day15-dqn-cpu-reference")
 EVALUATION_IDS: dict[PolicyName, str] = {
     "random": "day15-random-baseline",
     "dqn": "day15-dqn-cuda",
 }
+FORMAL_DQN_EVALUATION_ID = EVALUATION_IDS["dqn"]
+DQN_REFERENCE_EVALUATION_ID = "day15-dqn-cpu-reference"
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -55,6 +59,12 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="override the manifest referenced by the evaluation config",
     )
+    parser.add_argument(
+        "--source-day14-profiling-report",
+        type=Path,
+        default=None,
+        help="override the profiling report referenced by the evaluation config",
+    )
     return parser
 
 
@@ -73,6 +83,51 @@ def _resolve_manifest(config: EvaluationConfig, config_path: Path) -> Path:
         if candidate.is_file():
             return candidate
     return configured
+
+
+def _resolve_profiling_report(
+    config: EvaluationConfig,
+    config_path: Path,
+) -> Path | None:
+    if config.source_day14_profiling_report is None:
+        return None
+    configured = Path(config.source_day14_profiling_report)
+    candidates = (configured, Path.cwd() / configured, config_path.parent / configured)
+    for candidate in candidates:
+        if candidate.is_file():
+            return candidate
+    return configured
+
+
+def _is_cuda_request(device: str | None) -> bool:
+    if device is None:
+        return False
+    normalized = device.strip().lower()
+    return normalized == "cuda" or normalized.startswith("cuda:")
+
+
+def _output_destination(
+    policy_name: PolicyName,
+    args: argparse.Namespace,
+) -> tuple[Path, str]:
+    requested_output_dir = Path(args.output_dir) if args.output_dir is not None else None
+    if policy_name != "dqn" or _is_cuda_request(args.device):
+        output_dir = requested_output_dir or OUTPUT_DIRS[policy_name]
+        evaluation_id = args.evaluation_id or EVALUATION_IDS[policy_name]
+        return output_dir, evaluation_id
+
+    output_dir = requested_output_dir or DQN_REFERENCE_OUTPUT_DIR
+    evaluation_id = args.evaluation_id or DQN_REFERENCE_EVALUATION_ID
+    if output_dir.resolve() == FORMAL_DQN_OUTPUT_DIR.resolve():
+        raise ValueError(
+            "CPU DQN reference evaluation cannot write the formal CUDA output directory; "
+            f"use {DQN_REFERENCE_OUTPUT_DIR.as_posix()} or an explicit separate directory"
+        )
+    if evaluation_id == FORMAL_DQN_EVALUATION_ID:
+        raise ValueError(
+            "CPU DQN reference evaluation cannot use the formal CUDA evaluation id"
+        )
+    return output_dir, evaluation_id
 
 
 def _portable_command(
@@ -102,6 +157,7 @@ def run_evaluation(args: argparse.Namespace) -> tuple[Path, Path, dict[str, Any]
         )
 
     evaluation_config = load_evaluation_config(args.config)
+    output_dir, evaluation_id = _output_destination(policy_name, args)
     requested_device = args.device or "cpu"
     model = None
     model_id = "random-policy"
@@ -122,7 +178,14 @@ def run_evaluation(args: argparse.Namespace) -> tuple[Path, Path, dict[str, Any]
             evaluation_config,
             args.config,
         )
-        provenance = load_day14_provenance(manifest_path)
+        profiling_path = args.source_day14_profiling_report or _resolve_profiling_report(
+            evaluation_config,
+            args.config,
+        )
+        provenance = load_day14_provenance(
+            manifest_path,
+            profiling_report_path=profiling_path,
+        )
         loaded = load_dqn_checkpoint(
             args.checkpoint,
             device=requested_device,
@@ -146,6 +209,9 @@ def run_evaluation(args: argparse.Namespace) -> tuple[Path, Path, dict[str, Any]
             "day14_run_artifact_dir": provenance.get("run_dir"),
             "trainer_runtime": provenance.get("runtime", {}),
             "gpu_profiling_summary": provenance.get("gpu_profiling_summary", {}),
+            "source_day14_profiling_report": provenance.get(
+                "source_day14_profiling_report"
+            ),
         }
         checkpoint_metadata = {
             **dict(loaded.checkpoint_metadata),
@@ -162,7 +228,7 @@ def run_evaluation(args: argparse.Namespace) -> tuple[Path, Path, dict[str, Any]
         model_id=model_id,
         training_metadata=training_metadata,
         checkpoint_metadata=checkpoint_metadata,
-        evaluation_id=args.evaluation_id or EVALUATION_IDS[policy_name],
+        evaluation_id=evaluation_id,
         metadata={
             "evaluation_config_path": args.config.as_posix(),
             "evaluation_config": evaluation_config.to_dict(),
@@ -174,7 +240,6 @@ def run_evaluation(args: argparse.Namespace) -> tuple[Path, Path, dict[str, Any]
             "policy_protocol": "shared environment construction, seed handling, episode loop, and schema",
         },
     )
-    output_dir = args.output_dir or OUTPUT_DIRS[policy_name]
     results_path, episodes_path = write_evaluation_artifacts(result, output_dir)
     return results_path, episodes_path, result.to_dict()
 

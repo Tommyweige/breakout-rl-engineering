@@ -6,5 +6,6 @@
   "episodes_per_seed": 5,
   "epsilon": 0.0,
   "source_day14_manifest": "experiments/day14-final-frozen-100k/manifest.json",
+  "source_day14_profiling_report": "experiments/day14-batch-size-profiling-final/batch-size-comparison.json",
   "checkpoint_rule": "final checkpoint at the completed 100000 environment-step budget"
 }

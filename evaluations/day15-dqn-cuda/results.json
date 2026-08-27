@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "created_at_utc": "2026-08-27T09:48:09.846375Z",
+  "created_at_utc": "2026-08-27T10:13:22.651587Z",
   "evaluation_id": "day15-dqn-cuda",
   "policy_type": "dqn",
   "model_id": "day14-final-vanilla-dqn-seed42@step-00100000",
@@ -50,8 +50,8 @@
     "resolved_device": "cuda:0",
     "cuda_available": true,
     "evaluation_steps": 271970,
-    "wall_clock_seconds": 336.8584333001636,
-    "steps_per_second": 807.3718010724593,
+    "wall_clock_seconds": 354.47845809999853,
+    "steps_per_second": 767.239852762159,
     "cuda_device_index": 0,
     "gpu_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
     "cuda_device_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
@@ -151,6 +151,7 @@
         "quality_over_speed": "do not select a batch size from GPU utilization alone when return or numerical guardrails regress"
       },
       "selected_run_id": "batch-size-32-seed42",
+      "selected_run_status": "completed",
       "end_to_end_sps": 235.73711983468988,
       "training_samples_per_second": 1698.061621593238,
       "profiling": {
@@ -174,7 +175,8 @@
         },
         "gpu_memory_total_bytes": 8585740288.0
       }
-    }
+    },
+    "source_day14_profiling_report": "experiments/day14-batch-size-profiling-final/batch-size-comparison.json"
   },
   "checkpoint": {
     "path": "assets/day14/final-runs/day14-final-frozen-100k/day14-final-vanilla-dqn-seed42/checkpoints/step-00100000.pt",
@@ -562,6 +564,7 @@
       "epsilon": 0.0,
       "environment_id": "ALE/Breakout-v5",
       "source_day14_manifest": "experiments/day14-final-frozen-100k/manifest.json",
+      "source_day14_profiling_report": "experiments/day14-batch-size-profiling-final/batch-size-comparison.json",
       "checkpoint_rule": "final checkpoint at the completed 100000 environment-step budget"
     },
     "command": [

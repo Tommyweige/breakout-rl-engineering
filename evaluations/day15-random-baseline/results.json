@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "created_at_utc": "2026-08-27T09:31:58.068291Z",
+  "created_at_utc": "2026-08-27T10:07:15.289181Z",
   "evaluation_id": "day15-random-baseline",
   "policy_type": "random",
   "model_id": "random-policy",
@@ -50,8 +50,8 @@
     "resolved_device": "cpu",
     "cuda_available": true,
     "evaluation_steps": 2786,
-    "wall_clock_seconds": 2.442242000019178,
-    "steps_per_second": 1140.7550930571674,
+    "wall_clock_seconds": 2.3294247000012547,
+    "steps_per_second": 1196.0034595660034,
     "cuda_device_index": null,
     "gpu_name": null,
     "cuda_device_name": null,
@@ -433,6 +433,7 @@
       "epsilon": 0.0,
       "environment_id": "ALE/Breakout-v5",
       "source_day14_manifest": "experiments/day14-final-frozen-100k/manifest.json",
+      "source_day14_profiling_report": "experiments/day14-batch-size-profiling-final/batch-size-comparison.json",
       "checkpoint_rule": "final checkpoint at the completed 100000 environment-step budget"
     },
     "command": [

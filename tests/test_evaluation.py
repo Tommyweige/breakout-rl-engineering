@@ -7,6 +7,7 @@ import json
 import math
 import tempfile
 import unittest
+from argparse import Namespace
 from pathlib import Path
 from unittest.mock import patch
 
@@ -17,13 +18,22 @@ from torch import nn
 from breakout_rl.evaluation import (
     EvaluationConfig,
     evaluate_policy,
+    load_day14_provenance,
     load_dqn_checkpoint,
     load_evaluation_config,
     summarize_returns,
     write_evaluation_artifacts,
 )
 from breakout_rl.models import DQNNetwork
+from breakout_rl.evaluation_artifacts import validate_episode_rows
 from breakout_rl.training.config import DQNConfig
+from evaluate_dqn import (
+    DQN_REFERENCE_EVALUATION_ID,
+    DQN_REFERENCE_OUTPUT_DIR,
+    FORMAL_DQN_EVALUATION_ID,
+    FORMAL_DQN_OUTPUT_DIR,
+    _output_destination,
+)
 from generate_dqn_milestone_report import build_report
 from visualize_day15_evaluation import render_evaluation_comparison
 
@@ -285,6 +295,62 @@ class EvaluationTests(unittest.TestCase):
         self.assertEqual(config.seeds, (101, 202, 303))
         self.assertEqual(config.total_episodes, 15)
 
+    def test_config_records_explicit_day14_profiling_source(self) -> None:
+        config = EvaluationConfig.from_mapping(
+            {
+                "seeds": [101],
+                "source_day14_profiling_report": "experiments/profile.json",
+            }
+        )
+
+        self.assertEqual(
+            config.to_dict()["source_day14_profiling_report"],
+            "experiments/profile.json",
+        )
+
+    def test_day14_provenance_uses_manifest_config_and_explicit_profile(self) -> None:
+        provenance = load_day14_provenance(
+            Path("experiments/day14-final-frozen-100k/manifest.json"),
+            profiling_report_path=Path(
+                "experiments/day14-batch-size-profiling-final/batch-size-comparison.json"
+            ),
+        )
+
+        self.assertEqual(provenance["replay_backend"], "cpu")
+        self.assertEqual(
+            provenance["source_day14_profiling_report"],
+            "experiments/day14-batch-size-profiling-final/batch-size-comparison.json",
+        )
+        self.assertEqual(
+            provenance["gpu_profiling_summary"]["selected_run_id"],
+            "batch-size-32-seed42",
+        )
+
+    def test_cpu_dqn_reference_cannot_overwrite_formal_cuda_artifacts(self) -> None:
+        default_args = Namespace(device="cpu", output_dir=None, evaluation_id=None)
+        output_dir, evaluation_id = _output_destination("dqn", default_args)
+        self.assertEqual(output_dir, DQN_REFERENCE_OUTPUT_DIR)
+        self.assertEqual(evaluation_id, DQN_REFERENCE_EVALUATION_ID)
+
+        with self.assertRaisesRegex(ValueError, "formal CUDA output directory"):
+            _output_destination(
+                "dqn",
+                Namespace(
+                    device="cpu",
+                    output_dir=FORMAL_DQN_OUTPUT_DIR,
+                    evaluation_id=None,
+                ),
+            )
+        with self.assertRaisesRegex(ValueError, "formal CUDA evaluation id"):
+            _output_destination(
+                "dqn",
+                Namespace(
+                    device="cpu",
+                    output_dir=None,
+                    evaluation_id=FORMAL_DQN_EVALUATION_ID,
+                ),
+            )
+
     def test_checkpoint_load_matches_environment_action_count(self) -> None:
         model = DQNNetwork(num_actions=4).cpu()
         with tempfile.TemporaryDirectory() as temporary_directory:
@@ -364,6 +430,39 @@ class EvaluationTests(unittest.TestCase):
         self.assertIn("Random 的平均 raw Atari return", report)
         self.assertGreater(output_size, 0)
         self.assertTrue(metadata_exists)
+
+    def test_artifact_validator_derives_completion_and_rejects_duplicate_identity(self) -> None:
+        payload = {
+            "per_episode": [
+                {
+                    "evaluation_seed": 101,
+                    "episode_index": 1,
+                    "episode_seed": 101,
+                    "episode_return": 1.0,
+                    "episode_length": 2,
+                    "terminated": True,
+                    "truncated": False,
+                    "complete": True,
+                }
+            ]
+        }
+        rows = validate_episode_rows(
+            payload,
+            source="memory",
+            expected_seeds=[101],
+            expected_episodes_per_seed=1,
+        )
+        self.assertTrue(rows[0]["complete"])
+
+        duplicate = {"per_episode": [*payload["per_episode"], *payload["per_episode"]]}
+        with self.assertRaisesRegex(ValueError, "duplicate episode identity"):
+            validate_episode_rows(duplicate, source="memory")
+
+        inconsistent = {
+            "per_episode": [{**payload["per_episode"][0], "complete": False}]
+        }
+        with self.assertRaisesRegex(ValueError, "complete disagrees"):
+            validate_episode_rows(inconsistent, source="memory")
 
 
 if __name__ == "__main__":

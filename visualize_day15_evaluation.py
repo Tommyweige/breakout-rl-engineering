@@ -13,6 +13,11 @@ from pathlib import Path
 from statistics import fmean, pstdev
 from typing import Any, Mapping, Sequence
 
+from breakout_rl.evaluation_artifacts import (
+    read_evaluation_results,
+    validate_episode_rows,
+)
+
 
 def _sha256(path: Path) -> str:
     digest = hashlib.sha256()
@@ -23,44 +28,7 @@ def _sha256(path: Path) -> str:
 
 
 def _read_results(path: Path) -> dict[str, Any]:
-    if not path.is_file():
-        raise FileNotFoundError(path)
-    try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as error:
-        raise ValueError(f"{path}: invalid JSON") from error
-    if not isinstance(payload, dict):
-        raise ValueError(f"{path}: evaluation results must be a JSON object")
-    episodes = payload.get("per_episode")
-    if not isinstance(episodes, list) or not episodes:
-        raise ValueError(f"{path}: per_episode must be a non-empty array")
-    return payload
-
-
-def _episode_rows(payload: Mapping[str, Any], *, source: Path) -> list[dict[str, Any]]:
-    raw_rows = payload.get("per_episode")
-    if not isinstance(raw_rows, list) or not raw_rows:
-        raise ValueError(f"{source}: per_episode must be a non-empty array")
-    rows: list[dict[str, Any]] = []
-    for raw_row in raw_rows:
-        if not isinstance(raw_row, Mapping):
-            raise ValueError(f"{source}: every episode must be an object")
-        raw_return = raw_row.get("episode_return", raw_row.get("return"))
-        if raw_return is None:
-            raise ValueError(f"{source}: episode is missing episode_return")
-        try:
-            rows.append(
-                {
-                    "evaluation_seed": int(raw_row["evaluation_seed"]),
-                    "episode_index": int(raw_row["episode_index"]),
-                    "episode_return": float(raw_return),
-                    "terminated": bool(raw_row.get("terminated", False)),
-                    "truncated": bool(raw_row.get("truncated", False)),
-                }
-            )
-        except (KeyError, TypeError, ValueError) as error:
-            raise ValueError(f"{source}: malformed per_episode item") from error
-    return rows
+    return read_evaluation_results(path)
 
 
 def _group_returns(rows: Sequence[Mapping[str, Any]]) -> dict[int, list[float]]:
@@ -97,7 +65,7 @@ def _validate_inputs(
     *,
     random_source: Path,
     dqn_source: Path,
-) -> None:
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     if random_payload.get("policy_type") != "random":
         raise ValueError(f"{random_source}: expected policy_type=random")
     if dqn_payload.get("policy_type") != "dqn":
@@ -106,6 +74,27 @@ def _validate_inputs(
         raise ValueError("Random and DQN results must use the same evaluation seeds")
     if random_payload.get("episodes_per_seed") != dqn_payload.get("episodes_per_seed"):
         raise ValueError("Random and DQN results must use the same episodes_per_seed")
+    raw_seeds = dqn_payload.get("evaluation_seeds")
+    try:
+        seeds = tuple(int(seed) for seed in raw_seeds)
+        episodes_per_seed = int(dqn_payload["episodes_per_seed"])
+    except (TypeError, ValueError, KeyError) as error:
+        raise ValueError("evaluation protocol contains invalid seeds or episode count") from error
+    random_rows = validate_episode_rows(
+        random_payload,
+        source=random_source,
+        expected_seeds=seeds,
+        expected_episodes_per_seed=episodes_per_seed,
+        require_complete=True,
+    )
+    dqn_rows = validate_episode_rows(
+        dqn_payload,
+        source=dqn_source,
+        expected_seeds=seeds,
+        expected_episodes_per_seed=episodes_per_seed,
+        require_complete=True,
+    )
+    return random_rows, dqn_rows
 
 
 def _render_local(
@@ -116,14 +105,12 @@ def _render_local(
     destination: Path,
     metadata_destination: Path,
 ) -> None:
-    _validate_inputs(
+    random_rows, dqn_rows = _validate_inputs(
         random_payload,
         dqn_payload,
         random_source=random_source,
         dqn_source=dqn_source,
     )
-    random_rows = _episode_rows(random_payload, source=random_source)
-    dqn_rows = _episode_rows(dqn_payload, source=dqn_source)
     random_values = [float(row["episode_return"]) for row in random_rows]
     dqn_values = [float(row["episode_return"]) for row in dqn_rows]
     random_groups = _group_returns(random_rows)

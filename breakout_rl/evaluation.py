@@ -15,7 +15,6 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from numbers import Integral, Real
 from pathlib import Path
-from statistics import fmean, median, pstdev
 from typing import Any, Callable, Mapping, Protocol, Sequence
 
 import numpy as np
@@ -26,6 +25,11 @@ from breakout_env import ENVIRONMENT_ID, make_breakout_env
 from breakout_rl.models.dqn import DQNNetwork
 from breakout_rl.tensors import observation_to_tensor
 from breakout_rl.experiments import load_experiment_config
+from breakout_rl.evaluation_artifacts import (
+    read_evaluation_results,
+    summarize_returns,
+    summary_from_episode_rows,
+)
 from breakout_rl.training.diagnostics import ATARI_ACTION_NAMES
 from breakout_rl.training.dqn_trainer import resolve_device
 
@@ -74,6 +78,7 @@ class EvaluationConfig:
     epsilon: float = 0.0
     environment_id: str = ENVIRONMENT_ID
     source_day14_manifest: str | None = None
+    source_day14_profiling_report: str | None = None
     checkpoint_rule: str | None = None
 
     def __post_init__(self) -> None:
@@ -88,6 +93,7 @@ class EvaluationConfig:
             raise ValueError("environment_id must be a non-empty string")
         for name, value in (
             ("source_day14_manifest", self.source_day14_manifest),
+            ("source_day14_profiling_report", self.source_day14_profiling_report),
             ("checkpoint_rule", self.checkpoint_rule),
         ):
             if value is not None and not isinstance(value, str):
@@ -105,6 +111,7 @@ class EvaluationConfig:
             "epsilon": self.epsilon,
             "environment_id": self.environment_id,
             "source_day14_manifest": self.source_day14_manifest,
+            "source_day14_profiling_report": self.source_day14_profiling_report,
             "checkpoint_rule": self.checkpoint_rule,
         }
 
@@ -114,12 +121,14 @@ class EvaluationConfig:
             raise TypeError("evaluation config must be a JSON object")
         environment_id = values.get("environment_id", values.get("environment", ENVIRONMENT_ID))
         manifest = values.get("source_day14_manifest", values.get("day14_manifest"))
+        profiling_report = values.get("source_day14_profiling_report")
         return cls(
             seeds=tuple(values.get("seeds", ())),
             episodes_per_seed=values.get("episodes_per_seed", 5),
             epsilon=values.get("epsilon", 0.0),
             environment_id=environment_id,
             source_day14_manifest=manifest,
+            source_day14_profiling_report=profiling_report,
             checkpoint_rule=values.get("checkpoint_rule"),
         )
 
@@ -181,24 +190,6 @@ class EpisodeResult:
         }
 
 
-def summarize_returns(values: Sequence[float]) -> dict[str, float | int]:
-    """Summarize every episode without hiding the distribution."""
-
-    if not values:
-        raise ValueError("at least one episode return is required")
-    parsed = [float(value) for value in values]
-    if not all(math.isfinite(value) for value in parsed):
-        raise ValueError("episode returns must be finite")
-    return {
-        "count": len(parsed),
-        "mean_return": float(fmean(parsed)),
-        "median_return": float(median(parsed)),
-        "std_return": float(pstdev(parsed)),
-        "min_return": float(min(parsed)),
-        "max_return": float(max(parsed)),
-    }
-
-
 @dataclass(frozen=True)
 class EvaluationResult:
     """One policy's machine-readable result under a fixed protocol."""
@@ -236,9 +227,9 @@ class EvaluationResult:
     def to_dict(self) -> dict[str, Any]:
         returns = [episode.episode_return for episode in self.episodes]
         lengths = [episode.episode_length for episode in self.episodes]
-        summary = summarize_returns(returns)
-        summary["mean_episode_length"] = float(fmean(lengths))
-        summary["complete_episodes"] = sum(episode.complete for episode in self.episodes)
+        summary = summary_from_episode_rows(
+            [episode.to_dict() for episode in self.episodes]
+        )
         return {
             "schema_version": EVALUATION_SCHEMA_VERSION,
             "created_at_utc": datetime.now(timezone.utc).isoformat().replace(
@@ -679,22 +670,6 @@ def write_evaluation_artifacts(
     return results_path, episodes_path
 
 
-def read_evaluation_results(path: str | Path) -> dict[str, Any]:
-    source = Path(path)
-    if not source.is_file():
-        raise FileNotFoundError(source)
-    try:
-        payload = json.loads(source.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as error:
-        raise ValueError(f"{source}: invalid JSON") from error
-    if not isinstance(payload, dict):
-        raise ValueError(f"{source}: evaluation results must be a JSON object")
-    episodes = payload.get("per_episode")
-    if not isinstance(episodes, list) or not episodes:
-        raise ValueError(f"{source}: per_episode must be a non-empty array")
-    return payload
-
-
 def _sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as stream:
@@ -844,7 +819,21 @@ def _read_json_mapping(path: Path) -> dict[str, Any]:
     return dict(payload)
 
 
-def load_day14_provenance(path: str | Path) -> dict[str, Any]:
+def _resolve_optional_reference(path: str | Path, *, source: Path) -> Path:
+    candidate = Path(path)
+    if candidate.is_absolute():
+        return candidate.resolve()
+    for option in (candidate, Path.cwd() / candidate, source.parent / candidate):
+        if option.is_file():
+            return option.resolve()
+    return (Path.cwd() / candidate).resolve()
+
+
+def load_day14_provenance(
+    path: str | Path,
+    *,
+    profiling_report_path: str | Path | None = None,
+) -> dict[str, Any]:
     """Resolve the completed single final variant from the latest manifest."""
 
     source = Path(path)
@@ -886,7 +875,7 @@ def load_day14_provenance(path: str | Path) -> dict[str, Any]:
             effective_values = dict(effective_config.values)
             effective_values.update(config_values)
             config_values = effective_values
-    config_values.setdefault("replay_backend", None)
+    config_values.setdefault("replay_backend", "cpu")
 
     run_dir: Path | None = None
     raw_run_dir = variant.get("run_dir")
@@ -901,28 +890,47 @@ def load_day14_provenance(path: str | Path) -> dict[str, Any]:
             runtime = dict(raw_runtime)
 
     gpu_profiling_summary: dict[str, Any] = {}
-    profiling_path = source.parent.parent / (
-        "day14-batch-size-profiling-final/batch-size-comparison.json"
-    )
-    if profiling_path.is_file():
+    profiling_source: str | None = None
+    if profiling_report_path is not None:
+        profiling_path = _resolve_optional_reference(
+            profiling_report_path,
+            source=source,
+        )
+        if not profiling_path.is_file():
+            raise FileNotFoundError(profiling_path)
         profiling_report = _read_json_mapping(profiling_path)
-        selected_run: Mapping[str, Any] | None = None
-        runs = profiling_report.get("runs", [])
-        if isinstance(runs, list):
-            for candidate in runs:
-                if isinstance(candidate, Mapping) and candidate.get("batch_size") == config_values.get("batch_size"):
-                    selected_run = candidate
-                    break
-        profiling = selected_run.get("profiling", {}) if selected_run else {}
+        runs = profiling_report.get("runs")
+        if not isinstance(runs, list):
+            raise ValueError(f"{profiling_path}: profiling runs must be an array")
+        matching_runs = [
+            candidate
+            for candidate in runs
+            if isinstance(candidate, Mapping)
+            and candidate.get("status") == "completed"
+            and candidate.get("batch_size") == config_values.get("batch_size")
+        ]
+        if len(matching_runs) != 1:
+            raise ValueError(
+                f"{profiling_path}: expected exactly one completed profiling run for "
+                f"batch_size={config_values.get('batch_size')}, found {len(matching_runs)}"
+            )
+        selected_run = matching_runs[0]
+        if selected_run.get("completed_steps") != selected_run.get("expected_steps"):
+            raise ValueError(
+                f"{profiling_path}: selected profiling run did not complete its step budget"
+            )
+        profiling = selected_run.get("profiling", {})
         if not isinstance(profiling, Mapping):
             profiling = {}
+        profiling_source = _repository_path(profiling_path)
         gpu_profiling_summary = {
-            "source": _repository_path(profiling_path),
+            "source": profiling_source,
             "selected_batch_size": config_values.get("batch_size"),
             "selection_rule": profiling_report.get("selection_rule", {}),
-            "selected_run_id": selected_run.get("run_id") if selected_run else None,
-            "end_to_end_sps": selected_run.get("end_to_end_sps") if selected_run else None,
-            "training_samples_per_second": selected_run.get("training_samples_per_second") if selected_run else None,
+            "selected_run_id": selected_run.get("run_id"),
+            "selected_run_status": selected_run.get("status"),
+            "end_to_end_sps": selected_run.get("end_to_end_sps"),
+            "training_samples_per_second": selected_run.get("training_samples_per_second"),
             "profiling": {
                 "sample_csv": (
                     _repository_path((profiling_path.parent / profiling["sample_csv"]).resolve())
@@ -947,6 +955,7 @@ def load_day14_provenance(path: str | Path) -> dict[str, Any]:
         "expected_checkpoint_step": expected_step,
         "config_values": config_values,
         "config_reference": config_reference,
+        "source_day14_profiling_report": profiling_source,
         "run_dir": _repository_path(run_dir) if run_dir is not None else None,
         "runtime": runtime,
         "requested_device": variant.get("requested_device"),
