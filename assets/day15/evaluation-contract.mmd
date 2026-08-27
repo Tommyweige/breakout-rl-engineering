@@ -1,0 +1,14 @@
+flowchart TD
+    A[Day 14 final manifest] --> B[載入固定 checkpoint]
+    B --> C{DQN 還是 Random？}
+    C -->|DQN| D[解析 requested device]
+    D --> E{CUDA 可用？}
+    E -->|否| X[清楚失敗，不降回 CPU]
+    E -->|是| F[model.eval + no_grad]
+    C -->|Random| G[CPU 隨機策略]
+    F --> H[共用 episode harness]
+    G --> H
+    H --> I[固定 seeds + episodes]
+    I --> J[共用 episode loop]
+    J --> K[JSON + CSV]
+    K --> L[report + 分布圖]

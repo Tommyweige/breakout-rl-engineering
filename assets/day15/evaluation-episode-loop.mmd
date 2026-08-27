@@ -1,0 +1,11 @@
+stateDiagram-v2
+    [*] --> Reset
+    Reset --> Acting: fixed episode seed
+    Acting --> Stepping: legal action
+    Stepping --> Accumulating: raw reward + flags
+    Accumulating --> Acting: no done, cap not reached
+    Accumulating --> EnvironmentEnd: terminated or truncated
+    Accumulating --> EvaluatorCap: cap reached
+    EnvironmentEnd --> Recorded: preserve env flags
+    EvaluatorCap --> Recorded: evaluator_truncated=true
+    Recorded --> [*]

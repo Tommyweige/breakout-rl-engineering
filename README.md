@@ -400,10 +400,11 @@ Day 7～15 開始真正寫模型：
 
 ---
 
-## Phase 3 — 改進 DQN
+## Phase 3 — 訓練系統與 DQN 改進
 
-Day 16～20 會嘗試：
+Day 16～20 會先改善訓練系統，再比較 DQN 變體：
 
+* Vectorized DQN Training
 * Double DQN
 * Dueling Network
 * 不同 DQN 的實驗比較

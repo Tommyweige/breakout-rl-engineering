@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "generated_at_utc": "2026-08-27T08:50:12.695226Z",
+  "command": [
+    "visualize_day15_evaluation.py",
+    "evaluations/day15-random-baseline/results.json",
+    "evaluations/day15-dqn-cuda/results.json",
+    "--output",
+    "assets/day15/random-vs-dqn-returns.png",
+    "--metadata-output",
+    "assets/day15/random-vs-dqn-returns.json"
+  ],
+  "question": "在固定 evaluation seeds 與 raw reward 下，DQN 是否穩定高於 Random？",
+  "source_artifacts": {
+    "random_results": "evaluations/day15-random-baseline/results.json",
+    "random_results_sha256": "57d04d8f47fb01d927d7aae21058b9dbbcaaff38fbf1f3f6caf7e591f28a2f37",
+    "dqn_results": "evaluations/day15-dqn-cuda/results.json",
+    "dqn_results_sha256": "714ed95825c4aa422ddb880353a2197d312b9f245de7d00f43e2a481c68ada6a"
+  },
+  "evaluation_protocol": {
+    "seeds": [
+      101,
+      202,
+      303
+    ],
+    "episodes_per_seed": 5,
+    "epsilon": {
+      "random": 0.0,
+      "dqn": 0.0
+    },
+    "random_resolved_device": "cpu",
+    "dqn_resolved_device": "cuda:0",
+    "evaluator_truncated_episodes": {
+      "random": 0,
+      "dqn": 10
+    }
+  },
+  "output": "assets/day15/random-vs-dqn-returns.png",
+  "metadata_output": "assets/day15/random-vs-dqn-returns.json"
+}

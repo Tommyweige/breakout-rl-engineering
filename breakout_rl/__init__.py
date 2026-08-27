@@ -18,6 +18,11 @@ __all__ = [
     "select_epsilon_greedy_action",
     "should_update_target",
     "dqn_training_step",
+    "DQNPolicy",
+    "EvaluationConfig",
+    "EvaluationResult",
+    "RandomPolicy",
+    "evaluate_policy",
 ]
 
 
@@ -95,6 +100,29 @@ def __getattr__(name: str) -> Any:
             "DQNTrainer": DQNTrainer,
             "DQNTrainingStepResult": DQNTrainingStepResult,
             "dqn_training_step": dqn_training_step,
+        }[name]
+
+    if name in {
+        "DQNPolicy",
+        "EvaluationConfig",
+        "EvaluationResult",
+        "RandomPolicy",
+        "evaluate_policy",
+    }:
+        from breakout_rl.evaluation import (
+            DQNPolicy,
+            EvaluationConfig,
+            EvaluationResult,
+            RandomPolicy,
+            evaluate_policy,
+        )
+
+        return {
+            "DQNPolicy": DQNPolicy,
+            "EvaluationConfig": EvaluationConfig,
+            "EvaluationResult": EvaluationResult,
+            "RandomPolicy": RandomPolicy,
+            "evaluate_policy": evaluate_policy,
         }[name]
 
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
