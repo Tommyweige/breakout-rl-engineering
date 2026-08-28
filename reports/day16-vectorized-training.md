@@ -112,7 +112,7 @@ CUDA inference. Every episode terminated normally: 15/15 terminated, 0/15
 truncated, and 0/15 TimeLimit.
 
 For seed 101, the old implementation reproduced a 26,998-step TimeLimit. The
-final wrapper run ends at 198 steps with raw return 2.0. The initial serve has
+final wrapper run ends at 448 steps with raw return 12.0. The initial serve has
 one attempt with no activity, a second with activity that is not yet a complete
 confirmation, and a third that completes the two-observation activity streak.
 Each of the later four life-loss serves confirms on its second attempt. Across

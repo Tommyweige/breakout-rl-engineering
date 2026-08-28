@@ -86,7 +86,7 @@ sticky action 是 ALE 以固定機率忽略本次 requested action、延續前�
 
 這裡仍然要區分三層資訊：policy requested action、wrapper-resolved action（實際往下傳給 AtariPreprocessing/ALE 的 action），以及 ALE 內部不可直接取得的 sticky-action 隨機結果。診斷不會把第三層假裝成已觀察到的資料。
 
-選出的 N=2 100K checkpoint 的 Contract v2 diagnostic 覆蓋全部 15 個固定 seeds，15/15 正常 terminated、0/15 truncated、0/15 TimeLimit。原本會重現 26,998-step TimeLimit 的 seed 101，現在在第 198 個 agent step 正常結束；它的 initial serve 第一次 FIRE 沒有 activity，第二次雖然看見 activity 但還不足以完成確認，第三次才完成連續兩次 activity 的確認。後面四次 life-loss serve 也各在第二次 FIRE 完成確認。這個 trace 也保存 lives、life-loss、raw reward、requested/resolved action、serve attempt 與 observation change signal。
+選出的 N=2 100K checkpoint 的 Contract v2 diagnostic 覆蓋全部 15 個固定 seeds，15/15 正常 terminated、0/15 truncated、0/15 TimeLimit。原本會重現 26,998-step TimeLimit 的 seed 101，現在在第 448 個 agent step、raw return `12.0` 正常結束；它的 initial serve 第一次 FIRE 沒有 activity，第二次雖然看見 activity 但還不足以完成確認，第三次才完成連續兩次 activity 的確認。後面四次 life-loss serve 也各在第二次 FIRE 完成確認。這個 trace 也保存 lives、life-loss、raw reward、requested/resolved action、serve attempt 與 observation change signal。
 
 為了分辨 sticky action 是否真的參與了這個 retry，diagnostic 另外用相同 checkpoint 和五個固定 seeds 做兩個 control：兩組都只要求一次 activity confirmation，唯一改變的是 sticky probability。`0.25` control 出現 1 次沒有 observation activity 的 retry；`0.0` control 則是 0 次。這支持「sticky action 可能造成 FIRE 沒有被觀察到」的解釋，但 ALE API 不會公開那次隱藏抽樣，所以仍不能把它寫成直接的因果證明。
 
