@@ -42,7 +42,7 @@ Env 3 ─┘
 
 這個資料流和實際實作的順序如下。它是依照程式的 component interaction 畫出的結構圖；特別要注意 done environment 的 final observation 必須先保存，才可以局部 reset。
 
-[![單一環境與向量化 DQN trainer 的資料流，以及 done environment 的局部 reset](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/de5616ce57c35d6ac7e01a40a6aa6e3daa5618bf/assets/day16/vectorized-pipeline.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/de5616ce57c35d6ac7e01a40a6aa6e3daa5618bf/assets/day16/vectorized-pipeline.png)
+[![單一環境與向量化 DQN trainer 的資料流，以及 done environment 的局部 reset](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/0e345d1d053297fd77865fdc5ef8a9f850fe5b98/assets/day16/vectorized-pipeline.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/0e345d1d053297fd77865fdc5ef8a9f850fe5b98/assets/day16/vectorized-pipeline.png)
 
 ## `global_step` 必須數實際 transition
 
@@ -92,7 +92,7 @@ sticky action 是 ALE 以固定機率忽略本次 requested action、延續前�
 
 ## 10K systems screening：batching 確實有用，但 N 越大不等於越好
 
-接著才看完整 trainer 的 systems screening，也就是先量資料流效能而不把短跑分數當成模型結論。四組都使用重新隨機初始化（fresh initialization）、seed `42`、10,000 個實際 transitions、Vanilla DQN、GPU Replay、batch size 32 和 Contract v2；完整 machine-readable source 是 [`vectorized-training.json`](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/de5616ce57c35d6ac7e01a40a6aa6e3daa5618bf/assets/day16/vectorized-training.json)。
+接著才看完整 trainer 的 systems screening，也就是先量資料流效能而不把短跑分數當成模型結論。四組都使用重新隨機初始化（fresh initialization）、seed `42`、10,000 個實際 transitions、Vanilla DQN、GPU Replay、batch size 32 和 Contract v2；完整 machine-readable source 是 [`vectorized-training.json`](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/0e345d1d053297fd77865fdc5ef8a9f850fe5b98/assets/day16/vectorized-training.json)。
 
 | 同時環境數 N | vector iterations | accepted transitions/s | action inference calls | Replay insertion calls | strict parity |
 |---:|---:|---:|---:|---:|:---:|
@@ -105,13 +105,13 @@ sticky action 是 ALE 以固定機率忽略本次 requested action、延續前�
 
 這張圖的左側是每秒完成的 accepted transitions，右側是在相同 10K budget 下的 wall-clock，也就是真實經過的秒數。它回答的是「完整 training pipeline 能處理多少資料」，不是「模型是否學得更好」。
 
-[![1、2、4、8 個環境在相同 10K transition budget 下的吞吐與 wall-clock](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/de5616ce57c35d6ac7e01a40a6aa6e3daa5618bf/assets/day16/vectorized-throughput.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/de5616ce57c35d6ac7e01a40a6aa6e3daa5618bf/assets/day16/vectorized-throughput.png)
+[![1、2、4、8 個環境在相同 10K transition budget 下的吞吐與 wall-clock](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/0e345d1d053297fd77865fdc5ef8a9f850fe5b98/assets/day16/vectorized-throughput.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/0e345d1d053297fd77865fdc5ef8a9f850fe5b98/assets/day16/vectorized-throughput.png)
 
 ## 速度主要來自減少零碎呼叫
 
 在這組資料中，N=1 需要 10,000 次 model forward；N=4 降成 2,500 次；N=8 則是 1,250 次。每次 forward 的輸入是 `(N, 4, 84, 84)`，輸出是 `(N, 4)`，四個 action 仍然是 `NOOP`、`FIRE`、`RIGHT`、`LEFT`。
 
-[![不同 environment count 的 batched inference throughput 與單次 forward 成本](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/de5616ce57c35d6ac7e01a40a6aa6e3daa5618bf/assets/day16/batched-inference.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/de5616ce57c35d6ac7e01a40a6aa6e3daa5618bf/assets/day16/batched-inference.png)
+[![不同 environment count 的 batched inference throughput 與單次 forward 成本](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/0e345d1d053297fd77865fdc5ef8a9f850fe5b98/assets/day16/batched-inference.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/0e345d1d053297fd77865fdc5ef8a9f850fe5b98/assets/day16/batched-inference.png)
 
 獨立的 Replay insertion 微基準測試（microbenchmark）也測了 batch size 1、2、4、8、16。一次測量使用真實 Breakout reset/step 產生 observation，之後只為量 copy cost 而重複資料；它不是拿重複畫面宣稱學習效果。
 
@@ -123,19 +123,19 @@ sticky action 是 ALE 以固定機率忽略本次 requested action、延續前�
 | 8 | 32,488 | 0.246 ms |
 | 16 | 48,983 | 0.327 ms |
 
-[![batch size 1、2、4、8、16 的真實 replay insertion microbenchmark](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/de5616ce57c35d6ac7e01a40a6aa6e3daa5618bf/assets/day16/replay-insertion.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/de5616ce57c35d6ac7e01a40a6aa6e3daa5618bf/assets/day16/replay-insertion.png)
+[![batch size 1、2、4、8、16 的真實 replay insertion microbenchmark](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/0e345d1d053297fd77865fdc5ef8a9f850fe5b98/assets/day16/replay-insertion.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/0e345d1d053297fd77865fdc5ef8a9f850fe5b98/assets/day16/replay-insertion.png)
 
 圖表的結論很具體：批次越大，固定的函式呼叫與 GPU copy 成本越能被攤薄。但這不代表整個 trainer 會按同樣比例加速。完整 pipeline 還要付出 ALE CPU stepping、optimizer update、episode reset 與 metrics 寫入的成本。
 
 `SyncVectorEnv` 也要誠實標成 limitation：它把多個 environment 統一成 vector API，但沒有宣稱 ALE CPU stepping 已經變成多執行緒或多進程平行。這次主要收益來自 batched model inference 與 batched Replay insertion；AsyncVectorEnv/parallel ALE 留給未來的 systems work。
 
-[![1、2、4、8 個環境的固定間隔 CPU/GPU utilization sampling](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/de5616ce57c35d6ac7e01a40a6aa6e3daa5618bf/assets/day16/system-utilization.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/de5616ce57c35d6ac7e01a40a6aa6e3daa5618bf/assets/day16/system-utilization.png)
+[![1、2、4、8 個環境的固定間隔 CPU/GPU utilization sampling](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/0e345d1d053297fd77865fdc5ef8a9f850fe5b98/assets/day16/system-utilization.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/0e345d1d053297fd77865fdc5ef8a9f850fe5b98/assets/day16/system-utilization.png)
 
 這張圖的縱軸是固定間隔 sampler 量到的平均 CPU/GPU utilization，不是 GPU 理論峰值。它支持「零碎呼叫減少是主要改善來源」這個解釋，不能單獨證明某個 N 在所有硬體上都最好。
 
 ## Fresh 100K validation：選出的 N=2 通過 contract gate，但品質不能只看速度
 
-10K 是 systems screening；它不足以決定長一點的訓練是否仍維持環境語意。因此再用相同 seed、訓練參數（hyperparameters）、CPU thread setting、GPU Replay 和 Contract v2，重新從隨機初始化開始（fresh start）跑 N=1 reference 與 strict N=2 candidate，各 100,000 transitions。N=4 的同規格長跑則保留作為 supplemental candidate。選出的 N=2 source 是 [`vectorized-training-100k-n2.json`](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/de5616ce57c35d6ac7e01a40a6aa6e3daa5618bf/assets/day16/vectorized-training-100k-n2.json)；N=4 source 是 [`vectorized-training-100k.json`](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/de5616ce57c35d6ac7e01a40a6aa6e3daa5618bf/assets/day16/vectorized-training-100k.json)。
+10K 是 systems screening；它不足以決定長一點的訓練是否仍維持環境語意。因此再用相同 seed、訓練參數（hyperparameters）、CPU thread setting、GPU Replay 和 Contract v2，重新從隨機初始化開始（fresh start）跑 N=1 reference 與 strict N=2 candidate，各 100,000 transitions。N=4 的同規格長跑則保留作為 supplemental candidate。選出的 N=2 source 是 [`vectorized-training-100k-n2.json`](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/0e345d1d053297fd77865fdc5ef8a9f850fe5b98/assets/day16/vectorized-training-100k-n2.json)；N=4 source 是 [`vectorized-training-100k.json`](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/0e345d1d053297fd77865fdc5ef8a9f850fe5b98/assets/day16/vectorized-training-100k.json)。
 
 | N | accepted transitions/s | wall-clock | action calls | Replay insertion calls | optimizer updates | target syncs |
 |---:|---:|---:|---:|---:|---:|---:|
@@ -145,7 +145,7 @@ sticky action 是 ALE 以固定機率忽略本次 requested action、延續前�
 
 N=2 在這台 RTX 4060 Laptop GPU 上完成相同 budget 約快 `1.60×`，N=4 約快 `1.54×`，三者的 update/sync 次數相同。下圖是 N=1/N=4 supplemental scaling run；真正的 candidate decision 仍要搭配 fixed-seed evaluation。
 
-[![100K N=1 與 N=4 supplemental validation 的吞吐與 wall-clock](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/de5616ce57c35d6ac7e01a40a6aa6e3daa5618bf/assets/day16/vectorized-100k-vectorized-throughput.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/de5616ce57c35d6ac7e01a40a6aa6e3daa5618bf/assets/day16/vectorized-100k-vectorized-throughput.png)
+[![100K N=1 與 N=4 supplemental validation 的吞吐與 wall-clock](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/0e345d1d053297fd77865fdc5ef8a9f850fe5b98/assets/day16/vectorized-100k-vectorized-throughput.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/0e345d1d053297fd77865fdc5ef8a9f850fe5b98/assets/day16/vectorized-100k-vectorized-throughput.png)
 
 ## Evaluation 必須同時記錄 requested 與 executed action
 
@@ -162,7 +162,7 @@ N=2 在這台 RTX 4060 Laptop GPU 上完成相同 budget 約快 `1.60×`，N=4 �
 | N=2, 100K | 6.07 | 6.00 | 2.54 | 352.33 | 15/15 | 0/15 |
 | N=4, 100K | 2.33 | 2.00 | 1.07 | 201.27 | 15/15 | 0/15 |
 
-這個結果回答了兩件事：第一，新的 FIRE confirmation 沒有在這組 fixed seeds 造成 serve deadlock 或 TimeLimit failure；第二，N=2 與 N=4 的 15 局分數都低於 N=1，所以不能把 throughput speedup 寫成 quality equivalence。N=2 仍高於 Random baseline，因此在這次固定 100K guardrail 中，比 N=4 更適合作為 systems candidate；N=1 仍是 model-quality reference。完整結果與 checkpoint hashes 保存在 [`evaluation-summary.json`](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/de5616ce57c35d6ac7e01a40a6aa6e3daa5618bf/assets/day16/evaluation-summary.json)。
+這個結果回答了兩件事：第一，新的 FIRE confirmation 沒有在這組 fixed seeds 造成 serve deadlock 或 TimeLimit failure；第二，N=2 與 N=4 的 15 局分數都低於 N=1，所以不能把 throughput speedup 寫成 quality equivalence。N=2 仍高於 Random baseline，因此在這次固定 100K guardrail 中，比 N=4 更適合作為 systems candidate；N=1 仍是 model-quality reference。完整結果與 checkpoint hashes 保存在 [`evaluation-summary.json`](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/0e345d1d053297fd77865fdc5ef8a9f850fe5b98/assets/day16/evaluation-summary.json)。
 
 ## 最後選擇與下一個問題
 
