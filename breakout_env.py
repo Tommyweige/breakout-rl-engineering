@@ -156,7 +156,7 @@ def make_breakout_vector_env(
     *,
     render_mode: str | None = None,
     stack_size: int = 4,
-    fire_reset: bool = False,
+    fire_reset: bool = True,
 ) -> gym.vector.SyncVectorEnv:
     """Create independent Breakout environments with explicit manual reset.
 

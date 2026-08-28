@@ -55,7 +55,11 @@ from breakout_rl.training.dqn_trainer import (
 from breakout_rl.training.metrics import MetricsLogger
 
 
-VectorScheduleEventKind = Literal["optimizer_update", "target_sync"]
+VectorScheduleEventKind = Literal[
+    "optimizer_update",
+    "target_sync",
+    "checkpoint",
+]
 
 
 @dataclass(frozen=True)
@@ -66,8 +70,11 @@ class VectorizedTrainingStepSnapshot:
     vector_iteration: int
     environment_index: int
     episode: int
+    requested_action: int
     action: int
     action_source: str
+    action_overridden: bool
+    fire_reset_reason: str | None
     epsilon: float
     raw_reward: float
     current_raw_episode_return: float
@@ -116,6 +123,7 @@ def _schedule_events(
     *,
     train_frequency: int,
     target_update_interval: int,
+    checkpoint_interval: int | None = None,
 ) -> tuple[tuple[int, int, VectorScheduleEventKind], ...]:
     events: list[tuple[int, int, VectorScheduleEventKind]] = []
     events.extend(
@@ -134,6 +142,15 @@ def _schedule_events(
             target_update_interval,
         )
     )
+    if checkpoint_interval is not None:
+        events.extend(
+            (boundary, 2, "checkpoint")
+            for boundary in crossed_transition_boundaries(
+                previous_step,
+                current_step,
+                checkpoint_interval,
+            )
+        )
     return tuple(sorted(events))
 
 
@@ -314,6 +331,11 @@ class VectorizedDQNTrainer:
                 f"config.num_envs ({config.num_envs}) must match env.num_envs "
                 f"({self.num_envs})"
             )
+        if config.total_steps % self.num_envs != 0:
+            raise ValueError(
+                "config.total_steps must be divisible by config.num_envs so "
+                "each vector step contributes exactly N transitions"
+            )
         if config.cpu_threads is not None:
             torch.set_num_threads(config.cpu_threads)
 
@@ -455,6 +477,10 @@ class VectorizedDQNTrainer:
                 "metrics_flush_interval": self.config.metrics_flush_interval,
                 "metrics_row_cadence": 1,
                 "global_step_definition": "accepted environment transitions",
+                "schedule_semantics": (
+                    "optimizer, target, and checkpoint events execute at exact "
+                    "transition boundaries; replay insertion is chunked when crossed"
+                ),
                 "replay_transfer": self.config.replay_transfer,
                 "replay_backend": self.config.replay_backend,
                 "replay_storage_device": str(self.device)
@@ -539,9 +565,12 @@ class VectorizedDQNTrainer:
         infos: Mapping[str, Any] | Any,
         *,
         active_count: int,
-    ) -> tuple[np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         executed_actions = np.asarray(requested_actions, dtype=np.int64).copy()
         sources = np.asarray(action_sources, dtype=object).copy()
+        overridden = np.zeros(self.num_envs, dtype=np.bool_)
+        fire_reset_reasons = np.empty(self.num_envs, dtype=object)
+        fire_reset_reasons.fill(None)
         for index in range(active_count):
             requested = int(requested_actions[index])
             raw_executed = _info_at(
@@ -562,14 +591,17 @@ class VectorizedDQNTrainer:
                     f"expected 0 <= action < {self.action_count}"
                 )
             executed_actions[index] = int(executed)
+            overridden[index] = int(executed) != requested
             if str(sources[index]) == "random":
                 self._random_decision_count += 1
             elif str(sources[index]) == "greedy":
                 self._greedy_decision_count += 1
             if bool(_info_at(infos, "fire_reset_auto", index, False)):
                 sources[index] = "fire_reset"
+                reason = _info_at(infos, "fire_reset_reason", index, None)
+                fire_reset_reasons[index] = None if reason is None else str(reason)
             self._action_counts[int(executed)] += 1
-        return executed_actions, sources
+        return executed_actions, sources, overridden, fire_reset_reasons
 
     def _update_once(self) -> DQNTrainingStepResult:
         if self.config.replay_backend == "gpu":
@@ -629,6 +661,7 @@ class VectorizedDQNTrainer:
             current_step,
             train_frequency=self.config.train_frequency,
             target_update_interval=self.config.target_update_interval,
+            checkpoint_interval=self.config.checkpoint_interval,
         ):
             if kind == "optimizer_update":
                 if (
@@ -638,11 +671,13 @@ class VectorizedDQNTrainer:
                     and self._resume_rewarm_steps_remaining == 0
                 ):
                     last_result = self._update_once()
-            else:
+            elif kind == "target_sync":
                 hard_update(self.target_network, self.online_network)
                 self.target_network.eval()
                 self.target_sync_count += 1
                 self.last_target_sync_step = boundary
+            else:
+                self._stage_profiler.measure("checkpoint", self.save_checkpoint)
         return last_result
 
     def _metric_row(
@@ -651,8 +686,11 @@ class VectorizedDQNTrainer:
         global_step: int,
         environment_index: int,
         vector_iteration: int,
+        requested_action: int,
         action: int,
         action_source: str,
+        action_overridden: bool,
+        fire_reset_reason: str | None,
         epsilon: float,
         raw_reward: float,
         training_reward: float,
@@ -698,9 +736,16 @@ class VectorizedDQNTrainer:
             "last_target_sync_step": self.last_target_sync_step,
             "raw_reward": raw_reward,
             "training_reward": training_reward,
+            "requested_action": requested_action,
+            "requested_action_name": ATARI_ACTION_NAMES.get(
+                requested_action,
+                f"ACTION_{requested_action}",
+            ),
             "action": action,
             "action_name": ATARI_ACTION_NAMES.get(action, f"ACTION_{action}"),
             "action_source": action_source,
+            "action_overridden": action_overridden,
+            "fire_reset_reason": fire_reset_reason,
             "noop_count": self._action_counts[0]
             if len(self._action_counts) > 0
             else 0,
@@ -771,10 +816,16 @@ class VectorizedDQNTrainer:
                 "action_inference_transitions_per_second": float(
                     self.action_inference_transitions / elapsed
                 ),
+                "action_inference_batches_per_second": float(
+                    self.action_inference_batches / elapsed
+                ),
                 "replay_insertion_calls": self.replay_insertion_calls,
                 "replay_insertion_transitions": self.replay_insertion_transitions,
                 "replay_insertion_transitions_per_second": float(
                     self.replay_insertion_transitions / elapsed
+                ),
+                "replay_insertion_calls_per_second": float(
+                    self.replay_insertion_calls / elapsed
                 ),
                 "optimizer_updates_per_second": float(
                     self.optimizer_updates / elapsed
@@ -786,6 +837,10 @@ class VectorizedDQNTrainer:
                 "metrics_flush_interval": self.config.metrics_flush_interval,
                 "metrics_row_cadence": 1,
                 "global_step_definition": "accepted environment transitions",
+                "schedule_semantics": (
+                    "optimizer, target, and checkpoint events execute at exact "
+                    "transition boundaries; replay insertion is chunked when crossed"
+                ),
                 "configured_cpu_threads": self.config.cpu_threads,
                 "replay_transfer": self.config.replay_transfer,
                 "replay_backend": self.config.replay_backend,
@@ -838,10 +893,16 @@ class VectorizedDQNTrainer:
             "action_inference_transitions_per_second": float(
                 self.action_inference_transitions / elapsed
             ),
+            "action_inference_batches_per_second": float(
+                self.action_inference_batches / elapsed
+            ),
             "replay_insertion_calls": self.replay_insertion_calls,
             "replay_insertion_transitions": self.replay_insertion_transitions,
             "replay_insertion_transitions_per_second": float(
                 self.replay_insertion_transitions / elapsed
+            ),
+            "replay_insertion_calls_per_second": float(
+                self.replay_insertion_calls / elapsed
             ),
             "optimizer_updates_per_second": float(self.optimizer_updates / elapsed),
             "training_samples_per_second": float(
@@ -1019,6 +1080,76 @@ class VectorizedDQNTrainer:
             self._restore_rng_state(rng_state)
         self._last_checkpoint = checkpoint_path
 
+    def _insert_and_schedule(
+        self,
+        current_observations: np.ndarray,
+        executed_actions: np.ndarray,
+        training_rewards: np.ndarray,
+        final_next_observations: np.ndarray,
+        terminated: np.ndarray,
+        truncated: np.ndarray,
+        *,
+        previous_step: int,
+        vector_step_end: int,
+    ) -> DQNTrainingStepResult | None:
+        """Insert chunks so every transition boundary sees only prior data."""
+
+        event_steps = sorted(
+            {
+                boundary
+                for boundary, _priority, _kind in _schedule_events(
+                    previous_step,
+                    vector_step_end,
+                    train_frequency=self.config.train_frequency,
+                    target_update_interval=self.config.target_update_interval,
+                    checkpoint_interval=self.config.checkpoint_interval,
+                )
+            }
+        )
+        chunk_endpoints = event_steps + (
+            [vector_step_end] if not event_steps or event_steps[-1] != vector_step_end else []
+        )
+        insert_measure = (
+            self._stage_profiler.measure_cuda
+            if self.config.replay_backend == "gpu"
+            else self._stage_profiler.measure
+        )
+        last_result: DQNTrainingStepResult | None = None
+        chunk_start = previous_step
+        for chunk_end in chunk_endpoints:
+            source_start = chunk_start - previous_step
+            source_end = chunk_end - previous_step
+            chunk_size = source_end - source_start
+            insert_measure(
+                "batched_replay_insert",
+                lambda source_start=source_start, source_end=source_end: self.replay.add_batch(  # type: ignore[union-attr]
+                    current_observations[source_start:source_end],
+                    executed_actions[source_start:source_end],
+                    training_rewards[source_start:source_end],
+                    final_next_observations[source_start:source_end],
+                    terminated[source_start:source_end],
+                    truncated[source_start:source_end],
+                ),
+            )
+            self.replay_insertion_calls += 1
+            self.replay_insertion_transitions += chunk_size
+            rewarm_before = self._resume_rewarm_steps_remaining
+            self.global_step = chunk_end
+            self._resume_rewarm_steps_remaining = max(
+                0,
+                rewarm_before - chunk_size,
+            )
+            if chunk_end in event_steps:
+                scheduled_result = self._run_scheduled_events(
+                    chunk_start,
+                    chunk_end,
+                    rewarm_steps_before=rewarm_before,
+                )
+                if scheduled_result is not None:
+                    last_result = scheduled_result
+            chunk_start = chunk_end
+        return last_result
+
     def train(self) -> dict[str, Any]:
         """Run until ``config.total_steps`` accepted transitions are stored."""
 
@@ -1028,7 +1159,7 @@ class VectorizedDQNTrainer:
         try:
             while self.global_step < self.config.total_steps:
                 previous_step = self.global_step
-                active_count = min(self.num_envs, self.config.total_steps - previous_step)
+                vector_step_end = previous_step + self.num_envs
                 current_observations = np.array(observations, copy=True)
                 vector_iteration = self.vector_iterations + 1
                 actions, action_sources, epsilons = self._stage_profiler.measure_cuda(
@@ -1073,11 +1204,16 @@ class VectorizedDQNTrainer:
                     num_envs=self.num_envs,
                     observation_shape=self.observation_shape,
                 )
-                executed_actions, action_sources = self._executed_actions(
+                (
+                    executed_actions,
+                    action_sources,
+                    action_overridden,
+                    fire_reset_reasons,
+                ) = self._executed_actions(
                     actions,
                     action_sources,
                     infos,
-                    active_count=active_count,
+                    active_count=self.num_envs,
                 )
                 training_rewards = np.asarray(
                     [
@@ -1087,35 +1223,13 @@ class VectorizedDQNTrainer:
                     dtype=np.float32,
                 )
 
-                active_slice = slice(0, active_count)
-                insert_measure = (
-                    self._stage_profiler.measure_cuda
-                    if self.config.replay_backend == "gpu"
-                    else self._stage_profiler.measure
-                )
-                insert_measure(
-                    "batched_replay_insert",
-                    lambda: self.replay.add_batch(  # type: ignore[union-attr]
-                        current_observations[active_slice],
-                        executed_actions[active_slice],
-                        training_rewards[active_slice],
-                        final_next_observations[active_slice],
-                        terminated[active_slice],
-                        truncated[active_slice],
-                    ),
-                )
-                self.replay_insertion_calls += 1
-                self.replay_insertion_transitions += active_count
                 self.vector_iterations = vector_iteration
                 self.physical_environment_steps += self.num_envs
-                self.global_step += active_count
-
-                self._episode_returns[:active_count] += raw_rewards[active_slice]
-                self._episode_training_returns[:active_count] += training_rewards[active_slice]
-                self._episode_lengths[:active_count] += 1
+                self._episode_returns += raw_rewards
+                self._episode_training_returns += training_rewards
+                self._episode_lengths += 1
                 done = np.logical_or(terminated, truncated)
-                active_done = done.copy()
-                active_done[active_count:] = False
+                active_done = done
                 completed_returns = self._episode_returns.copy()
                 completed_lengths = self._episode_lengths.copy()
                 self.episode += int(active_done.sum())
@@ -1129,18 +1243,18 @@ class VectorizedDQNTrainer:
                 if reset_observations is not None:
                     observations[done] = reset_observations[done]
 
-                rewarm_before = self._resume_rewarm_steps_remaining
-                self._resume_rewarm_steps_remaining = max(
-                    0,
-                    rewarm_before - active_count,
-                )
-                result = self._run_scheduled_events(
-                    previous_step,
-                    self.global_step,
-                    rewarm_steps_before=rewarm_before,
+                result = self._insert_and_schedule(
+                    current_observations,
+                    executed_actions,
+                    training_rewards,
+                    final_next_observations,
+                    terminated,
+                    truncated,
+                    previous_step=previous_step,
+                    vector_step_end=vector_step_end,
                 )
 
-                for index in range(active_count):
+                for index in range(self.num_envs):
                     completed_return = (
                         float(completed_returns[index])
                         if active_done[index]
@@ -1155,8 +1269,15 @@ class VectorizedDQNTrainer:
                         global_step=previous_step + index + 1,
                         environment_index=index,
                         vector_iteration=vector_iteration,
+                        requested_action=int(actions[index]),
                         action=int(executed_actions[index]),
                         action_source=str(action_sources[index]),
+                        action_overridden=bool(action_overridden[index]),
+                        fire_reset_reason=(
+                            None
+                            if fire_reset_reasons[index] is None
+                            else str(fire_reset_reasons[index])
+                        ),
                         epsilon=float(epsilons[index]),
                         raw_reward=float(raw_rewards[index]),
                         training_reward=float(training_rewards[index]),
@@ -1165,7 +1286,7 @@ class VectorizedDQNTrainer:
                         completed_length=completed_length,
                         terminated=bool(terminated[index]),
                         truncated=bool(truncated[index]),
-                        transition_batch_size=active_count,
+                        transition_batch_size=self.num_envs,
                         action_inference_batch_size=self.num_envs,
                         result=result,
                     )
@@ -1180,8 +1301,15 @@ class VectorizedDQNTrainer:
                                 vector_iteration=vector_iteration,
                                 environment_index=index,
                                 episode=int(self._episode_counts[index]),
+                                requested_action=int(actions[index]),
                                 action=int(executed_actions[index]),
                                 action_source=str(action_sources[index]),
+                                action_overridden=bool(action_overridden[index]),
+                                fire_reset_reason=(
+                                    None
+                                    if fire_reset_reasons[index] is None
+                                    else str(fire_reset_reasons[index])
+                                ),
                                 epsilon=float(epsilons[index]),
                                 raw_reward=float(raw_rewards[index]),
                                 current_raw_episode_return=float(
@@ -1195,9 +1323,6 @@ class VectorizedDQNTrainer:
                                 target_sync_count=self.target_sync_count,
                             )
                         )
-
-                if self.global_step % self.config.checkpoint_interval == 0:
-                    self._stage_profiler.measure("checkpoint", self.save_checkpoint)
 
             if self._last_checkpoint is None or self._last_checkpoint.stem != (
                 f"step-{self.global_step:08d}"

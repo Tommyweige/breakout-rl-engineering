@@ -44,20 +44,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--cpu-threads", type=int, default=None)
     parser.add_argument("--profile-stages", action="store_true")
     parser.add_argument(
-        "--fire-reset",
-        action="store_true",
-        help="let the environment own initial and post-life-loss FIRE",
-    )
-    parser.add_argument(
         "--contract",
         type=Path,
-        default=None,
+        default=Path("configs/eval/breakout_contract_v2.json"),
         help="load a machine-readable Breakout environment contract",
-    )
-    parser.add_argument(
-        "--no-reward-clip",
-        action="store_true",
-        help="store raw rewards for training instead of sign-clipped rewards",
     )
     parser.add_argument("--output", type=Path, default=None)
     return parser
@@ -90,8 +80,6 @@ def _config_from_args(args: argparse.Namespace) -> DQNConfig:
             overrides[name] = value
     if args.profile_stages:
         overrides["profile_stages"] = True
-    if args.no_reward_clip:
-        overrides["reward_clip"] = False
     return base.with_overrides(**overrides)
 
 
@@ -119,23 +107,20 @@ def main(argv: list[str] | None = None) -> int:
         contract: BreakoutEvaluationContractV2 | None = (
             load_evaluation_contract(args.contract) if args.contract is not None else None
         )
-        if contract is not None:
-            validate_breakout_runtime_contract(contract)
-            if args.fire_reset and not contract.fire_reset:
-                raise ValueError("--fire-reset conflicts with contract fire_reset=false")
+        validate_breakout_runtime_contract(contract)
     except (TypeError, ValueError, FileNotFoundError) as error:
         print(f"Invalid vectorized training configuration: {error}")
         return 2
 
     env = make_breakout_vector_env(
         config.num_envs,
-        stack_size=contract.frame_stack if contract is not None else 4,
-        fire_reset=contract.fire_reset if contract is not None else args.fire_reset,
+        stack_size=contract.frame_stack,
+        fire_reset=contract.fire_reset,
     )
     try:
         trainer = VectorizedDQNTrainer(env, config, run_dir=run_path)
         summary = trainer.train()
-    except RuntimeError as error:
+    except (RuntimeError, ValueError) as error:
         print(f"Vectorized training could not start or was stopped: {error}")
         return 2
     finally:

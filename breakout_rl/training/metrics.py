@@ -59,6 +59,12 @@ METRIC_FIELDS: tuple[str, ...] = (
     "vector_iterations_per_second",
     "action_inference_batch_size",
     "replay_insert_batch_size",
+    "action_inference_batches_per_second",
+    "replay_insertion_calls_per_second",
+    "requested_action",
+    "requested_action_name",
+    "action_overridden",
+    "fire_reset_reason",
 )
 
 

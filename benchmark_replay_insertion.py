@@ -13,6 +13,11 @@ import numpy as np
 import torch
 
 from breakout_env import make_breakout_env
+from breakout_rl.evaluation_contract import (
+    BreakoutEvaluationContractV2,
+    load_evaluation_contract,
+    validate_breakout_runtime_contract,
+)
 from breakout_rl.replay import ReplayBuffer
 from breakout_rl.replay_gpu import GPUReplayBuffer
 from breakout_rl.training.dqn_trainer import resolve_device
@@ -22,8 +27,12 @@ def _batch_from_real_observations(
     batch_size: int,
     *,
     seed: int,
+    contract: BreakoutEvaluationContractV2,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    env = make_breakout_env(fire_reset=True)
+    env = make_breakout_env(
+        stack_size=contract.frame_stack,
+        fire_reset=contract.fire_reset,
+    )
     try:
         state, _ = env.reset(seed=seed)
         next_state, reward, terminated, truncated, _ = env.step(0)
@@ -48,8 +57,13 @@ def _run_one(
     seed: int,
     device: torch.device,
     capacity: int,
+    contract: BreakoutEvaluationContractV2,
 ) -> dict[str, Any]:
-    values = _batch_from_real_observations(batch_size, seed=seed)
+    values = _batch_from_real_observations(
+        batch_size,
+        seed=seed,
+        contract=contract,
+    )
     if device.type == "cuda":
         replay: ReplayBuffer | GPUReplayBuffer = GPUReplayBuffer(
             capacity,
@@ -91,6 +105,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--iterations", type=int, default=500)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--device", default="cuda")
+    parser.add_argument(
+        "--contract",
+        type=Path,
+        default=Path("configs/eval/breakout_contract_v2.json"),
+    )
     parser.add_argument("--capacity", type=int, default=1024)
     parser.add_argument(
         "--output",
@@ -107,6 +126,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.iterations < 1 or args.capacity < 1:
         raise ValueError("iterations and capacity must be positive")
     device = resolve_device(args.device)
+    contract = load_evaluation_contract(args.contract)
+    validate_breakout_runtime_contract(contract)
     results = [
         _run_one(
             batch_size,
@@ -114,6 +135,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             seed=args.seed,
             device=device,
             capacity=max(args.capacity, batch_size),
+            contract=contract,
         )
         for batch_size in args.batch_sizes
     ]
@@ -125,6 +147,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             "operation": "GPUReplayBuffer.add_batch or ReplayBuffer.add_batch",
             "seed": args.seed,
             "synchronize_cuda_before_and_after_measurement": device.type == "cuda",
+            "contract_path": args.contract.as_posix(),
         },
         "results": results,
     }

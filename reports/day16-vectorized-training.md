@@ -84,10 +84,11 @@ All candidates used `total_transitions=10000`, `batch_size=32`,
 Replay on the recorded RTX 4060 Laptop GPU. The four runs each produced 2,251
 optimizer updates and 21 target synchronizations including the initial sync.
 
-The scheduler is exact in transition-boundary counts, but updates are executed
-after the current vector iteration has been inserted as a batch. Consequently,
-the vectorized trace is not bit-for-bit identical to a single-environment trace;
-the report treats this as a declared batching boundary, not hidden equivalence.
+The trainer splits replay insertion into transition chunks when a vector step
+crosses a train, target, or checkpoint boundary. Boundary counts and event order
+are therefore exact, while the vectorized trace is still not bit-for-bit
+identical to a single-environment trace because N actions are selected together.
+The report treats this as a declared batching boundary, not hidden equivalence.
 
 ## Limitations and next step
 

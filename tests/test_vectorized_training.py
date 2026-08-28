@@ -96,6 +96,57 @@ class CountingQNetwork(nn.Module):
 
 
 class VectorizedTrainingTests(unittest.TestCase):
+    def test_total_transition_budget_must_be_a_full_vector_step_count(self) -> None:
+        config = DQNConfig(
+            total_steps=4,
+            num_envs=3,
+            batch_size=3,
+            replay_capacity=4,
+            learning_starts=4,
+            device="cpu",
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            with self.assertRaisesRegex(ValueError, "divisible"):
+                VectorizedDQNTrainer(
+                    DeterministicVectorEnv(),
+                    config,
+                    run_dir=Path(directory) / "partial-vector-step",
+                    online_network=CountingQNetwork(),
+                )
+
+    def test_checkpoint_boundaries_are_captured_inside_a_vector_step(self) -> None:
+        config = DQNConfig(
+            total_steps=6,
+            num_envs=3,
+            batch_size=3,
+            replay_capacity=6,
+            learning_starts=6,
+            checkpoint_interval=2,
+            device="cpu",
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            run_dir = Path(directory) / "checkpoint-boundaries"
+            trainer = VectorizedDQNTrainer(
+                DeterministicVectorEnv(),
+                config,
+                run_dir=run_dir,
+                online_network=CountingQNetwork(),
+            )
+            trainer.train()
+
+            checkpoint_names = sorted(
+                path.name for path in (run_dir / "checkpoints").glob("*.pt")
+            )
+
+        self.assertEqual(
+            checkpoint_names,
+            [
+                "step-00000002.pt",
+                "step-00000004.pt",
+                "step-00000006.pt",
+            ],
+        )
+
     def test_batched_forward_matches_independent_forward_actions(self) -> None:
         network = CountingQNetwork().eval()
         observations = torch.rand(3, *OBSERVATION_SHAPE)
@@ -203,7 +254,16 @@ class VectorizedTrainingTests(unittest.TestCase):
                     rewards,
                     np.array([True, False, False]),
                     truncated,
-                    {"final_obs": final_observations, "_final_obs": np.array([True, False, False])},
+                    {
+                        "final_obs": final_observations,
+                        "_final_obs": np.array([True, False, False]),
+                        "fire_reset_auto": np.array([True, False, False]),
+                        "fire_reset_executed_action": np.array([1, 0, 0]),
+                        "fire_reset_reason": np.array(
+                            ["initial_serve", None, None],
+                            dtype=object,
+                        ),
+                    },
                 )
 
         env = SameStepFinalObservationEnv()
@@ -219,18 +279,31 @@ class VectorizedTrainingTests(unittest.TestCase):
             device="cpu",
         )
         with tempfile.TemporaryDirectory() as directory:
+            network = CountingQNetwork()
+            with torch.no_grad():
+                network.head.weight.zero_()
+                network.head.bias.copy_(torch.tensor([1.0, -1.0]))
             trainer = VectorizedDQNTrainer(
                 env,
                 config,
                 run_dir=Path(directory) / "same-step",
-                online_network=CountingQNetwork(),
+                online_network=network,
             )
             trainer.train()
+            with (Path(directory) / "same-step/metrics.csv").open(
+                newline="",
+                encoding="utf-8",
+            ) as stream:
+                rows = list(csv.DictReader(stream))
 
         np.testing.assert_array_equal(
             trainer.replay.next_states[0],
             np.full(OBSERVATION_SHAPE, 77, dtype=np.uint8),
         )
+        self.assertEqual(rows[0]["requested_action"], "0")
+        self.assertEqual(rows[0]["action"], "1")
+        self.assertEqual(rows[0]["action_overridden"], "True")
+        self.assertEqual(rows[0]["fire_reset_reason"], "initial_serve")
 
 
 if __name__ == "__main__":

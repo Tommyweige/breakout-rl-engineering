@@ -12,9 +12,9 @@ flowchart LR
         V1 --> V2[N independent actions]
         V2 --> V3[vector env step]
         V3 --> V4[final observations for done envs]
-        V4 --> V5[replay.add_batch N transitions]
-        V5 --> V6[global_step += N]
-        V6 --> V7[run every crossed update boundary]
+        V4 --> V5[replay.add_batch transition chunks]
+        V5 --> V6[advance global_step by each chunk]
+        V6 --> V7[run every crossed update target and checkpoint boundary]
         V4 --> V8{done env?}
         V8 -->|yes| V9[reset only done envs]
         V8 -->|no| V0

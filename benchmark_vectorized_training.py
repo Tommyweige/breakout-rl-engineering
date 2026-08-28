@@ -10,8 +10,14 @@ from pathlib import Path
 from typing import Any, Sequence
 
 from breakout_env import make_breakout_vector_env
+from breakout_rl.evaluation_contract import (
+    BreakoutEvaluationContractV2,
+    load_evaluation_contract,
+    validate_breakout_runtime_contract,
+)
 from breakout_rl.training.config import DQNConfig
-from breakout_rl.training.vectorized import VectorizedDQNTrainer, resolve_device
+from breakout_rl.training.dqn_trainer import resolve_device
+from breakout_rl.training.vectorized import VectorizedDQNTrainer
 from profile_batch_size_experiment import RuntimeSampler, _sample_summary
 
 
@@ -23,6 +29,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--total-steps", type=int, default=10_000)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--device", default="cuda")
+    parser.add_argument(
+        "--contract",
+        type=Path,
+        default=Path("configs/eval/breakout_contract_v2.json"),
+    )
     parser.add_argument("--replay-backend", choices=("cpu", "gpu"), default="gpu")
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--learning-rate", type=float, default=1e-4)
@@ -62,6 +73,7 @@ def _run_one(
     args: argparse.Namespace,
     *,
     resolved_device: str,
+    contract: BreakoutEvaluationContractV2,
 ) -> dict[str, Any]:
     run_dir = args.run_root / f"envs-{environment_count}"
     if run_dir.exists() and any(run_dir.iterdir()):
@@ -69,7 +81,11 @@ def _run_one(
             f"run directory already contains artifacts: {run_dir}; choose a new --run-root"
         )
     sample_path = args.samples_root / f"envs-{environment_count}" / "runtime-samples.csv"
-    env = make_breakout_vector_env(environment_count, fire_reset=True)
+    env = make_breakout_vector_env(
+        environment_count,
+        stack_size=contract.frame_stack,
+        fire_reset=contract.fire_reset,
+    )
     sampler = RuntimeSampler(
         sample_path,
         interval_seconds=args.sample_interval,
@@ -128,9 +144,16 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.sample_interval <= 0:
         raise ValueError("sample interval must be greater than zero")
 
+    contract = load_evaluation_contract(args.contract)
+    validate_breakout_runtime_contract(contract)
     device = resolve_device(args.device)
     results = [
-        _run_one(count, args, resolved_device=str(device))
+        _run_one(
+            count,
+            args,
+            resolved_device=str(device),
+            contract=contract,
+        )
         for count in args.environment_counts
     ]
     report = {
@@ -138,8 +161,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "device": str(device),
         "replay_backend": args.replay_backend,
+        "contract_path": args.contract.as_posix(),
+        "contract": contract.to_dict(),
         "protocol": {
-            "environment_id": "ALE/Breakout-v5",
+            "environment_id": contract.environment_id,
             "algorithm": "vanilla DQN",
             "total_transitions": args.total_steps,
             "seed": args.seed,
@@ -151,7 +176,15 @@ def main(argv: Sequence[str] | None = None) -> int:
             "epsilon_decay_steps": args.epsilon_decay_steps,
             "checkpoint_interval": args.checkpoint_interval or args.total_steps,
             "precision": "float32",
-            "fire_reset": True,
+            "fire_reset": contract.fire_reset,
+            "frame_skip": contract.frame_skip,
+            "frame_stack": contract.frame_stack,
+            "sticky_action_probability": contract.sticky_action_probability,
+            "terminal_on_life_loss": contract.terminal_on_life_loss,
+            "schedule_semantics": (
+                "exact transition boundaries with replay chunks when a vector "
+                "step crosses an event"
+            ),
             "profile_stages": args.profile_stages,
         },
         "results": results,
