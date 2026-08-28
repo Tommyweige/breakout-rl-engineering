@@ -36,6 +36,79 @@ class TransitionBatch:
     truncated: np.ndarray
 
 
+def _validate_transition_batch(
+    states: np.ndarray,
+    actions: np.ndarray,
+    rewards: np.ndarray,
+    next_states: np.ndarray,
+    terminated: np.ndarray,
+    truncated: np.ndarray,
+    *,
+    expected_shape: tuple[int, ...],
+) -> TransitionBatch:
+    """Validate and normalize a batch before mutating replay storage."""
+
+    def observation_array(value: np.ndarray, *, name: str) -> np.ndarray:
+        array = np.asarray(value)
+        if array.dtype != STATE_DTYPE:
+            raise TypeError(f"{name} must have dtype uint8")
+        if array.ndim != len(expected_shape) + 1:
+            raise ValueError(
+                f"{name} must have shape (B, *{expected_shape}); "
+                f"received {tuple(array.shape)}"
+            )
+        if tuple(array.shape[1:]) != expected_shape or array.shape[0] < 1:
+            raise ValueError(
+                f"{name} must have shape (B, *{expected_shape}); "
+                f"received {tuple(array.shape)}"
+            )
+        return np.ascontiguousarray(array)
+
+    state_array = observation_array(states, name="states")
+    next_state_array = observation_array(next_states, name="next_states")
+    batch_size = int(state_array.shape[0])
+    if int(next_state_array.shape[0]) != batch_size:
+        raise ValueError("states and next_states must share batch size")
+
+    def vector_array(value: np.ndarray, *, name: str) -> np.ndarray:
+        array = np.asarray(value)
+        if array.ndim != 1 or int(array.shape[0]) != batch_size:
+            raise ValueError(f"{name} must have shape ({batch_size},)")
+        return array
+
+    action_array = vector_array(actions, name="actions")
+    if action_array.dtype.kind not in {"i", "u"}:
+        raise TypeError("actions must contain integer values")
+    if action_array.dtype.kind == "u" and action_array.size:
+        if int(action_array.max()) > np.iinfo(ACTION_DTYPE).max:
+            raise ValueError("actions are outside the int64 range")
+    action_array = np.ascontiguousarray(action_array, dtype=ACTION_DTYPE)
+
+    reward_array = vector_array(rewards, name="rewards")
+    if reward_array.dtype.kind not in {"i", "u", "f"}:
+        raise TypeError("rewards must contain numeric values")
+    reward_array = np.ascontiguousarray(reward_array, dtype=REWARD_DTYPE)
+
+    def flag_array(value: np.ndarray, *, name: str) -> np.ndarray:
+        array = vector_array(value, name=name)
+        if array.dtype.kind == "b":
+            return np.ascontiguousarray(array, dtype=FLAG_DTYPE)
+        if array.dtype.kind not in {"i", "u"}:
+            raise TypeError(f"{name} must contain boolean or 0/1 values")
+        if array.size and not np.all((array == 0) | (array == 1)):
+            raise TypeError(f"{name} must contain boolean or 0/1 values")
+        return np.ascontiguousarray(array, dtype=FLAG_DTYPE)
+
+    return TransitionBatch(
+        states=state_array,
+        actions=action_array,
+        rewards=reward_array,
+        next_states=next_state_array,
+        terminated=flag_array(terminated, name="terminated"),
+        truncated=flag_array(truncated, name="truncated"),
+    )
+
+
 def _positive_int(value: int, *, name: str) -> int:
     """Validate an integer configuration value that must be positive."""
 
@@ -250,6 +323,66 @@ class ReplayBuffer:
         self.write_index = (self.write_index + 1) % self.capacity
         self.size = min(self.size + 1, self.capacity)
         return slot
+
+    def add_batch(
+        self,
+        states: np.ndarray,
+        actions: np.ndarray,
+        rewards: np.ndarray,
+        next_states: np.ndarray,
+        terminated: np.ndarray,
+        truncated: np.ndarray,
+    ) -> np.ndarray:
+        """Copy a batch of transitions into consecutive ring-buffer slots.
+
+        The returned physical indices correspond to the input order. When a
+        batch is larger than the capacity, all input rows are still assigned
+        indices, while only the newest ``capacity`` rows need to be copied.
+        """
+
+        batch = _validate_transition_batch(
+            states,
+            actions,
+            rewards,
+            next_states,
+            terminated,
+            truncated,
+            expected_shape=self.observation_shape,
+        )
+        batch_size = int(batch.states.shape[0])
+        initial_write_index = self.write_index
+        slots = (
+            initial_write_index + np.arange(batch_size, dtype=np.int64)
+        ) % self.capacity
+
+        source_start = max(0, batch_size - self.capacity)
+        write_start = int(slots[source_start])
+        write_count = batch_size - source_start
+
+        def copy_ring(
+            destination: np.ndarray,
+            source: np.ndarray,
+        ) -> None:
+            first_count = min(write_count, self.capacity - write_start)
+            destination[write_start : write_start + first_count] = source[
+                source_start : source_start + first_count
+            ]
+            remaining = write_count - first_count
+            if remaining:
+                destination[:remaining] = source[
+                    source_start + first_count : source_start + first_count + remaining
+                ]
+
+        copy_ring(self.states, batch.states)
+        copy_ring(self.actions, batch.actions)
+        copy_ring(self.rewards, batch.rewards)
+        copy_ring(self.next_states, batch.next_states)
+        copy_ring(self.terminated, batch.terminated)
+        copy_ring(self.truncated, batch.truncated)
+
+        self.write_index = (initial_write_index + batch_size) % self.capacity
+        self.size = min(self.capacity, self.size + batch_size)
+        return slots
 
     def _validate_sample_request(self, batch_size: int) -> int:
         """Validate a sampling request against the current buffer size."""

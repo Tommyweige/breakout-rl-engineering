@@ -19,6 +19,11 @@ __all__ = [
     "dqn_training_step",
     "resolve_device",
     "seed_everything",
+    "VectorScheduleEventKind",
+    "VectorizedDQNTrainer",
+    "VectorizedTrainingStepCallback",
+    "VectorizedTrainingStepSnapshot",
+    "crossed_transition_boundaries",
 ]
 
 
@@ -32,11 +37,27 @@ def __getattr__(name: str):
         "dqn_training_step",
         "resolve_device",
         "seed_everything",
+        "VectorScheduleEventKind",
+        "VectorizedDQNTrainer",
+        "VectorizedTrainingStepCallback",
+        "VectorizedTrainingStepSnapshot",
+        "crossed_transition_boundaries",
     }:
         raise AttributeError(name)
 
-    from breakout_rl.training import dqn_trainer
+    if name in {
+        "VectorScheduleEventKind",
+        "VectorizedDQNTrainer",
+        "VectorizedTrainingStepCallback",
+        "VectorizedTrainingStepSnapshot",
+        "crossed_transition_boundaries",
+    }:
+        from breakout_rl.training import vectorized
 
-    value = getattr(dqn_trainer, name)
+        value = getattr(vectorized, name)
+    else:
+        from breakout_rl.training import dqn_trainer
+
+        value = getattr(dqn_trainer, name)
     globals()[name] = value
     return value

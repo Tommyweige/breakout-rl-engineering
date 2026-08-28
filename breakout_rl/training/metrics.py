@@ -51,6 +51,14 @@ METRIC_FIELDS: tuple[str, ...] = (
     "random_decision_count",
     "greedy_decision_count",
     "random_decision_ratio",
+    "environment_index",
+    "vector_iteration",
+    "num_envs",
+    "transition_batch_size",
+    "environment_transitions_per_second",
+    "vector_iterations_per_second",
+    "action_inference_batch_size",
+    "replay_insert_batch_size",
 )
 
 

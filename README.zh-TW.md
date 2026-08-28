@@ -395,7 +395,7 @@ Backend
 
 ### Phase 3 — 訓練系統與 DQN 改進
 
-* Day 16 — Vectorized DQN Training：多環境、批次 action inference 與批次 GPU Replay
+* Day 16 — [Vectorized DQN Training：多環境、批次 action inference 與批次 GPU Replay](docs/day16-vectorized-dqn-training.md)
 * Day 17 — Q-value overestimation 與 Double DQN
 * Day 18 — DQN vs. Double DQN
 * Day 19 — Dueling Network Architecture

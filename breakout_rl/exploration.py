@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 from numbers import Integral, Real
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, Sequence
 
 import numpy as np
 
@@ -18,6 +18,7 @@ __all__ = [
     "ActionSource",
     "LinearEpsilonSchedule",
     "select_epsilon_greedy_action",
+    "select_epsilon_greedy_actions",
 ]
 
 
@@ -109,3 +110,64 @@ def select_epsilon_greedy_action(
     with torch.no_grad():
         greedy_action = int(torch.argmax(q_values).item())
     return greedy_action, "greedy"
+
+
+def select_epsilon_greedy_actions(
+    q_values: torch.Tensor,
+    epsilon: float | Sequence[float] | np.ndarray,
+    *,
+    action_space_n: int,
+    rng: np.random.Generator,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Select one independently explored action for every Q-value row.
+
+    ``epsilon`` may be one scalar shared by the batch or one value per row.
+    The model is evaluated once by the caller; this helper only applies the
+    per-environment random-versus-greedy decision.
+    """
+
+    import torch
+
+    if not isinstance(q_values, torch.Tensor):
+        raise TypeError("q_values must be a torch.Tensor")
+    if q_values.ndim != 2:
+        raise ValueError("q_values must have shape (B, action_count)")
+    batch_size = int(q_values.shape[0])
+    if int(q_values.shape[1]) != action_space_n:
+        raise ValueError("q_values width must equal action_space_n")
+    if batch_size < 1:
+        raise ValueError("q_values must contain at least one environment")
+    if not torch.isfinite(q_values).all().item():
+        raise ValueError("q_values must contain only finite values")
+    if (
+        isinstance(action_space_n, bool)
+        or not isinstance(action_space_n, Integral)
+        or action_space_n < 1
+    ):
+        raise ValueError("action_space_n must be a positive integer")
+    if not isinstance(rng, np.random.Generator):
+        raise TypeError("rng must be a numpy.random.Generator")
+
+    epsilon_array = np.asarray(epsilon, dtype=np.float64)
+    if epsilon_array.ndim == 0:
+        epsilon_array = np.full(batch_size, float(epsilon_array), dtype=np.float64)
+    elif epsilon_array.ndim == 1 and int(epsilon_array.shape[0]) == batch_size:
+        epsilon_array = np.ascontiguousarray(epsilon_array, dtype=np.float64)
+    else:
+        raise ValueError("epsilon must be a scalar or have shape (B,)")
+    for value in epsilon_array:
+        _validate_probability("epsilon", float(value))
+
+    with torch.no_grad():
+        greedy_actions = torch.argmax(q_values, dim=1).detach().cpu().numpy()
+    random_mask = np.asarray(rng.random(batch_size) < epsilon_array, dtype=bool)
+    actions = np.asarray(greedy_actions, dtype=np.int64)
+    if random_mask.any():
+        actions[random_mask] = rng.integers(
+            0,
+            int(action_space_n),
+            size=int(random_mask.sum()),
+            dtype=np.int64,
+        )
+    sources = np.where(random_mask, "random", "greedy").astype("<U7")
+    return actions, sources

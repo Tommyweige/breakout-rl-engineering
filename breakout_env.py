@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import operator
 from typing import Any
 
 import ale_py
@@ -148,3 +149,39 @@ def make_breakout_env(
     # history so a policy can infer motion from successive observations.
     stacked = FrameStackObservation(env, stack_size=stack_size)
     return BreakoutFireResetWrapper(stacked) if fire_reset else stacked
+
+
+def make_breakout_vector_env(
+    num_envs: int,
+    *,
+    render_mode: str | None = None,
+    stack_size: int = 4,
+    fire_reset: bool = False,
+) -> gym.vector.SyncVectorEnv:
+    """Create independent Breakout environments with explicit manual reset.
+
+    ``DISABLED`` autoreset preserves the terminal transition's final
+    observation. The vectorized trainer resets only the environments whose
+    termination flags are true after it has inserted those transitions.
+    """
+
+    if isinstance(num_envs, bool):
+        raise TypeError("num_envs must be a positive integer")
+    try:
+        parsed_num_envs = operator.index(num_envs)
+    except TypeError as error:
+        raise TypeError("num_envs must be a positive integer") from error
+    if parsed_num_envs < 1:
+        raise ValueError("num_envs must be a positive integer")
+
+    def make_one() -> gym.Env:
+        return make_breakout_env(
+            render_mode=render_mode,
+            stack_size=stack_size,
+            fire_reset=fire_reset,
+        )
+
+    return gym.vector.SyncVectorEnv(
+        [make_one for _ in range(parsed_num_envs)],
+        autoreset_mode=gym.vector.AutoresetMode.DISABLED,
+    )

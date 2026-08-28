@@ -120,6 +120,13 @@ class DQNConfigTests(unittest.TestCase):
         with self.assertRaises(TypeError):
             DQNConfig(profile_stages=1)
 
+    def test_num_envs_is_a_positive_integer(self) -> None:
+        self.assertEqual(DQNConfig(num_envs=4).num_envs, 4)
+        with self.assertRaises((TypeError, ValueError)):
+            DQNConfig(num_envs=0)
+        with self.assertRaises((TypeError, ValueError)):
+            DQNConfig(num_envs=True)
+
     def test_auto_can_use_cpu_but_explicit_cuda_never_falls_back(self) -> None:
         with patch("breakout_rl.training.dqn_trainer.torch.cuda.is_available", return_value=False):
             self.assertEqual(str(resolve_device("auto")), "cpu")

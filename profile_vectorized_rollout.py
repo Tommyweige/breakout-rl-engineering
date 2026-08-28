@@ -12,7 +12,7 @@ import gymnasium as gym
 import numpy as np
 import torch
 
-from breakout_env import make_breakout_env
+from breakout_env import make_breakout_vector_env
 from breakout_rl.models.dqn import DQNNetwork
 from breakout_rl.tensors import observation_to_tensor
 from breakout_rl.training.dqn_trainer import resolve_device
@@ -20,10 +20,12 @@ from profile_batch_size_experiment import RuntimeSampler, _sample_summary
 
 
 def _build_vector_env(count: int) -> gym.vector.SyncVectorEnv:
-    def make_one() -> gym.Env:
-        return make_breakout_env()
+    return make_breakout_vector_env(count, fire_reset=True)
 
-    return gym.vector.SyncVectorEnv([make_one for _ in range(count)])
+
+def _synchronize(device: torch.device) -> None:
+    if device.type == "cuda":
+        torch.cuda.synchronize(device)
 
 
 def _run_count(
@@ -59,13 +61,17 @@ def _run_count(
                 actions = network(state).argmax(dim=1).cpu().numpy()
                 observations, _, terminated, truncated, _ = envs.step(actions)
                 if np.logical_or(terminated, truncated).any():
-                    observations, _ = envs.reset()
+                    observations, _ = envs.reset(
+                        options={
+                            "reset_mask": np.logical_or(terminated, truncated),
+                        }
+                    )
                 state = observation_to_tensor(
                     np.ascontiguousarray(observations),
                     device=device,
                 )
 
-        torch.cuda.synchronize(device)
+        _synchronize(device)
         start = time.perf_counter()
         total_steps = 0
         state = observation_to_tensor(
@@ -78,12 +84,16 @@ def _run_count(
                 observations, _, terminated, truncated, _ = envs.step(actions)
                 total_steps += count
                 if np.logical_or(terminated, truncated).any():
-                    observations, _ = envs.reset()
+                    observations, _ = envs.reset(
+                        options={
+                            "reset_mask": np.logical_or(terminated, truncated),
+                        }
+                    )
                 state = observation_to_tensor(
                     np.ascontiguousarray(observations),
                     device=device,
                 )
-        torch.cuda.synchronize(device)
+        _synchronize(device)
         elapsed = max(time.perf_counter() - start, 1e-9)
     finally:
         sampler.stop()
@@ -116,7 +126,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--samples-root",
         type=Path,
-        default=Path("assets/day14/vectorized-rollout-profiling"),
+        default=Path("assets/day16/vectorized-rollout-profiling"),
     )
     parser.add_argument("--output", type=Path, default=None)
     return parser
@@ -150,7 +160,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         "schema_version": 1,
         "device": str(device),
         "torch_version": torch.__version__,
-        "cuda_device_name": torch.cuda.get_device_name(device),
+        "cuda_device_name": (
+            torch.cuda.get_device_name(device) if device.type == "cuda" else None
+        ),
         "cpu_threads": args.cpu_threads,
         "results": results,
     }
