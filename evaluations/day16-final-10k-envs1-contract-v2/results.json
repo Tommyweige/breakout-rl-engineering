@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "created_at_utc": "2026-08-28T09:27:37.810842Z",
+  "created_at_utc": "2026-08-28T10:08:29.453477Z",
   "evaluation_id": "day16-final-10k-envs1-contract-v2",
   "policy_type": "dqn",
   "model_id": "envs-1@step-00010000",
@@ -49,9 +49,9 @@
     "requested_device": "cuda",
     "resolved_device": "cuda:0",
     "cuda_available": true,
-    "evaluation_steps": 2115,
-    "wall_clock_seconds": 4.8841790000442415,
-    "steps_per_second": 433.0308123393598,
+    "evaluation_steps": 1831,
+    "wall_clock_seconds": 4.373844800051302,
+    "steps_per_second": 418.62482179946664,
     "cuda_device_index": 0,
     "gpu_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
     "cuda_device_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
@@ -100,8 +100,8 @@
     "day16_vectorized_checkpoint": true
   },
   "checkpoint": {
-    "path": "C:/Users/tommy/.codex/worktrees/a23d/breakout-rl-engineering/runs/day16-finalization-10k/envs-1/checkpoints/step-00010000.pt",
-    "sha256": "f86e10b934320a4f103ab67f3b012d2f8b8c9ed4766b982e4ed7f483d52017cd",
+    "path": "C:/Users/tommy/.codex/worktrees/a23d/breakout-rl-engineering/runs/day16-finalization-10k-v2/envs-1/checkpoints/step-00010000.pt",
+    "sha256": "cb3dc1bebef6c8485b5cc1e03dc554b28c63ed12e564a085229ec5ebb57c3767",
     "step": 10000,
     "source_day14_run_id": null,
     "source_day14_manifest": null,
@@ -128,7 +128,7 @@
       "episode_index": 1,
       "episode_return": 0.0,
       "return": 0.0,
-      "episode_length": 126,
+      "episode_length": 123,
       "terminated": true,
       "truncated": false,
       "time_limit": false,
@@ -137,27 +137,27 @@
       "stop_reason": "terminated",
       "action_distribution": {
         "NOOP": 0,
-        "FIRE": 6,
-        "RIGHT": 3,
-        "LEFT": 117
+        "FIRE": 123,
+        "RIGHT": 0,
+        "LEFT": 0
       },
       "action_distribution_semantics": "executed/wrapper-resolved action",
       "requested_action_distribution": {
         "NOOP": 0,
-        "FIRE": 0,
-        "RIGHT": 3,
-        "LEFT": 123
+        "FIRE": 123,
+        "RIGHT": 0,
+        "LEFT": 0
       },
       "executed_action_distribution": {
         "NOOP": 0,
-        "FIRE": 6,
-        "RIGHT": 3,
-        "LEFT": 117
+        "FIRE": 123,
+        "RIGHT": 0,
+        "LEFT": 0
       },
-      "auto_fire_count": 6,
+      "auto_fire_count": 11,
       "auto_fire_reason_counts": {
-        "after_life_loss": 4,
-        "initial_serve": 2
+        "after_life_loss": 8,
+        "initial_serve": 3
       }
     },
     {
@@ -168,7 +168,7 @@
       "episode_index": 2,
       "episode_return": 0.0,
       "return": 0.0,
-      "episode_length": 125,
+      "episode_length": 122,
       "terminated": true,
       "truncated": false,
       "time_limit": false,
@@ -177,27 +177,27 @@
       "stop_reason": "terminated",
       "action_distribution": {
         "NOOP": 0,
-        "FIRE": 5,
-        "RIGHT": 3,
-        "LEFT": 117
+        "FIRE": 122,
+        "RIGHT": 0,
+        "LEFT": 0
       },
       "action_distribution_semantics": "executed/wrapper-resolved action",
       "requested_action_distribution": {
         "NOOP": 0,
-        "FIRE": 0,
-        "RIGHT": 3,
-        "LEFT": 122
+        "FIRE": 122,
+        "RIGHT": 0,
+        "LEFT": 0
       },
       "executed_action_distribution": {
         "NOOP": 0,
-        "FIRE": 5,
-        "RIGHT": 3,
-        "LEFT": 117
+        "FIRE": 122,
+        "RIGHT": 0,
+        "LEFT": 0
       },
-      "auto_fire_count": 5,
+      "auto_fire_count": 10,
       "auto_fire_reason_counts": {
-        "after_life_loss": 4,
-        "initial_serve": 1
+        "after_life_loss": 8,
+        "initial_serve": 2
       }
     },
     {
@@ -206,9 +206,9 @@
       "episode_seed": 103,
       "seed_index": 0,
       "episode_index": 3,
-      "episode_return": 1.0,
-      "return": 1.0,
-      "episode_length": 154,
+      "episode_return": 0.0,
+      "return": 0.0,
+      "episode_length": 122,
       "terminated": true,
       "truncated": false,
       "time_limit": false,
@@ -217,27 +217,27 @@
       "stop_reason": "terminated",
       "action_distribution": {
         "NOOP": 0,
-        "FIRE": 6,
-        "RIGHT": 5,
-        "LEFT": 143
+        "FIRE": 122,
+        "RIGHT": 0,
+        "LEFT": 0
       },
       "action_distribution_semantics": "executed/wrapper-resolved action",
       "requested_action_distribution": {
         "NOOP": 0,
-        "FIRE": 1,
-        "RIGHT": 5,
-        "LEFT": 148
+        "FIRE": 122,
+        "RIGHT": 0,
+        "LEFT": 0
       },
       "executed_action_distribution": {
         "NOOP": 0,
-        "FIRE": 6,
-        "RIGHT": 5,
-        "LEFT": 143
+        "FIRE": 122,
+        "RIGHT": 0,
+        "LEFT": 0
       },
-      "auto_fire_count": 5,
+      "auto_fire_count": 10,
       "auto_fire_reason_counts": {
-        "after_life_loss": 4,
-        "initial_serve": 1
+        "after_life_loss": 8,
+        "initial_serve": 2
       }
     },
     {
@@ -248,7 +248,7 @@
       "episode_index": 4,
       "episode_return": 0.0,
       "return": 0.0,
-      "episode_length": 125,
+      "episode_length": 122,
       "terminated": true,
       "truncated": false,
       "time_limit": false,
@@ -257,27 +257,27 @@
       "stop_reason": "terminated",
       "action_distribution": {
         "NOOP": 0,
-        "FIRE": 5,
+        "FIRE": 122,
         "RIGHT": 0,
-        "LEFT": 120
+        "LEFT": 0
       },
       "action_distribution_semantics": "executed/wrapper-resolved action",
       "requested_action_distribution": {
         "NOOP": 0,
-        "FIRE": 0,
+        "FIRE": 122,
         "RIGHT": 0,
-        "LEFT": 125
+        "LEFT": 0
       },
       "executed_action_distribution": {
         "NOOP": 0,
-        "FIRE": 5,
+        "FIRE": 122,
         "RIGHT": 0,
-        "LEFT": 120
+        "LEFT": 0
       },
-      "auto_fire_count": 5,
+      "auto_fire_count": 10,
       "auto_fire_reason_counts": {
-        "after_life_loss": 4,
-        "initial_serve": 1
+        "after_life_loss": 8,
+        "initial_serve": 2
       }
     },
     {
@@ -288,7 +288,7 @@
       "episode_index": 5,
       "episode_return": 0.0,
       "return": 0.0,
-      "episode_length": 125,
+      "episode_length": 122,
       "terminated": true,
       "truncated": false,
       "time_limit": false,
@@ -297,27 +297,27 @@
       "stop_reason": "terminated",
       "action_distribution": {
         "NOOP": 0,
-        "FIRE": 5,
+        "FIRE": 122,
         "RIGHT": 0,
-        "LEFT": 120
+        "LEFT": 0
       },
       "action_distribution_semantics": "executed/wrapper-resolved action",
       "requested_action_distribution": {
         "NOOP": 0,
-        "FIRE": 0,
+        "FIRE": 122,
         "RIGHT": 0,
-        "LEFT": 125
+        "LEFT": 0
       },
       "executed_action_distribution": {
         "NOOP": 0,
-        "FIRE": 5,
+        "FIRE": 122,
         "RIGHT": 0,
-        "LEFT": 120
+        "LEFT": 0
       },
-      "auto_fire_count": 5,
+      "auto_fire_count": 10,
       "auto_fire_reason_counts": {
-        "after_life_loss": 4,
-        "initial_serve": 1
+        "after_life_loss": 8,
+        "initial_serve": 2
       }
     },
     {
@@ -328,7 +328,7 @@
       "episode_index": 1,
       "episode_return": 0.0,
       "return": 0.0,
-      "episode_length": 125,
+      "episode_length": 122,
       "terminated": true,
       "truncated": false,
       "time_limit": false,
@@ -337,27 +337,27 @@
       "stop_reason": "terminated",
       "action_distribution": {
         "NOOP": 0,
-        "FIRE": 5,
+        "FIRE": 122,
         "RIGHT": 0,
-        "LEFT": 120
+        "LEFT": 0
       },
       "action_distribution_semantics": "executed/wrapper-resolved action",
       "requested_action_distribution": {
         "NOOP": 0,
-        "FIRE": 0,
+        "FIRE": 122,
         "RIGHT": 0,
-        "LEFT": 125
+        "LEFT": 0
       },
       "executed_action_distribution": {
         "NOOP": 0,
-        "FIRE": 5,
+        "FIRE": 122,
         "RIGHT": 0,
-        "LEFT": 120
+        "LEFT": 0
       },
-      "auto_fire_count": 5,
+      "auto_fire_count": 10,
       "auto_fire_reason_counts": {
-        "after_life_loss": 4,
-        "initial_serve": 1
+        "after_life_loss": 8,
+        "initial_serve": 2
       }
     },
     {
@@ -368,7 +368,7 @@
       "episode_index": 2,
       "episode_return": 0.0,
       "return": 0.0,
-      "episode_length": 125,
+      "episode_length": 122,
       "terminated": true,
       "truncated": false,
       "time_limit": false,
@@ -377,27 +377,27 @@
       "stop_reason": "terminated",
       "action_distribution": {
         "NOOP": 0,
-        "FIRE": 5,
+        "FIRE": 122,
         "RIGHT": 0,
-        "LEFT": 120
+        "LEFT": 0
       },
       "action_distribution_semantics": "executed/wrapper-resolved action",
       "requested_action_distribution": {
         "NOOP": 0,
-        "FIRE": 0,
+        "FIRE": 122,
         "RIGHT": 0,
-        "LEFT": 125
+        "LEFT": 0
       },
       "executed_action_distribution": {
         "NOOP": 0,
-        "FIRE": 5,
+        "FIRE": 122,
         "RIGHT": 0,
-        "LEFT": 120
+        "LEFT": 0
       },
-      "auto_fire_count": 5,
+      "auto_fire_count": 10,
       "auto_fire_reason_counts": {
-        "after_life_loss": 4,
-        "initial_serve": 1
+        "after_life_loss": 8,
+        "initial_serve": 2
       }
     },
     {
@@ -408,7 +408,7 @@
       "episode_index": 3,
       "episode_return": 0.0,
       "return": 0.0,
-      "episode_length": 125,
+      "episode_length": 122,
       "terminated": true,
       "truncated": false,
       "time_limit": false,
@@ -417,27 +417,27 @@
       "stop_reason": "terminated",
       "action_distribution": {
         "NOOP": 0,
-        "FIRE": 5,
+        "FIRE": 122,
         "RIGHT": 0,
-        "LEFT": 120
+        "LEFT": 0
       },
       "action_distribution_semantics": "executed/wrapper-resolved action",
       "requested_action_distribution": {
         "NOOP": 0,
-        "FIRE": 0,
+        "FIRE": 122,
         "RIGHT": 0,
-        "LEFT": 125
+        "LEFT": 0
       },
       "executed_action_distribution": {
         "NOOP": 0,
-        "FIRE": 5,
+        "FIRE": 122,
         "RIGHT": 0,
-        "LEFT": 120
+        "LEFT": 0
       },
-      "auto_fire_count": 5,
+      "auto_fire_count": 10,
       "auto_fire_reason_counts": {
-        "after_life_loss": 4,
-        "initial_serve": 1
+        "after_life_loss": 8,
+        "initial_serve": 2
       }
     },
     {
@@ -448,7 +448,7 @@
       "episode_index": 4,
       "episode_return": 0.0,
       "return": 0.0,
-      "episode_length": 125,
+      "episode_length": 122,
       "terminated": true,
       "truncated": false,
       "time_limit": false,
@@ -457,27 +457,27 @@
       "stop_reason": "terminated",
       "action_distribution": {
         "NOOP": 0,
-        "FIRE": 5,
-        "RIGHT": 3,
-        "LEFT": 117
+        "FIRE": 122,
+        "RIGHT": 0,
+        "LEFT": 0
       },
       "action_distribution_semantics": "executed/wrapper-resolved action",
       "requested_action_distribution": {
         "NOOP": 0,
-        "FIRE": 0,
-        "RIGHT": 3,
-        "LEFT": 122
+        "FIRE": 122,
+        "RIGHT": 0,
+        "LEFT": 0
       },
       "executed_action_distribution": {
         "NOOP": 0,
-        "FIRE": 5,
-        "RIGHT": 3,
-        "LEFT": 117
+        "FIRE": 122,
+        "RIGHT": 0,
+        "LEFT": 0
       },
-      "auto_fire_count": 5,
+      "auto_fire_count": 10,
       "auto_fire_reason_counts": {
-        "after_life_loss": 4,
-        "initial_serve": 1
+        "after_life_loss": 8,
+        "initial_serve": 2
       }
     },
     {
@@ -488,7 +488,7 @@
       "episode_index": 5,
       "episode_return": 0.0,
       "return": 0.0,
-      "episode_length": 125,
+      "episode_length": 122,
       "terminated": true,
       "truncated": false,
       "time_limit": false,
@@ -497,27 +497,27 @@
       "stop_reason": "terminated",
       "action_distribution": {
         "NOOP": 0,
-        "FIRE": 5,
+        "FIRE": 122,
         "RIGHT": 0,
-        "LEFT": 120
+        "LEFT": 0
       },
       "action_distribution_semantics": "executed/wrapper-resolved action",
       "requested_action_distribution": {
         "NOOP": 0,
-        "FIRE": 0,
+        "FIRE": 122,
         "RIGHT": 0,
-        "LEFT": 125
+        "LEFT": 0
       },
       "executed_action_distribution": {
         "NOOP": 0,
-        "FIRE": 5,
+        "FIRE": 122,
         "RIGHT": 0,
-        "LEFT": 120
+        "LEFT": 0
       },
-      "auto_fire_count": 5,
+      "auto_fire_count": 10,
       "auto_fire_reason_counts": {
-        "after_life_loss": 4,
-        "initial_serve": 1
+        "after_life_loss": 8,
+        "initial_serve": 2
       }
     },
     {
@@ -528,7 +528,7 @@
       "episode_index": 1,
       "episode_return": 0.0,
       "return": 0.0,
-      "episode_length": 125,
+      "episode_length": 122,
       "terminated": true,
       "truncated": false,
       "time_limit": false,
@@ -537,27 +537,27 @@
       "stop_reason": "terminated",
       "action_distribution": {
         "NOOP": 0,
-        "FIRE": 5,
+        "FIRE": 122,
         "RIGHT": 0,
-        "LEFT": 120
+        "LEFT": 0
       },
       "action_distribution_semantics": "executed/wrapper-resolved action",
       "requested_action_distribution": {
         "NOOP": 0,
-        "FIRE": 0,
+        "FIRE": 122,
         "RIGHT": 0,
-        "LEFT": 125
+        "LEFT": 0
       },
       "executed_action_distribution": {
         "NOOP": 0,
-        "FIRE": 5,
+        "FIRE": 122,
         "RIGHT": 0,
-        "LEFT": 120
+        "LEFT": 0
       },
-      "auto_fire_count": 5,
+      "auto_fire_count": 10,
       "auto_fire_reason_counts": {
-        "after_life_loss": 4,
-        "initial_serve": 1
+        "after_life_loss": 8,
+        "initial_serve": 2
       }
     },
     {
@@ -568,7 +568,7 @@
       "episode_index": 2,
       "episode_return": 0.0,
       "return": 0.0,
-      "episode_length": 125,
+      "episode_length": 122,
       "terminated": true,
       "truncated": false,
       "time_limit": false,
@@ -577,27 +577,27 @@
       "stop_reason": "terminated",
       "action_distribution": {
         "NOOP": 0,
-        "FIRE": 5,
-        "RIGHT": 26,
-        "LEFT": 94
+        "FIRE": 122,
+        "RIGHT": 0,
+        "LEFT": 0
       },
       "action_distribution_semantics": "executed/wrapper-resolved action",
       "requested_action_distribution": {
         "NOOP": 0,
-        "FIRE": 0,
-        "RIGHT": 26,
-        "LEFT": 99
+        "FIRE": 122,
+        "RIGHT": 0,
+        "LEFT": 0
       },
       "executed_action_distribution": {
         "NOOP": 0,
-        "FIRE": 5,
-        "RIGHT": 26,
-        "LEFT": 94
+        "FIRE": 122,
+        "RIGHT": 0,
+        "LEFT": 0
       },
-      "auto_fire_count": 5,
+      "auto_fire_count": 10,
       "auto_fire_reason_counts": {
-        "after_life_loss": 4,
-        "initial_serve": 1
+        "after_life_loss": 8,
+        "initial_serve": 2
       }
     },
     {
@@ -606,9 +606,9 @@
       "episode_seed": 305,
       "seed_index": 2,
       "episode_index": 3,
-      "episode_return": 3.0,
-      "return": 3.0,
-      "episode_length": 214,
+      "episode_return": 0.0,
+      "return": 0.0,
+      "episode_length": 122,
       "terminated": true,
       "truncated": false,
       "time_limit": false,
@@ -617,27 +617,27 @@
       "stop_reason": "terminated",
       "action_distribution": {
         "NOOP": 0,
-        "FIRE": 5,
-        "RIGHT": 13,
-        "LEFT": 196
+        "FIRE": 122,
+        "RIGHT": 0,
+        "LEFT": 0
       },
       "action_distribution_semantics": "executed/wrapper-resolved action",
       "requested_action_distribution": {
         "NOOP": 0,
-        "FIRE": 0,
-        "RIGHT": 13,
-        "LEFT": 201
+        "FIRE": 122,
+        "RIGHT": 0,
+        "LEFT": 0
       },
       "executed_action_distribution": {
         "NOOP": 0,
-        "FIRE": 5,
-        "RIGHT": 13,
-        "LEFT": 196
+        "FIRE": 122,
+        "RIGHT": 0,
+        "LEFT": 0
       },
-      "auto_fire_count": 5,
+      "auto_fire_count": 10,
       "auto_fire_reason_counts": {
-        "after_life_loss": 4,
-        "initial_serve": 1
+        "after_life_loss": 8,
+        "initial_serve": 2
       }
     },
     {
@@ -646,9 +646,9 @@
       "episode_seed": 306,
       "seed_index": 2,
       "episode_index": 4,
-      "episode_return": 7.0,
-      "return": 7.0,
-      "episode_length": 246,
+      "episode_return": 0.0,
+      "return": 0.0,
+      "episode_length": 122,
       "terminated": true,
       "truncated": false,
       "time_limit": false,
@@ -657,27 +657,27 @@
       "stop_reason": "terminated",
       "action_distribution": {
         "NOOP": 0,
-        "FIRE": 5,
-        "RIGHT": 20,
-        "LEFT": 221
+        "FIRE": 122,
+        "RIGHT": 0,
+        "LEFT": 0
       },
       "action_distribution_semantics": "executed/wrapper-resolved action",
       "requested_action_distribution": {
         "NOOP": 0,
-        "FIRE": 0,
-        "RIGHT": 20,
-        "LEFT": 226
+        "FIRE": 122,
+        "RIGHT": 0,
+        "LEFT": 0
       },
       "executed_action_distribution": {
         "NOOP": 0,
-        "FIRE": 5,
-        "RIGHT": 20,
-        "LEFT": 221
+        "FIRE": 122,
+        "RIGHT": 0,
+        "LEFT": 0
       },
-      "auto_fire_count": 5,
+      "auto_fire_count": 10,
       "auto_fire_reason_counts": {
-        "after_life_loss": 4,
-        "initial_serve": 1
+        "after_life_loss": 8,
+        "initial_serve": 2
       }
     },
     {
@@ -688,7 +688,7 @@
       "episode_index": 5,
       "episode_return": 0.0,
       "return": 0.0,
-      "episode_length": 125,
+      "episode_length": 122,
       "terminated": true,
       "truncated": false,
       "time_limit": false,
@@ -697,34 +697,33 @@
       "stop_reason": "terminated",
       "action_distribution": {
         "NOOP": 0,
-        "FIRE": 5,
+        "FIRE": 122,
         "RIGHT": 0,
-        "LEFT": 120
+        "LEFT": 0
       },
       "action_distribution_semantics": "executed/wrapper-resolved action",
       "requested_action_distribution": {
         "NOOP": 0,
-        "FIRE": 0,
+        "FIRE": 122,
         "RIGHT": 0,
-        "LEFT": 125
+        "LEFT": 0
       },
       "executed_action_distribution": {
         "NOOP": 0,
-        "FIRE": 5,
+        "FIRE": 122,
         "RIGHT": 0,
-        "LEFT": 120
+        "LEFT": 0
       },
-      "auto_fire_count": 5,
+      "auto_fire_count": 10,
       "auto_fire_reason_counts": {
-        "after_life_loss": 4,
-        "initial_serve": 1
+        "after_life_loss": 8,
+        "initial_serve": 2
       }
     }
   ],
   "per_episode_returns": [
     0.0,
     0.0,
-    1.0,
     0.0,
     0.0,
     0.0,
@@ -734,92 +733,93 @@
     0.0,
     0.0,
     0.0,
-    3.0,
-    7.0,
+    0.0,
+    0.0,
+    0.0,
     0.0
   ],
   "per_episode_lengths": [
-    126,
-    125,
-    154,
-    125,
-    125,
-    125,
-    125,
-    125,
-    125,
-    125,
-    125,
-    125,
-    214,
-    246,
-    125
+    123,
+    122,
+    122,
+    122,
+    122,
+    122,
+    122,
+    122,
+    122,
+    122,
+    122,
+    122,
+    122,
+    122,
+    122
   ],
   "action_distribution": {
     "NOOP": 0,
-    "FIRE": 77,
-    "RIGHT": 73,
-    "LEFT": 1965
+    "FIRE": 1831,
+    "RIGHT": 0,
+    "LEFT": 0
   },
   "action_distribution_semantics": "executed/wrapper-resolved action",
   "requested_action_distribution": {
     "NOOP": 0,
-    "FIRE": 1,
-    "RIGHT": 73,
-    "LEFT": 2041
+    "FIRE": 1831,
+    "RIGHT": 0,
+    "LEFT": 0
   },
   "executed_action_distribution": {
     "NOOP": 0,
-    "FIRE": 77,
-    "RIGHT": 73,
-    "LEFT": 1965
+    "FIRE": 1831,
+    "RIGHT": 0,
+    "LEFT": 0
   },
-  "auto_fire_count": 76,
+  "auto_fire_count": 151,
   "auto_fire_reason_counts": {
-    "after_life_loss": 60,
-    "initial_serve": 16
+    "after_life_loss": 120,
+    "initial_serve": 31
   },
   "summary": {
     "count": 15,
-    "mean_return": 0.7333333333333333,
+    "mean_return": 0.0,
     "median_return": 0.0,
-    "std_return": 1.8427033281447005,
+    "std_return": 0.0,
     "min_return": 0.0,
-    "max_return": 7.0,
-    "mean_episode_length": 141.0,
+    "max_return": 0.0,
+    "mean_episode_length": 122.06666666666666,
     "complete_episodes": 15,
     "finished_episode_count": 15,
     "terminated_count": 15,
     "truncated_count": 0,
     "time_limit_truncated_count": 0,
     "truncation_rate": 0.0,
-    "mean_return_terminated": 0.7333333333333333,
+    "mean_return_terminated": 0.0,
     "mean_return_truncated": null,
-    "mean_length_terminated": 141.0,
+    "mean_length_terminated": 122.06666666666666,
     "mean_length_truncated": null,
     "action_distribution_semantics": "executed/wrapper-resolved action",
     "action_distribution": {
-      "FIRE": 77,
-      "LEFT": 1965,
+      "FIRE": 1831,
+      "LEFT": 0,
       "NOOP": 0,
-      "RIGHT": 73
+      "RIGHT": 0
     },
     "requested_action_distribution": {
-      "FIRE": 1,
-      "LEFT": 2041,
+      "FIRE": 1831,
+      "LEFT": 0,
       "NOOP": 0,
-      "RIGHT": 73
+      "RIGHT": 0
     },
     "executed_action_distribution": {
-      "FIRE": 77,
-      "LEFT": 1965,
+      "FIRE": 1831,
+      "LEFT": 0,
       "NOOP": 0,
-      "RIGHT": 73
+      "RIGHT": 0
     },
-    "auto_fire_count": 76,
+    "auto_fire_count": 151,
     "auto_fire_reason_counts": {
-      "after_life_loss": 60,
-      "initial_serve": 16
+      "after_life_loss": 120,
+      "initial_serve": 31
     }
   },
   "metadata": {

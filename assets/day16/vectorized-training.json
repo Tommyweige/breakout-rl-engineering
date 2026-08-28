@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at_utc": "2026-08-28T09:10:59.564976+00:00",
+  "generated_at_utc": "2026-08-28T09:55:55.125786+00:00",
   "device": "cuda:0",
   "replay_backend": "gpu",
   "contract_path": "configs/eval/breakout_contract_v2.json",
@@ -62,28 +62,28 @@
     "action_selection_batch_semantics": "one batched forward selects all N actions before env.step; later transitions in a crossing batch use the pre-update online-network snapshot",
     "strict_action_selection_parity_rule": "strict parity requires num_envs <= train_frequency and train_frequency % num_envs == 0",
     "strict_action_selection_parity_requested": false,
-    "git_commit_sha": "59707b76c2906afb16f79b1476f733c2d296a70d",
+    "git_commit_sha": "4031b32edb451d2b89fbbc55d49a089ff2df88fa",
     "profile_stages": true
   },
   "results": [
     {
       "environment_count": 1,
-      "run_dir": "runs\\day16-finalization-10k\\envs-1",
+      "run_dir": "runs\\day16-finalization-10k-v2\\envs-1",
       "resolved_device": "cuda:0",
       "summary": {
         "status": "completed",
         "trainer": "vectorized_dqn",
         "run_id": "envs-1",
-        "run_dir": "runs\\day16-finalization-10k\\envs-1",
+        "run_dir": "runs\\day16-finalization-10k-v2\\envs-1",
         "seed": 42,
         "num_envs": 1,
         "total_steps": 10000,
         "total_transitions": 10000,
         "physical_environment_steps": 10000,
         "vector_iterations": 10000,
-        "episodes": 58,
+        "episodes": 51,
         "per_environment_episode_counts": [
-          58
+          51
         ],
         "optimizer_updates": 2251,
         "target_sync_count": 21,
@@ -98,20 +98,20 @@
           "capacity": 10000,
           "ratio": 1.0
         },
-        "steps_per_second": 254.34788635636818,
-        "environment_transitions_per_second": 254.34788635636818,
-        "physical_environment_steps_per_second": 254.34788635636818,
-        "vector_iterations_per_second": 254.34788635636818,
+        "steps_per_second": 298.19823823343904,
+        "environment_transitions_per_second": 298.19823823343904,
+        "physical_environment_steps_per_second": 298.19823823343904,
+        "vector_iterations_per_second": 298.19823823343904,
         "action_inference_batches": 10000,
         "action_inference_transitions": 10000,
-        "action_inference_transitions_per_second": 254.34788635636818,
-        "action_inference_batches_per_second": 254.34788635636818,
+        "action_inference_transitions_per_second": 298.19823823343904,
+        "action_inference_batches_per_second": 298.19823823343904,
         "replay_insertion_calls": 10000,
         "replay_insertion_transitions": 10000,
-        "replay_insertion_transitions_per_second": 254.34788635636818,
-        "replay_insertion_calls_per_second": 254.34788635636818,
-        "optimizer_updates_per_second": 57.25370921881848,
-        "training_samples_per_second": 1832.1186950021913,
+        "replay_insertion_transitions_per_second": 298.19823823343904,
+        "replay_insertion_calls_per_second": 298.19823823343904,
+        "optimizer_updates_per_second": 67.12442342634712,
+        "training_samples_per_second": 2147.981549643108,
         "runtime": {
           "python_version": "3.12.13",
           "pytorch_version": "2.13.0+cu130",
@@ -135,13 +135,13 @@
           "cuda_peak_allocated_bytes": 639140864,
           "cuda_reserved_bytes": 658505728,
           "cuda_peak_reserved_bytes": 658505728,
-          "gpu_utilization_percent": 26.0,
+          "gpu_utilization_percent": 21.0,
           "gpu_memory_total_bytes": 8585740288,
           "gpu_utilization_source": "nvidia-smi",
-          "wall_clock_seconds": 39.31622999999672,
-          "steps_per_second": 254.34788635636818,
+          "wall_clock_seconds": 33.534738700138405,
+          "steps_per_second": 298.19823823343904,
           "seed": 42,
-          "git_commit_sha": "59707b76c2906afb16f79b1476f733c2d296a70d",
+          "git_commit_sha": "4031b32edb451d2b89fbbc55d49a089ff2df88fa",
           "environment_id": "ALE/Breakout-v5",
           "vectorized": true,
           "num_envs": 1,
@@ -151,21 +151,21 @@
             84
           ],
           "action_count": 4,
-          "environment_transitions_per_second": 254.34788635636818,
+          "environment_transitions_per_second": 298.19823823343904,
           "physical_environment_steps": 10000,
-          "physical_environment_steps_per_second": 254.34788635636818,
+          "physical_environment_steps_per_second": 298.19823823343904,
           "vector_iterations": 10000,
-          "vector_iterations_per_second": 254.34788635636818,
+          "vector_iterations_per_second": 298.19823823343904,
           "action_inference_batches": 10000,
           "action_inference_transitions": 10000,
-          "action_inference_transitions_per_second": 254.34788635636818,
-          "action_inference_batches_per_second": 254.34788635636818,
+          "action_inference_transitions_per_second": 298.19823823343904,
+          "action_inference_batches_per_second": 298.19823823343904,
           "replay_insertion_calls": 10000,
           "replay_insertion_transitions": 10000,
-          "replay_insertion_transitions_per_second": 254.34788635636818,
-          "replay_insertion_calls_per_second": 254.34788635636818,
-          "optimizer_updates_per_second": 57.25370921881848,
-          "training_samples_per_second": 1832.1186950021913,
+          "replay_insertion_transitions_per_second": 298.19823823343904,
+          "replay_insertion_calls_per_second": 298.19823823343904,
+          "optimizer_updates_per_second": 67.12442342634712,
+          "training_samples_per_second": 2147.981549643108,
           "diagnostics_interval": 100,
           "metrics_flush_interval": 500,
           "metrics_row_cadence": 1,
@@ -185,105 +185,105 @@
           "stage_timings": {
             "batched_action_inference": {
               "calls": 10000,
-              "wall_seconds": 13.183965683216229,
-              "cpu_seconds": 13.328125,
-              "gpu_seconds": 12.852366907656192
+              "wall_seconds": 11.066797299543396,
+              "cpu_seconds": 11.46875,
+              "gpu_seconds": 10.815940350413323
             },
             "env_step": {
               "calls": 10000,
-              "wall_seconds": 7.031138205900788,
-              "cpu_seconds": 6.609375
+              "wall_seconds": 6.482708007795736,
+              "cpu_seconds": 4.9375
             },
             "batched_replay_insert": {
               "calls": 10000,
-              "wall_seconds": 3.943925797007978,
-              "cpu_seconds": 4.34375,
-              "gpu_seconds": 3.701207360073924
+              "wall_seconds": 3.1893019101116806,
+              "cpu_seconds": 3.59375,
+              "gpu_seconds": 2.971586144015193
             },
             "metrics_write": {
               "calls": 10000,
-              "wall_seconds": 0.3289124923758209,
-              "cpu_seconds": 0.328125
+              "wall_seconds": 0.3069146750494838,
+              "cpu_seconds": 0.390625
             },
             "gpu_replay_gather_cast": {
               "calls": 2251,
-              "wall_seconds": 1.0078422909136862,
-              "cpu_seconds": 0.921875,
-              "gpu_seconds": 1.0102440343648196
+              "wall_seconds": 0.8851241960655898,
+              "cpu_seconds": 0.8125,
+              "gpu_seconds": 0.8859182407706976
             },
             "forward": {
               "calls": 2251,
-              "wall_seconds": 1.496474709827453,
-              "cpu_seconds": 1.234375,
-              "gpu_seconds": 1.4770603222250938
+              "wall_seconds": 1.2216322019230574,
+              "cpu_seconds": 1.25,
+              "gpu_seconds": 1.190437376692891
             },
             "target_forward": {
               "calls": 2251,
-              "wall_seconds": 1.5376078982371837,
-              "cpu_seconds": 1.453125,
-              "gpu_seconds": 1.5101435538232326
+              "wall_seconds": 1.332784494617954,
+              "cpu_seconds": 1.15625,
+              "gpu_seconds": 1.2985700484365226
             },
             "loss": {
               "calls": 2251,
-              "wall_seconds": 0.28917439957149327,
-              "cpu_seconds": 0.296875,
-              "gpu_seconds": 0.24733263993635773
+              "wall_seconds": 0.24445349187590182,
+              "cpu_seconds": 0.1875,
+              "gpu_seconds": 0.20948559926031157
             },
             "backward": {
               "calls": 2251,
-              "wall_seconds": 4.13286050921306,
-              "cpu_seconds": 5.40625,
-              "gpu_seconds": 4.10181460043788
+              "wall_seconds": 3.233326901681721,
+              "cpu_seconds": 4.890625,
+              "gpu_seconds": 3.2132073588371277
             },
             "optimizer_step": {
               "calls": 2251,
-              "wall_seconds": 2.5167422932572663,
-              "cpu_seconds": 1.140625,
-              "gpu_seconds": 2.5456742422282694
+              "wall_seconds": 2.2565683075226843,
+              "cpu_seconds": 0.984375,
+              "gpu_seconds": 2.3085106895565985
             },
             "dqn_update": {
               "calls": 2251,
-              "wall_seconds": 10.872602701652795,
-              "cpu_seconds": 10.234375,
-              "gpu_seconds": 10.877102436542511
+              "wall_seconds": 9.128117298474535,
+              "cpu_seconds": 9.46875,
+              "gpu_seconds": 9.122686389923096
             },
             "gradient_diagnostics": {
               "calls": 23,
-              "wall_seconds": 0.052755700424313545,
-              "cpu_seconds": 0.03125,
-              "gpu_seconds": 0.05092147243022919
+              "wall_seconds": 0.03908449970185757,
+              "cpu_seconds": 0.015625,
+              "gpu_seconds": 0.03857948803901672
             },
             "diagnostics": {
               "calls": 23,
-              "wall_seconds": 0.04550010012462735,
-              "cpu_seconds": 0.0625,
-              "gpu_seconds": 0.044103872060775755
+              "wall_seconds": 0.03374169999733567,
+              "cpu_seconds": 0.015625,
+              "gpu_seconds": 0.032649312138557436
             },
             "checkpoint": {
               "calls": 1,
-              "wall_seconds": 0.02867359993979335,
+              "wall_seconds": 0.026665400015190244,
               "cpu_seconds": 0.03125
             }
           }
         },
-        "last_loss": 5.2976334700360894e-05,
-        "last_q_mean": 0.2872046232223511,
-        "last_q_max": 0.35038846731185913,
-        "last_q_min": 0.2403005063533783,
-        "last_target_mean": 0.29187846183776855,
-        "last_target_max": 0.37164735794067383,
-        "last_td_error_mean_abs": 0.00788203626871109,
-        "last_td_error_max_abs": 0.027512848377227783,
+        "last_loss": 0.00027180061442777514,
+        "last_q_mean": 0.31741970777511597,
+        "last_q_max": 0.5527478456497192,
+        "last_q_min": 0.22457551956176758,
+        "last_target_mean": 0.32134580612182617,
+        "last_target_max": 0.5406745672225952,
+        "last_td_error_mean_abs": 0.017541535198688507,
+        "last_td_error_max_abs": 0.08395230770111084,
         "action_distribution": {
           "NOOP": 2786,
-          "FIRE": 2644,
-          "RIGHT": 2033,
-          "LEFT": 2537
+          "FIRE": 2793,
+          "RIGHT": 2617,
+          "LEFT": 1804
         },
         "random_decision_count": 4769,
         "greedy_decision_count": 5231,
         "random_decision_ratio": 0.4769,
-        "last_checkpoint": "runs\\day16-finalization-10k\\envs-1\\checkpoints\\step-00010000.pt",
+        "last_checkpoint": "runs\\day16-finalization-10k-v2\\envs-1\\checkpoints\\step-00010000.pt",
         "action_selection_batch_semantics": "one batched forward selects all N actions before env.step; if the vector step crosses an optimizer boundary, later transitions use the pre-update online-network snapshot",
         "strict_action_selection_parity_rule": "strict parity requires num_envs <= train_frequency and train_frequency % num_envs == 0",
         "strict_action_selection_parity_requested": false,
@@ -295,53 +295,53 @@
         "sampling_interval_seconds": 1.0,
         "process_cpu_percent_method": "time.process_time normalized by wall time and logical CPU count",
         "cpu_logical_count": 16,
-        "sample_count": 41,
-        "gpu_sample_count": 41,
+        "sample_count": 35,
+        "gpu_sample_count": 35,
         "gpu_utilization_percent": {
-          "mean": 24.195121951219512,
-          "p50": 24.0,
-          "p95": 33.0,
-          "max": 33.0
+          "mean": 20.8,
+          "p50": 22.0,
+          "p95": 24.0,
+          "max": 25.0
         },
         "gpu_power_watts": {
-          "mean": 23.58951219512195,
-          "p50": 23.14,
-          "p95": 28.78,
-          "max": 32.46
+          "mean": 23.148285714285716,
+          "p50": 23.74,
+          "p95": 25.098,
+          "max": 25.17
         },
         "gpu_memory_used_bytes": {
-          "mean": 2634380962.3414636,
-          "peak": 2860515328.0
+          "mean": 2526289217.8285713,
+          "peak": 2577399808.0
         },
         "gpu_memory_total_bytes": 8585740288.0,
         "process_cpu_percent": {
-          "mean": 8.893214533315383,
-          "p50": 6.1332246495878415,
-          "p95": 6.374136964405311,
-          "max": 120.35526620861904
+          "mean": 5.991417181664119,
+          "p50": 6.1853238975658,
+          "p95": 6.390514727173804,
+          "max": 6.7484026196103555
         },
         "available": true
       },
-      "wall_clock_seconds_from_benchmark": 40.92340529989451
+      "wall_clock_seconds_from_benchmark": 34.83951650001109
     },
     {
       "environment_count": 2,
-      "run_dir": "runs\\day16-finalization-10k\\envs-2",
+      "run_dir": "runs\\day16-finalization-10k-v2\\envs-2",
       "resolved_device": "cuda:0",
       "summary": {
         "status": "completed",
         "trainer": "vectorized_dqn",
         "run_id": "envs-2",
-        "run_dir": "runs\\day16-finalization-10k\\envs-2",
+        "run_dir": "runs\\day16-finalization-10k-v2\\envs-2",
         "seed": 42,
         "num_envs": 2,
         "total_steps": 10000,
         "total_transitions": 10000,
         "physical_environment_steps": 10000,
         "vector_iterations": 5000,
-        "episodes": 55,
+        "episodes": 54,
         "per_environment_episode_counts": [
-          27,
+          26,
           28
         ],
         "optimizer_updates": 2251,
@@ -357,20 +357,20 @@
           "capacity": 10000,
           "ratio": 1.0
         },
-        "steps_per_second": 275.97979699781973,
-        "environment_transitions_per_second": 275.97979699781973,
-        "physical_environment_steps_per_second": 275.97979699781973,
-        "vector_iterations_per_second": 137.98989849890987,
+        "steps_per_second": 387.89395081774313,
+        "environment_transitions_per_second": 387.89395081774313,
+        "physical_environment_steps_per_second": 387.89395081774313,
+        "vector_iterations_per_second": 193.94697540887157,
         "action_inference_batches": 5000,
         "action_inference_transitions": 10000,
-        "action_inference_transitions_per_second": 275.97979699781973,
-        "action_inference_batches_per_second": 137.98989849890987,
+        "action_inference_transitions_per_second": 387.89395081774313,
+        "action_inference_batches_per_second": 193.94697540887157,
         "replay_insertion_calls": 5000,
         "replay_insertion_transitions": 10000,
-        "replay_insertion_transitions_per_second": 275.97979699781973,
-        "replay_insertion_calls_per_second": 137.98989849890987,
-        "optimizer_updates_per_second": 62.12305230420922,
-        "training_samples_per_second": 1987.937673734695,
+        "replay_insertion_transitions_per_second": 387.89395081774313,
+        "replay_insertion_calls_per_second": 193.94697540887157,
+        "optimizer_updates_per_second": 87.31492832907398,
+        "training_samples_per_second": 2794.0777065303673,
         "runtime": {
           "python_version": "3.12.13",
           "pytorch_version": "2.13.0+cu130",
@@ -394,13 +394,13 @@
           "cuda_peak_allocated_bytes": 639140864,
           "cuda_reserved_bytes": 658505728,
           "cuda_peak_reserved_bytes": 658505728,
-          "gpu_utilization_percent": 45.0,
+          "gpu_utilization_percent": 23.0,
           "gpu_memory_total_bytes": 8585740288,
           "gpu_utilization_source": "nvidia-smi",
-          "wall_clock_seconds": 36.234536400064826,
-          "steps_per_second": 275.97979699781973,
+          "wall_clock_seconds": 25.780242200009525,
+          "steps_per_second": 387.89395081774313,
           "seed": 42,
-          "git_commit_sha": "59707b76c2906afb16f79b1476f733c2d296a70d",
+          "git_commit_sha": "4031b32edb451d2b89fbbc55d49a089ff2df88fa",
           "environment_id": "ALE/Breakout-v5",
           "vectorized": true,
           "num_envs": 2,
@@ -410,21 +410,21 @@
             84
           ],
           "action_count": 4,
-          "environment_transitions_per_second": 275.97979699781973,
+          "environment_transitions_per_second": 387.89395081774313,
           "physical_environment_steps": 10000,
-          "physical_environment_steps_per_second": 275.97979699781973,
+          "physical_environment_steps_per_second": 387.89395081774313,
           "vector_iterations": 5000,
-          "vector_iterations_per_second": 137.98989849890987,
+          "vector_iterations_per_second": 193.94697540887157,
           "action_inference_batches": 5000,
           "action_inference_transitions": 10000,
-          "action_inference_transitions_per_second": 275.97979699781973,
-          "action_inference_batches_per_second": 137.98989849890987,
+          "action_inference_transitions_per_second": 387.89395081774313,
+          "action_inference_batches_per_second": 193.94697540887157,
           "replay_insertion_calls": 5000,
           "replay_insertion_transitions": 10000,
-          "replay_insertion_transitions_per_second": 275.97979699781973,
-          "replay_insertion_calls_per_second": 137.98989849890987,
-          "optimizer_updates_per_second": 62.12305230420922,
-          "training_samples_per_second": 1987.937673734695,
+          "replay_insertion_transitions_per_second": 387.89395081774313,
+          "replay_insertion_calls_per_second": 193.94697540887157,
+          "optimizer_updates_per_second": 87.31492832907398,
+          "training_samples_per_second": 2794.0777065303673,
           "diagnostics_interval": 100,
           "metrics_flush_interval": 500,
           "metrics_row_cadence": 1,
@@ -444,105 +444,105 @@
           "stage_timings": {
             "batched_action_inference": {
               "calls": 5000,
-              "wall_seconds": 9.279797204071656,
-              "cpu_seconds": 17.140625,
-              "gpu_seconds": 8.764449918627738
+              "wall_seconds": 6.002982397796586,
+              "cpu_seconds": 9.8125,
+              "gpu_seconds": 5.852575489223003
             },
             "env_step": {
               "calls": 5000,
-              "wall_seconds": 7.071099902968854,
-              "cpu_seconds": 12.0625
+              "wall_seconds": 6.036122592864558,
+              "cpu_seconds": 10.9375
             },
             "batched_replay_insert": {
               "calls": 5000,
-              "wall_seconds": 4.641903194366023,
-              "cpu_seconds": 10.5,
-              "gpu_seconds": 4.832285152971744
+              "wall_seconds": 1.8080332060344517,
+              "cpu_seconds": 5.09375,
+              "gpu_seconds": 1.6760416971743106
             },
             "metrics_write": {
               "calls": 10000,
-              "wall_seconds": 0.29985960479825735,
-              "cpu_seconds": 0.46875
+              "wall_seconds": 0.2641320056281984,
+              "cpu_seconds": 0.515625
             },
             "gpu_replay_gather_cast": {
               "calls": 2251,
-              "wall_seconds": 1.1164178010076284,
-              "cpu_seconds": 1.828125,
-              "gpu_seconds": 1.303488544151187
+              "wall_seconds": 0.8764129921328276,
+              "cpu_seconds": 1.40625,
+              "gpu_seconds": 0.8690734085291624
             },
             "forward": {
               "calls": 2251,
-              "wall_seconds": 1.6547381915152073,
-              "cpu_seconds": 3.28125,
-              "gpu_seconds": 1.5761510717868805
+              "wall_seconds": 1.2462890974711627,
+              "cpu_seconds": 2.40625,
+              "gpu_seconds": 1.2210362883508206
             },
             "target_forward": {
               "calls": 2251,
-              "wall_seconds": 1.656723502324894,
-              "cpu_seconds": 2.953125,
-              "gpu_seconds": 1.6536515526622533
+              "wall_seconds": 1.2781318998895586,
+              "cpu_seconds": 2.265625,
+              "gpu_seconds": 1.2552905591130257
             },
             "loss": {
               "calls": 2251,
-              "wall_seconds": 0.27985909627750516,
-              "cpu_seconds": 0.625,
-              "gpu_seconds": 0.2165929915253073
+              "wall_seconds": 0.22582510439679027,
+              "cpu_seconds": 0.25,
+              "gpu_seconds": 0.18480854226183147
             },
             "backward": {
               "calls": 2251,
-              "wall_seconds": 4.046743999002501,
-              "cpu_seconds": 8.890625,
-              "gpu_seconds": 3.966478401660919
+              "wall_seconds": 3.2868808009661734,
+              "cpu_seconds": 7.84375,
+              "gpu_seconds": 3.259821632504463
             },
             "optimizer_step": {
               "calls": 2251,
-              "wall_seconds": 2.809881398221478,
-              "cpu_seconds": 4.765625,
-              "gpu_seconds": 2.7853688957095146
+              "wall_seconds": 2.1270047053694725,
+              "cpu_seconds": 2.875,
+              "gpu_seconds": 2.158362976670265
             },
             "dqn_update": {
               "calls": 2251,
-              "wall_seconds": 11.478662206791341,
-              "cpu_seconds": 22.015625,
-              "gpu_seconds": 11.387991400957107
+              "wall_seconds": 8.936987703666091,
+              "cpu_seconds": 16.734375,
+              "gpu_seconds": 8.929103005886079
             },
             "gradient_diagnostics": {
               "calls": 23,
-              "wall_seconds": 0.0782123003154993,
-              "cpu_seconds": 0.09375,
-              "gpu_seconds": 0.07570064020156861
+              "wall_seconds": 0.04419989977031946,
+              "cpu_seconds": 0.046875,
+              "gpu_seconds": 0.04372806441783905
             },
             "diagnostics": {
               "calls": 23,
-              "wall_seconds": 0.05537860025651753,
-              "cpu_seconds": 0.09375,
-              "gpu_seconds": 0.05355478417873383
+              "wall_seconds": 0.03676749998703599,
+              "cpu_seconds": 0.125,
+              "gpu_seconds": 0.03584182393550873
             },
             "checkpoint": {
               "calls": 1,
-              "wall_seconds": 0.02547620004042983,
-              "cpu_seconds": 0.03125
+              "wall_seconds": 0.028152199927717447,
+              "cpu_seconds": 0.0625
             }
           }
         },
-        "last_loss": 0.00023701753525529057,
-        "last_q_mean": 0.2146146446466446,
-        "last_q_max": 0.34751132130622864,
-        "last_q_min": 0.15927976369857788,
-        "last_target_mean": 0.20356732606887817,
-        "last_target_max": 0.2909080684185028,
-        "last_td_error_mean_abs": 0.018114786595106125,
-        "last_td_error_max_abs": 0.05660325288772583,
+        "last_loss": 0.00034284431603737175,
+        "last_q_mean": 0.3147032558917999,
+        "last_q_max": 0.5336678624153137,
+        "last_q_min": 0.2473163902759552,
+        "last_target_mean": 0.31147927045822144,
+        "last_target_max": 0.4190827012062073,
+        "last_td_error_mean_abs": 0.01749594509601593,
+        "last_td_error_max_abs": 0.09774255752563477,
         "action_distribution": {
-          "NOOP": 2753,
-          "FIRE": 2327,
-          "RIGHT": 2869,
-          "LEFT": 2051
+          "NOOP": 2236,
+          "FIRE": 2543,
+          "RIGHT": 3444,
+          "LEFT": 1777
         },
         "random_decision_count": 4715,
         "greedy_decision_count": 5285,
         "random_decision_ratio": 0.4715,
-        "last_checkpoint": "runs\\day16-finalization-10k\\envs-2\\checkpoints\\step-00010000.pt",
+        "last_checkpoint": "runs\\day16-finalization-10k-v2\\envs-2\\checkpoints\\step-00010000.pt",
         "action_selection_batch_semantics": "one batched forward selects all N actions before env.step; if the vector step crosses an optimizer boundary, later transitions use the pre-update online-network snapshot",
         "strict_action_selection_parity_rule": "strict parity requires num_envs <= train_frequency and train_frequency % num_envs == 0",
         "strict_action_selection_parity_requested": false,
@@ -554,56 +554,56 @@
         "sampling_interval_seconds": 1.0,
         "process_cpu_percent_method": "time.process_time normalized by wall time and logical CPU count",
         "cpu_logical_count": 16,
-        "sample_count": 37,
-        "gpu_sample_count": 37,
+        "sample_count": 26,
+        "gpu_sample_count": 26,
         "gpu_utilization_percent": {
-          "mean": 44.027027027027025,
-          "p50": 48.0,
-          "p95": 57.199999999999996,
-          "max": 60.0
+          "mean": 22.692307692307693,
+          "p50": 23.5,
+          "p95": 25.75,
+          "max": 26.0
         },
         "gpu_power_watts": {
-          "mean": 42.83891891891892,
-          "p50": 48.07,
-          "p95": 54.91999999999998,
-          "max": 58.71
+          "mean": 25.19423076923077,
+          "p50": 25.825,
+          "p95": 26.41,
+          "max": 26.6
         },
         "gpu_memory_used_bytes": {
-          "mean": 2860260268.972973,
-          "peak": 3030384640.0
+          "mean": 2556992905.8461537,
+          "peak": 2561671168.0
         },
         "gpu_memory_total_bytes": 8585740288.0,
         "process_cpu_percent": {
-          "mean": 11.520254226492865,
-          "p50": 11.938993507054493,
-          "p95": 12.314844294302198,
-          "max": 12.382406836301076
+          "mean": 11.085864255049467,
+          "p50": 11.622033087097645,
+          "p95": 11.977404891057596,
+          "max": 12.00192892927589
         },
         "available": true
       },
-      "wall_clock_seconds_from_benchmark": 36.39272269979119
+      "wall_clock_seconds_from_benchmark": 25.927303500007838
     },
     {
       "environment_count": 4,
-      "run_dir": "runs\\day16-finalization-10k\\envs-4",
+      "run_dir": "runs\\day16-finalization-10k-v2\\envs-4",
       "resolved_device": "cuda:0",
       "summary": {
         "status": "completed",
         "trainer": "vectorized_dqn",
         "run_id": "envs-4",
-        "run_dir": "runs\\day16-finalization-10k\\envs-4",
+        "run_dir": "runs\\day16-finalization-10k-v2\\envs-4",
         "seed": 42,
         "num_envs": 4,
         "total_steps": 10000,
         "total_transitions": 10000,
         "physical_environment_steps": 10000,
         "vector_iterations": 2500,
-        "episodes": 54,
+        "episodes": 52,
         "per_environment_episode_counts": [
           14,
-          13,
           12,
-          15
+          15,
+          11
         ],
         "optimizer_updates": 2251,
         "target_sync_count": 21,
@@ -618,20 +618,20 @@
           "capacity": 10000,
           "ratio": 1.0
         },
-        "steps_per_second": 359.8413096943431,
-        "environment_transitions_per_second": 359.8413096943431,
-        "physical_environment_steps_per_second": 359.8413096943431,
-        "vector_iterations_per_second": 89.96032742358578,
+        "steps_per_second": 456.6272368015008,
+        "environment_transitions_per_second": 456.6272368015008,
+        "physical_environment_steps_per_second": 456.6272368015008,
+        "vector_iterations_per_second": 114.1568092003752,
         "action_inference_batches": 2500,
         "action_inference_transitions": 10000,
-        "action_inference_transitions_per_second": 359.8413096943431,
-        "action_inference_batches_per_second": 89.96032742358578,
+        "action_inference_transitions_per_second": 456.6272368015008,
+        "action_inference_batches_per_second": 114.1568092003752,
         "replay_insertion_calls": 2500,
         "replay_insertion_transitions": 10000,
-        "replay_insertion_transitions_per_second": 359.8413096943431,
-        "replay_insertion_calls_per_second": 89.96032742358578,
-        "optimizer_updates_per_second": 81.00027881219664,
-        "training_samples_per_second": 2592.0089219902925,
+        "replay_insertion_transitions_per_second": 456.6272368015008,
+        "replay_insertion_calls_per_second": 114.1568092003752,
+        "optimizer_updates_per_second": 102.78679100401783,
+        "training_samples_per_second": 3289.1773121285705,
         "runtime": {
           "python_version": "3.12.13",
           "pytorch_version": "2.13.0+cu130",
@@ -655,13 +655,13 @@
           "cuda_peak_allocated_bytes": 639140864,
           "cuda_reserved_bytes": 658505728,
           "cuda_peak_reserved_bytes": 658505728,
-          "gpu_utilization_percent": 26.0,
+          "gpu_utilization_percent": 25.0,
           "gpu_memory_total_bytes": 8585740288,
           "gpu_utilization_source": "nvidia-smi",
-          "wall_clock_seconds": 27.790027800016105,
-          "steps_per_second": 359.8413096943431,
+          "wall_clock_seconds": 21.899701099842787,
+          "steps_per_second": 456.6272368015008,
           "seed": 42,
-          "git_commit_sha": "59707b76c2906afb16f79b1476f733c2d296a70d",
+          "git_commit_sha": "4031b32edb451d2b89fbbc55d49a089ff2df88fa",
           "environment_id": "ALE/Breakout-v5",
           "vectorized": true,
           "num_envs": 4,
@@ -671,21 +671,21 @@
             84
           ],
           "action_count": 4,
-          "environment_transitions_per_second": 359.8413096943431,
+          "environment_transitions_per_second": 456.6272368015008,
           "physical_environment_steps": 10000,
-          "physical_environment_steps_per_second": 359.8413096943431,
+          "physical_environment_steps_per_second": 456.6272368015008,
           "vector_iterations": 2500,
-          "vector_iterations_per_second": 89.96032742358578,
+          "vector_iterations_per_second": 114.1568092003752,
           "action_inference_batches": 2500,
           "action_inference_transitions": 10000,
-          "action_inference_transitions_per_second": 359.8413096943431,
-          "action_inference_batches_per_second": 89.96032742358578,
+          "action_inference_transitions_per_second": 456.6272368015008,
+          "action_inference_batches_per_second": 114.1568092003752,
           "replay_insertion_calls": 2500,
           "replay_insertion_transitions": 10000,
-          "replay_insertion_transitions_per_second": 359.8413096943431,
-          "replay_insertion_calls_per_second": 89.96032742358578,
-          "optimizer_updates_per_second": 81.00027881219664,
-          "training_samples_per_second": 2592.0089219902925,
+          "replay_insertion_transitions_per_second": 456.6272368015008,
+          "replay_insertion_calls_per_second": 114.1568092003752,
+          "optimizer_updates_per_second": 102.78679100401783,
+          "training_samples_per_second": 3289.1773121285705,
           "diagnostics_interval": 100,
           "metrics_flush_interval": 500,
           "metrics_row_cadence": 1,
@@ -705,105 +705,105 @@
           "stage_timings": {
             "batched_action_inference": {
               "calls": 2500,
-              "wall_seconds": 4.902241895440966,
-              "cpu_seconds": 8.96875,
-              "gpu_seconds": 4.461903675436973
+              "wall_seconds": 3.305604712339118,
+              "cpu_seconds": 6.859375,
+              "gpu_seconds": 3.2197828167676925
             },
             "env_step": {
               "calls": 2500,
-              "wall_seconds": 6.513140310533345,
-              "cpu_seconds": 11.90625
+              "wall_seconds": 5.77603800361976,
+              "cpu_seconds": 10.09375
             },
             "batched_replay_insert": {
               "calls": 2500,
-              "wall_seconds": 2.2367151025682688,
-              "cpu_seconds": 5.015625,
-              "gpu_seconds": 2.3872067543417215
+              "wall_seconds": 1.0735525966156274,
+              "cpu_seconds": 2.703125,
+              "gpu_seconds": 0.9870595524013043
             },
             "metrics_write": {
               "calls": 10000,
-              "wall_seconds": 0.25733909709379077,
-              "cpu_seconds": 0.390625
+              "wall_seconds": 0.23351830756291747,
+              "cpu_seconds": 0.25
             },
             "gpu_replay_gather_cast": {
               "calls": 2251,
-              "wall_seconds": 1.0636752983555198,
-              "cpu_seconds": 1.984375,
-              "gpu_seconds": 1.3564449602514506
+              "wall_seconds": 0.9071782946120948,
+              "cpu_seconds": 1.515625,
+              "gpu_seconds": 0.9020724481642246
             },
             "forward": {
               "calls": 2251,
-              "wall_seconds": 1.6080017921049148,
-              "cpu_seconds": 2.625,
-              "gpu_seconds": 1.4996487659811975
+              "wall_seconds": 1.3244182986672968,
+              "cpu_seconds": 2.921875,
+              "gpu_seconds": 1.2946223362386227
             },
             "target_forward": {
               "calls": 2251,
-              "wall_seconds": 1.6199028014671057,
-              "cpu_seconds": 3.125,
-              "gpu_seconds": 1.6583018909990788
+              "wall_seconds": 1.3525672985706478,
+              "cpu_seconds": 1.8125,
+              "gpu_seconds": 1.3301983363330365
             },
             "loss": {
               "calls": 2251,
-              "wall_seconds": 0.26234479947015643,
-              "cpu_seconds": 0.53125,
-              "gpu_seconds": 0.19732755132345484
+              "wall_seconds": 0.23020150628872216,
+              "cpu_seconds": 0.46875,
+              "gpu_seconds": 0.19367366242827846
             },
             "backward": {
               "calls": 2251,
-              "wall_seconds": 3.8397325968835503,
-              "cpu_seconds": 8.984375,
-              "gpu_seconds": 3.7232293440401554
+              "wall_seconds": 3.102413491345942,
+              "cpu_seconds": 7.109375,
+              "gpu_seconds": 3.080118626236916
             },
             "optimizer_step": {
               "calls": 2251,
-              "wall_seconds": 2.6579111029859632,
-              "cpu_seconds": 3.78125,
-              "gpu_seconds": 2.6324058230519296
+              "wall_seconds": 2.1871961974538863,
+              "cpu_seconds": 2.734375,
+              "gpu_seconds": 2.217617949962616
             },
             "dqn_update": {
               "calls": 2251,
-              "wall_seconds": 10.967846996383741,
-              "cpu_seconds": 20.78125,
-              "gpu_seconds": 10.854172217845917
+              "wall_seconds": 8.979697990696877,
+              "cpu_seconds": 16.421875,
+              "gpu_seconds": 8.963079459667206
             },
             "gradient_diagnostics": {
               "calls": 23,
-              "wall_seconds": 0.07327879988588393,
-              "cpu_seconds": 0.078125,
-              "gpu_seconds": 0.07051791954040527
+              "wall_seconds": 0.04306320031173527,
+              "cpu_seconds": 0.046875,
+              "gpu_seconds": 0.0424197438955307
             },
             "diagnostics": {
               "calls": 23,
-              "wall_seconds": 0.05051109963096678,
-              "cpu_seconds": 0.09375,
-              "gpu_seconds": 0.04889094424247742
+              "wall_seconds": 0.03397740004584193,
+              "cpu_seconds": 0.0625,
+              "gpu_seconds": 0.03294528043270111
             },
             "checkpoint": {
               "calls": 1,
-              "wall_seconds": 0.02507299999706447,
+              "wall_seconds": 0.027684499975293875,
               "cpu_seconds": 0.046875
             }
           }
         },
-        "last_loss": 0.0001100601366488263,
-        "last_q_mean": 0.35014522075653076,
-        "last_q_max": 0.42325669527053833,
-        "last_q_min": 0.2623445689678192,
-        "last_target_mean": 0.3480195999145508,
-        "last_target_max": 0.4120214581489563,
-        "last_td_error_mean_abs": 0.011441697366535664,
-        "last_td_error_max_abs": 0.03494998812675476,
+        "last_loss": 0.01322158146649599,
+        "last_q_mean": 0.3920959234237671,
+        "last_q_max": 0.5643051266670227,
+        "last_q_min": 0.2567623555660248,
+        "last_target_mean": 0.4291567802429199,
+        "last_target_max": 1.4699105024337769,
+        "last_td_error_mean_abs": 0.045618653297424316,
+        "last_td_error_max_abs": 0.9098808169364929,
         "action_distribution": {
-          "NOOP": 2502,
-          "FIRE": 2090,
-          "RIGHT": 2714,
-          "LEFT": 2694
+          "NOOP": 2883,
+          "FIRE": 2659,
+          "RIGHT": 2775,
+          "LEFT": 1683
         },
         "random_decision_count": 4776,
         "greedy_decision_count": 5224,
         "random_decision_ratio": 0.4776,
-        "last_checkpoint": "runs\\day16-finalization-10k\\envs-4\\checkpoints\\step-00010000.pt",
+        "last_checkpoint": "runs\\day16-finalization-10k-v2\\envs-4\\checkpoints\\step-00010000.pt",
         "action_selection_batch_semantics": "one batched forward selects all N actions before env.step; if the vector step crosses an optimizer boundary, later transitions use the pre-update online-network snapshot",
         "strict_action_selection_parity_rule": "strict parity requires num_envs <= train_frequency and train_frequency % num_envs == 0",
         "strict_action_selection_parity_requested": false,
@@ -815,44 +815,44 @@
         "sampling_interval_seconds": 1.0,
         "process_cpu_percent_method": "time.process_time normalized by wall time and logical CPU count",
         "cpu_logical_count": 16,
-        "sample_count": 28,
-        "gpu_sample_count": 28,
+        "sample_count": 23,
+        "gpu_sample_count": 23,
         "gpu_utilization_percent": {
-          "mean": 45.607142857142854,
-          "p50": 49.5,
-          "p95": 56.65,
-          "max": 59.0
+          "mean": 23.82608695652174,
+          "p50": 25.0,
+          "p95": 26.0,
+          "max": 26.0
         },
         "gpu_power_watts": {
-          "mean": 46.50964285714286,
-          "p50": 48.44,
-          "p95": 56.751999999999995,
-          "max": 69.92
+          "mean": 26.193478260869565,
+          "p50": 26.44,
+          "p95": 27.302,
+          "max": 27.52
         },
         "gpu_memory_used_bytes": {
-          "mean": 2908862171.428571,
-          "peak": 2992635904.0
+          "mean": 2516263268.173913,
+          "peak": 2558525440.0
         },
         "gpu_memory_total_bytes": 8585740288.0,
         "process_cpu_percent": {
-          "mean": 11.371910334633302,
-          "p50": 11.813368426294081,
-          "p95": 12.21402021953122,
-          "max": 12.428326410266815
+          "mean": 11.018601506481406,
+          "p50": 11.580043066148436,
+          "p95": 11.997456063410718,
+          "max": 12.036461273476451
         },
         "available": true
       },
-      "wall_clock_seconds_from_benchmark": 27.93486679997295
+      "wall_clock_seconds_from_benchmark": 22.0740745998919
     },
     {
       "environment_count": 8,
-      "run_dir": "runs\\day16-finalization-10k\\envs-8",
+      "run_dir": "runs\\day16-finalization-10k-v2\\envs-8",
       "resolved_device": "cuda:0",
       "summary": {
         "status": "completed",
         "trainer": "vectorized_dqn",
         "run_id": "envs-8",
-        "run_dir": "runs\\day16-finalization-10k\\envs-8",
+        "run_dir": "runs\\day16-finalization-10k-v2\\envs-8",
         "seed": 42,
         "num_envs": 8,
         "total_steps": 10000,
@@ -862,12 +862,12 @@
         "episodes": 52,
         "per_environment_episode_counts": [
           7,
-          5,
+          6,
           6,
           7,
           6,
           8,
-          7,
+          6,
           6
         ],
         "optimizer_updates": 2251,
@@ -883,20 +883,20 @@
           "capacity": 10000,
           "ratio": 1.0
         },
-        "steps_per_second": 439.67077276985196,
-        "environment_transitions_per_second": 439.67077276985196,
-        "physical_environment_steps_per_second": 439.67077276985196,
-        "vector_iterations_per_second": 54.958846596231496,
+        "steps_per_second": 483.2957429120434,
+        "environment_transitions_per_second": 483.2957429120434,
+        "physical_environment_steps_per_second": 483.2957429120434,
+        "vector_iterations_per_second": 60.411967864005426,
         "action_inference_batches": 1250,
         "action_inference_transitions": 10000,
-        "action_inference_transitions_per_second": 439.67077276985196,
-        "action_inference_batches_per_second": 54.958846596231496,
+        "action_inference_transitions_per_second": 483.2957429120434,
+        "action_inference_batches_per_second": 60.411967864005426,
         "replay_insertion_calls": 2500,
         "replay_insertion_transitions": 10000,
-        "replay_insertion_transitions_per_second": 439.67077276985196,
-        "replay_insertion_calls_per_second": 109.91769319246299,
-        "optimizer_updates_per_second": 98.96989095049368,
-        "training_samples_per_second": 3167.0365104157977,
+        "replay_insertion_transitions_per_second": 483.2957429120434,
+        "replay_insertion_calls_per_second": 120.82393572801085,
+        "optimizer_updates_per_second": 108.78987172950097,
+        "training_samples_per_second": 3481.275895344031,
         "runtime": {
           "python_version": "3.12.13",
           "pytorch_version": "2.13.0+cu130",
@@ -920,13 +920,13 @@
           "cuda_peak_allocated_bytes": 639140864,
           "cuda_reserved_bytes": 658505728,
           "cuda_peak_reserved_bytes": 658505728,
-          "gpu_utilization_percent": 14.0,
+          "gpu_utilization_percent": 28.0,
           "gpu_memory_total_bytes": 8585740288,
           "gpu_utilization_source": "nvidia-smi",
-          "wall_clock_seconds": 22.744290999835357,
-          "steps_per_second": 439.67077276985196,
+          "wall_clock_seconds": 20.69126440002583,
+          "steps_per_second": 483.2957429120434,
           "seed": 42,
-          "git_commit_sha": "59707b76c2906afb16f79b1476f733c2d296a70d",
+          "git_commit_sha": "4031b32edb451d2b89fbbc55d49a089ff2df88fa",
           "environment_id": "ALE/Breakout-v5",
           "vectorized": true,
           "num_envs": 8,
@@ -936,21 +936,21 @@
             84
           ],
           "action_count": 4,
-          "environment_transitions_per_second": 439.67077276985196,
+          "environment_transitions_per_second": 483.2957429120434,
           "physical_environment_steps": 10000,
-          "physical_environment_steps_per_second": 439.67077276985196,
+          "physical_environment_steps_per_second": 483.2957429120434,
           "vector_iterations": 1250,
-          "vector_iterations_per_second": 54.958846596231496,
+          "vector_iterations_per_second": 60.411967864005426,
           "action_inference_batches": 1250,
           "action_inference_transitions": 10000,
-          "action_inference_transitions_per_second": 439.67077276985196,
-          "action_inference_batches_per_second": 54.958846596231496,
+          "action_inference_transitions_per_second": 483.2957429120434,
+          "action_inference_batches_per_second": 60.411967864005426,
           "replay_insertion_calls": 2500,
           "replay_insertion_transitions": 10000,
-          "replay_insertion_transitions_per_second": 439.67077276985196,
-          "replay_insertion_calls_per_second": 109.91769319246299,
-          "optimizer_updates_per_second": 98.96989095049368,
-          "training_samples_per_second": 3167.0365104157977,
+          "replay_insertion_transitions_per_second": 483.2957429120434,
+          "replay_insertion_calls_per_second": 120.82393572801085,
+          "optimizer_updates_per_second": 108.78987172950097,
+          "training_samples_per_second": 3481.275895344031,
           "diagnostics_interval": 100,
           "metrics_flush_interval": 500,
           "metrics_row_cadence": 1,
@@ -970,105 +970,105 @@
           "stage_timings": {
             "batched_action_inference": {
               "calls": 1250,
-              "wall_seconds": 2.033828406361863,
-              "cpu_seconds": 3.859375,
-              "gpu_seconds": 1.9763332825899125
+              "wall_seconds": 1.8820424999576062,
+              "cpu_seconds": 3.359375,
+              "gpu_seconds": 1.8288227201700211
             },
             "env_step": {
               "calls": 1250,
-              "wall_seconds": 5.986798499245197,
-              "cpu_seconds": 11.0625
+              "wall_seconds": 5.749572597909719,
+              "cpu_seconds": 11.375
             },
             "batched_replay_insert": {
               "calls": 2500,
-              "wall_seconds": 1.2569136950187385,
-              "cpu_seconds": 2.109375,
-              "gpu_seconds": 1.150524447262287
+              "wall_seconds": 1.1108232971746475,
+              "cpu_seconds": 2.203125,
+              "gpu_seconds": 1.0199227519780398
             },
             "metrics_write": {
               "calls": 10000,
-              "wall_seconds": 0.22282721824012697,
-              "cpu_seconds": 0.234375
+              "wall_seconds": 0.21323240036144853,
+              "cpu_seconds": 0.21875
             },
             "gpu_replay_gather_cast": {
               "calls": 2251,
-              "wall_seconds": 1.0144617012701929,
-              "cpu_seconds": 1.8125,
-              "gpu_seconds": 1.0089650570005178
+              "wall_seconds": 0.9389236965216696,
+              "cpu_seconds": 1.734375,
+              "gpu_seconds": 0.9362399367317558
             },
             "forward": {
               "calls": 2251,
-              "wall_seconds": 1.567895798245445,
-              "cpu_seconds": 3.125,
-              "gpu_seconds": 1.535765310317278
+              "wall_seconds": 1.3777138979639858,
+              "cpu_seconds": 2.65625,
+              "gpu_seconds": 1.3609791033565999
             },
             "target_forward": {
               "calls": 2251,
-              "wall_seconds": 1.4510486049111933,
-              "cpu_seconds": 3.03125,
-              "gpu_seconds": 1.4242144969254733
+              "wall_seconds": 1.4177377007436007,
+              "cpu_seconds": 2.25,
+              "gpu_seconds": 1.3810978560894727
             },
             "loss": {
               "calls": 2251,
-              "wall_seconds": 0.2533853065688163,
-              "cpu_seconds": 0.53125,
-              "gpu_seconds": 0.21894889525091277
+              "wall_seconds": 0.24140460439957678,
+              "cpu_seconds": 0.484375,
+              "gpu_seconds": 0.1988047034679912
             },
             "backward": {
               "calls": 2251,
-              "wall_seconds": 3.718679598532617,
-              "cpu_seconds": 8.484375,
-              "gpu_seconds": 3.696218464195728
+              "wall_seconds": 3.070557195460424,
+              "cpu_seconds": 7.46875,
+              "gpu_seconds": 3.050867873430252
             },
             "optimizer_step": {
               "calls": 2251,
-              "wall_seconds": 2.4903659985866398,
-              "cpu_seconds": 3.53125,
-              "gpu_seconds": 2.493452061623335
+              "wall_seconds": 2.196018405025825,
+              "cpu_seconds": 2.671875,
+              "gpu_seconds": 2.23637798333168
             },
             "dqn_update": {
               "calls": 2251,
-              "wall_seconds": 10.371076700277627,
-              "cpu_seconds": 20.125,
-              "gpu_seconds": 10.36210638976097
+              "wall_seconds": 9.115654204506427,
+              "cpu_seconds": 17.140625,
+              "gpu_seconds": 9.10765919995308
             },
             "gradient_diagnostics": {
               "calls": 23,
-              "wall_seconds": 0.04635310056619346,
-              "cpu_seconds": 0.09375,
-              "gpu_seconds": 0.045579488396644594
+              "wall_seconds": 0.043137799482792616,
+              "cpu_seconds": 0.109375,
+              "gpu_seconds": 0.04245760023593902
             },
             "diagnostics": {
               "calls": 23,
-              "wall_seconds": 0.040949899703264236,
-              "cpu_seconds": 0.046875,
-              "gpu_seconds": 0.04019548809528351
+              "wall_seconds": 0.03825749992392957,
+              "cpu_seconds": 0.03125,
+              "gpu_seconds": 0.03716320013999939
             },
             "checkpoint": {
               "calls": 1,
-              "wall_seconds": 0.03474340005777776,
-              "cpu_seconds": 0.0625
+              "wall_seconds": 0.026014999952167273,
+              "cpu_seconds": 0.015625
             }
           }
         },
-        "last_loss": 0.013135821558535099,
-        "last_q_mean": 0.37716907262802124,
-        "last_q_max": 0.5211741328239441,
-        "last_q_min": 0.33474886417388916,
-        "last_target_mean": 0.4059743881225586,
-        "last_target_max": 1.415645956993103,
-        "last_td_error_mean_abs": 0.043522827327251434,
-        "last_td_error_max_abs": 0.9111072421073914,
+        "last_loss": 7.802342588547617e-05,
+        "last_q_mean": 0.3194945454597473,
+        "last_q_max": 0.3615299165248871,
+        "last_q_min": 0.28638869524002075,
+        "last_target_mean": 0.3265196979045868,
+        "last_target_max": 0.3542993664741516,
+        "last_td_error_mean_abs": 0.010606321506202221,
+        "last_td_error_max_abs": 0.027436882257461548,
         "action_distribution": {
-          "NOOP": 2834,
-          "FIRE": 2999,
-          "RIGHT": 2121,
-          "LEFT": 2046
+          "NOOP": 2613,
+          "FIRE": 2887,
+          "RIGHT": 2174,
+          "LEFT": 2326
         },
         "random_decision_count": 4759,
         "greedy_decision_count": 5241,
         "random_decision_ratio": 0.4759,
-        "last_checkpoint": "runs\\day16-finalization-10k\\envs-8\\checkpoints\\step-00010000.pt",
+        "last_checkpoint": "runs\\day16-finalization-10k-v2\\envs-8\\checkpoints\\step-00010000.pt",
         "action_selection_batch_semantics": "one batched forward selects all N actions before env.step; if the vector step crosses an optimizer boundary, later transitions use the pre-update online-network snapshot",
         "strict_action_selection_parity_rule": "strict parity requires num_envs <= train_frequency and train_frequency % num_envs == 0",
         "strict_action_selection_parity_requested": false,
@@ -1080,34 +1080,34 @@
         "sampling_interval_seconds": 1.0,
         "process_cpu_percent_method": "time.process_time normalized by wall time and logical CPU count",
         "cpu_logical_count": 16,
-        "sample_count": 23,
-        "gpu_sample_count": 23,
+        "sample_count": 21,
+        "gpu_sample_count": 21,
         "gpu_utilization_percent": {
-          "mean": 25.82608695652174,
+          "mean": 23.571428571428573,
           "p50": 26.0,
-          "p95": 39.39999999999999,
-          "max": 42.0
+          "p95": 29.0,
+          "max": 31.0
         },
         "gpu_power_watts": {
-          "mean": 26.583478260869565,
-          "p50": 26.94,
-          "p95": 31.222999999999995,
-          "max": 31.83
+          "mean": 26.16190476190476,
+          "p50": 27.01,
+          "p95": 28.32,
+          "max": 28.35
         },
         "gpu_memory_used_bytes": {
-          "mean": 2941985124.173913,
-          "peak": 3051356160.0
+          "mean": 2525919719.6190476,
+          "peak": 2579496960.0
         },
         "gpu_memory_total_bytes": 8585740288.0,
         "process_cpu_percent": {
-          "mean": 15.468765769396667,
-          "p50": 11.657042905582387,
-          "p95": 12.353293226007935,
-          "max": 103.25253927693996
+          "mean": 11.021392978747661,
+          "p50": 11.71138092734824,
+          "p95": 12.318608276959667,
+          "max": 12.469955851559398
         },
         "available": true
       },
-      "wall_clock_seconds_from_benchmark": 22.954691000049934
+      "wall_clock_seconds_from_benchmark": 20.838626000098884
     }
   ]
 }

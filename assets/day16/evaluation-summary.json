@@ -1,10 +1,46 @@
 {
   "schema_version": 2,
-  "git_commit_sha": "bd0decdb5271e3e12805c87787181ccbeb2f362b",
+  "git_commit_sha": "5e0931ca48af369909d359cf73d53fe4c0b9e696",
   "purpose": "Day 16 Contract v2 learning-regression guardrail",
   "protocol": {
     "evaluation_config": "configs/eval/breakout_eval.json",
     "evaluation_contract": "configs/eval/breakout_contract_v2.json",
+    "contract": {
+      "schema_version": 2,
+      "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+      "environment_id": "ALE/Breakout-v5",
+      "frame_skip": 4,
+      "frame_stack": 4,
+      "sticky_action_probability": 0.25,
+      "fire_reset": true,
+      "terminal_on_life_loss": false,
+      "time_limit_semantics": {
+        "source": "ale.game_truncated",
+        "max_num_frames_per_episode": 108000,
+        "agent_step_limit": 27000,
+        "truncated_is_finished": true,
+        "external_time_limit_wrapper": false
+      },
+      "concrete_episode_seeds": [
+        101,
+        102,
+        103,
+        104,
+        105,
+        202,
+        203,
+        204,
+        205,
+        206,
+        303,
+        304,
+        305,
+        306,
+        307
+      ],
+      "evaluation_epsilon": 0.0,
+      "raw_reward_rule": "sum environment rewards without clipping"
+    },
     "episodes": 15,
     "epsilon": 0.0,
     "raw_reward": true,
@@ -24,60 +60,60 @@
       {
         "environment_count": 1,
         "results_path": "evaluations/day16-final-10k-envs1-contract-v2/results.json",
-        "results_sha256": "3c3db80860bc8213123c547ee420cef3bf18636e8020978c6ff1fbfed4cd9099",
-        "checkpoint_path": "runs/day16-finalization-10k/envs-1/checkpoints/step-00010000.pt",
-        "checkpoint_sha256": "f86e10b934320a4f103ab67f3b012d2f8b8c9ed4766b982e4ed7f483d52017cd",
+        "results_sha256": "c5c72b006dcd569e86e7463b783ff801405c97f39dc7248c1ad9e93cc3fcfe71",
+        "checkpoint_path": "runs/day16-finalization-10k-v2/envs-1/checkpoints/step-00010000.pt",
+        "checkpoint_sha256": "cb3dc1bebef6c8485b5cc1e03dc554b28c63ed12e564a085229ec5ebb57c3767",
         "model_id": "envs-1@step-00010000",
         "summary": {
           "count": 15,
-          "mean_return": 0.7333333333333333,
+          "mean_return": 0.0,
           "median_return": 0.0,
-          "std_return": 1.8427033281447005,
+          "std_return": 0.0,
           "min_return": 0.0,
-          "max_return": 7.0,
-          "mean_episode_length": 141.0,
+          "max_return": 0.0,
+          "mean_episode_length": 122.06666666666666,
           "complete_episodes": 15,
           "finished_episode_count": 15,
           "terminated_count": 15,
           "truncated_count": 0,
           "time_limit_truncated_count": 0,
           "truncation_rate": 0.0,
-          "mean_return_terminated": 0.7333333333333333,
+          "mean_return_terminated": 0.0,
           "mean_return_truncated": null,
-          "mean_length_terminated": 141.0,
+          "mean_length_terminated": 122.06666666666666,
           "mean_length_truncated": null,
           "action_distribution_semantics": "executed/wrapper-resolved action",
           "action_distribution": {
-            "FIRE": 77,
-            "LEFT": 1965,
+            "FIRE": 1831,
+            "LEFT": 0,
             "NOOP": 0,
-            "RIGHT": 73
+            "RIGHT": 0
           },
           "requested_action_distribution": {
-            "FIRE": 1,
-            "LEFT": 2041,
+            "FIRE": 1831,
+            "LEFT": 0,
             "NOOP": 0,
-            "RIGHT": 73
+            "RIGHT": 0
           },
           "executed_action_distribution": {
-            "FIRE": 77,
-            "LEFT": 1965,
+            "FIRE": 1831,
+            "LEFT": 0,
             "NOOP": 0,
-            "RIGHT": 73
+            "RIGHT": 0
           },
-          "auto_fire_count": 76,
+          "auto_fire_count": 151,
           "auto_fire_reason_counts": {
-            "after_life_loss": 60,
-            "initial_serve": 16
+            "after_life_loss": 120,
+            "initial_serve": 31
           }
         }
       },
       {
         "environment_count": 4,
         "results_path": "evaluations/day16-final-10k-envs4-contract-v2/results.json",
-        "results_sha256": "49bb9699587056898d3ec5961791bfab308b460bfdb78f82c93df6e04d61b83f",
-        "checkpoint_path": "runs/day16-finalization-10k/envs-4/checkpoints/step-00010000.pt",
-        "checkpoint_sha256": "4c3f44c9a593fb5c4a5371f3ec753f89072dd1b5684ec2c5d705fdb90b65cb9f",
+        "results_sha256": "ba62272cb67e020093c0ad39c01ee7623884024154b5f595fdfdd43faf44eaa4",
+        "checkpoint_path": "runs/day16-finalization-10k-v2/envs-4/checkpoints/step-00010000.pt",
+        "checkpoint_sha256": "acbf4895dbc11934579194c937a6fd6a5a8099622e0056fe0720057c95a5746a",
         "model_id": "envs-4@step-00010000",
         "summary": {
           "count": 15,
@@ -99,27 +135,27 @@
           "mean_length_truncated": null,
           "action_distribution_semantics": "executed/wrapper-resolved action",
           "action_distribution": {
-            "FIRE": 377,
-            "LEFT": 80,
-            "NOOP": 136,
-            "RIGHT": 2995
+            "FIRE": 605,
+            "LEFT": 330,
+            "NOOP": 237,
+            "RIGHT": 2416
           },
           "requested_action_distribution": {
-            "FIRE": 301,
-            "LEFT": 80,
-            "NOOP": 136,
-            "RIGHT": 3071
+            "FIRE": 454,
+            "LEFT": 330,
+            "NOOP": 237,
+            "RIGHT": 2567
           },
           "executed_action_distribution": {
-            "FIRE": 377,
-            "LEFT": 80,
-            "NOOP": 136,
-            "RIGHT": 2995
+            "FIRE": 605,
+            "LEFT": 330,
+            "NOOP": 237,
+            "RIGHT": 2416
           },
-          "auto_fire_count": 76,
+          "auto_fire_count": 151,
           "auto_fire_reason_counts": {
-            "after_life_loss": 60,
-            "initial_serve": 16
+            "after_life_loss": 120,
+            "initial_serve": 31
           }
         }
       }
@@ -129,60 +165,60 @@
     {
       "environment_count": 1,
       "results_path": "evaluations/day16-final-10k-envs1-contract-v2/results.json",
-      "results_sha256": "3c3db80860bc8213123c547ee420cef3bf18636e8020978c6ff1fbfed4cd9099",
-      "checkpoint_path": "runs/day16-finalization-10k/envs-1/checkpoints/step-00010000.pt",
-      "checkpoint_sha256": "f86e10b934320a4f103ab67f3b012d2f8b8c9ed4766b982e4ed7f483d52017cd",
+      "results_sha256": "c5c72b006dcd569e86e7463b783ff801405c97f39dc7248c1ad9e93cc3fcfe71",
+      "checkpoint_path": "runs/day16-finalization-10k-v2/envs-1/checkpoints/step-00010000.pt",
+      "checkpoint_sha256": "cb3dc1bebef6c8485b5cc1e03dc554b28c63ed12e564a085229ec5ebb57c3767",
       "model_id": "envs-1@step-00010000",
       "summary": {
         "count": 15,
-        "mean_return": 0.7333333333333333,
+        "mean_return": 0.0,
         "median_return": 0.0,
-        "std_return": 1.8427033281447005,
+        "std_return": 0.0,
         "min_return": 0.0,
-        "max_return": 7.0,
-        "mean_episode_length": 141.0,
+        "max_return": 0.0,
+        "mean_episode_length": 122.06666666666666,
         "complete_episodes": 15,
         "finished_episode_count": 15,
         "terminated_count": 15,
         "truncated_count": 0,
         "time_limit_truncated_count": 0,
         "truncation_rate": 0.0,
-        "mean_return_terminated": 0.7333333333333333,
+        "mean_return_terminated": 0.0,
         "mean_return_truncated": null,
-        "mean_length_terminated": 141.0,
+        "mean_length_terminated": 122.06666666666666,
         "mean_length_truncated": null,
         "action_distribution_semantics": "executed/wrapper-resolved action",
         "action_distribution": {
-          "FIRE": 77,
-          "LEFT": 1965,
+          "FIRE": 1831,
+          "LEFT": 0,
           "NOOP": 0,
-          "RIGHT": 73
+          "RIGHT": 0
         },
         "requested_action_distribution": {
-          "FIRE": 1,
-          "LEFT": 2041,
+          "FIRE": 1831,
+          "LEFT": 0,
           "NOOP": 0,
-          "RIGHT": 73
+          "RIGHT": 0
         },
         "executed_action_distribution": {
-          "FIRE": 77,
-          "LEFT": 1965,
+          "FIRE": 1831,
+          "LEFT": 0,
           "NOOP": 0,
-          "RIGHT": 73
+          "RIGHT": 0
         },
-        "auto_fire_count": 76,
+        "auto_fire_count": 151,
         "auto_fire_reason_counts": {
-          "after_life_loss": 60,
-          "initial_serve": 16
+          "after_life_loss": 120,
+          "initial_serve": 31
         }
       }
     },
     {
       "environment_count": 4,
       "results_path": "evaluations/day16-final-10k-envs4-contract-v2/results.json",
-      "results_sha256": "49bb9699587056898d3ec5961791bfab308b460bfdb78f82c93df6e04d61b83f",
-      "checkpoint_path": "runs/day16-finalization-10k/envs-4/checkpoints/step-00010000.pt",
-      "checkpoint_sha256": "4c3f44c9a593fb5c4a5371f3ec753f89072dd1b5684ec2c5d705fdb90b65cb9f",
+      "results_sha256": "ba62272cb67e020093c0ad39c01ee7623884024154b5f595fdfdd43faf44eaa4",
+      "checkpoint_path": "runs/day16-finalization-10k-v2/envs-4/checkpoints/step-00010000.pt",
+      "checkpoint_sha256": "acbf4895dbc11934579194c937a6fd6a5a8099622e0056fe0720057c95a5746a",
       "model_id": "envs-4@step-00010000",
       "summary": {
         "count": 15,
@@ -204,27 +240,27 @@
         "mean_length_truncated": null,
         "action_distribution_semantics": "executed/wrapper-resolved action",
         "action_distribution": {
-          "FIRE": 377,
-          "LEFT": 80,
-          "NOOP": 136,
-          "RIGHT": 2995
+          "FIRE": 605,
+          "LEFT": 330,
+          "NOOP": 237,
+          "RIGHT": 2416
         },
         "requested_action_distribution": {
-          "FIRE": 301,
-          "LEFT": 80,
-          "NOOP": 136,
-          "RIGHT": 3071
+          "FIRE": 454,
+          "LEFT": 330,
+          "NOOP": 237,
+          "RIGHT": 2567
         },
         "executed_action_distribution": {
-          "FIRE": 377,
-          "LEFT": 80,
-          "NOOP": 136,
-          "RIGHT": 2995
+          "FIRE": 605,
+          "LEFT": 330,
+          "NOOP": 237,
+          "RIGHT": 2416
         },
-        "auto_fire_count": 76,
+        "auto_fire_count": 151,
         "auto_fire_reason_counts": {
-          "after_life_loss": 60,
-          "initial_serve": 16
+          "after_life_loss": 120,
+          "initial_serve": 31
         }
       }
     }
@@ -236,102 +272,102 @@
       {
         "environment_count": 1,
         "results_path": "evaluations/day16-final-100k-envs1-contract-v2/results.json",
-        "results_sha256": "814cf03d3eddea096d4d32530e5882a3185618502dc7f166edca264ff3e1fe48",
-        "checkpoint_path": "runs/day16-finalization-100k/envs-1/checkpoints/step-00100000.pt",
-        "checkpoint_sha256": "89a59f9e803486c44edb9777046165ac7dc8ec72cb6a50f0876c7a091fad3025",
+        "results_sha256": "17722b58263003415edf4e34448a5ae8c1eff39fd5b446245144bfc4f6216aa1",
+        "checkpoint_path": "runs/day16-finalization-100k-v2/envs-1/checkpoints/step-00100000.pt",
+        "checkpoint_sha256": "42a37be2f551881f704567d9acfb3476801d45f47b5234aff504ef42142af799",
         "model_id": "envs-1@step-00100000",
         "summary": {
           "count": 15,
-          "mean_return": 9.733333333333333,
-          "median_return": 11.0,
-          "std_return": 3.395421754199158,
-          "min_return": 4.0,
-          "max_return": 14.0,
-          "mean_episode_length": 458.0,
+          "mean_return": 9.0,
+          "median_return": 9.0,
+          "std_return": 2.0330600909302543,
+          "min_return": 6.0,
+          "max_return": 13.0,
+          "mean_episode_length": 468.6666666666667,
           "complete_episodes": 15,
           "finished_episode_count": 15,
           "terminated_count": 15,
           "truncated_count": 0,
           "time_limit_truncated_count": 0,
           "truncation_rate": 0.0,
-          "mean_return_terminated": 9.733333333333333,
+          "mean_return_terminated": 9.0,
           "mean_return_truncated": null,
-          "mean_length_terminated": 458.0,
+          "mean_length_terminated": 468.6666666666667,
           "mean_length_truncated": null,
           "action_distribution_semantics": "executed/wrapper-resolved action",
           "action_distribution": {
-            "FIRE": 430,
-            "LEFT": 2806,
-            "NOOP": 813,
-            "RIGHT": 2821
+            "FIRE": 1307,
+            "LEFT": 2414,
+            "NOOP": 383,
+            "RIGHT": 2926
           },
           "requested_action_distribution": {
-            "FIRE": 374,
-            "LEFT": 2833,
-            "NOOP": 818,
-            "RIGHT": 2845
+            "FIRE": 1190,
+            "LEFT": 2467,
+            "NOOP": 389,
+            "RIGHT": 2984
           },
           "executed_action_distribution": {
-            "FIRE": 430,
-            "LEFT": 2806,
-            "NOOP": 813,
-            "RIGHT": 2821
+            "FIRE": 1307,
+            "LEFT": 2414,
+            "NOOP": 383,
+            "RIGHT": 2926
           },
-          "auto_fire_count": 76,
+          "auto_fire_count": 151,
           "auto_fire_reason_counts": {
-            "after_life_loss": 60,
-            "initial_serve": 16
+            "after_life_loss": 120,
+            "initial_serve": 31
           }
         }
       },
       {
         "environment_count": 4,
         "results_path": "evaluations/day16-final-100k-envs4-contract-v2/results.json",
-        "results_sha256": "ac58a7aed6dc970cda930c58ec97f0968f3de75c43c1f961a9ab7028f26fb7d2",
-        "checkpoint_path": "runs/day16-finalization-100k/envs-4/checkpoints/step-00100000.pt",
-        "checkpoint_sha256": "8facd3931cc5e8f4b3a9b6dbd16dd177399cb683776efcbd53d235274003fcf4",
+        "results_sha256": "80b6707d5ef9b142965c671ba1cf2139dab1b9fd3d78c1ba9537b5060732804a",
+        "checkpoint_path": "runs/day16-finalization-100k-v2/envs-4/checkpoints/step-00100000.pt",
+        "checkpoint_sha256": "e0d550b46d4cf9af219a5513153cb643f67514fbbb103040b57a633495145823",
         "model_id": "envs-4@step-00100000",
         "summary": {
           "count": 15,
-          "mean_return": 5.4,
-          "median_return": 5.0,
-          "std_return": 2.7519689920733725,
-          "min_return": 2.0,
-          "max_return": 11.0,
-          "mean_episode_length": 312.0,
+          "mean_return": 2.3333333333333335,
+          "median_return": 2.0,
+          "std_return": 1.0749676997731399,
+          "min_return": 1.0,
+          "max_return": 4.0,
+          "mean_episode_length": 201.26666666666668,
           "complete_episodes": 15,
           "finished_episode_count": 15,
           "terminated_count": 15,
           "truncated_count": 0,
           "time_limit_truncated_count": 0,
           "truncation_rate": 0.0,
-          "mean_return_terminated": 5.4,
+          "mean_return_terminated": 2.3333333333333335,
           "mean_return_truncated": null,
-          "mean_length_terminated": 312.0,
+          "mean_length_terminated": 201.26666666666668,
           "mean_length_truncated": null,
           "action_distribution_semantics": "executed/wrapper-resolved action",
           "action_distribution": {
-            "FIRE": 1159,
-            "LEFT": 1245,
-            "NOOP": 71,
-            "RIGHT": 2205
+            "FIRE": 1614,
+            "LEFT": 682,
+            "NOOP": 323,
+            "RIGHT": 400
           },
           "requested_action_distribution": {
-            "FIRE": 1121,
-            "LEFT": 1246,
-            "NOOP": 72,
-            "RIGHT": 2241
+            "FIRE": 1530,
+            "LEFT": 744,
+            "NOOP": 339,
+            "RIGHT": 406
           },
           "executed_action_distribution": {
-            "FIRE": 1159,
-            "LEFT": 1245,
-            "NOOP": 71,
-            "RIGHT": 2205
+            "FIRE": 1614,
+            "LEFT": 682,
+            "NOOP": 323,
+            "RIGHT": 400
           },
-          "auto_fire_count": 76,
+          "auto_fire_count": 151,
           "auto_fire_reason_counts": {
-            "after_life_loss": 60,
-            "initial_serve": 16
+            "after_life_loss": 120,
+            "initial_serve": 31
           }
         }
       }
@@ -339,60 +375,60 @@
   },
   "random_baseline": {
     "results_path": "evaluations/day16-contract-v2-random/results.json",
-    "results_sha256": "fb02ab219a3e125344c22898b4a912508154b13f481948e528a0fc0c1a72c3a8",
+    "results_sha256": "cdee3d8ace5710f4eab2360799d27262483c37c5e06fd9fd4f37633dbb1ad5c4",
     "policy_type": "random",
     "summary": {
       "count": 15,
-      "mean_return": 1.5333333333333334,
-      "median_return": 1.0,
-      "std_return": 1.2036980056845192,
+      "mean_return": 1.7333333333333334,
+      "median_return": 2.0,
+      "std_return": 1.1234866364235145,
       "min_return": 0.0,
-      "max_return": 4.0,
-      "mean_episode_length": 184.06666666666666,
+      "max_return": 5.0,
+      "mean_episode_length": 197.4,
       "complete_episodes": 15,
       "finished_episode_count": 15,
       "terminated_count": 15,
       "truncated_count": 0,
       "time_limit_truncated_count": 0,
       "truncation_rate": 0.0,
-      "mean_return_terminated": 1.5333333333333334,
+      "mean_return_terminated": 1.7333333333333334,
       "mean_return_truncated": null,
-      "mean_length_terminated": 184.06666666666666,
+      "mean_length_terminated": 197.4,
       "mean_length_truncated": null,
       "action_distribution_semantics": "executed/wrapper-resolved action",
       "action_distribution": {
-        "FIRE": 778,
-        "LEFT": 661,
-        "NOOP": 651,
-        "RIGHT": 671
+        "FIRE": 895,
+        "LEFT": 675,
+        "NOOP": 686,
+        "RIGHT": 705
       },
       "requested_action_distribution": {
-        "FIRE": 728,
-        "LEFT": 679,
-        "NOOP": 662,
-        "RIGHT": 692
+        "FIRE": 789,
+        "LEFT": 713,
+        "NOOP": 708,
+        "RIGHT": 751
       },
       "executed_action_distribution": {
-        "FIRE": 778,
-        "LEFT": 661,
-        "NOOP": 651,
-        "RIGHT": 671
+        "FIRE": 895,
+        "LEFT": 675,
+        "NOOP": 686,
+        "RIGHT": 705
       },
-      "auto_fire_count": 76,
+      "auto_fire_count": 151,
       "auto_fire_reason_counts": {
-        "after_life_loss": 60,
-        "initial_serve": 16
+        "after_life_loss": 120,
+        "initial_serve": 31
       }
     }
   },
   "diagnostics": {
     "fire_sticky": {
       "path": "assets/day16/fire-sticky-diagnostic.json",
-      "sha256": "57bc403ecae831554fa49da270b234fe4047f513b8cabb02c5cfe467a0290b52"
+      "sha256": "14a38d0774784a5152e80eced3e501ef909796c2b29ebe6bbd969fabe4fe8348"
     },
     "q_value": {
       "path": "assets/day16/q-value-diagnostics.json",
-      "sha256": "c6de3d83725c5cdb54990dd3e81bf56f41ba40b76a285fc3a41769c58c97d339"
+      "sha256": "7a50a4c5136543989d174927d4ea7d9d941f2e2eb173f4c0975091e2751925d7"
     },
     "overestimation_simulation": {
       "path": "assets/day16/overestimation-bias.json",

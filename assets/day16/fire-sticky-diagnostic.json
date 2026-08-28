@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "created_at_utc": "2026-08-28T09:28:38.299341Z",
+  "created_at_utc": "2026-08-28T10:17:29.609580Z",
   "purpose": "Contract v2 FIRE/sticky-action root-cause diagnostic",
-  "git_commit_sha": "59707b76c2906afb16f79b1476f733c2d296a70d",
+  "git_commit_sha": "5e0931ca48af369909d359cf73d53fe4c0b9e696",
   "contract_path": "configs/eval/breakout_contract_v2.json",
   "contract": {
     "schema_version": 2,
@@ -41,8 +41,8 @@
     "raw_reward_rule": "sum environment rewards without clipping"
   },
   "checkpoint": {
-    "path": "C:/Users/tommy/.codex/worktrees/a23d/breakout-rl-engineering/runs/day16-finalization-100k/envs-4/checkpoints/step-00100000.pt",
-    "sha256": "8facd3931cc5e8f4b3a9b6dbd16dd177399cb683776efcbd53d235274003fcf4",
+    "path": "C:/Users/tommy/.codex/worktrees/a23d/breakout-rl-engineering/runs/day16-finalization-100k-v2/envs-4/checkpoints/step-00100000.pt",
+    "sha256": "e0d550b46d4cf9af219a5513153cb643f67514fbbb103040b57a633495145823",
     "step": 100000,
     "source_day14_run_id": null,
     "source_day14_manifest": null,
@@ -125,8 +125,10 @@
       102
     ],
     "max_agent_steps": 27000,
-    "fire_confirmation_rule": "observable raw reward or non-zero observation change after the wrapper-resolved FIRE step",
+    "fire_confirmation_rule": "observable raw reward or two consecutive observations whose change fraction reaches 0.0001 after wrapper-resolved FIRE",
     "max_fire_attempts": 8,
+    "fire_confirmation_steps": 2,
+    "fire_confirmation_change_fraction": 0.0001,
     "hidden_ale_action_visibility": "ALE API does not expose the hidden sticky-action draw; wrapper-resolved action means the action passed downward"
   },
   "runtime": {
@@ -136,13 +138,13 @@
     "cuda_available": true,
     "cuda_device_index": 0,
     "gpu_model": "NVIDIA GeForce RTX 4060 Laptop GPU",
-    "wall_clock_seconds": 13.174987600184977
+    "wall_clock_seconds": 6.028728700010106
   },
   "per_episode": [
     {
       "episode_seed": 101,
       "episode_return": 2.0,
-      "episode_length": 181,
+      "episode_length": 198,
       "terminated": true,
       "truncated": false,
       "time_limit": false,
@@ -168,35 +170,38 @@
           "lives_after": 2
         },
         {
-          "step": 127,
+          "step": 173,
           "lives_before": 2,
           "lives_after": 1
         },
         {
-          "step": 181,
+          "step": 198,
           "lives_before": 1,
           "lives_after": 0
         }
       ],
       "requested_action_distribution": {
-        "FIRE": 46,
-        "LEFT": 42,
-        "RIGHT": 93
+        "FIRE": 100,
+        "LEFT": 51,
+        "NOOP": 8,
+        "RIGHT": 39
       },
       "wrapper_resolved_action_distribution": {
-        "FIRE": 50,
-        "LEFT": 42,
-        "RIGHT": 89
+        "FIRE": 105,
+        "LEFT": 46,
+        "NOOP": 8,
+        "RIGHT": 39
       },
       "executed_action_distribution": {
-        "FIRE": 50,
-        "LEFT": 42,
-        "RIGHT": 89
+        "FIRE": 105,
+        "LEFT": 46,
+        "NOOP": 8,
+        "RIGHT": 39
       },
-      "auto_fire_count": 6,
+      "auto_fire_count": 11,
       "auto_fire_reason_counts": {
-        "after_life_loss": 4,
-        "initial_serve": 2
+        "after_life_loss": 8,
+        "initial_serve": 3
       },
       "serve_attempts": [
         {
@@ -212,60 +217,105 @@
           "step": 2,
           "reason": "initial_serve",
           "attempt": 2,
-          "confirmed": true,
-          "confirmation": "observation_activity",
+          "confirmed": false,
+          "confirmation": null,
           "observation_changed_fraction": 0.0002834467120181406,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 3,
+          "reason": "initial_serve",
+          "attempt": 3,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.0008149092970521542,
           "raw_reward": 0.0
         },
         {
           "step": 27,
           "reason": "after_life_loss",
           "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
+          "confirmed": false,
+          "confirmation": null,
           "observation_changed_fraction": 0.001240079365079365,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 28,
+          "reason": "after_life_loss",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.001665249433106576,
           "raw_reward": 0.0
         },
         {
           "step": 51,
           "reason": "after_life_loss",
           "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
+          "confirmed": false,
+          "confirmation": null,
           "observation_changed_fraction": 0.0012046485260770975,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 52,
+          "reason": "after_life_loss",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.0015589569160997733,
           "raw_reward": 0.0
         },
         {
           "step": 104,
           "reason": "after_life_loss",
           "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
+          "confirmed": false,
+          "confirmation": null,
           "observation_changed_fraction": 0.0013109410430839003,
           "raw_reward": 0.0
         },
         {
-          "step": 128,
+          "step": 105,
+          "reason": "after_life_loss",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.001736111111111111,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 174,
           "reason": "after_life_loss",
           "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
+          "confirmed": false,
+          "confirmation": null,
           "observation_changed_fraction": 0.001240079365079365,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 175,
+          "reason": "after_life_loss",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.0017715419501133788,
           "raw_reward": 0.0
         }
       ],
-      "serve_retry_count": 1,
-      "serve_confirmation_failures": 1,
-      "observation_changed_step_fraction": 0.9613259668508287,
-      "mean_observation_changed_fraction": 0.00404459666002681,
-      "unchanged_observation_step_fraction": 0.03867403314917127,
+      "serve_retry_count": 7,
+      "serve_attempts_without_confirmation": 6,
+      "observation_changed_step_fraction": 0.9646464646464646,
+      "mean_observation_changed_fraction": 0.004604756464875512,
+      "unchanged_observation_step_fraction": 0.03535353535353535,
       "max_consecutive_unchanged_observation": 2,
-      "diagnostic_wall_clock_seconds": 0.635736099909991
+      "diagnostic_wall_clock_seconds": 0.5189188998192549
     },
     {
       "episode_seed": 102,
       "episode_return": 2.0,
-      "episode_length": 200,
+      "episode_length": 181,
       "terminated": true,
       "truncated": false,
       "time_limit": false,
@@ -296,90 +346,138 @@
           "lives_after": 1
         },
         {
-          "step": 200,
+          "step": 181,
           "lives_before": 1,
           "lives_after": 0
         }
       ],
       "requested_action_distribution": {
-        "FIRE": 54,
-        "LEFT": 48,
-        "RIGHT": 98
+        "FIRE": 96,
+        "LEFT": 45,
+        "NOOP": 30,
+        "RIGHT": 10
       },
       "wrapper_resolved_action_distribution": {
-        "FIRE": 58,
-        "LEFT": 48,
-        "RIGHT": 94
+        "FIRE": 102,
+        "LEFT": 41,
+        "NOOP": 28,
+        "RIGHT": 10
       },
       "executed_action_distribution": {
-        "FIRE": 58,
-        "LEFT": 48,
-        "RIGHT": 94
+        "FIRE": 102,
+        "LEFT": 41,
+        "NOOP": 28,
+        "RIGHT": 10
       },
-      "auto_fire_count": 5,
+      "auto_fire_count": 10,
       "auto_fire_reason_counts": {
-        "after_life_loss": 4,
-        "initial_serve": 1
+        "after_life_loss": 8,
+        "initial_serve": 2
       },
       "serve_attempts": [
         {
           "step": 1,
           "reason": "initial_serve",
           "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
+          "confirmed": false,
+          "confirmation": null,
           "observation_changed_fraction": 0.0002834467120181406,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 2,
+          "reason": "initial_serve",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.0008149092970521542,
           "raw_reward": 0.0
         },
         {
           "step": 26,
           "reason": "after_life_loss",
           "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
+          "confirmed": false,
+          "confirmation": null,
           "observation_changed_fraction": 0.001240079365079365,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 27,
+          "reason": "after_life_loss",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.001665249433106576,
           "raw_reward": 0.0
         },
         {
           "step": 50,
           "reason": "after_life_loss",
           "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
+          "confirmed": false,
+          "confirmation": null,
           "observation_changed_fraction": 0.0012046485260770975,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 51,
+          "reason": "after_life_loss",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.0015589569160997733,
           "raw_reward": 0.0
         },
         {
           "step": 103,
           "reason": "after_life_loss",
           "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
+          "confirmed": false,
+          "confirmation": null,
           "observation_changed_fraction": 0.0013109410430839003,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 104,
+          "reason": "after_life_loss",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.001736111111111111,
           "raw_reward": 0.0
         },
         {
           "step": 127,
           "reason": "after_life_loss",
           "attempt": 1,
+          "confirmed": false,
+          "confirmation": null,
+          "observation_changed_fraction": 0.0015943877551020409,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 128,
+          "reason": "after_life_loss",
+          "attempt": 2,
           "confirmed": true,
-          "confirmation": "observation_activity",
-          "observation_changed_fraction": 0.001240079365079365,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.0019486961451247165,
           "raw_reward": 0.0
         }
       ],
-      "serve_retry_count": 0,
-      "serve_confirmation_failures": 0,
-      "observation_changed_step_fraction": 0.97,
-      "mean_observation_changed_fraction": 0.004062145691609977,
-      "unchanged_observation_step_fraction": 0.03,
+      "serve_retry_count": 5,
+      "serve_attempts_without_confirmation": 5,
+      "observation_changed_step_fraction": 0.9613259668508287,
+      "mean_observation_changed_fraction": 0.0030544906728805707,
+      "unchanged_observation_step_fraction": 0.03867403314917127,
       "max_consecutive_unchanged_observation": 2,
-      "diagnostic_wall_clock_seconds": 0.49363650009036064
+      "diagnostic_wall_clock_seconds": 0.30128560005687177
     },
     {
       "episode_seed": 103,
-      "episode_return": 3.0,
-      "episode_length": 213,
+      "episode_return": 4.0,
+      "episode_length": 262,
       "terminated": true,
       "truncated": false,
       "time_limit": false,
@@ -400,334 +498,148 @@
           "lives_after": 3
         },
         {
-          "step": 133,
+          "step": 182,
           "lives_before": 3,
           "lives_after": 2
         },
         {
-          "step": 157,
+          "step": 206,
           "lives_before": 2,
           "lives_after": 1
         },
         {
-          "step": 213,
+          "step": 262,
           "lives_before": 1,
           "lives_after": 0
         }
       ],
       "requested_action_distribution": {
-        "FIRE": 70,
-        "LEFT": 65,
-        "RIGHT": 78
+        "FIRE": 141,
+        "LEFT": 45,
+        "NOOP": 49,
+        "RIGHT": 27
       },
       "wrapper_resolved_action_distribution": {
-        "FIRE": 73,
-        "LEFT": 65,
-        "RIGHT": 75
+        "FIRE": 148,
+        "LEFT": 43,
+        "NOOP": 46,
+        "RIGHT": 25
       },
       "executed_action_distribution": {
-        "FIRE": 73,
-        "LEFT": 65,
-        "RIGHT": 75
+        "FIRE": 148,
+        "LEFT": 43,
+        "NOOP": 46,
+        "RIGHT": 25
       },
-      "auto_fire_count": 5,
+      "auto_fire_count": 10,
       "auto_fire_reason_counts": {
-        "after_life_loss": 4,
-        "initial_serve": 1
+        "after_life_loss": 8,
+        "initial_serve": 2
       },
       "serve_attempts": [
         {
           "step": 1,
           "reason": "initial_serve",
           "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
+          "confirmed": false,
+          "confirmation": null,
           "observation_changed_fraction": 0.00021258503401360543,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 2,
+          "reason": "initial_serve",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.0006377551020408163,
           "raw_reward": 0.0
         },
         {
           "step": 55,
           "reason": "after_life_loss",
           "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
+          "confirmed": false,
+          "confirmation": null,
           "observation_changed_fraction": 0.001240079365079365,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 56,
+          "reason": "after_life_loss",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.001665249433106576,
           "raw_reward": 0.0
         },
         {
           "step": 79,
           "reason": "after_life_loss",
           "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
+          "confirmed": false,
+          "confirmation": null,
           "observation_changed_fraction": 0.0012046485260770975,
           "raw_reward": 0.0
         },
         {
-          "step": 134,
+          "step": 80,
+          "reason": "after_life_loss",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.0015589569160997733,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 183,
           "reason": "after_life_loss",
           "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
+          "confirmed": false,
+          "confirmation": null,
           "observation_changed_fraction": 0.0013109410430839003,
           "raw_reward": 0.0
         },
         {
-          "step": 158,
+          "step": 184,
+          "reason": "after_life_loss",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.001736111111111111,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 207,
           "reason": "after_life_loss",
           "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
+          "confirmed": false,
+          "confirmation": null,
           "observation_changed_fraction": 0.0015943877551020409,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 208,
+          "reason": "after_life_loss",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.0019486961451247165,
           "raw_reward": 0.0
         }
       ],
-      "serve_retry_count": 0,
-      "serve_confirmation_failures": 0,
-      "observation_changed_step_fraction": 0.9859154929577465,
-      "mean_observation_changed_fraction": 0.004792644757433489,
-      "unchanged_observation_step_fraction": 0.014084507042253521,
+      "serve_retry_count": 5,
+      "serve_attempts_without_confirmation": 5,
+      "observation_changed_step_fraction": 0.9732824427480916,
+      "mean_observation_changed_fraction": 0.0037691921552335944,
+      "unchanged_observation_step_fraction": 0.026717557251908396,
       "max_consecutive_unchanged_observation": 2,
-      "diagnostic_wall_clock_seconds": 0.5065197998192161
+      "diagnostic_wall_clock_seconds": 0.41839160001836717
     },
     {
       "episode_seed": 104,
-      "episode_return": 5.0,
-      "episode_length": 305,
-      "terminated": true,
-      "truncated": false,
-      "time_limit": false,
-      "time_limit_source": null,
-      "initial_lives": 5,
-      "final_lives": 0,
-      "lives_observation_reliable": true,
-      "life_loss_count": 5,
-      "life_loss_events": [
-        {
-          "step": 100,
-          "lives_before": 5,
-          "lives_after": 4
-        },
-        {
-          "step": 124,
-          "lives_before": 4,
-          "lives_after": 3
-        },
-        {
-          "step": 178,
-          "lives_before": 3,
-          "lives_after": 2
-        },
-        {
-          "step": 252,
-          "lives_before": 2,
-          "lives_after": 1
-        },
-        {
-          "step": 305,
-          "lives_before": 1,
-          "lives_after": 0
-        }
-      ],
-      "requested_action_distribution": {
-        "FIRE": 82,
-        "LEFT": 70,
-        "NOOP": 5,
-        "RIGHT": 148
-      },
-      "wrapper_resolved_action_distribution": {
-        "FIRE": 83,
-        "LEFT": 70,
-        "NOOP": 5,
-        "RIGHT": 147
-      },
-      "executed_action_distribution": {
-        "FIRE": 83,
-        "LEFT": 70,
-        "NOOP": 5,
-        "RIGHT": 147
-      },
-      "auto_fire_count": 5,
-      "auto_fire_reason_counts": {
-        "after_life_loss": 4,
-        "initial_serve": 1
-      },
-      "serve_attempts": [
-        {
-          "step": 1,
-          "reason": "initial_serve",
-          "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
-          "observation_changed_fraction": 0.00021258503401360543,
-          "raw_reward": 0.0
-        },
-        {
-          "step": 101,
-          "reason": "after_life_loss",
-          "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
-          "observation_changed_fraction": 0.001240079365079365,
-          "raw_reward": 0.0
-        },
-        {
-          "step": 125,
-          "reason": "after_life_loss",
-          "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
-          "observation_changed_fraction": 0.0012755102040816326,
-          "raw_reward": 0.0
-        },
-        {
-          "step": 179,
-          "reason": "after_life_loss",
-          "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
-          "observation_changed_fraction": 0.006271258503401361,
-          "raw_reward": 0.0
-        },
-        {
-          "step": 253,
-          "reason": "after_life_loss",
-          "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
-          "observation_changed_fraction": 0.0018778344671201814,
-          "raw_reward": 0.0
-        }
-      ],
-      "serve_retry_count": 0,
-      "serve_confirmation_failures": 0,
-      "observation_changed_step_fraction": 0.9901639344262295,
-      "mean_observation_changed_fraction": 0.0038850786216125797,
-      "unchanged_observation_step_fraction": 0.009836065573770493,
-      "max_consecutive_unchanged_observation": 2,
-      "diagnostic_wall_clock_seconds": 0.7190904000308365
-    },
-    {
-      "episode_seed": 105,
-      "episode_return": 5.0,
-      "episode_length": 286,
-      "terminated": true,
-      "truncated": false,
-      "time_limit": false,
-      "time_limit_source": null,
-      "initial_lives": 5,
-      "final_lives": 0,
-      "lives_observation_reliable": true,
-      "life_loss_count": 5,
-      "life_loss_events": [
-        {
-          "step": 100,
-          "lives_before": 5,
-          "lives_after": 4
-        },
-        {
-          "step": 124,
-          "lives_before": 4,
-          "lives_after": 3
-        },
-        {
-          "step": 178,
-          "lives_before": 3,
-          "lives_after": 2
-        },
-        {
-          "step": 233,
-          "lives_before": 2,
-          "lives_after": 1
-        },
-        {
-          "step": 286,
-          "lives_before": 1,
-          "lives_after": 0
-        }
-      ],
-      "requested_action_distribution": {
-        "FIRE": 75,
-        "LEFT": 77,
-        "NOOP": 2,
-        "RIGHT": 132
-      },
-      "wrapper_resolved_action_distribution": {
-        "FIRE": 76,
-        "LEFT": 77,
-        "NOOP": 2,
-        "RIGHT": 131
-      },
-      "executed_action_distribution": {
-        "FIRE": 76,
-        "LEFT": 77,
-        "NOOP": 2,
-        "RIGHT": 131
-      },
-      "auto_fire_count": 5,
-      "auto_fire_reason_counts": {
-        "after_life_loss": 4,
-        "initial_serve": 1
-      },
-      "serve_attempts": [
-        {
-          "step": 1,
-          "reason": "initial_serve",
-          "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
-          "observation_changed_fraction": 0.00021258503401360543,
-          "raw_reward": 0.0
-        },
-        {
-          "step": 101,
-          "reason": "after_life_loss",
-          "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
-          "observation_changed_fraction": 0.001240079365079365,
-          "raw_reward": 0.0
-        },
-        {
-          "step": 125,
-          "reason": "after_life_loss",
-          "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
-          "observation_changed_fraction": 0.0012755102040816326,
-          "raw_reward": 0.0
-        },
-        {
-          "step": 179,
-          "reason": "after_life_loss",
-          "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
-          "observation_changed_fraction": 0.005491780045351474,
-          "raw_reward": 0.0
-        },
-        {
-          "step": 234,
-          "reason": "after_life_loss",
-          "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
-          "observation_changed_fraction": 0.005066609977324263,
-          "raw_reward": 0.0
-        }
-      ],
-      "serve_retry_count": 0,
-      "serve_confirmation_failures": 0,
-      "observation_changed_step_fraction": 0.9895104895104895,
-      "mean_observation_changed_fraction": 0.004686285936285937,
-      "unchanged_observation_step_fraction": 0.01048951048951049,
-      "max_consecutive_unchanged_observation": 2,
-      "diagnostic_wall_clock_seconds": 0.6772742001339793
-    },
-    {
-      "episode_seed": 202,
-      "episode_return": 6.0,
-      "episode_length": 326,
+      "episode_return": 1.0,
+      "episode_length": 150,
       "terminated": true,
       "truncated": false,
       "time_limit": false,
@@ -758,93 +670,459 @@
           "lives_after": 1
         },
         {
-          "step": 326,
+          "step": 150,
           "lives_before": 1,
           "lives_after": 0
         }
       ],
       "requested_action_distribution": {
-        "FIRE": 46,
-        "LEFT": 82,
-        "NOOP": 1,
-        "RIGHT": 197
+        "FIRE": 87,
+        "LEFT": 43,
+        "RIGHT": 20
       },
       "wrapper_resolved_action_distribution": {
-        "FIRE": 50,
-        "LEFT": 82,
-        "NOOP": 1,
-        "RIGHT": 193
+        "FIRE": 93,
+        "LEFT": 38,
+        "RIGHT": 19
       },
       "executed_action_distribution": {
-        "FIRE": 50,
-        "LEFT": 82,
-        "NOOP": 1,
-        "RIGHT": 193
+        "FIRE": 93,
+        "LEFT": 38,
+        "RIGHT": 19
       },
-      "auto_fire_count": 5,
+      "auto_fire_count": 10,
       "auto_fire_reason_counts": {
-        "after_life_loss": 4,
-        "initial_serve": 1
+        "after_life_loss": 8,
+        "initial_serve": 2
       },
       "serve_attempts": [
         {
           "step": 1,
           "reason": "initial_serve",
           "attempt": 1,
+          "confirmed": false,
+          "confirmation": null,
+          "observation_changed_fraction": 0.00021258503401360543,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 2,
+          "reason": "initial_serve",
+          "attempt": 2,
           "confirmed": true,
-          "confirmation": "observation_activity",
-          "observation_changed_fraction": 0.0002834467120181406,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.0006377551020408163,
           "raw_reward": 0.0
         },
         {
           "step": 26,
           "reason": "after_life_loss",
           "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
+          "confirmed": false,
+          "confirmation": null,
           "observation_changed_fraction": 0.001240079365079365,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 27,
+          "reason": "after_life_loss",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.001665249433106576,
           "raw_reward": 0.0
         },
         {
           "step": 50,
           "reason": "after_life_loss",
           "attempt": 1,
+          "confirmed": false,
+          "confirmation": null,
+          "observation_changed_fraction": 0.0012755102040816326,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 51,
+          "reason": "after_life_loss",
+          "attempt": 2,
           "confirmed": true,
-          "confirmation": "observation_activity",
-          "observation_changed_fraction": 0.0012046485260770975,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.001736111111111111,
           "raw_reward": 0.0
         },
         {
           "step": 103,
           "reason": "after_life_loss",
           "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
+          "confirmed": false,
+          "confirmation": null,
           "observation_changed_fraction": 0.0013109410430839003,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 104,
+          "reason": "after_life_loss",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.001736111111111111,
           "raw_reward": 0.0
         },
         {
           "step": 127,
           "reason": "after_life_loss",
           "attempt": 1,
+          "confirmed": false,
+          "confirmation": null,
+          "observation_changed_fraction": 0.001665249433106576,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 128,
+          "reason": "after_life_loss",
+          "attempt": 2,
           "confirmed": true,
-          "confirmation": "observation_activity",
-          "observation_changed_fraction": 0.001240079365079365,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.0021258503401360546,
           "raw_reward": 0.0
         }
       ],
-      "serve_retry_count": 0,
-      "serve_confirmation_failures": 0,
-      "observation_changed_step_fraction": 0.9815950920245399,
-      "mean_observation_changed_fraction": 0.004856850715746421,
-      "unchanged_observation_step_fraction": 0.018404907975460124,
+      "serve_retry_count": 5,
+      "serve_attempts_without_confirmation": 5,
+      "observation_changed_step_fraction": 0.9466666666666667,
+      "mean_observation_changed_fraction": 0.003761337868480726,
+      "unchanged_observation_step_fraction": 0.05333333333333334,
       "max_consecutive_unchanged_observation": 2,
-      "diagnostic_wall_clock_seconds": 0.7488796000834554
+      "diagnostic_wall_clock_seconds": 0.26165259978733957
+    },
+    {
+      "episode_seed": 105,
+      "episode_return": 4.0,
+      "episode_length": 272,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "initial_lives": 5,
+      "final_lives": 0,
+      "lives_observation_reliable": true,
+      "life_loss_count": 5,
+      "life_loss_events": [
+        {
+          "step": 25,
+          "lives_before": 5,
+          "lives_after": 4
+        },
+        {
+          "step": 49,
+          "lives_before": 4,
+          "lives_after": 3
+        },
+        {
+          "step": 120,
+          "lives_before": 3,
+          "lives_after": 2
+        },
+        {
+          "step": 172,
+          "lives_before": 2,
+          "lives_after": 1
+        },
+        {
+          "step": 272,
+          "lives_before": 1,
+          "lives_after": 0
+        }
+      ],
+      "requested_action_distribution": {
+        "FIRE": 92,
+        "LEFT": 84,
+        "NOOP": 18,
+        "RIGHT": 78
+      },
+      "wrapper_resolved_action_distribution": {
+        "FIRE": 97,
+        "LEFT": 80,
+        "NOOP": 18,
+        "RIGHT": 77
+      },
+      "executed_action_distribution": {
+        "FIRE": 97,
+        "LEFT": 80,
+        "NOOP": 18,
+        "RIGHT": 77
+      },
+      "auto_fire_count": 10,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 8,
+        "initial_serve": 2
+      },
+      "serve_attempts": [
+        {
+          "step": 1,
+          "reason": "initial_serve",
+          "attempt": 1,
+          "confirmed": false,
+          "confirmation": null,
+          "observation_changed_fraction": 0.00021258503401360543,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 2,
+          "reason": "initial_serve",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.0006377551020408163,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 26,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": false,
+          "confirmation": null,
+          "observation_changed_fraction": 0.001240079365079365,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 27,
+          "reason": "after_life_loss",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.001665249433106576,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 50,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": false,
+          "confirmation": null,
+          "observation_changed_fraction": 0.0012755102040816326,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 51,
+          "reason": "after_life_loss",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.001736111111111111,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 121,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": false,
+          "confirmation": null,
+          "observation_changed_fraction": 0.0013109410430839003,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 122,
+          "reason": "after_life_loss",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.001736111111111111,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 173,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": false,
+          "confirmation": null,
+          "observation_changed_fraction": 0.00116921768707483,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 174,
+          "reason": "after_life_loss",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.0015943877551020409,
+          "raw_reward": 0.0
+        }
+      ],
+      "serve_retry_count": 5,
+      "serve_attempts_without_confirmation": 5,
+      "observation_changed_step_fraction": 0.9742647058823529,
+      "mean_observation_changed_fraction": 0.004786289515806322,
+      "unchanged_observation_step_fraction": 0.025735294117647058,
+      "max_consecutive_unchanged_observation": 2,
+      "diagnostic_wall_clock_seconds": 0.4290311001241207
+    },
+    {
+      "episode_seed": 202,
+      "episode_return": 2.0,
+      "episode_length": 181,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "initial_lives": 5,
+      "final_lives": 0,
+      "lives_observation_reliable": true,
+      "life_loss_count": 5,
+      "life_loss_events": [
+        {
+          "step": 25,
+          "lives_before": 5,
+          "lives_after": 4
+        },
+        {
+          "step": 49,
+          "lives_before": 4,
+          "lives_after": 3
+        },
+        {
+          "step": 102,
+          "lives_before": 3,
+          "lives_after": 2
+        },
+        {
+          "step": 126,
+          "lives_before": 2,
+          "lives_after": 1
+        },
+        {
+          "step": 181,
+          "lives_before": 1,
+          "lives_after": 0
+        }
+      ],
+      "requested_action_distribution": {
+        "FIRE": 95,
+        "LEFT": 45,
+        "NOOP": 31,
+        "RIGHT": 10
+      },
+      "wrapper_resolved_action_distribution": {
+        "FIRE": 101,
+        "LEFT": 41,
+        "NOOP": 29,
+        "RIGHT": 10
+      },
+      "executed_action_distribution": {
+        "FIRE": 101,
+        "LEFT": 41,
+        "NOOP": 29,
+        "RIGHT": 10
+      },
+      "auto_fire_count": 10,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 8,
+        "initial_serve": 2
+      },
+      "serve_attempts": [
+        {
+          "step": 1,
+          "reason": "initial_serve",
+          "attempt": 1,
+          "confirmed": false,
+          "confirmation": null,
+          "observation_changed_fraction": 0.0002834467120181406,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 2,
+          "reason": "initial_serve",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.0008149092970521542,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 26,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": false,
+          "confirmation": null,
+          "observation_changed_fraction": 0.001240079365079365,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 27,
+          "reason": "after_life_loss",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.001665249433106576,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 50,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": false,
+          "confirmation": null,
+          "observation_changed_fraction": 0.0012046485260770975,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 51,
+          "reason": "after_life_loss",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.0015589569160997733,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 103,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": false,
+          "confirmation": null,
+          "observation_changed_fraction": 0.0013109410430839003,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 104,
+          "reason": "after_life_loss",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.001736111111111111,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 127,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": false,
+          "confirmation": null,
+          "observation_changed_fraction": 0.0015943877551020409,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 128,
+          "reason": "after_life_loss",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.0019486961451247165,
+          "raw_reward": 0.0
+        }
+      ],
+      "serve_retry_count": 5,
+      "serve_attempts_without_confirmation": 5,
+      "observation_changed_step_fraction": 0.9613259668508287,
+      "mean_observation_changed_fraction": 0.003074848724019995,
+      "unchanged_observation_step_fraction": 0.03867403314917127,
+      "max_consecutive_unchanged_observation": 2,
+      "diagnostic_wall_clock_seconds": 0.29264430003240705
     },
     {
       "episode_seed": 203,
-      "episode_return": 8.0,
-      "episode_length": 434,
+      "episode_return": 1.0,
+      "episode_length": 150,
       "terminated": true,
       "truncated": false,
       "time_limit": false,
@@ -855,113 +1133,158 @@
       "life_loss_count": 5,
       "life_loss_events": [
         {
-          "step": 100,
+          "step": 25,
           "lives_before": 5,
           "lives_after": 4
         },
         {
-          "step": 124,
+          "step": 49,
           "lives_before": 4,
           "lives_after": 3
         },
         {
-          "step": 227,
+          "step": 102,
           "lives_before": 3,
           "lives_after": 2
         },
         {
-          "step": 350,
+          "step": 126,
           "lives_before": 2,
           "lives_after": 1
         },
         {
-          "step": 434,
+          "step": 150,
           "lives_before": 1,
           "lives_after": 0
         }
       ],
       "requested_action_distribution": {
-        "FIRE": 154,
-        "LEFT": 109,
+        "FIRE": 82,
+        "LEFT": 46,
         "NOOP": 2,
-        "RIGHT": 169
+        "RIGHT": 20
       },
       "wrapper_resolved_action_distribution": {
-        "FIRE": 156,
-        "LEFT": 109,
+        "FIRE": 88,
+        "LEFT": 40,
         "NOOP": 2,
-        "RIGHT": 167
+        "RIGHT": 20
       },
       "executed_action_distribution": {
-        "FIRE": 156,
-        "LEFT": 109,
+        "FIRE": 88,
+        "LEFT": 40,
         "NOOP": 2,
-        "RIGHT": 167
+        "RIGHT": 20
       },
-      "auto_fire_count": 5,
+      "auto_fire_count": 10,
       "auto_fire_reason_counts": {
-        "after_life_loss": 4,
-        "initial_serve": 1
+        "after_life_loss": 8,
+        "initial_serve": 2
       },
       "serve_attempts": [
         {
           "step": 1,
           "reason": "initial_serve",
           "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
+          "confirmed": false,
+          "confirmation": null,
           "observation_changed_fraction": 0.00021258503401360543,
           "raw_reward": 0.0
         },
         {
-          "step": 101,
+          "step": 2,
+          "reason": "initial_serve",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.0006377551020408163,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 26,
           "reason": "after_life_loss",
           "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
+          "confirmed": false,
+          "confirmation": null,
           "observation_changed_fraction": 0.001240079365079365,
           "raw_reward": 0.0
         },
         {
-          "step": 125,
+          "step": 27,
+          "reason": "after_life_loss",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.001665249433106576,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 50,
           "reason": "after_life_loss",
           "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
+          "confirmed": false,
+          "confirmation": null,
           "observation_changed_fraction": 0.0012755102040816326,
           "raw_reward": 0.0
         },
         {
-          "step": 228,
+          "step": 51,
           "reason": "after_life_loss",
-          "attempt": 1,
+          "attempt": 2,
           "confirmed": true,
-          "confirmation": "observation_activity",
-          "observation_changed_fraction": 0.001240079365079365,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.001736111111111111,
           "raw_reward": 0.0
         },
         {
-          "step": 351,
+          "step": 103,
           "reason": "after_life_loss",
           "attempt": 1,
+          "confirmed": false,
+          "confirmation": null,
+          "observation_changed_fraction": 0.0013109410430839003,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 104,
+          "reason": "after_life_loss",
+          "attempt": 2,
           "confirmed": true,
-          "confirmation": "observation_activity",
-          "observation_changed_fraction": 0.0018778344671201814,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.001736111111111111,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 127,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": false,
+          "confirmation": null,
+          "observation_changed_fraction": 0.001665249433106576,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 128,
+          "reason": "after_life_loss",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.0021258503401360546,
           "raw_reward": 0.0
         }
       ],
-      "serve_retry_count": 0,
-      "serve_confirmation_failures": 0,
-      "observation_changed_step_fraction": 0.9861751152073732,
-      "mean_observation_changed_fraction": 0.0043761168061694725,
-      "unchanged_observation_step_fraction": 0.013824884792626729,
+      "serve_retry_count": 5,
+      "serve_attempts_without_confirmation": 5,
+      "observation_changed_step_fraction": 0.96,
+      "mean_observation_changed_fraction": 0.003676303854875284,
+      "unchanged_observation_step_fraction": 0.04,
       "max_consecutive_unchanged_observation": 2,
-      "diagnostic_wall_clock_seconds": 1.06936309998855
+      "diagnostic_wall_clock_seconds": 0.25013349996879697
     },
     {
       "episode_seed": 204,
-      "episode_return": 4.0,
-      "episode_length": 255,
+      "episode_return": 1.0,
+      "episode_length": 150,
       "terminated": true,
       "truncated": false,
       "time_limit": false,
@@ -972,113 +1295,155 @@
       "life_loss_count": 5,
       "life_loss_events": [
         {
-          "step": 100,
+          "step": 25,
           "lives_before": 5,
           "lives_after": 4
         },
         {
-          "step": 124,
+          "step": 49,
           "lives_before": 4,
           "lives_after": 3
         },
         {
-          "step": 177,
+          "step": 102,
           "lives_before": 3,
           "lives_after": 2
         },
         {
-          "step": 230,
+          "step": 126,
           "lives_before": 2,
           "lives_after": 1
         },
         {
-          "step": 255,
+          "step": 150,
           "lives_before": 1,
           "lives_after": 0
         }
       ],
       "requested_action_distribution": {
-        "FIRE": 71,
-        "LEFT": 56,
-        "NOOP": 2,
-        "RIGHT": 126
+        "FIRE": 82,
+        "LEFT": 47,
+        "RIGHT": 21
       },
       "wrapper_resolved_action_distribution": {
-        "FIRE": 74,
-        "LEFT": 56,
-        "NOOP": 2,
-        "RIGHT": 123
+        "FIRE": 88,
+        "LEFT": 41,
+        "RIGHT": 21
       },
       "executed_action_distribution": {
-        "FIRE": 74,
-        "LEFT": 56,
-        "NOOP": 2,
-        "RIGHT": 123
+        "FIRE": 88,
+        "LEFT": 41,
+        "RIGHT": 21
       },
-      "auto_fire_count": 5,
+      "auto_fire_count": 10,
       "auto_fire_reason_counts": {
-        "after_life_loss": 4,
-        "initial_serve": 1
+        "after_life_loss": 8,
+        "initial_serve": 2
       },
       "serve_attempts": [
         {
           "step": 1,
           "reason": "initial_serve",
           "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
+          "confirmed": false,
+          "confirmation": null,
           "observation_changed_fraction": 0.00021258503401360543,
           "raw_reward": 0.0
         },
         {
-          "step": 101,
+          "step": 2,
+          "reason": "initial_serve",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.0006377551020408163,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 26,
           "reason": "after_life_loss",
           "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
+          "confirmed": false,
+          "confirmation": null,
           "observation_changed_fraction": 0.001240079365079365,
           "raw_reward": 0.0
         },
         {
-          "step": 125,
+          "step": 27,
+          "reason": "after_life_loss",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.001665249433106576,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 50,
           "reason": "after_life_loss",
           "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
+          "confirmed": false,
+          "confirmation": null,
           "observation_changed_fraction": 0.0012755102040816326,
           "raw_reward": 0.0
         },
         {
-          "step": 178,
+          "step": 51,
           "reason": "after_life_loss",
-          "attempt": 1,
+          "attempt": 2,
           "confirmed": true,
-          "confirmation": "observation_activity",
-          "observation_changed_fraction": 0.0060232426303854876,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.001736111111111111,
           "raw_reward": 0.0
         },
         {
-          "step": 231,
+          "step": 103,
           "reason": "after_life_loss",
           "attempt": 1,
+          "confirmed": false,
+          "confirmation": null,
+          "observation_changed_fraction": 0.0013109410430839003,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 104,
+          "reason": "after_life_loss",
+          "attempt": 2,
           "confirmed": true,
-          "confirmation": "observation_activity",
-          "observation_changed_fraction": 0.001240079365079365,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.001736111111111111,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 127,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": false,
+          "confirmation": null,
+          "observation_changed_fraction": 0.001665249433106576,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 128,
+          "reason": "after_life_loss",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.0021258503401360546,
           "raw_reward": 0.0
         }
       ],
-      "serve_retry_count": 0,
-      "serve_confirmation_failures": 0,
-      "observation_changed_step_fraction": 0.9921568627450981,
-      "mean_observation_changed_fraction": 0.0044709550486861415,
-      "unchanged_observation_step_fraction": 0.00784313725490196,
+      "serve_retry_count": 5,
+      "serve_attempts_without_confirmation": 5,
+      "observation_changed_step_fraction": 0.96,
+      "mean_observation_changed_fraction": 0.003567649281934996,
+      "unchanged_observation_step_fraction": 0.04,
       "max_consecutive_unchanged_observation": 2,
-      "diagnostic_wall_clock_seconds": 0.7124363998882473
+      "diagnostic_wall_clock_seconds": 0.26026839995756745
     },
     {
       "episode_seed": 205,
-      "episode_return": 9.0,
-      "episode_length": 500,
+      "episode_return": 1.0,
+      "episode_length": 168,
       "terminated": true,
       "truncated": false,
       "time_limit": false,
@@ -1089,113 +1454,155 @@
       "life_loss_count": 5,
       "life_loss_events": [
         {
-          "step": 100,
+          "step": 25,
           "lives_before": 5,
           "lives_after": 4
         },
         {
-          "step": 124,
+          "step": 49,
           "lives_before": 4,
           "lives_after": 3
         },
         {
-          "step": 277,
+          "step": 120,
           "lives_before": 3,
           "lives_after": 2
         },
         {
-          "step": 380,
+          "step": 144,
           "lives_before": 2,
           "lives_after": 1
         },
         {
-          "step": 500,
+          "step": 168,
           "lives_before": 1,
           "lives_after": 0
         }
       ],
       "requested_action_distribution": {
-        "FIRE": 123,
-        "LEFT": 134,
-        "NOOP": 55,
-        "RIGHT": 188
+        "FIRE": 88,
+        "LEFT": 44,
+        "RIGHT": 36
       },
       "wrapper_resolved_action_distribution": {
-        "FIRE": 126,
-        "LEFT": 134,
-        "NOOP": 54,
-        "RIGHT": 186
+        "FIRE": 94,
+        "LEFT": 38,
+        "RIGHT": 36
       },
       "executed_action_distribution": {
-        "FIRE": 126,
-        "LEFT": 134,
-        "NOOP": 54,
-        "RIGHT": 186
+        "FIRE": 94,
+        "LEFT": 38,
+        "RIGHT": 36
       },
-      "auto_fire_count": 5,
+      "auto_fire_count": 10,
       "auto_fire_reason_counts": {
-        "after_life_loss": 4,
-        "initial_serve": 1
+        "after_life_loss": 8,
+        "initial_serve": 2
       },
       "serve_attempts": [
         {
           "step": 1,
           "reason": "initial_serve",
           "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
+          "confirmed": false,
+          "confirmation": null,
           "observation_changed_fraction": 0.00021258503401360543,
           "raw_reward": 0.0
         },
         {
-          "step": 101,
+          "step": 2,
+          "reason": "initial_serve",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.0006377551020408163,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 26,
           "reason": "after_life_loss",
           "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
+          "confirmed": false,
+          "confirmation": null,
           "observation_changed_fraction": 0.001240079365079365,
           "raw_reward": 0.0
         },
         {
-          "step": 125,
+          "step": 27,
+          "reason": "after_life_loss",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.001665249433106576,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 50,
           "reason": "after_life_loss",
           "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
+          "confirmed": false,
+          "confirmation": null,
           "observation_changed_fraction": 0.0012755102040816326,
           "raw_reward": 0.0
         },
         {
-          "step": 278,
+          "step": 51,
           "reason": "after_life_loss",
-          "attempt": 1,
+          "attempt": 2,
           "confirmed": true,
-          "confirmation": "observation_activity",
-          "observation_changed_fraction": 0.000744047619047619,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.001736111111111111,
           "raw_reward": 0.0
         },
         {
-          "step": 381,
+          "step": 121,
           "reason": "after_life_loss",
           "attempt": 1,
+          "confirmed": false,
+          "confirmation": null,
+          "observation_changed_fraction": 0.0013109410430839003,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 122,
+          "reason": "after_life_loss",
+          "attempt": 2,
           "confirmed": true,
-          "confirmation": "observation_activity",
+          "confirmation": "observation_activity_streak",
           "observation_changed_fraction": 0.001736111111111111,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 145,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": false,
+          "confirmation": null,
+          "observation_changed_fraction": 0.001665249433106576,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 146,
+          "reason": "after_life_loss",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.0021258503401360546,
           "raw_reward": 0.0
         }
       ],
-      "serve_retry_count": 0,
-      "serve_confirmation_failures": 0,
-      "observation_changed_step_fraction": 0.988,
-      "mean_observation_changed_fraction": 0.005133503401360544,
-      "unchanged_observation_step_fraction": 0.012,
-      "max_consecutive_unchanged_observation": 3,
-      "diagnostic_wall_clock_seconds": 1.4865657000336796
+      "serve_retry_count": 5,
+      "serve_attempts_without_confirmation": 5,
+      "observation_changed_step_fraction": 0.9523809523809523,
+      "mean_observation_changed_fraction": 0.00481543063654033,
+      "unchanged_observation_step_fraction": 0.047619047619047616,
+      "max_consecutive_unchanged_observation": 2,
+      "diagnostic_wall_clock_seconds": 0.2865301000420004
     },
     {
       "episode_seed": 206,
-      "episode_return": 4.0,
-      "episode_length": 292,
+      "episode_return": 3.0,
+      "episode_length": 228,
       "terminated": true,
       "truncated": false,
       "time_limit": false,
@@ -1216,100 +1623,148 @@
           "lives_after": 3
         },
         {
-          "step": 120,
+          "step": 149,
           "lives_before": 3,
           "lives_after": 2
         },
         {
-          "step": 222,
+          "step": 173,
           "lives_before": 2,
           "lives_after": 1
         },
         {
-          "step": 292,
+          "step": 228,
           "lives_before": 1,
           "lives_after": 0
         }
       ],
       "requested_action_distribution": {
-        "FIRE": 54,
-        "LEFT": 65,
-        "RIGHT": 173
+        "FIRE": 105,
+        "LEFT": 58,
+        "NOOP": 30,
+        "RIGHT": 35
       },
       "wrapper_resolved_action_distribution": {
-        "FIRE": 56,
-        "LEFT": 65,
-        "RIGHT": 171
+        "FIRE": 112,
+        "LEFT": 53,
+        "NOOP": 28,
+        "RIGHT": 35
       },
       "executed_action_distribution": {
-        "FIRE": 56,
-        "LEFT": 65,
-        "RIGHT": 171
+        "FIRE": 112,
+        "LEFT": 53,
+        "NOOP": 28,
+        "RIGHT": 35
       },
-      "auto_fire_count": 5,
+      "auto_fire_count": 10,
       "auto_fire_reason_counts": {
-        "after_life_loss": 4,
-        "initial_serve": 1
+        "after_life_loss": 8,
+        "initial_serve": 2
       },
       "serve_attempts": [
         {
           "step": 1,
           "reason": "initial_serve",
           "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
+          "confirmed": false,
+          "confirmation": null,
           "observation_changed_fraction": 0.0002834467120181406,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 2,
+          "reason": "initial_serve",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.0007794784580498867,
           "raw_reward": 0.0
         },
         {
           "step": 26,
           "reason": "after_life_loss",
           "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
+          "confirmed": false,
+          "confirmation": null,
           "observation_changed_fraction": 0.00116921768707483,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 27,
+          "reason": "after_life_loss",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.0016298185941043084,
           "raw_reward": 0.0
         },
         {
           "step": 97,
           "reason": "after_life_loss",
           "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
+          "confirmed": false,
+          "confirmation": null,
           "observation_changed_fraction": 0.0012046485260770975,
           "raw_reward": 0.0
         },
         {
-          "step": 121,
+          "step": 98,
           "reason": "after_life_loss",
-          "attempt": 1,
+          "attempt": 2,
           "confirmed": true,
-          "confirmation": "observation_activity",
-          "observation_changed_fraction": 0.0024447278911564627,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.001665249433106576,
           "raw_reward": 0.0
         },
         {
-          "step": 223,
+          "step": 150,
           "reason": "after_life_loss",
           "attempt": 1,
+          "confirmed": false,
+          "confirmation": null,
+          "observation_changed_fraction": 0.001240079365079365,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 151,
+          "reason": "after_life_loss",
+          "attempt": 2,
           "confirmed": true,
-          "confirmation": "observation_activity",
-          "observation_changed_fraction": 0.006944444444444444,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.0017006802721088435,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 174,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": false,
+          "confirmation": null,
+          "observation_changed_fraction": 0.0018778344671201814,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 175,
+          "reason": "after_life_loss",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.00233843537414966,
           "raw_reward": 0.0
         }
       ],
-      "serve_retry_count": 0,
-      "serve_confirmation_failures": 0,
-      "observation_changed_step_fraction": 0.9897260273972602,
-      "mean_observation_changed_fraction": 0.004092140566272172,
-      "unchanged_observation_step_fraction": 0.010273972602739725,
+      "serve_retry_count": 5,
+      "serve_attempts_without_confirmation": 5,
+      "observation_changed_step_fraction": 0.9780701754385965,
+      "mean_observation_changed_fraction": 0.0038302601742451372,
+      "unchanged_observation_step_fraction": 0.021929824561403508,
       "max_consecutive_unchanged_observation": 2,
-      "diagnostic_wall_clock_seconds": 0.8033841999713331
+      "diagnostic_wall_clock_seconds": 0.35969580011442304
     },
     {
       "episode_seed": 303,
       "episode_return": 2.0,
-      "episode_length": 180,
+      "episode_length": 197,
       "terminated": true,
       "truncated": false,
       "time_limit": false,
@@ -1335,443 +1790,143 @@
           "lives_after": 2
         },
         {
-          "step": 126,
+          "step": 172,
           "lives_before": 2,
           "lives_after": 1
         },
         {
-          "step": 180,
+          "step": 197,
           "lives_before": 1,
           "lives_after": 0
         }
       ],
       "requested_action_distribution": {
-        "FIRE": 45,
-        "LEFT": 43,
-        "RIGHT": 92
+        "FIRE": 98,
+        "LEFT": 52,
+        "NOOP": 8,
+        "RIGHT": 39
       },
       "wrapper_resolved_action_distribution": {
-        "FIRE": 49,
-        "LEFT": 43,
-        "RIGHT": 88
+        "FIRE": 103,
+        "LEFT": 47,
+        "NOOP": 8,
+        "RIGHT": 39
       },
       "executed_action_distribution": {
-        "FIRE": 49,
-        "LEFT": 43,
-        "RIGHT": 88
+        "FIRE": 103,
+        "LEFT": 47,
+        "NOOP": 8,
+        "RIGHT": 39
       },
-      "auto_fire_count": 5,
+      "auto_fire_count": 10,
       "auto_fire_reason_counts": {
-        "after_life_loss": 4,
-        "initial_serve": 1
+        "after_life_loss": 8,
+        "initial_serve": 2
       },
       "serve_attempts": [
         {
           "step": 1,
           "reason": "initial_serve",
           "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
+          "confirmed": false,
+          "confirmation": null,
           "observation_changed_fraction": 0.0002834467120181406,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 2,
+          "reason": "initial_serve",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.0008149092970521542,
           "raw_reward": 0.0
         },
         {
           "step": 26,
           "reason": "after_life_loss",
           "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
+          "confirmed": false,
+          "confirmation": null,
           "observation_changed_fraction": 0.001240079365079365,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 27,
+          "reason": "after_life_loss",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.001665249433106576,
           "raw_reward": 0.0
         },
         {
           "step": 50,
           "reason": "after_life_loss",
           "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
+          "confirmed": false,
+          "confirmation": null,
           "observation_changed_fraction": 0.0012046485260770975,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 51,
+          "reason": "after_life_loss",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.0015589569160997733,
           "raw_reward": 0.0
         },
         {
           "step": 103,
           "reason": "after_life_loss",
           "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
+          "confirmed": false,
+          "confirmation": null,
           "observation_changed_fraction": 0.0013109410430839003,
           "raw_reward": 0.0
         },
         {
-          "step": 127,
+          "step": 104,
+          "reason": "after_life_loss",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.001736111111111111,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 173,
           "reason": "after_life_loss",
           "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
+          "confirmed": false,
+          "confirmation": null,
           "observation_changed_fraction": 0.001240079365079365,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 174,
+          "reason": "after_life_loss",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.0017715419501133788,
           "raw_reward": 0.0
         }
       ],
-      "serve_retry_count": 0,
-      "serve_confirmation_failures": 0,
-      "observation_changed_step_fraction": 0.9666666666666667,
-      "mean_observation_changed_fraction": 0.0040739559712774,
-      "unchanged_observation_step_fraction": 0.03333333333333333,
+      "serve_retry_count": 5,
+      "serve_attempts_without_confirmation": 5,
+      "observation_changed_step_fraction": 0.9695431472081218,
+      "mean_observation_changed_fraction": 0.0048822617033276935,
+      "unchanged_observation_step_fraction": 0.030456852791878174,
       "max_consecutive_unchanged_observation": 2,
-      "diagnostic_wall_clock_seconds": 0.5218398000579327
+      "diagnostic_wall_clock_seconds": 0.3296699000056833
     },
     {
       "episode_seed": 304,
-      "episode_return": 11.0,
-      "episode_length": 414,
-      "terminated": true,
-      "truncated": false,
-      "time_limit": false,
-      "time_limit_source": null,
-      "initial_lives": 5,
-      "final_lives": 0,
-      "lives_observation_reliable": true,
-      "life_loss_count": 5,
-      "life_loss_events": [
-        {
-          "step": 55,
-          "lives_before": 5,
-          "lives_after": 4
-        },
-        {
-          "step": 154,
-          "lives_before": 4,
-          "lives_after": 3
-        },
-        {
-          "step": 178,
-          "lives_before": 3,
-          "lives_after": 2
-        },
-        {
-          "step": 251,
-          "lives_before": 2,
-          "lives_after": 1
-        },
-        {
-          "step": 414,
-          "lives_before": 1,
-          "lives_after": 0
-        }
-      ],
-      "requested_action_distribution": {
-        "FIRE": 80,
-        "LEFT": 137,
-        "NOOP": 2,
-        "RIGHT": 195
-      },
-      "wrapper_resolved_action_distribution": {
-        "FIRE": 81,
-        "LEFT": 137,
-        "NOOP": 2,
-        "RIGHT": 194
-      },
-      "executed_action_distribution": {
-        "FIRE": 81,
-        "LEFT": 137,
-        "NOOP": 2,
-        "RIGHT": 194
-      },
-      "auto_fire_count": 5,
-      "auto_fire_reason_counts": {
-        "after_life_loss": 4,
-        "initial_serve": 1
-      },
-      "serve_attempts": [
-        {
-          "step": 1,
-          "reason": "initial_serve",
-          "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
-          "observation_changed_fraction": 0.0002834467120181406,
-          "raw_reward": 0.0
-        },
-        {
-          "step": 56,
-          "reason": "after_life_loss",
-          "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
-          "observation_changed_fraction": 0.003755668934240363,
-          "raw_reward": 0.0
-        },
-        {
-          "step": 155,
-          "reason": "after_life_loss",
-          "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
-          "observation_changed_fraction": 0.005562641723356009,
-          "raw_reward": 0.0
-        },
-        {
-          "step": 179,
-          "reason": "after_life_loss",
-          "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
-          "observation_changed_fraction": 0.0008149092970521542,
-          "raw_reward": 0.0
-        },
-        {
-          "step": 252,
-          "reason": "after_life_loss",
-          "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
-          "observation_changed_fraction": 0.0015589569160997733,
-          "raw_reward": 0.0
-        }
-      ],
-      "serve_retry_count": 0,
-      "serve_confirmation_failures": 0,
-      "observation_changed_step_fraction": 0.9975845410628019,
-      "mean_observation_changed_fraction": 0.0061358681959096046,
-      "unchanged_observation_step_fraction": 0.0024154589371980675,
-      "max_consecutive_unchanged_observation": 1,
-      "diagnostic_wall_clock_seconds": 1.1070232999045402
-    },
-    {
-      "episode_seed": 305,
-      "episode_return": 9.0,
-      "episode_length": 427,
-      "terminated": true,
-      "truncated": false,
-      "time_limit": false,
-      "time_limit_source": null,
-      "initial_lives": 5,
-      "final_lives": 0,
-      "lives_observation_reliable": true,
-      "life_loss_count": 5,
-      "life_loss_events": [
-        {
-          "step": 53,
-          "lives_before": 5,
-          "lives_after": 4
-        },
-        {
-          "step": 77,
-          "lives_before": 4,
-          "lives_after": 3
-        },
-        {
-          "step": 132,
-          "lives_before": 3,
-          "lives_after": 2
-        },
-        {
-          "step": 236,
-          "lives_before": 2,
-          "lives_after": 1
-        },
-        {
-          "step": 427,
-          "lives_before": 1,
-          "lives_after": 0
-        }
-      ],
-      "requested_action_distribution": {
-        "FIRE": 77,
-        "LEFT": 123,
-        "RIGHT": 227
-      },
-      "wrapper_resolved_action_distribution": {
-        "FIRE": 78,
-        "LEFT": 123,
-        "RIGHT": 226
-      },
-      "executed_action_distribution": {
-        "FIRE": 78,
-        "LEFT": 123,
-        "RIGHT": 226
-      },
-      "auto_fire_count": 5,
-      "auto_fire_reason_counts": {
-        "after_life_loss": 4,
-        "initial_serve": 1
-      },
-      "serve_attempts": [
-        {
-          "step": 1,
-          "reason": "initial_serve",
-          "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
-          "observation_changed_fraction": 0.00021258503401360543,
-          "raw_reward": 0.0
-        },
-        {
-          "step": 54,
-          "reason": "after_life_loss",
-          "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
-          "observation_changed_fraction": 0.0010983560090702948,
-          "raw_reward": 0.0
-        },
-        {
-          "step": 78,
-          "reason": "after_life_loss",
-          "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
-          "observation_changed_fraction": 0.0007794784580498867,
-          "raw_reward": 0.0
-        },
-        {
-          "step": 133,
-          "reason": "after_life_loss",
-          "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
-          "observation_changed_fraction": 0.0011337868480725624,
-          "raw_reward": 0.0
-        },
-        {
-          "step": 237,
-          "reason": "after_life_loss",
-          "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
-          "observation_changed_fraction": 0.007369614512471655,
-          "raw_reward": 0.0
-        }
-      ],
-      "serve_retry_count": 0,
-      "serve_confirmation_failures": 0,
-      "observation_changed_step_fraction": 0.9953161592505855,
-      "mean_observation_changed_fraction": 0.005065531286675483,
-      "unchanged_observation_step_fraction": 0.00468384074941452,
-      "max_consecutive_unchanged_observation": 2,
-      "diagnostic_wall_clock_seconds": 0.9897658999543637
-    },
-    {
-      "episode_seed": 306,
-      "episode_return": 7.0,
-      "episode_length": 367,
-      "terminated": true,
-      "truncated": false,
-      "time_limit": false,
-      "time_limit_source": null,
-      "initial_lives": 5,
-      "final_lives": 0,
-      "lives_observation_reliable": true,
-      "life_loss_count": 5,
-      "life_loss_events": [
-        {
-          "step": 53,
-          "lives_before": 5,
-          "lives_after": 4
-        },
-        {
-          "step": 77,
-          "lives_before": 4,
-          "lives_after": 3
-        },
-        {
-          "step": 132,
-          "lives_before": 3,
-          "lives_after": 2
-        },
-        {
-          "step": 267,
-          "lives_before": 2,
-          "lives_after": 1
-        },
-        {
-          "step": 367,
-          "lives_before": 1,
-          "lives_after": 0
-        }
-      ],
-      "requested_action_distribution": {
-        "FIRE": 96,
-        "LEFT": 130,
-        "NOOP": 3,
-        "RIGHT": 138
-      },
-      "wrapper_resolved_action_distribution": {
-        "FIRE": 97,
-        "LEFT": 129,
-        "NOOP": 3,
-        "RIGHT": 138
-      },
-      "executed_action_distribution": {
-        "FIRE": 97,
-        "LEFT": 129,
-        "NOOP": 3,
-        "RIGHT": 138
-      },
-      "auto_fire_count": 5,
-      "auto_fire_reason_counts": {
-        "after_life_loss": 4,
-        "initial_serve": 1
-      },
-      "serve_attempts": [
-        {
-          "step": 1,
-          "reason": "initial_serve",
-          "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
-          "observation_changed_fraction": 0.00021258503401360543,
-          "raw_reward": 0.0
-        },
-        {
-          "step": 54,
-          "reason": "after_life_loss",
-          "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
-          "observation_changed_fraction": 0.0010983560090702948,
-          "raw_reward": 0.0
-        },
-        {
-          "step": 78,
-          "reason": "after_life_loss",
-          "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
-          "observation_changed_fraction": 0.0007794784580498867,
-          "raw_reward": 0.0
-        },
-        {
-          "step": 133,
-          "reason": "after_life_loss",
-          "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
-          "observation_changed_fraction": 0.0011337868480725624,
-          "raw_reward": 0.0
-        },
-        {
-          "step": 268,
-          "reason": "after_life_loss",
-          "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
-          "observation_changed_fraction": 0.004854024943310657,
-          "raw_reward": 0.0
-        }
-      ],
-      "serve_retry_count": 0,
-      "serve_confirmation_failures": 0,
-      "observation_changed_step_fraction": 0.9945504087193461,
-      "mean_observation_changed_fraction": 0.0061701792433594685,
-      "unchanged_observation_step_fraction": 0.005449591280653951,
-      "max_consecutive_unchanged_observation": 2,
-      "diagnostic_wall_clock_seconds": 0.826545299962163
-    },
-    {
-      "episode_seed": 307,
-      "episode_return": 4.0,
-      "episode_length": 300,
+      "episode_return": 2.0,
+      "episode_length": 181,
       "terminated": true,
       "truncated": false,
       "time_limit": false,
@@ -1787,100 +1942,634 @@
           "lives_after": 4
         },
         {
-          "step": 99,
+          "step": 77,
           "lives_before": 4,
           "lives_after": 3
         },
         {
-          "step": 123,
+          "step": 102,
           "lives_before": 3,
           "lives_after": 2
         },
         {
-          "step": 198,
+          "step": 156,
           "lives_before": 2,
           "lives_after": 1
         },
         {
-          "step": 300,
+          "step": 181,
           "lives_before": 1,
           "lives_after": 0
         }
       ],
       "requested_action_distribution": {
-        "FIRE": 48,
-        "LEFT": 65,
-        "RIGHT": 187
+        "FIRE": 105,
+        "LEFT": 35,
+        "NOOP": 30,
+        "RIGHT": 11
       },
       "wrapper_resolved_action_distribution": {
-        "FIRE": 52,
-        "LEFT": 65,
-        "RIGHT": 183
+        "FIRE": 108,
+        "LEFT": 33,
+        "NOOP": 30,
+        "RIGHT": 10
       },
       "executed_action_distribution": {
-        "FIRE": 52,
-        "LEFT": 65,
-        "RIGHT": 183
+        "FIRE": 108,
+        "LEFT": 33,
+        "NOOP": 30,
+        "RIGHT": 10
       },
-      "auto_fire_count": 5,
+      "auto_fire_count": 10,
       "auto_fire_reason_counts": {
-        "after_life_loss": 4,
-        "initial_serve": 1
+        "after_life_loss": 8,
+        "initial_serve": 2
       },
       "serve_attempts": [
         {
           "step": 1,
           "reason": "initial_serve",
           "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
+          "confirmed": false,
+          "confirmation": null,
           "observation_changed_fraction": 0.0002834467120181406,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 2,
+          "reason": "initial_serve",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.0008149092970521542,
           "raw_reward": 0.0
         },
         {
           "step": 26,
           "reason": "after_life_loss",
           "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
-          "observation_changed_fraction": 0.00116921768707483,
-          "raw_reward": 0.0
-        },
-        {
-          "step": 100,
-          "reason": "after_life_loss",
-          "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
-          "observation_changed_fraction": 0.0013463718820861678,
-          "raw_reward": 0.0
-        },
-        {
-          "step": 124,
-          "reason": "after_life_loss",
-          "attempt": 1,
-          "confirmed": true,
-          "confirmation": "observation_activity",
+          "confirmed": false,
+          "confirmation": null,
           "observation_changed_fraction": 0.001240079365079365,
           "raw_reward": 0.0
         },
         {
-          "step": 199,
+          "step": 27,
+          "reason": "after_life_loss",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.001736111111111111,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 78,
           "reason": "after_life_loss",
           "attempt": 1,
+          "confirmed": false,
+          "confirmation": null,
+          "observation_changed_fraction": 0.0008503401360544217,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 79,
+          "reason": "after_life_loss",
+          "attempt": 2,
           "confirmed": true,
-          "confirmation": "observation_activity",
-          "observation_changed_fraction": 0.001488095238095238,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.0013818027210884354,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 103,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": false,
+          "confirmation": null,
+          "observation_changed_fraction": 0.0013109410430839003,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 104,
+          "reason": "after_life_loss",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.0018069727891156463,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 157,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": false,
+          "confirmation": null,
+          "observation_changed_fraction": 0.001240079365079365,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 158,
+          "reason": "after_life_loss",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.0017715419501133788,
           "raw_reward": 0.0
         }
       ],
-      "serve_retry_count": 0,
-      "serve_confirmation_failures": 0,
-      "observation_changed_step_fraction": 0.9766666666666667,
-      "mean_observation_changed_fraction": 0.004423894557823129,
-      "unchanged_observation_step_fraction": 0.023333333333333334,
+      "serve_retry_count": 5,
+      "serve_attempts_without_confirmation": 5,
+      "observation_changed_step_fraction": 0.9613259668508287,
+      "mean_observation_changed_fraction": 0.0029573984289848533,
+      "unchanged_observation_step_fraction": 0.03867403314917127,
+      "max_consecutive_unchanged_observation": 3,
+      "diagnostic_wall_clock_seconds": 0.3060892999637872
+    },
+    {
+      "episode_seed": 305,
+      "episode_return": 4.0,
+      "episode_length": 261,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "initial_lives": 5,
+      "final_lives": 0,
+      "lives_observation_reliable": true,
+      "life_loss_count": 5,
+      "life_loss_events": [
+        {
+          "step": 102,
+          "lives_before": 5,
+          "lives_after": 4
+        },
+        {
+          "step": 126,
+          "lives_before": 4,
+          "lives_after": 3
+        },
+        {
+          "step": 181,
+          "lives_before": 3,
+          "lives_after": 2
+        },
+        {
+          "step": 205,
+          "lives_before": 2,
+          "lives_after": 1
+        },
+        {
+          "step": 261,
+          "lives_before": 1,
+          "lives_after": 0
+        }
+      ],
+      "requested_action_distribution": {
+        "FIRE": 138,
+        "LEFT": 48,
+        "NOOP": 62,
+        "RIGHT": 13
+      },
+      "wrapper_resolved_action_distribution": {
+        "FIRE": 143,
+        "LEFT": 47,
+        "NOOP": 59,
+        "RIGHT": 12
+      },
+      "executed_action_distribution": {
+        "FIRE": 143,
+        "LEFT": 47,
+        "NOOP": 59,
+        "RIGHT": 12
+      },
+      "auto_fire_count": 10,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 8,
+        "initial_serve": 2
+      },
+      "serve_attempts": [
+        {
+          "step": 1,
+          "reason": "initial_serve",
+          "attempt": 1,
+          "confirmed": false,
+          "confirmation": null,
+          "observation_changed_fraction": 0.00021258503401360543,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 2,
+          "reason": "initial_serve",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.0006377551020408163,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 103,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": false,
+          "confirmation": null,
+          "observation_changed_fraction": 0.0010983560090702948,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 104,
+          "reason": "after_life_loss",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.0015235260770975058,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 127,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": false,
+          "confirmation": null,
+          "observation_changed_fraction": 0.0007794784580498867,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 128,
+          "reason": "after_life_loss",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.0012046485260770975,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 182,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": false,
+          "confirmation": null,
+          "observation_changed_fraction": 0.0011337868480725624,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 183,
+          "reason": "after_life_loss",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.0015589569160997733,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 206,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": false,
+          "confirmation": null,
+          "observation_changed_fraction": 0.00116921768707483,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 207,
+          "reason": "after_life_loss",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.0015943877551020409,
+          "raw_reward": 0.0
+        }
+      ],
+      "serve_retry_count": 5,
+      "serve_attempts_without_confirmation": 5,
+      "observation_changed_step_fraction": 0.9770114942528736,
+      "mean_observation_changed_fraction": 0.002888224255219329,
+      "unchanged_observation_step_fraction": 0.022988505747126436,
       "max_consecutive_unchanged_observation": 2,
-      "diagnostic_wall_clock_seconds": 0.7062204000540078
+      "diagnostic_wall_clock_seconds": 0.4033186000306159
+    },
+    {
+      "episode_seed": 306,
+      "episode_return": 3.0,
+      "episode_length": 212,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "initial_lives": 5,
+      "final_lives": 0,
+      "lives_observation_reliable": true,
+      "life_loss_count": 5,
+      "life_loss_events": [
+        {
+          "step": 53,
+          "lives_before": 5,
+          "lives_after": 4
+        },
+        {
+          "step": 77,
+          "lives_before": 4,
+          "lives_after": 3
+        },
+        {
+          "step": 132,
+          "lives_before": 3,
+          "lives_after": 2
+        },
+        {
+          "step": 156,
+          "lives_before": 2,
+          "lives_after": 1
+        },
+        {
+          "step": 212,
+          "lives_before": 1,
+          "lives_after": 0
+        }
+      ],
+      "requested_action_distribution": {
+        "FIRE": 115,
+        "LEFT": 45,
+        "NOOP": 40,
+        "RIGHT": 12
+      },
+      "wrapper_resolved_action_distribution": {
+        "FIRE": 120,
+        "LEFT": 42,
+        "NOOP": 38,
+        "RIGHT": 12
+      },
+      "executed_action_distribution": {
+        "FIRE": 120,
+        "LEFT": 42,
+        "NOOP": 38,
+        "RIGHT": 12
+      },
+      "auto_fire_count": 10,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 8,
+        "initial_serve": 2
+      },
+      "serve_attempts": [
+        {
+          "step": 1,
+          "reason": "initial_serve",
+          "attempt": 1,
+          "confirmed": false,
+          "confirmation": null,
+          "observation_changed_fraction": 0.00021258503401360543,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 2,
+          "reason": "initial_serve",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.0006377551020408163,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 54,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": false,
+          "confirmation": null,
+          "observation_changed_fraction": 0.0010983560090702948,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 55,
+          "reason": "after_life_loss",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.0015235260770975058,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 78,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": false,
+          "confirmation": null,
+          "observation_changed_fraction": 0.0007794784580498867,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 79,
+          "reason": "after_life_loss",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.0012046485260770975,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 133,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": false,
+          "confirmation": null,
+          "observation_changed_fraction": 0.0011337868480725624,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 134,
+          "reason": "after_life_loss",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.0015589569160997733,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 157,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": false,
+          "confirmation": null,
+          "observation_changed_fraction": 0.00116921768707483,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 158,
+          "reason": "after_life_loss",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.0015943877551020409,
+          "raw_reward": 0.0
+        }
+      ],
+      "serve_retry_count": 5,
+      "serve_attempts_without_confirmation": 5,
+      "observation_changed_step_fraction": 0.9764150943396226,
+      "mean_observation_changed_fraction": 0.0031479966200316607,
+      "unchanged_observation_step_fraction": 0.02358490566037736,
+      "max_consecutive_unchanged_observation": 2,
+      "diagnostic_wall_clock_seconds": 0.3355229999870062
+    },
+    {
+      "episode_seed": 307,
+      "episode_return": 3.0,
+      "episode_length": 228,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "initial_lives": 5,
+      "final_lives": 0,
+      "lives_observation_reliable": true,
+      "life_loss_count": 5,
+      "life_loss_events": [
+        {
+          "step": 25,
+          "lives_before": 5,
+          "lives_after": 4
+        },
+        {
+          "step": 96,
+          "lives_before": 4,
+          "lives_after": 3
+        },
+        {
+          "step": 149,
+          "lives_before": 3,
+          "lives_after": 2
+        },
+        {
+          "step": 173,
+          "lives_before": 2,
+          "lives_after": 1
+        },
+        {
+          "step": 228,
+          "lives_before": 1,
+          "lives_after": 0
+        }
+      ],
+      "requested_action_distribution": {
+        "FIRE": 106,
+        "LEFT": 56,
+        "NOOP": 31,
+        "RIGHT": 35
+      },
+      "wrapper_resolved_action_distribution": {
+        "FIRE": 112,
+        "LEFT": 52,
+        "NOOP": 29,
+        "RIGHT": 35
+      },
+      "executed_action_distribution": {
+        "FIRE": 112,
+        "LEFT": 52,
+        "NOOP": 29,
+        "RIGHT": 35
+      },
+      "auto_fire_count": 10,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 8,
+        "initial_serve": 2
+      },
+      "serve_attempts": [
+        {
+          "step": 1,
+          "reason": "initial_serve",
+          "attempt": 1,
+          "confirmed": false,
+          "confirmation": null,
+          "observation_changed_fraction": 0.0002834467120181406,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 2,
+          "reason": "initial_serve",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.0007794784580498867,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 26,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": false,
+          "confirmation": null,
+          "observation_changed_fraction": 0.00116921768707483,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 27,
+          "reason": "after_life_loss",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.0016298185941043084,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 97,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": false,
+          "confirmation": null,
+          "observation_changed_fraction": 0.0012046485260770975,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 98,
+          "reason": "after_life_loss",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.001665249433106576,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 150,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": false,
+          "confirmation": null,
+          "observation_changed_fraction": 0.001240079365079365,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 151,
+          "reason": "after_life_loss",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.0017006802721088435,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 174,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": false,
+          "confirmation": null,
+          "observation_changed_fraction": 0.0018778344671201814,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 175,
+          "reason": "after_life_loss",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity_streak",
+          "observation_changed_fraction": 0.00233843537414966,
+          "raw_reward": 0.0
+        }
+      ],
+      "serve_retry_count": 5,
+      "serve_attempts_without_confirmation": 5,
+      "observation_changed_step_fraction": 0.9780701754385965,
+      "mean_observation_changed_fraction": 0.003964524406253729,
+      "unchanged_observation_step_fraction": 0.021929824561403508,
+      "max_consecutive_unchanged_observation": 2,
+      "diagnostic_wall_clock_seconds": 0.36006970005109906
     }
   ],
   "summary": {
@@ -1889,35 +2578,35 @@
     "truncated_count": 0,
     "time_limit_count": 0,
     "requested_action_distribution": {
-      "FIRE": 1121,
-      "LEFT": 1246,
-      "NOOP": 72,
-      "RIGHT": 2241
+      "FIRE": 1530,
+      "LEFT": 744,
+      "NOOP": 339,
+      "RIGHT": 406
     },
     "wrapper_resolved_action_distribution": {
-      "FIRE": 1159,
-      "LEFT": 1245,
-      "NOOP": 71,
-      "RIGHT": 2205
+      "FIRE": 1614,
+      "LEFT": 682,
+      "NOOP": 323,
+      "RIGHT": 400
     },
     "executed_action_distribution": {
-      "FIRE": 1159,
-      "LEFT": 1245,
-      "NOOP": 71,
-      "RIGHT": 2205
+      "FIRE": 1614,
+      "LEFT": 682,
+      "NOOP": 323,
+      "RIGHT": 400
     },
-    "auto_fire_count": 76,
+    "auto_fire_count": 151,
     "auto_fire_reason_counts": {
-      "after_life_loss": 60,
-      "initial_serve": 16
+      "after_life_loss": 120,
+      "initial_serve": 31
     },
-    "serve_retry_count": 1,
-    "serve_confirmation_failures": 1,
+    "serve_retry_count": 77,
+    "serve_attempts_without_confirmation": 76,
     "life_loss_count": 75,
     "max_consecutive_unchanged_observation": 3
   },
   "trace": {
     "path": "assets/day16/fire-sticky-trace.jsonl",
-    "row_count": 381
+    "row_count": 379
   }
 }
