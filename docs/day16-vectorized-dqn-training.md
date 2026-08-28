@@ -28,7 +28,7 @@ Day 16 要解的，就是這個問題。
 
 > **如果一次同時跑 2、4、8 個 Breakout，讓它們一起產生 observation，再一次送進 GPU，完整訓練到底會不會真的變快？**
 
-而且這次不能只追求速度。Day 15 才剛把 Breakout 的規則固定成 Contract v2：開局與掉命後由環境處理必要的 FIRE、frame skip 是 4、frame stack 是 4、sticky action probability 是 0.25。Day 16 不可以一邊換環境規則、一邊說速度差異都是 vectorization 帶來的。
+而且這次不能只追求速度。Day 15 已經把 Breakout 規則固定成 Contract v2：frame skip 是 4、frame stack 是 4、sticky action probability 是 0.25，開局與掉命後的必要 FIRE 由環境統一處理。Day 16 要比較的是 training system，不是偷偷換一套遊戲規則。
 
 ## 一次跑多個環境，不是把迴圈複製八份
 
@@ -49,19 +49,19 @@ Env 3 ─┘
    4 個 actions
 ```
 
-這裡第一個 `4` 是 environment 數量；後面的 `(4, 84, 84)` 則是每個 Agent 看到的四張 84×84 灰階畫面。
+第一個 `4` 是 environment 數量；後面的 `(4, 84, 84)` 則是每個 Agent 看到的四張 84×84 灰階畫面。
 
 真正的重點是：**神經網路只 forward 一次。**
 
-不是在 Python 裡對四個 environment 各呼叫一次模型，而是把四份 observation 疊成一個 batch，一次交給 CUDA。這就是 batched inference，中文可以把它理解成「一次處理一批資料」。
+不是在 Python 裡對四個 environment 各呼叫一次模型，而是把四份 observation 疊成一個 batch，一次交給 CUDA。這就是 batched inference，可以理解成「一次處理一批資料」。
 
-Replay Buffer 也用同樣思路。以前每產生一筆 transition，就做一次小型 GPU 寫入；現在改成一次寫入一批。
+Replay Buffer 也用同樣的思路。以前每產生一筆 transition，就做一次小型 GPU 寫入；現在可以一次寫入一批。
 
-完整資料流變成：
+完整資料流如下：
 
 [![單一環境與向量化 DQN trainer 的資料流](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/6244f3858c1ac1d0c383c1e424f74cd4dcc831c2/assets/day16/vectorized-pipeline.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/6244f3858c1ac1d0c383c1e424f74cd4dcc831c2/assets/day16/vectorized-pipeline.png)
 
-看起來只是「多開幾個遊戲」，但真正麻煩的地方反而不是 GPU，而是：**怎麼確保多開之後，DQN 還是在學同一件事。**
+看起來只是「多開幾個遊戲」，但真正麻煩的地方反而不是 GPU，而是：**怎麼確保多開之後，DQN 還是在按照原本的訓練節奏學習。**
 
 ## `global_step` 不能再理解成「跑了幾次迴圈」
 
@@ -83,23 +83,15 @@ vector step 一次
 
 這時真正的訓練進度應該增加 8，而不是 1。
 
-這個差異非常重要，因為 DQN 裡很多事情都依賴步數：
+這個差異非常重要，因為 DQN 裡很多事情都依賴步數：什麼時候開始學習、每隔多少筆資料更新一次網路、epsilon 探索率下降到哪裡、target network 何時同步，以及 checkpoint 的 10K、100K 到底代表多少資料。
 
-- 什麼時候開始從 Replay 抽資料學習；
-- 每隔多少筆 transition 更新一次網路；
-- epsilon 探索率下降到哪裡；
-- target network 什麼時候同步；
-- checkpoint 的 10K、100K 到底代表多少資料。
+例如目前 `train_frequency = 4`。如果一次 vector step 產生 8 筆 transition，它其實跨過了第 4 筆和第 8 筆兩個更新點。若程式只是寫成「每個 vector step 更新一次」，更新次數就會直接少一半。
 
-例如目前 `train_frequency = 4`。
+所以 Day 16 不把 vector iteration 當成訓練步數，而是仍然用**實際收到的 environment transitions**計數。
 
-如果一次 vector step 產生 8 筆 transition，它其實跨過了第 4 筆和第 8 筆兩個更新點。若程式只是寫成「每個 vector step 更新一次」，那更新次數會直接少一半。
+這也是這次 1、2、4、8 個環境的 10K 實驗，最後全部都得到相同 `2,251` 次 optimizer update 和 `21` 次 target sync 的原因。
 
-所以 Day 16 沒有把「vector iteration」當作訓練步數，而是仍然用**實際收到的 environment transitions**計數。
-
-這也是這次 1、2、4、8 個環境的 10K 實驗，最後全部都得到相同的 `2,251` 次 optimizer update 和 `21` 次 target sync 的原因。
-
-速度變了，但 DQN 的更新節奏沒有偷偷被改掉。
+速度變了，但更新頻率沒有因為多開環境而偷偷縮水。
 
 ## 多個遊戲一起跑，最怕把不同 episode 接錯
 
@@ -117,19 +109,19 @@ vector step 一次
 
 但這個 transition 在真實遊戲裡根本不存在。
 
-因此目前的做法是先保留真正的 final observation，把這筆 transition 寫進 Replay，再只 reset 已經 `terminated` 或 `truncated` 的 environment。
+因此目前的做法是先保存真正的 final observation，把這筆 transition 寫進 Replay，再只 reset 已經 `terminated` 或 `truncated` 的 environment。
 
-Day 15 定下來的 FIRE 規則也要各自獨立。某個 environment 剛掉命，需要由環境執行 FIRE；另外三個 environment 可能仍然正常打球，不能一起被影響。
+Day 15 定下來的 FIRE 規則也要各自獨立。某個 environment 剛掉命，需要由環境處理必要的 FIRE；另外幾個 environment 可能還在正常打球，不能一起被影響。
 
-而且如果模型要求 `RIGHT`，但環境因為重新發球實際執行了 `FIRE`，Replay 裡保存的 action 必須是**真的被環境執行的 FIRE**。否則模型之後會拿錯誤的 `(state, action, reward)` 關係來學習。
+而且如果 policy 原本要求 `RIGHT`，但環境的 serve wrapper 這一步改成 `FIRE`，Replay 裡必須保存 wrapper 最後送進環境的 `FIRE`，否則模型之後會拿錯誤的 `(state, action, reward)` 關係來學習。
 
-這些細節看起來不像「GPU 加速」，但它們才是 RL systems 最容易出錯的地方：**速度可以量，錯掉的 transition 卻不一定會立刻報錯。**
+這些細節看起來不像 GPU 加速，但它們才是 RL systems 最容易出錯的地方：**速度可以量，錯掉的 transition 卻不一定會立刻報錯。**
 
 ## 真正跑起來後，4 個環境已經吃到大部分收益
 
-接著才是這一天最想知道的數字。
+接著才是 Day 16 最想知道的數字。
 
-我在同一張 RTX 4060 Laptop GPU 上，固定 Vanilla DQN、GPU Replay、batch size 32、seed 42 和 Contract v2，分別跑：
+在同一張 RTX 4060 Laptop GPU 上，固定 Vanilla DQN、GPU Replay、batch size 32、seed 42 和 Contract v2，分別跑：
 
 ```text
 N = 1
@@ -138,7 +130,7 @@ N = 4
 N = 8
 ```
 
-每組都只跑 10,000 個實際 environment transitions，先看完整 trainer 的速度。
+每組都使用 10,000 個實際 environment transitions，先比較完整 trainer 的短跑速度。
 
 | 同時環境數 | transitions/s | 跑完 10K 約需 | action inference 次數 | Replay 寫入次數 | 平均 GPU util. |
 |---:|---:|---:|---:|---:|---:|
@@ -160,9 +152,9 @@ N=8：318.57
 
 把環境數再翻倍，速度只多了約 2.7%。
 
-所以這次不是得到「環境愈多愈好」的結論，而是看到一個很典型的系統現象：**batching 一開始可以快速攤薄固定成本，但到某個點之後，新的瓶頸會浮出來。**
+所以這次不是得到「環境愈多愈好」的結論，而是看到一個很典型的系統現象：**batching 一開始可以快速攤薄固定成本，但到某個點之後，新的瓶頸就會浮出來。**
 
-這也是為什麼目前把 N=4 當成比較合理的候選，而不是單純看到 N=8 數字最高就選 N=8。
+N=4 已經取得大部分收益，因此後續真正要選正式 backend 時，不能只看誰的 SPS 最大，還要一起考慮訓練節奏與實作複雜度。
 
 ## 速度主要不是來自「GPU 使用率暴增」
 
@@ -213,8 +205,6 @@ DQN update：       約 10.5 s → 13.3 s
 
 ## 為什麼 N=8 的 Replay 寫入次數沒有降到 1,250？
 
-這裡有一個很能看出「不能只為了 batching 犧牲訓練語意」的細節。
-
 N=8 一次會產生 8 筆 transition；照理說 10K transitions 只需要 1,250 次 `add_batch`。
 
 但目前 `train_frequency = 4`。
@@ -226,9 +216,9 @@ N=8 一次會產生 8 筆 transition；照理說 10K transitions 只需要 1,250
 第 8 筆 → optimizer update
 ```
 
-如果整批 8 筆先全部塞進 Replay，第一次 update 就會提前看到本來應該屬於「第 5～8 筆」的未來資料，訓練順序就變了。
+如果整批 8 筆先全部塞進 Replay，第一次 update 就會提前看到本來應該屬於第 5～8 筆的資料，訓練資料順序就被改了。
 
-所以這批 8 筆會拆成：
+所以寫入會按照 transition boundary 分成：
 
 ```text
 4 筆 → insert → update
@@ -237,38 +227,9 @@ N=8 一次會產生 8 筆 transition；照理說 10K transitions 只需要 1,250
 
 結果 N=8 的 Replay insertion 仍然是 2,500 次，和 N=4 一樣。
 
-這也剛好解釋了為什麼 N=4 已經非常接近 N=8：N=8 還能繼續減少 action-inference calls，但 Replay insertion 已經受到訓練 update boundary 限制，ALE 的 CPU 工作也沒有因為多開環境而消失。
+這也解釋了為什麼 N=4 已經非常接近 N=8：N=8 還能繼續減少 action-inference calls，但 Replay insertion 已經受到 update boundary 限制，ALE 的 CPU 工作也沒有因為多開環境而消失。
 
-這比「N=8 比 N=4 快 2.7%」本身更重要，因為它指出了下一個效能上限在哪裡。
-
-## 系統變快了，但 10K 還不能證明學習品質一樣
-
-速度通過之後，我還是用 Day 15 固定下來的 15 個 evaluation episodes，檢查 N=1 與 N=4 的 10K checkpoint。
-
-結果是：
-
-| 10K checkpoint | mean return | median | 正常結束 | TimeLimit |
-|---|---:|---:|---:|---:|
-| N=1 | 1.53 | 0 | 15/15 | 0/15 |
-| N=4 | 2.80 | 2 | 14/15 | 1/15 |
-
-只看平均分數，N=4 甚至比較高。
-
-但這不能拿來說「N=4 學得比較好」。10K 對 DQN 來說仍然非常早，而且 N=4 有一局在 seed 101 跑到 26,998 steps 才被 TimeLimit 截斷，那局的 return 是 0；policy 請求的 action 裡有 26,207 次是 `RIGHT`。
-
-因此這個 guardrail 真正告訴我們的是：
-
-> **目前沒有證據顯示 vectorization 讓分數直接崩掉，但也還沒有足夠證據證明 N=1 和 N=4 的 learning quality 已經等價。**
-
-這一局 timeout 還值得多看一眼。Contract v2 使用 `sticky_action_probability = 0.25`，也就是環境有機率沿用前一個實際 action，而不是採用這一次收到的 action。現在的 FIRE reset 是在需要發球時送出必要的 FIRE；理論上，sticky action 可能讓某次 FIRE 沒有真正生效。
-
-seed 101 的 `return=0 + 27K TimeLimit + 長時間 RIGHT` 和「沒有成功進入正常球局」的型態相容，但目前 artifact 沒有逐個 raw emulator frame 記錄實際執行 action，因此**這仍然只是需要驗證的假說，不是已經證實的 root cause**。
-
-這個警訊反而很有價值。Day 16 本來就在證明一件事：
-
-> **systems optimization 不能只看 SPS。只要環境語意或 transition 有一個地方不對，再快都沒有意義。**
-
-所以在後面開始 500K、1M 甚至數百萬 transitions 的正式比較前，這個 FIRE / sticky-action 邊界最好先被釐清，而不是把一次 10K 的平均分數當成通行證。
+這比「N=8 比 N=4 快 2.7%」本身更有意思，因為它讓我們看到下一個效能上限在哪裡。
 
 ## Day 16 真正得到的答案
 
@@ -292,10 +253,10 @@ Day 16 沒有讓 DQN 變成新的演算法，也沒有讓 GPU 使用率衝到 10
 → batched Replay insertion
 ```
 
-在這台 RTX 4060 Laptop GPU 上，10K 完整 trainer 的速度從約 215 transitions/s 提高到約 310～319 transitions/s。N=4 已經取得大部分收益，N=8 只再增加一點點。
+在這台 RTX 4060 Laptop GPU 上，10K 短跑的完整 trainer 從約 215 transitions/s 提高到約 310～319 transitions/s。N=4 已經取得大部分收益，N=8 只再增加一點點。
 
 更重要的是，我們現在知道這個 1.48× 是從哪裡來的：不是「CUDA 自動加速」，而是**減少大量 batch=1 的模型呼叫與零碎 GPU 寫入**。
 
-這也讓後面的長訓練有了一個更合理的系統起點。
+10K 在這一天主要回答的是 systems 問題，不拿來判斷哪個 checkpoint 學得比較好。真正的模型品質比較，仍然要在相同環境規則與更長訓練預算下進行。
 
-下一步開始，問題會從「怎麼更快收集與學習 transition」轉回演算法本身：Vanilla DQN 的 `max` 為什麼可能偏向被高估的 Q-value？Double DQN 又是怎麼把 action selection 和 value evaluation 拆開的？
+下一步，焦點會從「怎麼更有效率地收集與處理 transition」轉回演算法本身：Vanilla DQN 的 `max` 為什麼可能偏向被高估的 Q-value？Double DQN 又是怎麼把 action selection 和 value evaluation 拆開的？
