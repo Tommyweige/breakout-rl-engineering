@@ -212,22 +212,44 @@ class BreakoutFireResetWrapper(gym.Wrapper):
         return observation, float(reward), bool(terminated), bool(truncated), info
 
 
-def make_breakout_raw_env(*, render_mode: str | None = None) -> gym.Env:
+def _sticky_action_probability(value: float) -> float:
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError) as error:
+        raise TypeError("sticky_action_probability must be finite and between 0 and 1") from error
+    if not np.isfinite(parsed) or not 0.0 <= parsed <= 1.0:
+        raise ValueError("sticky_action_probability must be finite and between 0 and 1")
+    return parsed
+
+
+def make_breakout_raw_env(
+    *,
+    render_mode: str | None = None,
+    sticky_action_probability: float = 0.25,
+) -> gym.Env:
     """Create the raw Breakout environment used by the preprocessing chain."""
 
+    sticky_probability = _sticky_action_probability(sticky_action_probability)
     return gym.make(
         ENVIRONMENT_ID,
         render_mode=render_mode,
         # AtariPreprocessing must be the only component that skips frames.
         frameskip=1,
-        repeat_action_probability=0.25,
+        repeat_action_probability=sticky_probability,
     )
 
 
-def make_breakout_preprocessed_env(*, render_mode: str | None = None) -> gym.Env:
+def make_breakout_preprocessed_env(
+    *,
+    render_mode: str | None = None,
+    sticky_action_probability: float = 0.25,
+) -> gym.Env:
     """Create Breakout after Atari preprocessing but before frame stacking."""
 
-    env = make_breakout_raw_env(render_mode=render_mode)
+    env = make_breakout_raw_env(
+        render_mode=render_mode,
+        sticky_action_probability=sticky_action_probability,
+    )
 
     # Keep the raw pixels compact while preserving the spatial information
     # needed by Breakout. The wrapper also performs the official max-pooling.
@@ -251,6 +273,7 @@ def make_breakout_env(
     fire_reset_max_attempts: int = 8,
     fire_confirmation_steps: int = 2,
     fire_confirmation_change_fraction: float = 1e-4,
+    sticky_action_probability: float = 0.25,
 ) -> gym.Env:
     """Create the project's baseline preprocessed Breakout environment.
 
@@ -264,7 +287,10 @@ def make_breakout_env(
     if stack_size < 1:
         raise ValueError("stack_size must be at least 1")
 
-    env = make_breakout_preprocessed_env(render_mode=render_mode)
+    env = make_breakout_preprocessed_env(
+        render_mode=render_mode,
+        sticky_action_probability=sticky_action_probability,
+    )
 
     # Frame skip controls action frequency; stacking supplies short-term
     # history so a policy can infer motion from successive observations.
@@ -290,6 +316,7 @@ def make_breakout_vector_env(
     fire_reset_max_attempts: int = 8,
     fire_confirmation_steps: int = 2,
     fire_confirmation_change_fraction: float = 1e-4,
+    sticky_action_probability: float = 0.25,
 ) -> gym.vector.SyncVectorEnv:
     """Create independent Breakout environments with explicit manual reset.
 
@@ -315,6 +342,7 @@ def make_breakout_vector_env(
             fire_reset_max_attempts=fire_reset_max_attempts,
             fire_confirmation_steps=fire_confirmation_steps,
             fire_confirmation_change_fraction=fire_confirmation_change_fraction,
+            sticky_action_probability=sticky_action_probability,
         )
 
     return gym.vector.SyncVectorEnv(

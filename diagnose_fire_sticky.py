@@ -334,10 +334,15 @@ def _run_episode(
             "auto_fire_reason_counts": dict(sorted(fire_reasons.items())),
             "serve_attempts": serve_attempts,
             "serve_retry_count": sum(
-                max(int(attempt["attempt"]) - 1, 0) for attempt in serve_attempts
+                int(attempt["attempt"]) > 1 for attempt in serve_attempts
             ),
             "serve_attempts_without_confirmation": sum(
                 1 for attempt in serve_attempts if attempt["confirmed"] is False
+            ),
+            "fire_attempts_without_observation_activity": sum(
+                float(attempt["observation_changed_fraction"]) < 1e-4
+                and float(attempt["raw_reward"]) == 0.0
+                for attempt in serve_attempts
             ),
             "observation_changed_step_fraction": float(
                 sum(changed_flags) / max(len(changed_flags), 1)
@@ -385,6 +390,69 @@ def _runtime(device: torch.device) -> dict[str, Any]:
     return values
 
 
+def _aggregate_summary(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    if not rows:
+        raise ValueError("at least one diagnostic episode is required")
+    requested_counts: Counter[str] = Counter()
+    executed_counts: Counter[str] = Counter()
+    reason_counts: Counter[str] = Counter()
+    for row in rows:
+        requested_counts.update(row["requested_action_distribution"])
+        executed_counts.update(row["executed_action_distribution"])
+        reason_counts.update(row["auto_fire_reason_counts"])
+    return {
+        "episode_count": len(rows),
+        "terminated_count": sum(bool(row["terminated"]) for row in rows),
+        "truncated_count": sum(bool(row["truncated"]) for row in rows),
+        "time_limit_count": sum(bool(row["time_limit"]) for row in rows),
+        "requested_action_distribution": dict(sorted(requested_counts.items())),
+        "wrapper_resolved_action_distribution": dict(
+            sorted(executed_counts.items())
+        ),
+        "executed_action_distribution": dict(sorted(executed_counts.items())),
+        "auto_fire_count": sum(int(row["auto_fire_count"]) for row in rows),
+        "auto_fire_reason_counts": dict(sorted(reason_counts.items())),
+        "serve_retry_count": sum(int(row["serve_retry_count"]) for row in rows),
+        "serve_attempts_without_confirmation": sum(
+            int(row["serve_attempts_without_confirmation"]) for row in rows
+        ),
+        "fire_attempts_without_observation_activity": sum(
+            int(row["fire_attempts_without_observation_activity"]) for row in rows
+        ),
+        "life_loss_count": sum(int(row["life_loss_count"]) for row in rows),
+        "max_consecutive_unchanged_observation": max(
+            int(row["max_consecutive_unchanged_observation"]) for row in rows
+        ),
+    }
+
+
+def _run_rows(
+    model: torch.nn.Module,
+    *,
+    env_factory: Any,
+    device: torch.device,
+    seeds: Sequence[int],
+    max_steps: int,
+    trace_seeds: set[int] | None = None,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    rows: list[dict[str, Any]] = []
+    traces: list[dict[str, Any]] = []
+    selected_trace_seeds = trace_seeds or set()
+    for seed in seeds:
+        row, trace = _run_episode(
+            model,
+            env_factory=env_factory,
+            device=device,
+            seed=int(seed),
+            max_steps=max_steps,
+            trace=int(seed) in selected_trace_seeds,
+        )
+        rows.append(row)
+        if trace:
+            traces.extend(trace)
+    return rows, traces
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Diagnose Contract v2 FIRE and sticky-action serving on real ALE."
@@ -398,6 +466,18 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--seeds", nargs="+", type=int, default=None)
     parser.add_argument("--trace-seeds", nargs="+", type=int, default=[101, 102])
+    parser.add_argument(
+        "--causal-control",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="also run a non-Contract p=0 sticky-action control (default: enabled)",
+    )
+    parser.add_argument(
+        "--causal-control-seeds",
+        nargs="+",
+        type=int,
+        default=[101, 102, 103, 104, 105],
+    )
     parser.add_argument("--max-steps", type=int, default=None)
     parser.add_argument(
         "--output",
@@ -434,6 +514,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     trace_seeds = set(args.trace_seeds)
     if not trace_seeds.issubset(set(seeds)):
         raise ValueError("trace-seeds must be included in seeds")
+    control_seeds = tuple(args.causal_control_seeds)
+    if args.causal_control:
+        if not control_seeds or len(set(control_seeds)) != len(control_seeds):
+            raise ValueError("causal-control-seeds must be a non-empty unique list")
+        if not set(control_seeds).issubset(set(seeds)):
+            raise ValueError("causal-control-seeds must be included in seeds")
     max_steps = args.max_steps or int(contract.time_limit_semantics["agent_step_limit"])
     if max_steps < 1:
         raise ValueError("max-steps must be positive")
@@ -448,28 +534,50 @@ def main(argv: Sequence[str] | None = None) -> int:
         env_factory=env_factory,
     )
     started_at = time.perf_counter()
-    rows: list[dict[str, Any]] = []
-    traces: list[dict[str, Any]] = []
-    for seed in seeds:
-        row, trace = _run_episode(
-            loaded.model,
-            env_factory=env_factory,
-            device=device,
-            seed=int(seed),
-            max_steps=max_steps,
-            trace=int(seed) in trace_seeds,
-        )
-        rows.append(row)
-        if trace:
-            traces.extend(trace)
+    rows, traces = _run_rows(
+        loaded.model,
+        env_factory=env_factory,
+        device=device,
+        seeds=seeds,
+        max_steps=max_steps,
+        trace_seeds=trace_seeds,
+    )
 
-    requested_counts: Counter[str] = Counter()
-    executed_counts: Counter[str] = Counter()
-    reason_counts: Counter[str] = Counter()
-    for row in rows:
-        requested_counts.update(row["requested_action_distribution"])
-        executed_counts.update(row["executed_action_distribution"])
-        reason_counts.update(row["auto_fire_reason_counts"])
+    primary_summary = _aggregate_summary(rows)
+    same_sticky_rows: list[dict[str, Any]] = []
+    no_sticky_rows: list[dict[str, Any]] = []
+    control_started_at = time.perf_counter()
+    if args.causal_control:
+        same_sticky_env_factory = lambda: make_breakout_env(
+            stack_size=contract.frame_stack,
+            fire_reset=contract.fire_reset,
+            sticky_action_probability=contract.sticky_action_probability,
+            fire_confirmation_steps=1,
+        )
+        no_sticky_env_factory = lambda: make_breakout_env(
+            stack_size=contract.frame_stack,
+            fire_reset=contract.fire_reset,
+            sticky_action_probability=0.0,
+            fire_confirmation_steps=1,
+        )
+        same_sticky_rows, _ = _run_rows(
+            loaded.model,
+            env_factory=same_sticky_env_factory,
+            device=device,
+            seeds=control_seeds,
+            max_steps=max_steps,
+        )
+        no_sticky_rows, _ = _run_rows(
+            loaded.model,
+            env_factory=no_sticky_env_factory,
+            device=device,
+            seeds=control_seeds,
+            max_steps=max_steps,
+        )
+    same_sticky_summary = (
+        _aggregate_summary(same_sticky_rows) if same_sticky_rows else None
+    )
+    no_sticky_summary = _aggregate_summary(no_sticky_rows) if no_sticky_rows else None
     payload = {
         "schema_version": 1,
         "created_at_utc": datetime.now(timezone.utc).isoformat().replace(
@@ -506,33 +614,50 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "ALE API does not expose the hidden sticky-action draw; "
                 "wrapper-resolved action means the action passed downward"
             ),
+            "causal_control": {
+                "enabled": args.causal_control,
+                "same_sticky_action_probability": contract.sticky_action_probability,
+                "no_sticky_action_probability": 0.0,
+                "confirmation_steps": 1,
+                "purpose": (
+                    "non-Contract sensitivity pair using the same checkpoint, "
+                    "selected fixed seeds, and confirmation_steps=1"
+                ),
+            },
         },
         "runtime": {
             **_runtime(device),
             "wall_clock_seconds": time.perf_counter() - started_at,
         },
         "per_episode": rows,
-        "summary": {
-            "episode_count": len(rows),
-            "terminated_count": sum(bool(row["terminated"]) for row in rows),
-            "truncated_count": sum(bool(row["truncated"]) for row in rows),
-            "time_limit_count": sum(bool(row["time_limit"]) for row in rows),
-            "requested_action_distribution": dict(sorted(requested_counts.items())),
-            "wrapper_resolved_action_distribution": dict(
-                sorted(executed_counts.items())
-            ),
-            "executed_action_distribution": dict(sorted(executed_counts.items())),
-            "auto_fire_count": sum(int(row["auto_fire_count"]) for row in rows),
-            "auto_fire_reason_counts": dict(sorted(reason_counts.items())),
-            "serve_retry_count": sum(int(row["serve_retry_count"]) for row in rows),
-            "serve_attempts_without_confirmation": sum(
-                int(row["serve_attempts_without_confirmation"]) for row in rows
-            ),
-            "life_loss_count": sum(int(row["life_loss_count"]) for row in rows),
-            "max_consecutive_unchanged_observation": max(
-                int(row["max_consecutive_unchanged_observation"]) for row in rows
-            ),
-        },
+        "summary": primary_summary,
+        "causal_control": (
+            {
+                "same_sticky": {
+                    "sticky_action_probability": contract.sticky_action_probability,
+                    "fire_confirmation_steps": 1,
+                    "seeds": list(control_seeds),
+                    "per_episode": same_sticky_rows,
+                    "summary": same_sticky_summary,
+                },
+                "no_sticky": {
+                    "sticky_action_probability": 0.0,
+                    "fire_confirmation_steps": 1,
+                    "seeds": list(control_seeds),
+                    "per_episode": no_sticky_rows,
+                    "summary": no_sticky_summary,
+                },
+                "wall_clock_seconds": time.perf_counter() - control_started_at,
+                "interpretation": (
+                    "Comparing same-sticky and no-sticky controls with the same "
+                    "confirmation rule isolates an association between sticky "
+                    "actions and observable serve retries. ALE's hidden random draw "
+                    "is still unavailable, so this is not direct causal proof."
+                ),
+            }
+            if same_sticky_summary is not None and no_sticky_summary is not None
+            else None
+        ),
         "trace": {
             "path": args.trace_output.as_posix(),
             "row_count": len(traces),
