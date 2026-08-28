@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "control_variables": {
+    "seed": 42,
+    "num_envs": 2,
+    "total_steps": 10000,
+    "replay_backend": "gpu",
+    "replay_transfer": "direct"
+  },
+  "interpretation": "Double DQN performs an additional online next-state forward; these runs measure overhead only and are not a model-quality comparison.",
+  "runs": [
+    {
+      "algorithm": "dqn",
+      "steps_per_second": 248.3054500094179,
+      "optimizer_updates_per_second": 55.89355679711997,
+      "optimizer_updates": 2251,
+      "wall_clock_seconds": 40.272978299995884,
+      "peak_vram_bytes": 639140864,
+      "gpu_utilization_percent": 11.0,
+      "target_forward_gpu_seconds": 2.484203906476498
+    },
+    {
+      "algorithm": "double_dqn",
+      "steps_per_second": 237.5392785438535,
+      "optimizer_updates_per_second": 53.47009160022142,
+      "optimizer_updates": 2251,
+      "wall_clock_seconds": 42.0983008001931,
+      "peak_vram_bytes": 639140864,
+      "gpu_utilization_percent": 12.0,
+      "target_forward_gpu_seconds": 4.269155000567436
+    }
+  ]
+}

@@ -10,8 +10,8 @@ python overestimation_demo.py --actions 4 --trials 100000 --noise-stds 0.1 0.5 1
 python inspect_double_dqn_targets.py --seed 42 --output assets/day17/dqn-vs-double-targets.json
 python visualize_double_dqn_targets.py --input assets/day17/dqn-vs-double-targets.json --output assets/day17/dqn-vs-double-targets.png
 python generate_probe_states.py --contract configs/eval/breakout_contract_v2.json --output assets/day17/probe_states.npz --states-per-seed 4 --stride 32 --max-steps 256
-python train_vectorized_dqn.py --config configs/double_dqn_baseline.json --run-id day17-double-dqn-smoke-seed42-final --output assets/day17/double-dqn-smoke-summary.json
-python analyze_q_values.py --checkpoint runs/day17-double-dqn-smoke-seed42-final/checkpoints/step-00010000.pt --probe-states assets/day17/probe_states.npz --device cuda --output assets/day17/q-probe-summary.json
+python train_vectorized_dqn.py --config configs/double_dqn_baseline.json --run-id day17-double-dqn-smoke-seed42-final2 --output assets/day17/double-dqn-smoke-summary.json
+python analyze_q_values.py --checkpoint runs/day17-double-dqn-smoke-seed42-final2/checkpoints/step-00010000.pt --probe-states assets/day17/probe_states.npz --device cuda --output assets/day17/q-probe-summary.json
 python visualize_q_values.py --input assets/day17/q-probe-summary.json --output assets/day17/q-probe-summary.png
 python train_vectorized_dqn.py --config configs/double_dqn_baseline.json --algorithm dqn --run-id day17-vanilla-dqn-control-seed42 --output assets/day17/vanilla-dqn-smoke-summary.json
 python summarize_day17_smoke.py --vanilla-summary assets/day17/vanilla-dqn-smoke-summary.json --double-summary assets/day17/double-dqn-smoke-summary.json --output assets/day17/smoke-performance.json --plot-output assets/day17/smoke-performance.png
