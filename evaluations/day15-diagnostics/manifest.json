@@ -1,0 +1,354 @@
+{
+  "diagnostic_schema_version": 1,
+  "created_at_utc": "2026-08-28T03:56:11.868990Z",
+  "source_v1_artifacts": {
+    "random_results": "evaluations/day15-random-baseline/results.json",
+    "dqn_results": "evaluations/day15-dqn-cuda/results.json",
+    "contract_markers": [
+      "evaluations/day15-random-baseline/contract-v1.json",
+      "evaluations/day15-dqn-cuda/contract-v1.json"
+    ],
+    "time_limit_summaries": [
+      "evaluations/day15-random-baseline/time-limit-summary.json",
+      "evaluations/day15-dqn-cuda/time-limit-summary.json"
+    ]
+  },
+  "concrete_episode_seeds": [
+    101,
+    102,
+    103,
+    104,
+    105,
+    202,
+    203,
+    204,
+    205,
+    206,
+    303,
+    304,
+    305,
+    306,
+    307
+  ],
+  "trace_episode_seeds": [
+    101,
+    102,
+    103
+  ],
+  "modes": {
+    "root_cause": [
+      "evaluations/day15-diagnostics/root-cause/results.json",
+      "evaluations/day15-diagnostics/root-cause/episodes.csv",
+      "evaluations/day15-diagnostics/root-cause/trace.jsonl"
+    ],
+    "fire_assist": [
+      "evaluations/day15-diagnostics/fire-assist/results.json",
+      "evaluations/day15-diagnostics/fire-assist/episodes.csv",
+      "evaluations/day15-diagnostics/fire-assist/trace.jsonl"
+    ],
+    "epsilon005": [
+      "evaluations/day15-diagnostics/epsilon005/results.json",
+      "evaluations/day15-diagnostics/epsilon005/episodes.csv",
+      "evaluations/day15-diagnostics/epsilon005/trace.jsonl"
+    ]
+  },
+  "checkpoint": {
+    "path": "assets/day14/final-runs/day14-final-frozen-100k/day14-final-vanilla-dqn-seed42/checkpoints/step-00100000.pt",
+    "sha256": "022bda1ea5bb1ebcb0535ebb522fc954af11fd43607e124d5e5dc7a2aec3b79b",
+    "step": 100000,
+    "source_day14_run_id": "day14-final-vanilla-dqn-seed42",
+    "source_day14_manifest": "experiments/day14-final-frozen-100k/manifest.json",
+    "format_version": 1,
+    "model_config": {
+      "num_actions": 4,
+      "input_shape": [
+        4,
+        84,
+        84
+      ],
+      "hidden_dim": 512
+    },
+    "requested_device": "cuda",
+    "resolved_device": "cuda:0"
+  },
+  "training": {
+    "source_day14_run_id": "day14-final-vanilla-dqn-seed42",
+    "training_seed": 42,
+    "training_budget": 100000,
+    "learning_rate": 0.0002,
+    "batch_size": 32,
+    "train_frequency": 4,
+    "replay_backend": "cpu",
+    "training_device": "cuda",
+    "training_precision": "float32",
+    "training_config": {
+      "total_steps": 100000,
+      "seed": 42,
+      "gamma": 0.99,
+      "learning_rate": 0.0002,
+      "batch_size": 32,
+      "replay_capacity": 10000,
+      "learning_starts": 1000,
+      "train_frequency": 4,
+      "target_update_interval": 500,
+      "epsilon_start": 0.9,
+      "epsilon_end": 0.05,
+      "epsilon_decay_steps": 10000,
+      "gradient_clip_norm": 10.0,
+      "reward_clip": true,
+      "device": "cuda",
+      "precision": "float32",
+      "checkpoint_interval": 25000,
+      "diagnostics_interval": 100,
+      "metrics_flush_interval": 100,
+      "cpu_threads": 2
+    },
+    "config_reference": "configs/final/day14-vanilla-dqn.json",
+    "source_day14_manifest": "experiments/day14-final-frozen-100k/manifest.json",
+    "source_of_truth": "latest Day 14 final manifest and referenced run artifacts",
+    "selection_rule": "final checkpoint at 100000 environment steps",
+    "selection_rationale": {
+      "short_stage": "candidate requires completed 10K, finite metrics, and end-to-end SPS strictly above batch 32",
+      "long_stage": "validate every short-stage candidate with 100K learning metrics before freezing",
+      "quality_over_speed": "do not select a batch size from GPU utilization alone when return or numerical guardrails regress"
+    },
+    "day14_experiment_id": "day14-final-frozen-100k",
+    "day14_run_artifact_dir": "assets/day14/final-runs/day14-final-frozen-100k/day14-final-vanilla-dqn-seed42",
+    "trainer_runtime": {
+      "python_version": "3.12.13",
+      "pytorch_version": "2.13.0+cu130",
+      "torch_cuda_version": "13.0",
+      "gymnasium_version": "1.3.0",
+      "ale_version": "0.12.0",
+      "numpy_version": "2.5.1",
+      "cpu_logical_count": 16,
+      "cpu_thread_count": 2,
+      "cpu_interop_thread_count": 12,
+      "device": "cuda:0",
+      "requested_device": "cuda",
+      "resolved_device": "cuda:0",
+      "precision": "float32",
+      "cuda_device_index": 0,
+      "cuda_available": true,
+      "cuda_device_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+      "gpu_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+      "gpu_model": "NVIDIA GeForce RTX 4060 Laptop GPU",
+      "cuda_allocated_bytes": 51090432,
+      "cuda_peak_allocated_bytes": 70963200,
+      "cuda_reserved_bytes": 90177536,
+      "cuda_peak_reserved_bytes": 90177536,
+      "gpu_utilization_percent": 31.0,
+      "gpu_memory_total_bytes": 8585740288,
+      "gpu_utilization_source": "nvidia-smi",
+      "wall_clock_seconds": 452.3894775999943,
+      "steps_per_second": 221.04846587174745,
+      "seed": 42,
+      "git_commit_sha": "8696d6eaf8a8f3cab18f75661e83113ad5025102",
+      "environment_id": "ALE/Breakout-v5",
+      "observation_shape": [
+        4,
+        84,
+        84
+      ],
+      "action_count": 4,
+      "diagnostics_interval": 100,
+      "metrics_flush_interval": 100,
+      "metrics_row_cadence": 1,
+      "configured_cpu_threads": 2
+    },
+    "gpu_profiling_summary": {
+      "source": "experiments/day14-batch-size-profiling-final/batch-size-comparison.json",
+      "selected_batch_size": 32,
+      "selection_rule": {
+        "short_stage": "candidate requires completed 10K, finite metrics, and end-to-end SPS strictly above batch 32",
+        "long_stage": "validate every short-stage candidate with 100K learning metrics before freezing",
+        "quality_over_speed": "do not select a batch size from GPU utilization alone when return or numerical guardrails regress"
+      },
+      "selected_run_id": "batch-size-32-seed42",
+      "selected_run_status": "completed",
+      "baseline_recent_episode_return": 1.5,
+      "baseline_recent_episode_count": 20,
+      "regression_guardrails_passed": true,
+      "end_to_end_sps": 235.73711983468988,
+      "training_samples_per_second": 1698.061621593238,
+      "profiling": {
+        "sample_csv": "assets/day14/batch-size-profiling/day14-batch-size-profiling-final/batch-size-32/runtime-samples.csv",
+        "sampling_method": "in-process fixed-interval sampler; nvidia-smi query per sample",
+        "gpu_utilization_percent": {
+          "mean": 30.133333333333333,
+          "p50": 32.0,
+          "p95": 36.0,
+          "max": 38.0
+        },
+        "gpu_power_watts": {
+          "mean": 25.59111111111111,
+          "p50": 26.55,
+          "p95": 27.434,
+          "max": 27.63
+        },
+        "gpu_memory_used_bytes": {
+          "mean": 1837874107.7333333,
+          "peak": 1885339648.0
+        },
+        "gpu_memory_total_bytes": 8585740288.0
+      }
+    },
+    "source_day14_profiling_report": "experiments/day14-batch-size-profiling-final/batch-size-comparison.json",
+    "day14_gate": {
+      "status": "passed",
+      "criteria": {
+        "return_signal": true,
+        "diagnostics_healthy": true,
+        "selection_not_single_best_episode": true,
+        "checkpoint_provenance_complete": true
+      },
+      "return_signal": {
+        "reference_10k_recent_mean": 1.5,
+        "reference_recent_episode_count": 20,
+        "final_100k_recent_mean": 6.15,
+        "improvement": 4.65
+      },
+      "diagnostics": {
+        "summary_status": "completed",
+        "summary_values_finite": true,
+        "metrics_values_finite": true,
+        "field_counts": {
+          "loss": {
+            "observed": 251,
+            "finite": 251
+          },
+          "q_mean": {
+            "observed": 251,
+            "finite": 251
+          },
+          "q_max": {
+            "observed": 251,
+            "finite": 251
+          },
+          "q_min": {
+            "observed": 251,
+            "finite": 251
+          },
+          "target_mean": {
+            "observed": 251,
+            "finite": 251
+          },
+          "target_max": {
+            "observed": 251,
+            "finite": 251
+          },
+          "td_error_mean_abs": {
+            "observed": 251,
+            "finite": 251
+          },
+          "td_error_max_abs": {
+            "observed": 251,
+            "finite": 251
+          },
+          "gradient_norm": {
+            "observed": 251,
+            "finite": 251
+          }
+        },
+        "summary_source": "assets/day14/final-runs/day14-final-frozen-100k/day14-final-vanilla-dqn-seed42/summary.json",
+        "metrics_source": "assets/day14/final-runs/day14-final-frozen-100k/day14-final-vanilla-dqn-seed42/metrics.csv"
+      },
+      "selection": {
+        "rationale": {
+          "short_stage": "candidate requires completed 10K, finite metrics, and end-to-end SPS strictly above batch 32",
+          "long_stage": "validate every short-stage candidate with 100K learning metrics before freezing",
+          "quality_over_speed": "do not select a batch size from GPU utilization alone when return or numerical guardrails regress"
+        },
+        "selected_profile_run_id": "batch-size-32-seed42",
+        "regression_guardrails_passed": true,
+        "final_run_episode_count": 329
+      },
+      "provenance": {
+        "run_id": "day14-final-vanilla-dqn-seed42",
+        "expected_step": 100000,
+        "summary_step": 100000,
+        "config_reference": "../../configs/final/day14-vanilla-dqn.json",
+        "run_dir": "assets/day14/final-runs/day14-final-frozen-100k/day14-final-vanilla-dqn-seed42"
+      },
+      "reasons": []
+    }
+  },
+  "day14_gate": {
+    "status": "passed",
+    "criteria": {
+      "return_signal": true,
+      "diagnostics_healthy": true,
+      "selection_not_single_best_episode": true,
+      "checkpoint_provenance_complete": true
+    },
+    "return_signal": {
+      "reference_10k_recent_mean": 1.5,
+      "reference_recent_episode_count": 20,
+      "final_100k_recent_mean": 6.15,
+      "improvement": 4.65
+    },
+    "diagnostics": {
+      "summary_status": "completed",
+      "summary_values_finite": true,
+      "metrics_values_finite": true,
+      "field_counts": {
+        "loss": {
+          "observed": 251,
+          "finite": 251
+        },
+        "q_mean": {
+          "observed": 251,
+          "finite": 251
+        },
+        "q_max": {
+          "observed": 251,
+          "finite": 251
+        },
+        "q_min": {
+          "observed": 251,
+          "finite": 251
+        },
+        "target_mean": {
+          "observed": 251,
+          "finite": 251
+        },
+        "target_max": {
+          "observed": 251,
+          "finite": 251
+        },
+        "td_error_mean_abs": {
+          "observed": 251,
+          "finite": 251
+        },
+        "td_error_max_abs": {
+          "observed": 251,
+          "finite": 251
+        },
+        "gradient_norm": {
+          "observed": 251,
+          "finite": 251
+        }
+      },
+      "summary_source": "assets/day14/final-runs/day14-final-frozen-100k/day14-final-vanilla-dqn-seed42/summary.json",
+      "metrics_source": "assets/day14/final-runs/day14-final-frozen-100k/day14-final-vanilla-dqn-seed42/metrics.csv"
+    },
+    "selection": {
+      "rationale": {
+        "short_stage": "candidate requires completed 10K, finite metrics, and end-to-end SPS strictly above batch 32",
+        "long_stage": "validate every short-stage candidate with 100K learning metrics before freezing",
+        "quality_over_speed": "do not select a batch size from GPU utilization alone when return or numerical guardrails regress"
+      },
+      "selected_profile_run_id": "batch-size-32-seed42",
+      "regression_guardrails_passed": true,
+      "final_run_episode_count": 329
+    },
+    "provenance": {
+      "run_id": "day14-final-vanilla-dqn-seed42",
+      "expected_step": 100000,
+      "summary_step": 100000,
+      "config_reference": "../../configs/final/day14-vanilla-dqn.json",
+      "run_dir": "assets/day14/final-runs/day14-final-frozen-100k/day14-final-vanilla-dqn-seed42"
+    },
+    "reasons": []
+  }
+}

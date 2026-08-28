@@ -60,6 +60,20 @@ class BreakoutEnvironmentTests(unittest.TestCase):
 
         self.assertEqual(observation.shape, (4, 84, 84))
 
+    def test_fire_reset_wrapper_reports_the_environment_executed_fire(self) -> None:
+        env = make_breakout_env(fire_reset=True)
+        try:
+            env.reset(seed=42)
+            _, _, terminated, truncated, info = env.step(2)
+
+            self.assertFalse(terminated or truncated)
+            self.assertTrue(info["fire_reset_auto"])
+            self.assertEqual(info["fire_reset_reason"], "initial_serve")
+            self.assertEqual(info["fire_reset_requested_action"], 2)
+            self.assertEqual(info["fire_reset_executed_action"], 1)
+        finally:
+            env.close()
+
     def test_reset_does_not_leak_previous_episode_frames(self) -> None:
         fresh_env = make_breakout_env()
         try:

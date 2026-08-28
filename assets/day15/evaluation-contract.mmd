@@ -1,0 +1,8 @@
+flowchart TD
+    A[Day 15 fixed config] --> B{DQN or Random?}
+    B -->|DQN| C[Load Day 14 final checkpoint<br/>request CUDA; unavailable → fail<br/>model.eval + no_grad]
+    B -->|Random| D[RandomPolicy on CPU]
+    C --> E[Shared episode harness<br/>fixed seeds × episodes<br/>raw reward + termination flags]
+    D --> E
+    E --> F[JSON + CSV]
+    F --> G[Report + distribution plot]

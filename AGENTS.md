@@ -135,3 +135,69 @@ For every important image, the article should explain what the reader is seeing,
 For Day 7 onward, prefer a reproducible visualization/inspection script and preserve seed/run/checkpoint/source metadata when applicable.
 
 Keep regeneration commands, Mermaid source, scripts, and metadata in the repository so maintainers can reproduce the artifact. Put a command in the reader-facing article only when running that command is itself useful to understanding the day's technical topic.
+
+## Canonical Breakout environment contract from Day 16 onward
+
+Day 15 established **Breakout Evaluation / Environment Contract v2**. For all Day 16+ work that creates, trains, evaluates, records, compares, or deploys a Breakout policy, the machine-readable source of truth is:
+
+```text
+configs/eval/breakout_contract_v2.json
+```
+
+Do not reconstruct this contract from memory, copy values into a new config and let them drift, or silently fall back to the older Day 15 Contract v1. Load and validate the committed contract whenever the runtime can do so directly; otherwise derive an explicit adapter from it and record any unsupported field as a parity limitation.
+
+The canonical semantics currently include:
+
+```text
+environment_id = ALE/Breakout-v5
+frame_skip = 4
+frame_stack = 4
+sticky_action_probability = 0.25
+fire_reset = true
+terminal_on_life_loss = false
+TimeLimit source = ale.game_truncated
+max raw frames per episode = 108000
+agent-step limit = 27000
+evaluation epsilon = 0
+raw evaluation reward = unclipped Atari reward
+fixed concrete evaluation seeds = Contract v2 list
+```
+
+### FIRE ownership is part of the RL task definition
+
+From Contract v2 onward, the **environment owns only the mandatory serve FIRE behavior**:
+
+```text
+initial serve
++
+immediately after an observed life loss
+```
+
+The policy action space still contains `FIRE`. Do not remove or remap the four model outputs `NOOP / FIRE / RIGHT / LEFT`. Environment-side FIRE assist is narrowly scoped to serve states; it is not permission to inject arbitrary FIRE actions during normal gameplay.
+
+Whenever the environment overrides a requested policy action with the mandatory serve `FIRE`:
+
+- preserve both the requested action and the actually executed action in diagnostics when practical;
+- Replay Buffer transitions must store the **executed environment action**, not the policy's overridden request;
+- action counts used as training provenance should make environment-side FIRE visible rather than pretending the requested action was executed;
+- vectorized environments must track the serve/life-loss state independently for each sub-environment.
+
+### Training, evaluation, vectorization, and gameplay must agree
+
+Do not compare two trainers as a systems or algorithm A/B if they use different FIRE/reset/termination semantics.
+
+For Day 16+ comparisons, all sides must use the same Contract v2 semantics, including the single-environment reference used against a vectorized candidate. The same rule applies to Day 17 smoke training, Day 18/20 model-family comparisons, Day 21 long training, gameplay recording, and final evaluation.
+
+Day 15 Contract v1 artifacts remain valid **legacy evidence** for the original 100K checkpoint, but v1 and v2 scores must not be presented as if they were obtained under the same environment contract.
+
+### Do not silently change the contract
+
+If later evidence requires changing any task-defining field such as `fire_reset`, frame skip, sticky-action probability, life-loss termination, TimeLimit semantics, evaluation seeds, or raw-reward handling:
+
+1. create a new explicit contract version;
+2. document why the task definition changed;
+3. update training and evaluation together;
+4. rebuild any baseline needed for fair comparison;
+5. do not overwrite historical v1/v2 artifacts.
+
+For Browser/ALE-WASM work, if a Contract v2 field cannot be reproduced exactly, mark environment parity as partial and report the mismatch. Do not claim browser rollout scores are directly comparable to Python evaluation until the relevant environment semantics have been verified.

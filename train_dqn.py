@@ -11,6 +11,11 @@ from typing import Any
 import torch
 
 from breakout_env import make_breakout_env
+from breakout_rl.evaluation_contract import (
+    BreakoutEvaluationContractV2,
+    load_evaluation_contract,
+    validate_breakout_runtime_contract,
+)
 from breakout_rl.training.config import DQNConfig
 from breakout_rl.training.dqn_trainer import DQNTrainer, NonFiniteTrainingError
 
@@ -42,6 +47,19 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--train-frequency", type=int, default=None)
     parser.add_argument("--target-update-interval", type=int, default=None)
     parser.add_argument("--checkpoint-interval", type=int, default=None)
+    parser.add_argument(
+        "--fire-reset",
+        action="store_true",
+        help="use the Day 15 Contract v2 environment-side serve semantics",
+    )
+    parser.add_argument(
+        "--contract",
+        "--evaluation-contract",
+        dest="contract",
+        type=Path,
+        default=None,
+        help="load a machine-readable Breakout environment contract",
+    )
     parser.add_argument(
         "--no-reward-clip",
         action="store_true",
@@ -113,11 +131,23 @@ def main(argv: list[str] | None = None) -> int:
     try:
         config = _config_from_args(args)
         run_path = _run_path(args, config)
+        contract: BreakoutEvaluationContractV2 | None = (
+            load_evaluation_contract(args.contract)
+            if args.contract is not None
+            else None
+        )
+        if contract is not None:
+            validate_breakout_runtime_contract(contract)
+            if args.fire_reset and not contract.fire_reset:
+                raise ValueError("--fire-reset conflicts with contract fire_reset=false")
     except (FileNotFoundError, TypeError, ValueError) as error:
         print(f"Invalid training configuration: {error}")
         return 2
 
-    env = make_breakout_env()
+    env = make_breakout_env(
+        stack_size=contract.frame_stack if contract is not None else 4,
+        fire_reset=contract.fire_reset if contract is not None else args.fire_reset,
+    )
     try:
         trainer = DQNTrainer(
             env,
