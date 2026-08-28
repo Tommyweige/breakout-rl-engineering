@@ -1,116 +1,178 @@
-# Day 15｜DQN 到底有沒有真的學會？先把評估做成固定實驗
+# Day 15｜DQN 真的變強了嗎？一次評估反而抓出了 FIRE deadlock
 
-Day 14 的訓練曲線和 100K checkpoint GIF 已經出現值得追蹤的行為，但它們還不能直接回答一個更重要的問題：**這個模型換幾個起始條件後，是否仍然比亂選 action 好？**
+Day 14 把 DQN 訓練到 100K 個環境步數後，曲線開始出現學習跡象，實際遊玩也不再像完全亂按。
 
-訓練曲線是在模型持續更新時量到的；GIF 則只有一個 checkpoint、一個 evaluation seed 和一局遊戲。兩者可以支持「這個 candidate 值得再驗證」，卻不能等同於「DQN 已經穩定通過正式評估」。Day 15 的工作，就是把這個差距變成一個固定、可重跑的實驗。
+但這時候最危險的事情，就是太快把「看起來有進步」當成「模型真的學會了」。訓練時的分數會受到探索、模型持續更新、當下遇到的遊戲狀態影響；一段 GIF 更只代表某一局發生過什麼。
 
-## 先固定要評估的模型
+所以 Day 15 原本只想回答一個很單純的問題：
 
-如果看完評估結果才回頭挑最好看的 checkpoint，評估就不再是對預先選定模型的檢查。因此 Day 15 先遵守 Day 14 final manifest 裡的規則：使用 `day14-final-vanilla-dqn-seed42` 在 `100,000` 個環境步數完成時保存的 final checkpoint。
+> **把模型凍結，不再學習，換幾個不同的遊戲起始條件後，它還能不能穩定比 Random Policy 好？**
 
-這裡的 manifest 是記錄實驗配置、完成狀態和來源 artifact 的 JSON；checkpoint 則是保存某個訓練時刻模型權重的檔案。最新的 Day 14 final manifest 是本次 provenance（來源追蹤）的依據。它實際記錄的候選設定是 training seed `42`、learning rate `2e-4`、batch size `32`（每次模型更新一起處理的資料筆數）、train frequency `4` 和 `100K` budget；有效的 replay backend 是 `cpu`。把 Replay 直接放在 GPU 記憶體中的其他實驗仍是 Day 14 的系統效能證據，沒有在 Day 15 被偷偷換成另一個 checkpoint。
+結果真正有趣的地方，反而不是最後那個平均分數，而是評估過程暴露出了一個之前被訓練流程掩蓋的問題。
 
-training seed 會影響模型初始化、探索和 Replay 抽樣；evaluation seed 則控制凍結模型在遊戲環境中遇到的隨機性。這次刻意把兩者分開：模型來自 training seed `42`，評估使用 `101`、`202`、`303` 三個 evaluation seed group，每組五局，共 15 局。每個 group 的第 1～5 局用 `seed + episode_index` 形成實際 reset seed，例如 `101`～`105`，所以每一局都能在 artifact 中追查。
+## 先把「會不會玩」和「還在學」分開
 
-這個候選也通過了 Day 14 的 Gate A（進入正式評估前的檢查）。用 batch size 32 的 10K profiling（量測訓練效能與品質的實驗）結果作為基準，最近 20 局平均 raw return 是 `1.50`；100K final run 的最後 20 局平均是 `6.15`。final summary 與 metrics 裡的必要 diagnostics 都是有限數值，選擇依據也保留了品質護欄（quality guardrails）；100K run 共記錄 329 局，不是只挑一局最高分。因此 Day 15 有理由驗證這個 candidate，但仍要把「訓練訊號變好」和「獨立 evaluation 一定更強」分開。
+這次拿來評估的是 Day 14 訓練到 100K 時保存的模型。評估開始後，權重完全不再更新，也不再從 Replay Buffer 取資料學習。
 
-這種「先選模型，再選評估條件」的順序，是避免資料洩漏（data leakage）的基本界線：evaluation 結果可以告訴我們模型表現如何，但不能反過來改寫模型選擇規則。
+DQN 每一步只做一件事：把目前看到的四張連續畫面送進網路，得到 `NOOP`、`FIRE`、`RIGHT`、`LEFT` 四個動作的 Q-value，再選最大的那一個。
 
-原始的 Random 與 DQN 結果現在明確標記為 Evaluation Contract v1：FIRE 由 policy 負責、`epsilon = 0`，環境不自動代替 policy 發 FIRE。這些 `results.json` 保留作為歷史基準，後續診斷會寫到新的目錄，不覆寫 v1。
+這種做法叫做 **greedy policy**。這裡的 Q-value 可以先理解成模型對「現在做這個動作有多值得」的估計；`epsilon = 0` 則表示評估時不再故意加入隨機探索。
 
-## 凍結模型，也凍結評估時的行為
+為了知道這個分數到底有沒有意義，我同時跑了一個 Random Policy。它不看畫面，也不使用神經網路，只是從四個合法動作中隨機選一個。
 
-訓練中的 DQN 會從 Replay Buffer（保存過去互動資料、供模型重複抽樣的資料區）取資料，透過 optimizer（根據誤差更新權重的工具）調整網路，並定期同步 target network（暫時固定的目標網路）。那時候的回報描述的是「模型一邊改變自己、一邊玩遊戲」。
+兩邊都跑相同的 15 個固定遊戲起始條件，分數使用 Atari 環境真正回傳的 raw reward，不使用訓練時可能採用的 reward clipping。
 
-Day 15 要看的則是固定權重的行動規則。正式 DQN 使用 greedy policy：模型輸出四個 action 的 Q-value 後，選擇數值最大的 action。Q-value 是模型對「從目前畫面採取某個 action 有多值得」的估計，不是機率；`epsilon = 0` 表示採取隨機 action 的機率為零，評估不再加入探索。
+第一眼看起來，結果很漂亮：
 
-模型仍然需要把環境送出的畫面交給網路。`uint8` 是用 0～255 整數保存像素的資料型別，`float32` 是神經網路計算常用的 32 位元浮點數，而 tensor 可以先理解成適合模型運算的多維陣列。這次只在模型輸入邊界做這個轉換，並且用 `model.eval()` 加上 `torch.no_grad()`：
+| Policy | 平均分數 | 中位數 | 最低 | 最高 |
+|---|---:|---:|---:|---:|
+| Random | 1.33 | 1 | 0 | 5 |
+| DQN | 4.53 | 5 | 1 | 11 |
 
-```python
-state = observation_to_tensor(observation, device=device)
-with torch.no_grad():
-    q_values = model(state)
-action = int(torch.argmax(q_values[0]).item())
+DQN 的平均分數比 Random 高了 3.20 分，中位數也從 1 提高到 5。從回報分布來看，100K checkpoint 顯然已經不只是完全隨機的行為。
 
-observation, reward, terminated, truncated, _ = env.step(action)
-episode_return += float(reward)
-```
+[![Random 與 100K DQN 的每局 raw return 分布](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/3f599ba/assets/day15/random-vs-dqn-returns.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/3f599ba/assets/day15/random-vs-dqn-returns.png)
 
-`torch.no_grad()` 關閉梯度追蹤，`model.eval()` 讓網路進入推論模式；兩者都不會更新 optimizer、target network 或 Replay Buffer。每局累積的是環境的 raw reward，也就是 Atari 原始遊戲分數，而不是訓練時可能使用的 reward clipping 分數。
+如果只看到這裡，我很可能會直接寫下「DQN 已經明顯贏過 Random」。
 
-正式 DQN evaluation 明確指定 `--device cuda`。這次 requested device 是 `cuda`，resolved device 是 `cuda:0`，GPU 是 NVIDIA GeForce RTX 4060 Laptop GPU；若 CUDA 不可用，程式會清楚失敗，不會靜默降回 CPU。Random 沒有神經網路推論，所以使用 CPU；這裡比較的是遊戲回報，不是兩個 runtime 的速度。
+但另外一個數字非常奇怪。
 
-## Random 和 DQN 必須共用同一個 episode loop
+Random 每局平均只走了大約 186 個 agent steps，DQN 卻平均走了 **18,131 steps**。
 
-Random policy 的作用是提供一個容易解釋的 baseline：如果凍結 DQN 連固定規則下的亂選 action 都贏不了，就不能只靠訓練曲線宣稱模型學會了。
+這不像是普通的「模型比較會活」。差距大到值得先停下來查原因。
 
-但 baseline 只有在測量方式相同時才有意義。這次兩種 policy 共用 environment construction、影像 preprocessing、reset seed、raw reward 累積、`terminated`／`truncated` 判斷、統計和輸出格式；唯一不同的是 action 如何產生。這個共用的 episode harness，就是負責一局遊戲外層循環的程式，讓 policy 只需要回答「下一步選哪個 action」。
+## 18,131 steps 不是超強生存能力
 
-下面的結構圖顯示這個匯合點：DQN 先載入 Day 14 checkpoint 並驗證 CUDA，Random 直接建立 CPU policy；兩者之後走同一條 evaluation path。
+Gymnasium 在一局結束時，會區分兩種情況：
 
-[![Day 15 evaluation contract：DQN 與 Random 進入同一個 episode harness](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/3f599ba/assets/day15/evaluation-contract.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/3f599ba/assets/day15/evaluation-contract.png)
+- `terminated`：遊戲本身真的結束，例如所有生命都用完。
+- `truncated`：不是正常遊戲結束，而是因為外部限制被截斷。
 
-圖中的流程是依照實際 CLI 和 `evaluate_policy` 的結構整理出的 structural diagram，不是某一次 rollout 的畫面截圖。它回答的是「哪些條件在兩種 policy 之間保持不變」，而不是預測分數。
+Random 的 15 局全部都是正常 `terminated`。
 
-## `terminated` 和 `truncated` 都要留下來
+DQN 卻只有 5 局正常結束，另外 **10 局都撞上 TimeLimit**。這 10 局幾乎全部停在 26,993～27,000 agent steps。
 
-一局遊戲結束時，Gymnasium 會回傳兩個不同的訊號。`terminated` 表示環境本身達到了終止條件；`truncated` 表示環境或 wrapper 因外部限制截斷了這局。對統計來說，兩者都代表 episode loop 可以進入下一局，但原因不能被混成一個模糊的 `done`。
+這個數字不是巧合。Breakout 的 Atari 環境每局上限是 108,000 個 emulator frames，而目前 preprocessing 每個 agent action 會向前跑 4 個 frames：
 
-Day 15 沒有另外加一個會改變正式分數的評估器步數上限（evaluator cap），而是讓 Arcade Learning Environment（ALE）的 Breakout-v5 使用自己的 episode 邊界。v1 的 DQN 有 5 局 `terminated`，另 10 局是由 ALE 的 `game_truncated` 標記的 TimeLimit；Random 則是 15 局 `terminated`。`complete = terminated or truncated` 只表示 episode loop 已結束，不表示 DQN 在 timeout 前仍然正常控制遊戲。
+`108,000 ÷ 4 = 27,000`
 
-[![Day 15 episode loop：分開保存 terminated 與 truncated 狀態](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/3f599ba/assets/day15/evaluation-episode-loop.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/3f599ba/assets/day15/evaluation-episode-loop.png)
+也就是說，這些局不是「DQN 撐了兩萬多步還沒死」，而是它一直沒有正常把遊戲結束，最後被環境時間上限強制切掉。
 
-10 個 TimeLimit episode 的 agent steps 幾乎都在 `26,993`～`27,000`，所以平均長度 `18,131` 不能被當成「存活能力」的證據。這個數字只告訴我們 evaluator 等到了環境上限；回報、結束原因和中間的 action/observation 行為必須一起看。
+真正的問題因此變成：
 
-## 平均值之外，還要看整個分布
+> **這兩萬多步裡，遊戲到底還有沒有真的在進行？**
 
-這次固定 protocol 的實際結果如下。mean 是所有局回報的平均；median 是排序後位於中間的回報，較不容易被極端局拉動；std 是 standard deviation（標準差），用來描述回報的 spread，也就是每局離平均值有多分散。
+## 把其中一局攤開後，問題變得很明顯
 
-| Policy | 局數 | terminated | truncated | TimeLimit | mean | median | std | min | max |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Random | 15 | 15 | 0 | 0 | 1.33 | 1.00 | 1.30 | 0 | 5 |
-| DQN | 15 | 5 | 10 | 10 | 4.53 | 5.00 | 3.07 | 1 | 11 |
+我先追了一局會撞到 TimeLimit 的 seed `101`。
 
-如果只畫兩根 mean bar，會看見 DQN `4.53` 高於 Random `1.33`，卻看不見每一局的差異。下面的圖直接讀取兩份 evaluation JSON：每個點是一局，箱型圖保留中間分布，菱形是 mean，短線是 median；右側則按 evaluation seed group 畫出平均和 population std。population std 把這次收集到的 episodes 當成要描述的整體，不把它包裝成多 training seeds 的不確定性估計。
+在第 54 個 agent step，DQN 掉了一條命。
 
-[![Random 與凍結 DQN 的每局 raw return 分布，以及各 evaluation seed group 的平均與 spread](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/3f599ba/assets/day15/random-vs-dqn-returns.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/3f599ba/assets/day15/random-vs-dqn-returns.png)
+接下來第一次真正選到 `FIRE`，竟然已經是第 **16,449 step**。
 
-圖中可以同時看到兩件事：DQN 在三個 evaluation seed group 的平均都高於 Random，median 也從 `1` 提高到 `5`；另一方面，DQN 的 spread 更大，且有 10 局長度碰到 ALE 的 TimeLimit。這份 evidence 支持「Day 14 checkpoint 在這批固定 episodes 中展現較高回報」，但不能單獨證明所有未來起始狀態都會得到同樣結果。
+中間隔了：
 
-## 27K timeout 其實發生了什麼
+**16,395 steps。**
 
-要分辨「遊戲真的持續進行」和「畫面卡在某種狀態」，需要把一局中的每一步攤開來看。root-cause trace 讀取同一個 frozen checkpoint 的 Q-values、greedy action、ALE lives、raw reward、life-loss event、FIRE 時間點，以及前後 observation 的變化比例；lives 與 TimeLimit 都直接來自 ALE，沒有從分數猜測。
+而且這整段期間，約 96% 的 observation 幾乎沒有變化，動作也有約 96% 都是 `RIGHT`。最長一段連續不變的畫面超過 16,000 steps。
 
-在 concrete seed `101` 和 `103`，life loss 都發生在 agent step `54`，但第一次 FIRE 分別延遲到 `16,449` 與 `16,446`，latency 是 `16,395` 與 `16,392` steps。這兩局最後都 TimeLimit；trace 中約 `96%` 的 observation 完全不變，greedy/action 約 `96%` 固定為 `RIGHT`，最長連續不變 observation 超過 `16,000` steps。相對地，terminated seed `102` 在 405 steps 結束，第一次 life loss 後 33 steps 就 FIRE，後續重發球多為 1 step 內。這組對照支持的 root cause 是 **life loss 後的 serve deadlock，加上 RIGHT action collapse**，不是「模型能正常存活很久」。
+另一個 TimeLimit seed `103` 幾乎重現同樣的模式：同樣在 step 54 掉命，之後過了 16,392 steps 才再次 FIRE。
 
-接著用同一個 checkpoint、同一組 15 個 concrete episode seeds、相同 preprocessing 和 raw reward 做兩個只供診斷的 ablation（只改一個行為因素的對照實驗）：
+反過來看一局正常結束的 seed `102`，第一次掉命後 33 steps 就重新 FIRE，後面的幾次掉命幾乎都只隔 1 step 就重新開始。
 
-| Mode | epsilon | FIRE assist | mean return | median | terminated | TimeLimit | mean length | dominant action fraction | life-loss → FIRE latency | auto-FIRE |
-|---|---:|:---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Contract v1 | 0.00 | no | 4.53 | 5 | 5 | 10 | 18,131.33 | — | — | 0 |
-| Diagnostic A | 0.00 | yes | 8.80 | 8 | 15 | 0 | 429.93 | 0.58 | 1.00 | 75 |
-| Diagnostic B | 0.05 | no | 9.20 | 8 | 15 | 0 | 508.53 | 0.55 | 30.45 | 0 |
+這時候問題已經不是單純的「DQN 偏好 RIGHT」。真正的關鍵是 Breakout 有一個特殊規則：**球局開始需要 FIRE；掉一條命後，也需要再次 FIRE 才會重新發球。**
 
-Diagnostic A 把 FIRE 放到 environment-side serve assist：initial serve 和每次觀察到 life loss 後都執行一次 FIRE。15 局全部正常 `terminated`，且 observation unchanged 的最長 streak 降到 3。Diagnostic B 不代替 FIRE，只加入 `epsilon = 0.05` 的隨機 action；它也讓 15 局全部結束，但平均 life-loss → FIRE latency 是 30.45 steps，代表少量探索偶爾能救回 serve，卻不是固定且可重現的語義。
+如果模型掉命後沒有 FIRE，畫面就會停在等待發球的狀態。對模型來說，它會持續看到非常相似的畫面；如果此時 Q-value 又一直偏向 RIGHT，就可能進入：
 
-這張圖把三組真實 artifact 放在同一個視野：上方看每局 raw return 的分布，右上分開 terminated 與 TimeLimit，左下比較平均 episode length，右下只比較兩種重發球策略的延遲。它的重點不是替 A 或 B 頒發較高分，而是顯示「環境明確處理 serve」和「靠隨機探索偶爾碰到 FIRE」是兩種不同的機制。
+`RIGHT → 幾乎相同的畫面 → RIGHT → 幾乎相同的畫面 → ...`
 
-[![Day 15 FIRE、TimeLimit 與兩個 diagnostic 的真實結果比較](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/13a99f0/assets/day15/fire-time-limit-diagnostics.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/13a99f0/assets/day15/fire-time-limit-diagnostics.png)
+最後一路卡到 27,000 steps。
 
-因此 Contract v2 選 Option B：`fire_reset = true`，由 environment 在 initial serve 和觀察到 life loss 後執行 FIRE；`terminal_on_life_loss = false` 保留完整遊戲 episode，TimeLimit 明確以 `ale.game_truncated` 標記。這不是把 v1 分數改名，而是根據 trace 和 A/B evidence 定義下一個公平的 environment contract。v1 仍是 legacy baseline，Contract v2 保存在 `configs/eval/breakout_contract_v2.json`，Day 16 應直接載入同一份語義。
+這就是這次看到的 **serve deadlock**：不是遊戲玩得特別久，而是掉命後根本沒有正常重新開始。
 
-## 這次的答案是「有訊號，但還不能過度宣稱」
+## 為什麼訓練時沒有這麼明顯？
 
-在 15 局固定 evaluation episodes 中，DQN 的 mean 和 median 都高於 Random，因此 Day 14 的 100K checkpoint 確實保留了可觀察的行動訊號。本次最準確的描述是：**DQN 的中心值較高，但 spread 仍有重疊**；不能只因平均值較高，就宣稱它已經在所有完整遊戲中穩定勝過 Random。
+這裡又出現一個很容易被忽略的差異。
 
-限制同樣清楚：目前只有一個 training seed（42），不是使用多個 training seeds 檢查穩健性的研究；DQN 和 Random 的結束方式也不同，DQN 有 10 局由環境時間限制截斷。這些限制不會讓 evaluation infrastructure 失效，但會限制我們能對模型下的結論強度。如果未來 DQN 沒有高於 Random，也不應立刻斷言卷積神經網路容量不足；還需要更長 training horizon、多個 training seeds 或後續模型比較。
+Day 14 訓練後期的 epsilon 不是 0，而是 `0.05`。
 
-## Day 15 留下的是一把可重用的尺
+也就是即使模型本身想一直按 RIGHT，仍然有 5% 的機率改成隨機動作。Breakout 一共有四個動作，因此探索過程偶爾就可能亂中 FIRE，把原本卡住的球局重新啟動。
 
-Day 16 會把 single-environment training 改成多環境、批次 action inference（一次替多個 observation 選 action）和批次 GPU Replay insertion。系統最佳化可能提高 throughput，但也可能因 autoreset（一局結束後自動開始下一局）、global step（已走過的環境步數）、done semantics（如何解讀 terminated/truncated 結束訊號）或 Replay ordering（資料寫入 Replay 的先後順序）改變 policy quality。
+正式評估則把 epsilon 降到 0，完全移除這層隨機救援。這反而讓 greedy policy 真正的缺陷第一次完整暴露出來。
 
-因此 Day 16、Day 17、Day 18 和 Day 20 都應重用本日的 evaluation contract：相同的 Breakout preprocessing、concrete evaluation seeds、每組 episode 數、greedy epsilon、raw reward、`terminated`／`truncated`／TimeLimit semantics 和 JSON/CSV schema。這樣下一次比較的差異才主要來自 training system 或 DQN variant，而不是評估規則被換掉。
+光靠這個推論還不夠，所以我又做了兩個對照實驗。
 
-可重建的原始結果保存在 `evaluations/day15-random-baseline/` 和 `evaluations/day15-dqn-cuda/`；圖表由兩份 `results.json` 重新產生，完整 provenance 和 GPU metadata 則保存在 DQN result 與 milestone report 中。這些 artifacts 讓後續比較可以重新使用同一份 evaluation contract。
+## 兩個對照實驗，把 FIRE 的影響拆開
 
-Day 15 真正完成的不是替模型頒發「已學會」的稱號，而是先把「怎麼知道它真的變好」這件事固定下來。下一個問題才是：向量化訓練能不能提高系統效率，同時保住這份 policy-quality baseline？
+兩個實驗都使用完全相同的 100K checkpoint 和相同的 15 個遊戲起始條件，不重新訓練模型。
+
+第一組保持 `epsilon = 0`，但改由環境在開局和掉命後立即執行必要的 FIRE。
+
+第二組不提供 FIRE assist，仍然由模型負責 FIRE，只把 epsilon 恢復成訓練後期的 `0.05`。
+
+結果如下：
+
+| 模式 | epsilon | 環境自動 FIRE | 平均分數 | 正常結束 | TimeLimit | 平均局長 |
+|---|---:|:---:|---:|---:|---:|---:|
+| 原始 greedy 評估 | 0.00 | 否 | 4.53 | 5/15 | 10/15 | 18,131 |
+| FIRE assist | 0.00 | 是 | 8.80 | 15/15 | 0/15 | 430 |
+| 保留探索 | 0.05 | 否 | 9.20 | 15/15 | 0/15 | 509 |
+
+[![FIRE、TimeLimit 與兩個對照實驗的真實結果](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/13a99f0/assets/day15/fire-time-limit-diagnostics.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/13a99f0/assets/day15/fire-time-limit-diagnostics.png)
+
+FIRE assist 最直接：15 局全部正常結束，TimeLimit 從 10 局降到 0，而且掉命後大約下一步就能重新發球。
+
+`epsilon = 0.05` 也能消除這批測試裡的 TimeLimit，這正好支持前面的猜想：**訓練時的隨機探索確實可能偶爾幫模型按到 FIRE，把 deadlock 解開。**
+
+不過第二組平均分數 9.20 比 FIRE assist 的 8.80 高，並不代表我們應該選「評估時保留隨機探索」。這裡真正要決定的不是哪一組剛好分數最高，而是未來到底要怎麼定義這個 RL 任務。
+
+如果把重新發球交給隨機探索，模型有時 1 step 就 FIRE，有時可能等幾十甚至幾百步。這會讓「一局 Breakout」混進很多跟打磚塊能力無關的等待時間，也讓不同模型之間的比較受到運氣影響。
+
+因此我最後選擇把 **serve** 當成環境規則，而不是 Agent 必須自己學會的策略。
+
+## 從 Day 16 開始，FIRE 變成環境的一部分
+
+新的 Contract v2 把 Breakout 任務固定成：
+
+| 設定 | 規則 |
+|---|---|
+| 遊戲 | `ALE/Breakout-v5` |
+| Frame skip | 4 |
+| Frame stack | 4 |
+| Sticky action probability | 0.25 |
+| 開局 FIRE | 環境負責 |
+| 掉命後 FIRE | 環境負責 |
+| 掉一條命是否結束整局 | 否 |
+| 評估 epsilon | 0 |
+| 分數 | raw Atari reward |
+| TimeLimit | 108,000 raw frames，約 27,000 agent steps |
+
+這代表之後 Agent 專心學的是：
+
+**看球在哪裡、移動 paddle、把球打回去、繼續打磚塊。**
+
+而「這一條命結束後要按一下 FIRE 才重新發球」由環境統一處理。
+
+這個選擇本身沒有唯一標準答案。如果研究問題是「Agent 能不能連遊戲啟動動作都自己學會」，那完全可以讓 policy 負責 FIRE。但這個專案接下來要比較的是 DQN、Double DQN、Dueling Network，以及 vectorized training、GPU batching 和部署；把 serve 行為固定下來，能讓後面的比較更接近我們真正想研究的東西。
+
+更重要的是，從現在開始 **training 和 evaluation 都必須使用同一套 FIRE 規則**。不能訓練時讓環境自動 FIRE，評估時又要求模型自己 FIRE；也不能拿舊規則下的分數和新規則下的分數當成完全相同的實驗直接排名。
+
+所以前面得到的 DQN `4.53`、Random `1.33` 仍然保留，它們證明 100K DQN 已經出現學習訊號，也正是這批資料讓我們找到 deadlock。但它們屬於舊的 Contract v1，不會直接拿來當後續模型家族比較的正式基準。
+
+## Day 15 真正驗證到的是什麼？
+
+回到一開始的問題：「100K DQN 到底有沒有學到東西？」
+
+答案是 **有，而且已經能看到比 Random 更有結構的行為；但還遠不到可以宣布模型很強。**
+
+更重要的是，Day 15 讓我重新確認一件在強化學習裡非常容易踩坑的事：
+
+> **分數變高，不一定只代表模型變好了；也可能是環境、探索策略或 episode 規則正在偷偷影響你看到的結果。**
+
+如果我只停在 `4.53 > 1.33`，這篇文章會得到一個看起來漂亮、但其實不完整的結論。
+
+真正有價值的是繼續往下問：為什麼 DQN 一局可以跑到 18,000 steps？為什麼 10 局都剛好停在 27K？為什麼加入 FIRE 後全部恢復正常？
+
+最後得到的不只是一次評估分數，而是一套之後所有實驗都能共用的 Breakout 規則。
+
+Day 16 接下來要把單一環境改成多環境一起跑，再把 action inference 和 Replay insertion 批次送進 GPU。到時候我們不只要看訓練有沒有變快，也要確認 vectorization 沒有再次偷偷改掉今天才固定下來的環境語意。
