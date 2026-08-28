@@ -336,7 +336,7 @@ def _run_episode(
             "serve_retry_count": sum(
                 max(int(attempt["attempt"]) - 1, 0) for attempt in serve_attempts
             ),
-            "serve_confirmation_failures": sum(
+            "serve_attempts_without_confirmation": sum(
                 1 for attempt in serve_attempts if attempt["confirmed"] is False
             ),
             "observation_changed_step_fraction": float(
@@ -525,8 +525,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             "auto_fire_count": sum(int(row["auto_fire_count"]) for row in rows),
             "auto_fire_reason_counts": dict(sorted(reason_counts.items())),
             "serve_retry_count": sum(int(row["serve_retry_count"]) for row in rows),
-            "serve_confirmation_failures": sum(
-                int(row["serve_confirmation_failures"]) for row in rows
+            "serve_attempts_without_confirmation": sum(
+                int(row["serve_attempts_without_confirmation"]) for row in rows
             ),
             "life_loss_count": sum(int(row["life_loss_count"]) for row in rows),
             "max_consecutive_unchanged_observation": max(
