@@ -5,12 +5,11 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import math
 import operator
+import subprocess
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
-from statistics import fmean, pstdev
 from typing import Any, Mapping, Sequence
 
 import numpy as np
@@ -33,6 +32,20 @@ def _sha256(path: Path) -> str:
         for chunk in iter(lambda: stream.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def _git_commit_sha() -> str | None:
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    value = result.stdout.strip()
+    return value or None
 
 
 def _action_names(env: Any, action_count: int) -> tuple[str, ...]:
@@ -259,6 +272,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             "+00:00", "Z"
         ),
         "purpose": "Exploratory real-checkpoint Q-value diagnostics for Day 16",
+        "git_commit_sha": _git_commit_sha(),
         "interpretation_boundary": (
             "These are model outputs on real Breakout observations. Without a "
             "ground-truth Q-star oracle they do not prove that a particular "

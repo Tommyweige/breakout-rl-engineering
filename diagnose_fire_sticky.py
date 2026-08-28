@@ -7,6 +7,7 @@ import hashlib
 import json
 import math
 import operator
+import subprocess
 import time
 from collections import Counter
 from datetime import datetime, timezone
@@ -33,6 +34,20 @@ def _sha256(path: Path) -> str:
         for chunk in iter(lambda: stream.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def _git_commit_sha() -> str | None:
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    value = result.stdout.strip()
+    return value or None
 
 
 def _action_names(env: Any, action_count: int) -> tuple[str, ...]:
@@ -461,6 +476,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             "+00:00", "Z"
         ),
         "purpose": "Contract v2 FIRE/sticky-action root-cause diagnostic",
+        "git_commit_sha": _git_commit_sha(),
         "contract_path": args.contract.as_posix(),
         "contract": contract.to_dict(),
         "checkpoint": {
