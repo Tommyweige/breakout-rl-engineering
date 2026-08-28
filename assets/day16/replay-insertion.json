@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "generated_at_utc": "2026-08-28T10:09:58.733126+00:00",
+  "device": "cuda:0",
+  "protocol": {
+    "operation": "GPUReplayBuffer.add_batch or ReplayBuffer.add_batch",
+    "seed": 42,
+    "synchronize_cuda_before_and_after_measurement": true,
+    "contract_path": "configs/eval/breakout_contract_v2.json",
+    "git_commit_sha": "4031b32edb451d2b89fbbc55d49a089ff2df88fa"
+  },
+  "results": [
+    {
+      "batch_size": 1,
+      "iterations": 500,
+      "transitions": 500,
+      "wall_clock_seconds": 0.1007481999695301,
+      "transitions_per_second": 4962.867824449649,
+      "latency_ms_per_call": 0.2014963999390602,
+      "buffer_capacity": 1024,
+      "observation_shape": [
+        4,
+        84,
+        84
+      ],
+      "source_requested_action": 0,
+      "source_executed_action": 1,
+      "source": "one real ALE/Breakout-v5 reset and step, repeated for copy timing"
+    },
+    {
+      "batch_size": 2,
+      "iterations": 500,
+      "transitions": 1000,
+      "wall_clock_seconds": 0.10170960007235408,
+      "transitions_per_second": 9831.913598014553,
+      "latency_ms_per_call": 0.20341920014470816,
+      "buffer_capacity": 1024,
+      "observation_shape": [
+        4,
+        84,
+        84
+      ],
+      "source_requested_action": 0,
+      "source_executed_action": 1,
+      "source": "one real ALE/Breakout-v5 reset and step, repeated for copy timing"
+    },
+    {
+      "batch_size": 4,
+      "iterations": 500,
+      "transitions": 2000,
+      "wall_clock_seconds": 0.11524069984443486,
+      "transitions_per_second": 17354.979644342926,
+      "latency_ms_per_call": 0.23048139968886971,
+      "buffer_capacity": 1024,
+      "observation_shape": [
+        4,
+        84,
+        84
+      ],
+      "source_requested_action": 0,
+      "source_executed_action": 1,
+      "source": "one real ALE/Breakout-v5 reset and step, repeated for copy timing"
+    },
+    {
+      "batch_size": 8,
+      "iterations": 500,
+      "transitions": 4000,
+      "wall_clock_seconds": 0.12312199990265071,
+      "transitions_per_second": 32488.101258610917,
+      "latency_ms_per_call": 0.24624399980530143,
+      "buffer_capacity": 1024,
+      "observation_shape": [
+        4,
+        84,
+        84
+      ],
+      "source_requested_action": 0,
+      "source_executed_action": 1,
+      "source": "one real ALE/Breakout-v5 reset and step, repeated for copy timing"
+    },
+    {
+      "batch_size": 16,
+      "iterations": 500,
+      "transitions": 8000,
+      "wall_clock_seconds": 0.1633221001829952,
+      "transitions_per_second": 48982.96060996248,
+      "latency_ms_per_call": 0.3266442003659904,
+      "buffer_capacity": 1024,
+      "observation_shape": [
+        4,
+        84,
+        84
+      ],
+      "source_requested_action": 0,
+      "source_executed_action": 1,
+      "source": "one real ALE/Breakout-v5 reset and step, repeated for copy timing"
+    }
+  ]
+}

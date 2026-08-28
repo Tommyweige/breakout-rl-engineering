@@ -1,0 +1,504 @@
+{
+  "schema_version": 2,
+  "git_commit_sha": "42a5a8833ae4ae6004b93d4ab1b80dc733e2f7e3",
+  "purpose": "Day 16 Contract v2 learning-regression guardrail",
+  "protocol": {
+    "evaluation_config": "configs/eval/breakout_eval.json",
+    "evaluation_contract": "configs/eval/breakout_contract_v2.json",
+    "contract": {
+      "schema_version": 2,
+      "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+      "environment_id": "ALE/Breakout-v5",
+      "frame_skip": 4,
+      "frame_stack": 4,
+      "sticky_action_probability": 0.25,
+      "fire_reset": true,
+      "fire_reset_confirmation": {
+        "max_fire_attempts": 8,
+        "confirmation_steps": 2,
+        "min_observation_change_fraction": 0.0001,
+        "confirmation_operator": "any",
+        "confirmation_signals": [
+          "raw_reward",
+          "observation_activity_streak"
+        ]
+      },
+      "terminal_on_life_loss": false,
+      "time_limit_semantics": {
+        "source": "ale.game_truncated",
+        "max_num_frames_per_episode": 108000,
+        "agent_step_limit": 27000,
+        "truncated_is_finished": true,
+        "external_time_limit_wrapper": false
+      },
+      "concrete_episode_seeds": [
+        101,
+        102,
+        103,
+        104,
+        105,
+        202,
+        203,
+        204,
+        205,
+        206,
+        303,
+        304,
+        305,
+        306,
+        307
+      ],
+      "evaluation_epsilon": 0.0,
+      "raw_reward_rule": "sum environment rewards without clipping"
+    },
+    "episodes": 15,
+    "evaluation_artifact_schema_version": 2,
+    "epsilon": 0.0,
+    "raw_reward": true,
+    "selection_rule": "the selected vector candidate is chosen from the near-top throughput settings and strict action-selection parity; quality is not selected from the 10K screening",
+    "action_distribution_semantics": "executed/wrapper-resolved action",
+    "provenance_fields": [
+      "requested_action_distribution",
+      "executed_action_distribution",
+      "auto_fire_count",
+      "auto_fire_reason_counts"
+    ],
+    "candidate_roles": {
+      "quality_reference": 1,
+      "selected_systems_backend": 2,
+      "supplemental_candidate": 4
+    }
+  },
+  "screening_10k": {
+    "training_report": "assets/day16/vectorized-training.json",
+    "total_transitions": 10000,
+    "candidates": [
+      {
+        "environment_count": 1,
+        "role": "screening_reference",
+        "results_path": "evaluations/day16-final-10k-envs1-contract-v2/results.json",
+        "results_sha256": "3f51c3518ad56b420c3867fe121046633d34b070184de23d169ad80dfa4fe845",
+        "checkpoint_path": "runs/day16-finalization-10k-v2/envs-1/checkpoints/step-00010000.pt",
+        "checkpoint_sha256": "cb3dc1bebef6c8485b5cc1e03dc554b28c63ed12e564a085229ec5ebb57c3767",
+        "model_id": "envs-1@step-00010000",
+        "summary": {
+          "count": 15,
+          "mean_return": 0.0,
+          "median_return": 0.0,
+          "std_return": 0.0,
+          "min_return": 0.0,
+          "max_return": 0.0,
+          "mean_episode_length": 122.06666666666666,
+          "complete_episodes": 15,
+          "finished_episode_count": 15,
+          "terminated_count": 15,
+          "truncated_count": 0,
+          "time_limit_truncated_count": 0,
+          "truncation_rate": 0.0,
+          "mean_return_terminated": 0.0,
+          "mean_return_truncated": null,
+          "mean_length_terminated": 122.06666666666666,
+          "mean_length_truncated": null,
+          "action_distribution_semantics": "executed/wrapper-resolved action",
+          "action_distribution": {
+            "FIRE": 1831,
+            "LEFT": 0,
+            "NOOP": 0,
+            "RIGHT": 0
+          },
+          "requested_action_distribution": {
+            "FIRE": 1831,
+            "LEFT": 0,
+            "NOOP": 0,
+            "RIGHT": 0
+          },
+          "executed_action_distribution": {
+            "FIRE": 1831,
+            "LEFT": 0,
+            "NOOP": 0,
+            "RIGHT": 0
+          },
+          "auto_fire_count": 151,
+          "auto_fire_reason_counts": {
+            "after_life_loss": 120,
+            "initial_serve": 31
+          }
+        }
+      },
+      {
+        "environment_count": 2,
+        "role": "screening_candidate",
+        "results_path": "evaluations/day16-final-10k-envs2-contract-v2/results.json",
+        "results_sha256": "47602e24b418ebc84a405739a39d31e1dd48f3718203c019b6ef1a738c6f5d78",
+        "checkpoint_path": "runs/day16-finalization-10k-v2/envs-2/checkpoints/step-00010000.pt",
+        "checkpoint_sha256": "77c38d714a9503e1b8a42a8025be6bab16701cb99901da381ddd412bf132aec4",
+        "model_id": "envs-2@step-00010000",
+        "summary": {
+          "count": 15,
+          "mean_return": 0.7333333333333333,
+          "median_return": 0.0,
+          "std_return": 1.8427033281447005,
+          "min_return": 0.0,
+          "max_return": 7.0,
+          "mean_episode_length": 141.0,
+          "complete_episodes": 15,
+          "finished_episode_count": 15,
+          "terminated_count": 15,
+          "truncated_count": 0,
+          "time_limit_truncated_count": 0,
+          "truncation_rate": 0.0,
+          "mean_return_terminated": 0.7333333333333333,
+          "mean_return_truncated": null,
+          "mean_length_terminated": 141.0,
+          "mean_length_truncated": null,
+          "action_distribution_semantics": "executed/wrapper-resolved action",
+          "action_distribution": {
+            "FIRE": 151,
+            "LEFT": 1953,
+            "NOOP": 0,
+            "RIGHT": 11
+          },
+          "requested_action_distribution": {
+            "FIRE": 0,
+            "LEFT": 2104,
+            "NOOP": 0,
+            "RIGHT": 11
+          },
+          "executed_action_distribution": {
+            "FIRE": 151,
+            "LEFT": 1953,
+            "NOOP": 0,
+            "RIGHT": 11
+          },
+          "auto_fire_count": 151,
+          "auto_fire_reason_counts": {
+            "after_life_loss": 120,
+            "initial_serve": 31
+          }
+        }
+      }
+    ]
+  },
+  "candidates": [
+    {
+      "environment_count": 1,
+      "role": "screening_reference",
+      "results_path": "evaluations/day16-final-10k-envs1-contract-v2/results.json",
+      "results_sha256": "3f51c3518ad56b420c3867fe121046633d34b070184de23d169ad80dfa4fe845",
+      "checkpoint_path": "runs/day16-finalization-10k-v2/envs-1/checkpoints/step-00010000.pt",
+      "checkpoint_sha256": "cb3dc1bebef6c8485b5cc1e03dc554b28c63ed12e564a085229ec5ebb57c3767",
+      "model_id": "envs-1@step-00010000",
+      "summary": {
+        "count": 15,
+        "mean_return": 0.0,
+        "median_return": 0.0,
+        "std_return": 0.0,
+        "min_return": 0.0,
+        "max_return": 0.0,
+        "mean_episode_length": 122.06666666666666,
+        "complete_episodes": 15,
+        "finished_episode_count": 15,
+        "terminated_count": 15,
+        "truncated_count": 0,
+        "time_limit_truncated_count": 0,
+        "truncation_rate": 0.0,
+        "mean_return_terminated": 0.0,
+        "mean_return_truncated": null,
+        "mean_length_terminated": 122.06666666666666,
+        "mean_length_truncated": null,
+        "action_distribution_semantics": "executed/wrapper-resolved action",
+        "action_distribution": {
+          "FIRE": 1831,
+          "LEFT": 0,
+          "NOOP": 0,
+          "RIGHT": 0
+        },
+        "requested_action_distribution": {
+          "FIRE": 1831,
+          "LEFT": 0,
+          "NOOP": 0,
+          "RIGHT": 0
+        },
+        "executed_action_distribution": {
+          "FIRE": 1831,
+          "LEFT": 0,
+          "NOOP": 0,
+          "RIGHT": 0
+        },
+        "auto_fire_count": 151,
+        "auto_fire_reason_counts": {
+          "after_life_loss": 120,
+          "initial_serve": 31
+        }
+      }
+    },
+    {
+      "environment_count": 2,
+      "role": "screening_candidate",
+      "results_path": "evaluations/day16-final-10k-envs2-contract-v2/results.json",
+      "results_sha256": "47602e24b418ebc84a405739a39d31e1dd48f3718203c019b6ef1a738c6f5d78",
+      "checkpoint_path": "runs/day16-finalization-10k-v2/envs-2/checkpoints/step-00010000.pt",
+      "checkpoint_sha256": "77c38d714a9503e1b8a42a8025be6bab16701cb99901da381ddd412bf132aec4",
+      "model_id": "envs-2@step-00010000",
+      "summary": {
+        "count": 15,
+        "mean_return": 0.7333333333333333,
+        "median_return": 0.0,
+        "std_return": 1.8427033281447005,
+        "min_return": 0.0,
+        "max_return": 7.0,
+        "mean_episode_length": 141.0,
+        "complete_episodes": 15,
+        "finished_episode_count": 15,
+        "terminated_count": 15,
+        "truncated_count": 0,
+        "time_limit_truncated_count": 0,
+        "truncation_rate": 0.0,
+        "mean_return_terminated": 0.7333333333333333,
+        "mean_return_truncated": null,
+        "mean_length_terminated": 141.0,
+        "mean_length_truncated": null,
+        "action_distribution_semantics": "executed/wrapper-resolved action",
+        "action_distribution": {
+          "FIRE": 151,
+          "LEFT": 1953,
+          "NOOP": 0,
+          "RIGHT": 11
+        },
+        "requested_action_distribution": {
+          "FIRE": 0,
+          "LEFT": 2104,
+          "NOOP": 0,
+          "RIGHT": 11
+        },
+        "executed_action_distribution": {
+          "FIRE": 151,
+          "LEFT": 1953,
+          "NOOP": 0,
+          "RIGHT": 11
+        },
+        "auto_fire_count": 151,
+        "auto_fire_reason_counts": {
+          "after_life_loss": 120,
+          "initial_serve": 31
+        }
+      }
+    }
+  ],
+  "long_validation_100k": {
+    "training_report": "assets/day16/vectorized-training-100k-n2.json",
+    "total_transitions": 100000,
+    "candidates": [
+      {
+        "environment_count": 1,
+        "role": "quality_reference",
+        "results_path": "evaluations/day16-final-100k-envs1-contract-v2/results.json",
+        "results_sha256": "7ceeff34d2aaad6823e4bc18488d33c4bc3caa7fd53465ce54db26eb94d8475f",
+        "checkpoint_path": "runs/day16-finalization-100k-v2/envs-1/checkpoints/step-00100000.pt",
+        "checkpoint_sha256": "42a37be2f551881f704567d9acfb3476801d45f47b5234aff504ef42142af799",
+        "model_id": "envs-1@step-00100000",
+        "summary": {
+          "count": 15,
+          "mean_return": 9.0,
+          "median_return": 9.0,
+          "std_return": 2.0330600909302543,
+          "min_return": 6.0,
+          "max_return": 13.0,
+          "mean_episode_length": 468.6666666666667,
+          "complete_episodes": 15,
+          "finished_episode_count": 15,
+          "terminated_count": 15,
+          "truncated_count": 0,
+          "time_limit_truncated_count": 0,
+          "truncation_rate": 0.0,
+          "mean_return_terminated": 9.0,
+          "mean_return_truncated": null,
+          "mean_length_terminated": 468.6666666666667,
+          "mean_length_truncated": null,
+          "action_distribution_semantics": "executed/wrapper-resolved action",
+          "action_distribution": {
+            "FIRE": 1307,
+            "LEFT": 2414,
+            "NOOP": 383,
+            "RIGHT": 2926
+          },
+          "requested_action_distribution": {
+            "FIRE": 1190,
+            "LEFT": 2467,
+            "NOOP": 389,
+            "RIGHT": 2984
+          },
+          "executed_action_distribution": {
+            "FIRE": 1307,
+            "LEFT": 2414,
+            "NOOP": 383,
+            "RIGHT": 2926
+          },
+          "auto_fire_count": 151,
+          "auto_fire_reason_counts": {
+            "after_life_loss": 120,
+            "initial_serve": 31
+          }
+        }
+      },
+      {
+        "environment_count": 2,
+        "role": "selected_systems_backend",
+        "results_path": "evaluations/day16-final-100k-envs2-contract-v2/results.json",
+        "results_sha256": "4086f1b0a7da1e803b58eae762242abf8bb1f29474af94b9bdbe5d3a49c9d4dc",
+        "checkpoint_path": "runs/day16-finalization-100k-v2-n2/envs-2/checkpoints/step-00100000.pt",
+        "checkpoint_sha256": "69a60a90bd90ed4700581301ff089e42bacfb7f3d4246b68ee35a45ef230989d",
+        "model_id": "envs-2@step-00100000",
+        "summary": {
+          "count": 15,
+          "mean_return": 6.066666666666666,
+          "median_return": 6.0,
+          "std_return": 2.5420901286583493,
+          "min_return": 3.0,
+          "max_return": 12.0,
+          "mean_episode_length": 352.3333333333333,
+          "complete_episodes": 15,
+          "finished_episode_count": 15,
+          "terminated_count": 15,
+          "truncated_count": 0,
+          "time_limit_truncated_count": 0,
+          "truncation_rate": 0.0,
+          "mean_return_terminated": 6.066666666666666,
+          "mean_return_truncated": null,
+          "mean_length_terminated": 352.3333333333333,
+          "mean_length_truncated": null,
+          "action_distribution_semantics": "executed/wrapper-resolved action",
+          "action_distribution": {
+            "FIRE": 1450,
+            "LEFT": 1787,
+            "NOOP": 136,
+            "RIGHT": 1912
+          },
+          "requested_action_distribution": {
+            "FIRE": 1338,
+            "LEFT": 1844,
+            "NOOP": 141,
+            "RIGHT": 1962
+          },
+          "executed_action_distribution": {
+            "FIRE": 1450,
+            "LEFT": 1787,
+            "NOOP": 136,
+            "RIGHT": 1912
+          },
+          "auto_fire_count": 151,
+          "auto_fire_reason_counts": {
+            "after_life_loss": 120,
+            "initial_serve": 31
+          }
+        }
+      },
+      {
+        "environment_count": 4,
+        "role": "supplemental_candidate",
+        "results_path": "evaluations/day16-final-100k-envs4-contract-v2/results.json",
+        "results_sha256": "c8e02d2f05e45e8fe840f290a7d7f45ccc9aed6b722b4a65a79fee168560bb08",
+        "checkpoint_path": "runs/day16-finalization-100k-v2/envs-4/checkpoints/step-00100000.pt",
+        "checkpoint_sha256": "e0d550b46d4cf9af219a5513153cb643f67514fbbb103040b57a633495145823",
+        "model_id": "envs-4@step-00100000",
+        "summary": {
+          "count": 15,
+          "mean_return": 2.3333333333333335,
+          "median_return": 2.0,
+          "std_return": 1.0749676997731399,
+          "min_return": 1.0,
+          "max_return": 4.0,
+          "mean_episode_length": 201.26666666666668,
+          "complete_episodes": 15,
+          "finished_episode_count": 15,
+          "terminated_count": 15,
+          "truncated_count": 0,
+          "time_limit_truncated_count": 0,
+          "truncation_rate": 0.0,
+          "mean_return_terminated": 2.3333333333333335,
+          "mean_return_truncated": null,
+          "mean_length_terminated": 201.26666666666668,
+          "mean_length_truncated": null,
+          "action_distribution_semantics": "executed/wrapper-resolved action",
+          "action_distribution": {
+            "FIRE": 1614,
+            "LEFT": 682,
+            "NOOP": 323,
+            "RIGHT": 400
+          },
+          "requested_action_distribution": {
+            "FIRE": 1530,
+            "LEFT": 744,
+            "NOOP": 339,
+            "RIGHT": 406
+          },
+          "executed_action_distribution": {
+            "FIRE": 1614,
+            "LEFT": 682,
+            "NOOP": 323,
+            "RIGHT": 400
+          },
+          "auto_fire_count": 151,
+          "auto_fire_reason_counts": {
+            "after_life_loss": 120,
+            "initial_serve": 31
+          }
+        }
+      }
+    ]
+  },
+  "random_baseline": {
+    "results_path": "evaluations/day16-contract-v2-random/results.json",
+    "results_sha256": "0ae8056b52120ce72c75e094986ad875e8b644f689c4d50438bdf952a85c95a7",
+    "policy_type": "random",
+    "summary": {
+      "count": 15,
+      "mean_return": 1.7333333333333334,
+      "median_return": 2.0,
+      "std_return": 1.1234866364235145,
+      "min_return": 0.0,
+      "max_return": 5.0,
+      "mean_episode_length": 197.4,
+      "complete_episodes": 15,
+      "finished_episode_count": 15,
+      "terminated_count": 15,
+      "truncated_count": 0,
+      "time_limit_truncated_count": 0,
+      "truncation_rate": 0.0,
+      "mean_return_terminated": 1.7333333333333334,
+      "mean_return_truncated": null,
+      "mean_length_terminated": 197.4,
+      "mean_length_truncated": null,
+      "action_distribution_semantics": "executed/wrapper-resolved action",
+      "action_distribution": {
+        "FIRE": 895,
+        "LEFT": 675,
+        "NOOP": 686,
+        "RIGHT": 705
+      },
+      "requested_action_distribution": {
+        "FIRE": 789,
+        "LEFT": 713,
+        "NOOP": 708,
+        "RIGHT": 751
+      },
+      "executed_action_distribution": {
+        "FIRE": 895,
+        "LEFT": 675,
+        "NOOP": 686,
+        "RIGHT": 705
+      },
+      "auto_fire_count": 151,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 120,
+        "initial_serve": 31
+      }
+    }
+  },
+  "diagnostics": {
+    "fire_sticky": {
+      "path": "assets/day16/fire-sticky-diagnostic.json",
+      "sha256": "50d31d5bfa53d1ec7e11c37eead9720907c670fa5d1e5e536726e6e4433b3a30"
+    }
+  }
+}

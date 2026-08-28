@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import math
+from collections import Counter
 from pathlib import Path
 from statistics import fmean, median, pstdev
 from typing import Any, Mapping, Sequence
@@ -20,6 +21,9 @@ TIME_LIMIT_SUMMARY_FIELDS = (
     "mean_length_terminated",
     "mean_length_truncated",
 )
+EVALUATION_ARTIFACT_SCHEMA_VERSION = 2
+SUPPORTED_EVALUATION_ARTIFACT_SCHEMA_VERSIONS = (1, EVALUATION_ARTIFACT_SCHEMA_VERSION)
+ACTION_DISTRIBUTION_SEMANTICS = "executed/wrapper-resolved action"
 
 
 def read_evaluation_results(path: str | Path) -> dict[str, Any]:
@@ -32,8 +36,59 @@ def read_evaluation_results(path: str | Path) -> dict[str, Any]:
         raise ValueError(f"{source}: invalid JSON") from error
     if not isinstance(payload, dict):
         raise ValueError(f"{source}: evaluation results must be a JSON object")
+    schema_version = payload.get("schema_version", 1)
+    if isinstance(schema_version, bool) or not isinstance(schema_version, int):
+        raise ValueError(f"{source}: schema_version must be an integer")
+    if schema_version not in SUPPORTED_EVALUATION_ARTIFACT_SCHEMA_VERSIONS:
+        raise ValueError(
+            f"{source}: unsupported evaluation artifact schema_version="
+            f"{schema_version}"
+        )
     if not isinstance(payload.get("per_episode"), list):
         raise ValueError(f"{source}: per_episode must be an array")
+    if schema_version == EVALUATION_ARTIFACT_SCHEMA_VERSION:
+        required = (
+            "action_distribution_semantics",
+            "requested_action_distribution",
+            "executed_action_distribution",
+            "auto_fire_count",
+            "auto_fire_reason_counts",
+        )
+        missing = [field for field in required if field not in payload]
+        if missing:
+            raise ValueError(
+                f"{source}: schema v2 is missing " + ", ".join(missing)
+            )
+        if payload["action_distribution_semantics"] != ACTION_DISTRIBUTION_SEMANTICS:
+            raise ValueError(
+                f"{source}: schema v2 action_distribution_semantics must be "
+                f"{ACTION_DISTRIBUTION_SEMANTICS!r}"
+            )
+        for field in (
+            "requested_action_distribution",
+            "executed_action_distribution",
+            "auto_fire_reason_counts",
+        ):
+            if not isinstance(payload[field], Mapping):
+                raise ValueError(f"{source}: schema v2 {field} must be an object")
+        if isinstance(payload["auto_fire_count"], bool) or not isinstance(
+            payload["auto_fire_count"], int
+        ):
+            raise ValueError(f"{source}: schema v2 auto_fire_count must be an integer")
+        for index, row in enumerate(payload["per_episode"]):
+            if not isinstance(row, Mapping):
+                raise ValueError(f"{source}: per_episode[{index}] must be an object")
+            missing_row = [field for field in required if field not in row]
+            if missing_row:
+                raise ValueError(
+                    f"{source}: schema v2 per_episode[{index}] is missing "
+                    + ", ".join(missing_row)
+                )
+            if row["action_distribution_semantics"] != ACTION_DISTRIBUTION_SEMANTICS:
+                raise ValueError(
+                    f"{source}: schema v2 per_episode[{index}] has invalid "
+                    "action_distribution_semantics"
+                )
     return payload
 
 
@@ -185,7 +240,7 @@ def validate_episode_rows(
 
 def summary_from_episode_rows(
     rows: Sequence[Mapping[str, Any]],
-) -> dict[str, float | int | None]:
+) -> dict[str, Any]:
     if not rows:
         raise ValueError("at least one episode row is required")
     summary = summarize_returns([float(row["episode_return"]) for row in rows])
@@ -215,6 +270,55 @@ def summary_from_episode_rows(
             "mean_length_truncated": _mean("episode_length", truncated_rows),
         }
     )
+    requested_action_counts: Counter[str] = Counter()
+    executed_action_counts: Counter[str] = Counter()
+    auto_fire_reason_counts: Counter[str] = Counter()
+    auto_fire_count = 0
+    has_action_provenance = False
+    for row in rows:
+        raw_requested = row.get("requested_action_distribution")
+        raw_executed = row.get(
+            "executed_action_distribution",
+            row.get("action_distribution"),
+        )
+        if isinstance(raw_requested, Mapping):
+            has_action_provenance = True
+            requested_action_counts.update(
+                {str(name): int(count) for name, count in raw_requested.items()}
+            )
+        if isinstance(raw_executed, Mapping):
+            has_action_provenance = True
+            executed_action_counts.update(
+                {str(name): int(count) for name, count in raw_executed.items()}
+            )
+        raw_reason_counts = row.get("auto_fire_reason_counts")
+        if isinstance(raw_reason_counts, Mapping):
+            auto_fire_reason_counts.update(
+                {str(name): int(count) for name, count in raw_reason_counts.items()}
+            )
+        try:
+            auto_fire_count += int(row.get("auto_fire_count", 0))
+        except (TypeError, ValueError):
+            raise ValueError("auto_fire_count must be an integer when present") from None
+    if has_action_provenance:
+        if not requested_action_counts:
+            requested_action_counts.update(executed_action_counts)
+        summary.update(
+            {
+                "action_distribution_semantics": ACTION_DISTRIBUTION_SEMANTICS,
+                "action_distribution": dict(sorted(executed_action_counts.items())),
+                "requested_action_distribution": dict(
+                    sorted(requested_action_counts.items())
+                ),
+                "executed_action_distribution": dict(
+                    sorted(executed_action_counts.items())
+                ),
+                "auto_fire_count": auto_fire_count,
+                "auto_fire_reason_counts": dict(
+                    sorted(auto_fire_reason_counts.items())
+                ),
+            }
+        )
     return summary
 
 
@@ -261,9 +365,12 @@ def validate_embedded_summary(
 
 
 __all__ = [
+    "ACTION_DISTRIBUTION_SEMANTICS",
+    "EVALUATION_ARTIFACT_SCHEMA_VERSION",
     "read_evaluation_results",
     "summarize_returns",
     "summary_from_episode_rows",
+    "SUPPORTED_EVALUATION_ARTIFACT_SCHEMA_VERSIONS",
     "TIME_LIMIT_SUMMARY_FIELDS",
     "validate_embedded_summary",
     "validate_episode_rows",

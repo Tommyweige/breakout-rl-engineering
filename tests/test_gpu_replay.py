@@ -64,6 +64,38 @@ class GPUReplayBufferTests(unittest.TestCase):
             np.array([3.0, 1.0, 2.0], dtype=np.float32) / 255.0,
         )
 
+    def test_add_batch_preserves_order_and_wraps_the_ring(self) -> None:
+        replay = self.make_buffer(capacity=4)
+        transitions = [self.transition(index) for index in range(3)]
+        replay.add_batch(
+            np.stack([transition[0] for transition in transitions]),
+            np.asarray([transition[1] for transition in transitions]),
+            np.asarray([transition[2] for transition in transitions]),
+            np.stack([transition[3] for transition in transitions]),
+            np.asarray([transition[4] for transition in transitions]),
+            np.asarray([transition[5] for transition in transitions]),
+        )
+        replay.add_batch(
+            np.stack([self.transition(index)[0] for index in range(3, 6)]),
+            np.asarray([3, 0, 1]),
+            np.asarray([3.5, 4.5, 5.5]),
+            np.stack([self.transition(index)[3] for index in range(3, 6)]),
+            np.asarray([False, False, False]),
+            np.asarray([True, False, False]),
+        )
+
+        self.assertEqual(replay.size, 4)
+        self.assertEqual(replay.write_index, 2)
+        np.testing.assert_array_equal(
+            replay.states[:, 0, 0, 0].cpu().numpy(),
+            np.array([4, 5, 2, 3], dtype=np.uint8),
+        )
+        batch = replay.gather(np.array([2, 3, 0, 1], dtype=np.int64))
+        np.testing.assert_array_equal(
+            batch.states[:, 0, 0, 0].cpu().numpy(),
+            np.array([2, 3, 4, 5], dtype=np.float32) / 255.0,
+        )
+
     def test_sampling_is_without_replacement_and_seedable(self) -> None:
         first = self.make_buffer(capacity=6)
         second = self.make_buffer(capacity=6)

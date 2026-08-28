@@ -10,7 +10,10 @@ from typing import Sequence
 import numpy as np
 import torch
 
-from breakout_rl.replay import DEFAULT_OBSERVATION_SHAPE
+from breakout_rl.replay import (
+    DEFAULT_OBSERVATION_SHAPE,
+    _validate_transition_batch,
+)
 from breakout_rl.replay_tensors import ReplayTensorBatch
 
 
@@ -216,6 +219,61 @@ class GPUReplayBuffer:
         self.write_index = (self.write_index + 1) % self.capacity
         self.size = min(self.size + 1, self.capacity)
         return slot
+
+    def add_batch(
+        self,
+        states: np.ndarray,
+        actions: np.ndarray,
+        rewards: np.ndarray,
+        next_states: np.ndarray,
+        terminated: np.ndarray,
+        truncated: np.ndarray,
+    ) -> np.ndarray:
+        """Copy a batch of transitions into consecutive device-side slots."""
+
+        batch = _validate_transition_batch(
+            states,
+            actions,
+            rewards,
+            next_states,
+            terminated,
+            truncated,
+            expected_shape=self.observation_shape,
+        )
+        batch_size = int(batch.states.shape[0])
+        initial_write_index = self.write_index
+        slots = (
+            initial_write_index + np.arange(batch_size, dtype=np.int64)
+        ) % self.capacity
+        source_start = max(0, batch_size - self.capacity)
+        write_start = int(slots[source_start])
+        write_count = batch_size - source_start
+
+        def copy_ring(destination: torch.Tensor, source: np.ndarray) -> None:
+            first_count = min(write_count, self.capacity - write_start)
+            destination[write_start : write_start + first_count].copy_(
+                torch.from_numpy(source[source_start : source_start + first_count])
+            )
+            remaining = write_count - first_count
+            if remaining:
+                destination[:remaining].copy_(
+                    torch.from_numpy(
+                        source[
+                            source_start + first_count : source_start + first_count + remaining
+                        ]
+                    )
+                )
+
+        copy_ring(self.states, batch.states)
+        copy_ring(self.actions, batch.actions)
+        copy_ring(self.rewards, batch.rewards)
+        copy_ring(self.next_states, batch.next_states)
+        copy_ring(self.terminated, batch.terminated)
+        copy_ring(self.truncated, batch.truncated)
+
+        self.write_index = (initial_write_index + batch_size) % self.capacity
+        self.size = min(self.capacity, self.size + batch_size)
+        return slots
 
     def _validate_batch_size(self, batch_size: int) -> int:
         parsed = _positive_int(batch_size, name="batch_size")

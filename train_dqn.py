@@ -13,6 +13,7 @@ import torch
 from breakout_env import make_breakout_env
 from breakout_rl.evaluation_contract import (
     BreakoutEvaluationContractV2,
+    breakout_environment_kwargs,
     load_evaluation_contract,
     validate_breakout_runtime_contract,
 )
@@ -144,9 +145,10 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Invalid training configuration: {error}")
         return 2
 
-    env = make_breakout_env(
-        stack_size=contract.frame_stack if contract is not None else 4,
-        fire_reset=contract.fire_reset if contract is not None else args.fire_reset,
+    env = (
+        make_breakout_env(**breakout_environment_kwargs(contract))
+        if contract is not None
+        else make_breakout_env(fire_reset=args.fire_reset)
     )
     try:
         trainer = DQNTrainer(

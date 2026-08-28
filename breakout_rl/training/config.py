@@ -110,6 +110,8 @@ class DQNConfig:
     replay_transfer: str = "direct"
     replay_backend: str = "cpu"
     profile_stages: bool = False
+    num_envs: int = 1
+    strict_action_selection_parity: bool = False
 
     def __post_init__(self) -> None:
         _validated_int(self.total_steps, name="total_steps", minimum=1)
@@ -178,6 +180,9 @@ class DQNConfig:
             _validated_int(self.cpu_threads, name="cpu_threads", minimum=1)
         if not isinstance(self.profile_stages, bool):
             raise TypeError("profile_stages must be a boolean")
+        _validated_int(self.num_envs, name="num_envs", minimum=1)
+        if not isinstance(self.strict_action_selection_parity, bool):
+            raise TypeError("strict_action_selection_parity must be a boolean")
         object.__setattr__(
             self,
             "replay_transfer",

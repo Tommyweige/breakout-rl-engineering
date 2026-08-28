@@ -10,6 +10,7 @@ import operator
 import platform
 import re
 import time
+from collections import Counter
 from contextlib import nullcontext
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -27,6 +28,8 @@ from breakout_rl.models.dqn import DQNNetwork
 from breakout_rl.tensors import observation_to_tensor
 from breakout_rl.experiments import load_experiment_config
 from breakout_rl.evaluation_artifacts import (
+    ACTION_DISTRIBUTION_SEMANTICS,
+    EVALUATION_ARTIFACT_SCHEMA_VERSION,
     read_evaluation_results,
     summarize_returns,
     summary_from_episode_rows,
@@ -35,7 +38,8 @@ from breakout_rl.training.diagnostics import ATARI_ACTION_NAMES
 from breakout_rl.training.dqn_trainer import resolve_device
 
 
-EVALUATION_SCHEMA_VERSION = 1
+EVALUATION_CONFIG_SCHEMA_VERSION = 1
+EVALUATION_SCHEMA_VERSION = EVALUATION_ARTIFACT_SCHEMA_VERSION
 EnvironmentFactory = Callable[[], Any]
 
 
@@ -106,7 +110,7 @@ class EvaluationConfig:
 
     def to_dict(self) -> dict[str, Any]:
         return {
-            "schema_version": EVALUATION_SCHEMA_VERSION,
+            "schema_version": EVALUATION_CONFIG_SCHEMA_VERSION,
             "seeds": list(self.seeds),
             "episodes_per_seed": self.episodes_per_seed,
             "epsilon": self.epsilon,
@@ -162,6 +166,10 @@ class EpisodeResult:
     action_distribution: Mapping[str, int]
     time_limit: bool = False
     time_limit_source: str | None = None
+    requested_action_distribution: Mapping[str, int] | None = None
+    executed_action_distribution: Mapping[str, int] | None = None
+    auto_fire_count: int = 0
+    auto_fire_reason_counts: Mapping[str, int] | None = None
 
     @property
     def complete(self) -> bool:
@@ -178,6 +186,12 @@ class EpisodeResult:
         return "incomplete"
 
     def to_dict(self) -> dict[str, Any]:
+        executed_distribution = dict(
+            self.executed_action_distribution or self.action_distribution
+        )
+        requested_distribution = dict(
+            self.requested_action_distribution or executed_distribution
+        )
         return {
             "evaluation_seed": self.evaluation_seed,
             "seed": self.episode_seed,
@@ -193,7 +207,14 @@ class EpisodeResult:
             "time_limit_source": self.time_limit_source,
             "complete": self.complete,
             "stop_reason": self.stop_reason,
-            "action_distribution": dict(self.action_distribution),
+            # Keep the historical field, but define it explicitly as the
+            # action sent to the wrapped environment.
+            "action_distribution": executed_distribution,
+            "action_distribution_semantics": ACTION_DISTRIBUTION_SEMANTICS,
+            "requested_action_distribution": requested_distribution,
+            "executed_action_distribution": executed_distribution,
+            "auto_fire_count": int(self.auto_fire_count),
+            "auto_fire_reason_counts": dict(self.auto_fire_reason_counts or {}),
         }
 
 
@@ -231,6 +252,35 @@ class EvaluationResult:
                 counts[name] = counts.get(name, 0) + int(count)
         return counts
 
+    @property
+    def requested_action_distribution(self) -> dict[str, int]:
+        counts = {name: 0 for name in self.action_names}
+        for episode in self.episodes:
+            values = episode.requested_action_distribution or episode.action_distribution
+            for name, count in values.items():
+                counts[name] = counts.get(name, 0) + int(count)
+        return counts
+
+    @property
+    def executed_action_distribution(self) -> dict[str, int]:
+        return self.action_distribution
+
+    @property
+    def auto_fire_count(self) -> int:
+        return sum(int(episode.auto_fire_count) for episode in self.episodes)
+
+    @property
+    def auto_fire_reason_counts(self) -> dict[str, int]:
+        counts: Counter[str] = Counter()
+        for episode in self.episodes:
+            counts.update(
+                {
+                    str(name): int(count)
+                    for name, count in (episode.auto_fire_reason_counts or {}).items()
+                }
+            )
+        return dict(sorted(counts.items()))
+
     def to_dict(self) -> dict[str, Any]:
         returns = [episode.episode_return for episode in self.episodes]
         lengths = [episode.episode_length for episode in self.episodes]
@@ -267,7 +317,12 @@ class EvaluationResult:
             "per_episode": [episode.to_dict() for episode in self.episodes],
             "per_episode_returns": returns,
             "per_episode_lengths": lengths,
-            "action_distribution": self.action_distribution,
+            "action_distribution": self.executed_action_distribution,
+            "action_distribution_semantics": ACTION_DISTRIBUTION_SEMANTICS,
+            "requested_action_distribution": self.requested_action_distribution,
+            "executed_action_distribution": self.executed_action_distribution,
+            "auto_fire_count": self.auto_fire_count,
+            "auto_fire_reason_counts": self.auto_fire_reason_counts,
             "summary": summary,
             "metadata": dict(self.metadata or {}),
         }
@@ -404,6 +459,48 @@ def _seed_action_space(env: Any, seed: int) -> None:
     seed_method = getattr(getattr(env, "action_space", None), "seed", None)
     if callable(seed_method):
         seed_method(seed)
+
+
+def _resolved_action_from_info(
+    info: Mapping[str, Any] | Any,
+    *,
+    requested_action: int,
+    action_count: int,
+) -> tuple[int, bool, str | None]:
+    """Read wrapper provenance without pretending to see hidden ALE randomness."""
+
+    if not isinstance(info, Mapping):
+        return requested_action, False, None
+    raw_requested = info.get("fire_reset_requested_action", requested_action)
+    try:
+        resolved_requested = operator.index(raw_requested)
+    except TypeError as error:
+        raise ValueError(
+            "fire_reset_requested_action must be an integer"
+        ) from error
+    if int(resolved_requested) != requested_action:
+        raise ValueError(
+            "environment fire_reset_requested_action does not match policy action"
+        )
+    auto_fire = bool(info.get("fire_reset_auto", False))
+    if auto_fire and "fire_reset_executed_action" not in info:
+        raise ValueError(
+            "environment-side FIRE must report fire_reset_executed_action"
+        )
+    raw_executed = info.get("fire_reset_executed_action", requested_action)
+    try:
+        executed_action = operator.index(raw_executed)
+    except TypeError as error:
+        raise ValueError("fire_reset_executed_action must be an integer") from error
+    if not 0 <= int(executed_action) < action_count:
+        raise ValueError(
+            "environment executed an illegal action "
+            f"{executed_action}; expected 0 <= action < {action_count}"
+        )
+    raw_reason = info.get("fire_reset_reason")
+    if raw_reason is not None and not isinstance(raw_reason, str):
+        raise ValueError("fire_reset_reason must be a string or None")
+    return int(executed_action), auto_fire, raw_reason
 
 
 def _time_limit_signal(
@@ -543,13 +640,16 @@ def evaluate_policy(
                     _seed_action_space(env, episode_seed)
                     rng = np.random.default_rng(episode_seed)
                     episode_return = 0.0
-                    action_values: list[int] = []
+                    requested_action_values: list[int] = []
+                    executed_action_values: list[int] = []
+                    auto_fire_count = 0
+                    auto_fire_reason_counts: Counter[str] = Counter()
                     terminated = False
                     truncated = False
                     while True:
                         if (
                             max_steps_per_episode is not None
-                            and len(action_values) >= max_steps_per_episode
+                            and len(requested_action_values) >= max_steps_per_episode
                         ):
                             raise RuntimeError(
                                 "evaluation episode did not finish within "
@@ -561,8 +661,24 @@ def evaluate_policy(
                                 f"policy returned illegal action {action}; "
                                 f"expected 0 <= action < {action_count}"
                             )
-                        action_values.append(action)
-                        observation, reward, terminated_raw, truncated_raw, info = env.step(action)
+                        requested_action_values.append(action)
+                        (
+                            observation,
+                            reward,
+                            terminated_raw,
+                            truncated_raw,
+                            info,
+                        ) = env.step(action)
+                        executed_action, auto_fire, fire_reason = _resolved_action_from_info(
+                            info,
+                            requested_action=action,
+                            action_count=action_count,
+                        )
+                        executed_action_values.append(executed_action)
+                        if auto_fire:
+                            auto_fire_count += 1
+                            if fire_reason is not None:
+                                auto_fire_reason_counts[fire_reason] += 1
                         reward_value = float(reward)
                         if not math.isfinite(reward_value):
                             raise ValueError("environment reward must be finite")
@@ -577,9 +693,12 @@ def evaluate_policy(
                         if terminated or truncated:
                             break
 
-                    counts = {name: 0 for name in action_names}
-                    for action in action_values:
-                        counts[action_names[action]] += 1
+                    requested_counts = {name: 0 for name in action_names}
+                    executed_counts = {name: 0 for name in action_names}
+                    for action in requested_action_values:
+                        requested_counts[action_names[action]] += 1
+                    for action in executed_action_values:
+                        executed_counts[action_names[action]] += 1
                     episode_results.append(
                         EpisodeResult(
                             evaluation_seed=evaluation_seed,
@@ -587,12 +706,18 @@ def evaluate_policy(
                             seed_index=seed_index,
                             episode_index=episode_index,
                             episode_return=float(episode_return),
-                            episode_length=len(action_values),
+                            episode_length=len(executed_action_values),
                             terminated=terminated,
                             truncated=truncated,
-                            action_distribution=counts,
+                            action_distribution=executed_counts,
                             time_limit=time_limit,
                             time_limit_source=time_limit_source,
+                            requested_action_distribution=requested_counts,
+                            executed_action_distribution=executed_counts,
+                            auto_fire_count=auto_fire_count,
+                            auto_fire_reason_counts=dict(
+                                sorted(auto_fire_reason_counts.items())
+                            ),
                         )
                     )
     finally:
@@ -666,8 +791,16 @@ def write_evaluation_artifacts(
     )
 
     action_columns = [_csv_column_name(name) for name in result.action_names]
+    requested_action_columns = [
+        f"requested_{column}" for column in action_columns
+    ]
+    executed_action_columns = [
+        f"executed_{column}" for column in action_columns
+    ]
     fieldnames = [
+        "schema_version",
         "policy_type",
+        "action_distribution_semantics",
         "evaluation_seed",
         "seed_index",
         "episode_index",
@@ -682,13 +815,27 @@ def write_evaluation_artifacts(
         "stop_reason",
         *action_columns,
         "action_distribution_json",
+        *requested_action_columns,
+        *executed_action_columns,
+        "requested_action_distribution_json",
+        "executed_action_distribution_json",
+        "auto_fire_count",
+        "auto_fire_reason_counts_json",
     ]
     with episodes_path.open("w", newline="", encoding="utf-8") as stream:
         writer = csv.DictWriter(stream, fieldnames=fieldnames)
         writer.writeheader()
         for episode in result.episodes:
+            executed_distribution = dict(
+                episode.executed_action_distribution or episode.action_distribution
+            )
+            requested_distribution = dict(
+                episode.requested_action_distribution or executed_distribution
+            )
             row: dict[str, Any] = {
+                "schema_version": EVALUATION_SCHEMA_VERSION,
                 "policy_type": result.policy_type,
+                "action_distribution_semantics": ACTION_DISTRIBUTION_SEMANTICS,
                 "evaluation_seed": episode.evaluation_seed,
                 "seed_index": episode.seed_index,
                 "episode_index": episode.episode_index,
@@ -702,13 +849,40 @@ def write_evaluation_artifacts(
                 "complete": episode.complete,
                 "stop_reason": episode.stop_reason,
                 "action_distribution_json": json.dumps(
-                    dict(episode.action_distribution),
+                    executed_distribution,
+                    ensure_ascii=False,
+                    sort_keys=True,
+                ),
+                "requested_action_distribution_json": json.dumps(
+                    requested_distribution,
+                    ensure_ascii=False,
+                    sort_keys=True,
+                ),
+                "executed_action_distribution_json": json.dumps(
+                    executed_distribution,
+                    ensure_ascii=False,
+                    sort_keys=True,
+                ),
+                "auto_fire_count": int(episode.auto_fire_count),
+                "auto_fire_reason_counts_json": json.dumps(
+                    dict(episode.auto_fire_reason_counts or {}),
                     ensure_ascii=False,
                     sort_keys=True,
                 ),
             }
-            for action_name, column in zip(result.action_names, action_columns):
-                row[column] = int(episode.action_distribution.get(action_name, 0))
+            for action_name, column, requested_column, executed_column in zip(
+                result.action_names,
+                action_columns,
+                requested_action_columns,
+                executed_action_columns,
+            ):
+                row[column] = int(executed_distribution.get(action_name, 0))
+                row[requested_column] = int(
+                    requested_distribution.get(action_name, 0)
+                )
+                row[executed_column] = int(
+                    executed_distribution.get(action_name, 0)
+                )
             writer.writerow(row)
     return results_path, episodes_path
 

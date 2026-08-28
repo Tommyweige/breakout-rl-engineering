@@ -1,0 +1,24 @@
+flowchart LR
+    subgraph S[Single-env reference]
+        S0[one observation] --> S1[one model forward]
+        S1 --> S2[one action]
+        S2 --> S3[env.step]
+        S3 --> S4[replay.add one transition]
+        S4 --> S5[update at transition boundary]
+    end
+
+    subgraph V[Vectorized trainer]
+        V0[N observations] --> V1[one model forward N x 4 x 84 x 84]
+        V1 --> V2[N independent actions]
+        V2 --> V3[vector env step]
+        V3 --> V4[final observations for done envs]
+        V4 --> V5[replay.add_batch transition chunks]
+        V5 --> V6[advance global_step by each chunk]
+        V6 --> V7[run every crossed update target and checkpoint boundary]
+        V4 --> V8{done env?}
+        V8 -->|yes| V9[reset only done envs]
+        V8 -->|no| V0
+        V9 --> V0
+    end
+
+    S5 -. same DQN schedule .-> V7

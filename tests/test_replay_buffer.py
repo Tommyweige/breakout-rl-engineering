@@ -74,6 +74,34 @@ class ReplayBufferTests(unittest.TestCase):
         self.assertEqual(buffer.oldest_index, 2)
         self.assertEqual(buffer.newest_index, 1)
 
+    def test_add_batch_preserves_input_order_across_ring_wraparound(self) -> None:
+        buffer = ReplayBuffer(capacity=4, observation_shape=self.SMALL_SHAPE)
+        first = [self.transition(index) for index in range(3)]
+        buffer.add_batch(
+            np.stack([value[0] for value in first]),
+            np.asarray([value[1] for value in first]),
+            np.asarray([value[2] for value in first]),
+            np.stack([value[3] for value in first]),
+            np.asarray([value[4] for value in first]),
+            np.asarray([value[5] for value in first]),
+        )
+        second = [self.transition(index) for index in range(3, 6)]
+        buffer.add_batch(
+            np.stack([value[0] for value in second]),
+            np.asarray([value[1] for value in second]),
+            np.asarray([value[2] for value in second]),
+            np.stack([value[3] for value in second]),
+            np.asarray([value[4] for value in second]),
+            np.asarray([value[5] for value in second]),
+        )
+
+        self.assertEqual(buffer.size, 4)
+        self.assertEqual(buffer.write_index, 2)
+        np.testing.assert_array_equal(
+            buffer.states[:, 0, 0],
+            np.array([4, 5, 2, 3], dtype=np.uint8),
+        )
+
     def test_sample_returns_named_batch_with_expected_shapes_and_dtypes(self) -> None:
         buffer = ReplayBuffer(capacity=8, observation_shape=self.SMALL_SHAPE)
         self.add_indices(buffer, 5)

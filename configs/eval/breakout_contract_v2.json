@@ -6,7 +6,16 @@
   "frame_stack": 4,
   "sticky_action_probability": 0.25,
   "fire_reset": true,
-  "fire_reset_rule": "The environment executes FIRE at the initial serve and immediately after each observed life loss; it reports requested and executed actions.",
+  "fire_reset_confirmation": {
+    "max_fire_attempts": 8,
+    "confirmation_steps": 2,
+    "min_observation_change_fraction": 0.0001,
+    "confirmation_operator": "any",
+    "confirmation_signals": [
+      "raw_reward",
+      "observation_activity_streak"
+    ]
+  },
   "terminal_on_life_loss": false,
   "time_limit_semantics": {
     "source": "ale.game_truncated",
