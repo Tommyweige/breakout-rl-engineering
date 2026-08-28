@@ -33,7 +33,7 @@ a* = argmax_a Q̂(s, a)
 
 第二種是用來隔離「選擇」和「評分」的概念模型，和 Double DQN 想處理的方向相同；它不是這一天已經實作完成的 Double DQN trainer。
 
-[![四個等價 action 在不同估計噪聲下的真實值、Vanilla max 與 decoupled estimator](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/de5616c7998f48d341c5767a326969a7d5a42285/assets/day16/overestimation-bias.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/de5616c7998f48d341c5767a326969a7d5a42285/assets/day16/overestimation-bias.png)
+[![四個等價 action 在不同估計噪聲下的真實值、Vanilla max 與 decoupled estimator](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/de5616ce57c35d6ac7e01a40a6aa6e3daa5618bf/assets/day16/overestimation-bias.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/de5616ce57c35d6ac7e01a40a6aa6e3daa5618bf/assets/day16/overestimation-bias.png)
 
 左圖的橫軸是每個 action 估計誤差的標準差，縱軸是平均估計值；藍線是真實最佳值 `1.0`，橘線是同一批 estimates 取出的最大值，綠線是用獨立第二批 noise 評估的結果。右圖把縱軸改成「平均估計值 − 真實值」，這個差值就是平均偏差（bias），所以零線代表沒有平均偏差。
 
@@ -54,7 +54,7 @@ toy simulation 只告訴我們一個可能的數值機制。為了不把概念�
 | `RIGHT` | 1.8416 | 0.2325 | 1.4720 | 2.1445 |
 | `LEFT` | 1.8412 | 0.2119 | 1.4855 | 2.1180 |
 
-在每個 state 先取最大 action 後，`max Q` 的平均是 `1.8653`，top-two action gap 的平均是 `0.0162`。這些數字告訴我們模型目前在這批真實畫面上輸出了什麼；它們沒有告訴我們正確答案應該是多少。因此目前只能把這份 [CUDA Q-value diagnostics](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/de5616c7998f48d341c5767a326969a7d5a42285/assets/day16/q-value-diagnostics.json) 稱為 exploratory evidence，不能把「Q-value 大於零」或「max 比 action mean 高」直接寫成 Breakout overestimation 已被證明。
+在每個 state 先取最大 action 後，`max Q` 的平均是 `1.8653`，top-two action gap 的平均是 `0.0162`。這些數字告訴我們模型目前在這批真實畫面上輸出了什麼；它們沒有告訴我們正確答案應該是多少。因此目前只能把這份 [CUDA Q-value diagnostics](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/de5616ce57c35d6ac7e01a40a6aa6e3daa5618bf/assets/day16/q-value-diagnostics.json) 稱為 exploratory evidence，不能把「Q-value 大於零」或「max 比 action mean 高」直接寫成 Breakout overestimation 已被證明。
 
 這個區分很重要：CPU toy simulation 證明的是選擇機制；CUDA probe 顯示的是目前 checkpoint 的真實輸出；要量出 Breakout 的實際 overestimation，還需要可靠的 value reference 或額外的受控比較。
 
