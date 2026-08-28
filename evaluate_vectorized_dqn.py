@@ -17,6 +17,7 @@ from breakout_rl.evaluation import (
 )
 from breakout_rl.evaluation_contract import (
     BreakoutEvaluationContractV2,
+    breakout_environment_kwargs,
     load_evaluation_contract,
     validate_breakout_runtime_contract,
 )
@@ -47,10 +48,7 @@ def build_parser() -> argparse.ArgumentParser:
 def _environment_factory(
     contract: BreakoutEvaluationContractV2,
 ) -> Callable[[], Any]:
-    return lambda: make_breakout_env(
-        stack_size=contract.frame_stack,
-        fire_reset=contract.fire_reset,
-    )
+    return lambda: make_breakout_env(**breakout_environment_kwargs(contract))
 
 
 def run_evaluation(args: argparse.Namespace) -> tuple[Path, Path, dict[str, Any]]:

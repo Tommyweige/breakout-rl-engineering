@@ -17,6 +17,7 @@ import torch
 from breakout_env import make_breakout_env
 from breakout_rl.evaluation_contract import (
     BreakoutEvaluationContractV2,
+    breakout_environment_kwargs,
     load_evaluation_contract,
     validate_breakout_runtime_contract,
 )
@@ -45,10 +46,7 @@ def _batch_from_real_observations(
     seed: int,
     contract: BreakoutEvaluationContractV2,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    env = make_breakout_env(
-        stack_size=contract.frame_stack,
-        fire_reset=contract.fire_reset,
-    )
+    env = make_breakout_env(**breakout_environment_kwargs(contract))
     try:
         state, _ = env.reset(seed=seed)
         next_state, reward, terminated, truncated, info = env.step(0)

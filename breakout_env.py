@@ -3,12 +3,20 @@
 from __future__ import annotations
 
 import operator
-from typing import Any
+from typing import Any, Sequence
 
 import ale_py
 import gymnasium as gym
 import numpy as np
 from gymnasium.wrappers import AtariPreprocessing, FrameStackObservation
+
+from breakout_rl.evaluation_contract import (
+    FIRE_RESET_CONFIRMATION_STEPS,
+    FIRE_RESET_CONFIRMATION_OPERATOR,
+    FIRE_RESET_CONFIRMATION_SIGNALS,
+    FIRE_RESET_MAX_ATTEMPTS,
+    FIRE_RESET_MIN_OBSERVATION_CHANGE_FRACTION,
+)
 
 
 gym.register_envs(ale_py)
@@ -23,9 +31,13 @@ class BreakoutFireResetWrapper(gym.Wrapper):
         self,
         env: gym.Env,
         *,
-        max_fire_attempts: int = 8,
-        confirmation_steps: int = 2,
-        min_observation_change_fraction: float = 1e-4,
+        max_fire_attempts: int = FIRE_RESET_MAX_ATTEMPTS,
+        confirmation_steps: int = FIRE_RESET_CONFIRMATION_STEPS,
+        min_observation_change_fraction: float = (
+            FIRE_RESET_MIN_OBSERVATION_CHANGE_FRACTION
+        ),
+        confirmation_operator: str = FIRE_RESET_CONFIRMATION_OPERATOR,
+        confirmation_signals: Sequence[str] = FIRE_RESET_CONFIRMATION_SIGNALS,
     ) -> None:
         super().__init__(env)
         if isinstance(max_fire_attempts, bool):
@@ -54,6 +66,20 @@ class BreakoutFireResetWrapper(gym.Wrapper):
             raise ValueError(
                 "min_observation_change_fraction must be finite and non-negative"
             )
+        if confirmation_operator != FIRE_RESET_CONFIRMATION_OPERATOR:
+            raise ValueError(
+                "confirmation_operator must be "
+                f"{FIRE_RESET_CONFIRMATION_OPERATOR!r}"
+            )
+        if isinstance(confirmation_signals, (str, bytes)):
+            raise TypeError("confirmation_signals must be a sequence")
+        parsed_signals = tuple(confirmation_signals)
+        if not parsed_signals or len(set(parsed_signals)) != len(parsed_signals):
+            raise ValueError("confirmation_signals must be non-empty and unique")
+        if any(signal not in FIRE_RESET_CONFIRMATION_SIGNALS for signal in parsed_signals):
+            raise ValueError(
+                "confirmation_signals contains an unsupported signal"
+            )
         meanings = getattr(self.unwrapped, "get_action_meanings", None)
         action_names = tuple(str(value) for value in meanings()) if callable(meanings) else ()
         try:
@@ -63,6 +89,8 @@ class BreakoutFireResetWrapper(gym.Wrapper):
         self.max_fire_attempts = int(parsed_max_fire_attempts)
         self.confirmation_steps = int(parsed_confirmation_steps)
         self.min_observation_change_fraction = parsed_change_fraction
+        self.confirmation_operator = confirmation_operator
+        self.confirmation_signals = parsed_signals
         self._needs_fire = False
         self._pending_fire_reason: str | None = None
         self._fire_attempts = 0
@@ -123,6 +151,8 @@ class BreakoutFireResetWrapper(gym.Wrapper):
                 "fire_reset_max_attempts": self.max_fire_attempts,
                 "fire_reset_confirmation_steps": self.confirmation_steps,
                 "fire_reset_observation_change_threshold": self.min_observation_change_fraction,
+                "fire_reset_confirmation_operator": self.confirmation_operator,
+                "fire_reset_confirmation_signals": list(self.confirmation_signals),
             }
         )
         return observation, reset_info
@@ -149,19 +179,24 @@ class BreakoutFireResetWrapper(gym.Wrapper):
             self._fire_attempts += 1
             fire_attempt = self._fire_attempts
             self._auto_fire_count += 1
-            if float(reward) != 0.0:
-                fire_confirmed = True
-                fire_confirmation = "reward"
-            elif (
-                observation_changed_fraction
-                >= self.min_observation_change_fraction
-            ):
-                self._fire_activity_streak += 1
+            confirmations: list[str] = []
+            if "raw_reward" in self.confirmation_signals and float(reward) != 0.0:
+                confirmations.append("reward")
+            if "observation_activity_streak" in self.confirmation_signals:
+                if (
+                    observation_changed_fraction
+                    >= self.min_observation_change_fraction
+                ):
+                    self._fire_activity_streak += 1
+                else:
+                    self._fire_activity_streak = 0
                 if self._fire_activity_streak >= self.confirmation_steps:
-                    fire_confirmed = True
-                    fire_confirmation = "observation_activity_streak"
+                    confirmations.append("observation_activity_streak")
             else:
                 self._fire_activity_streak = 0
+            if self.confirmation_operator == FIRE_RESET_CONFIRMATION_OPERATOR and confirmations:
+                fire_confirmed = True
+                fire_confirmation = confirmations[0]
             if fire_confirmed or bool(terminated) or bool(truncated):
                 self._needs_fire = False
                 self._pending_fire_reason = None
@@ -204,6 +239,8 @@ class BreakoutFireResetWrapper(gym.Wrapper):
                 "fire_reset_activity_streak": self._fire_activity_streak,
                 "fire_reset_confirmation_steps": self.confirmation_steps,
                 "fire_reset_observation_change_threshold": self.min_observation_change_fraction,
+                "fire_reset_confirmation_operator": self.confirmation_operator,
+                "fire_reset_confirmation_signals": list(self.confirmation_signals),
                 "fire_reset_observation_changed_fraction": observation_changed_fraction,
                 "fire_reset_auto_fire_count": self._auto_fire_count,
                 "fire_reset_needs_fire": self._needs_fire,
@@ -270,9 +307,13 @@ def make_breakout_env(
     render_mode: str | None = None,
     stack_size: int = 4,
     fire_reset: bool = False,
-    fire_reset_max_attempts: int = 8,
-    fire_confirmation_steps: int = 2,
-    fire_confirmation_change_fraction: float = 1e-4,
+    fire_reset_max_attempts: int = FIRE_RESET_MAX_ATTEMPTS,
+    fire_confirmation_steps: int = FIRE_RESET_CONFIRMATION_STEPS,
+    fire_confirmation_change_fraction: float = (
+        FIRE_RESET_MIN_OBSERVATION_CHANGE_FRACTION
+    ),
+    fire_confirmation_operator: str = FIRE_RESET_CONFIRMATION_OPERATOR,
+    fire_confirmation_signals: Sequence[str] = FIRE_RESET_CONFIRMATION_SIGNALS,
     sticky_action_probability: float = 0.25,
 ) -> gym.Env:
     """Create the project's baseline preprocessed Breakout environment.
@@ -301,6 +342,8 @@ def make_breakout_env(
             max_fire_attempts=fire_reset_max_attempts,
             confirmation_steps=fire_confirmation_steps,
             min_observation_change_fraction=fire_confirmation_change_fraction,
+            confirmation_operator=fire_confirmation_operator,
+            confirmation_signals=fire_confirmation_signals,
         )
         if fire_reset
         else stacked
@@ -313,9 +356,13 @@ def make_breakout_vector_env(
     render_mode: str | None = None,
     stack_size: int = 4,
     fire_reset: bool = True,
-    fire_reset_max_attempts: int = 8,
-    fire_confirmation_steps: int = 2,
-    fire_confirmation_change_fraction: float = 1e-4,
+    fire_reset_max_attempts: int = FIRE_RESET_MAX_ATTEMPTS,
+    fire_confirmation_steps: int = FIRE_RESET_CONFIRMATION_STEPS,
+    fire_confirmation_change_fraction: float = (
+        FIRE_RESET_MIN_OBSERVATION_CHANGE_FRACTION
+    ),
+    fire_confirmation_operator: str = FIRE_RESET_CONFIRMATION_OPERATOR,
+    fire_confirmation_signals: Sequence[str] = FIRE_RESET_CONFIRMATION_SIGNALS,
     sticky_action_probability: float = 0.25,
 ) -> gym.vector.SyncVectorEnv:
     """Create independent Breakout environments with explicit manual reset.
@@ -342,6 +389,8 @@ def make_breakout_vector_env(
             fire_reset_max_attempts=fire_reset_max_attempts,
             fire_confirmation_steps=fire_confirmation_steps,
             fire_confirmation_change_fraction=fire_confirmation_change_fraction,
+            fire_confirmation_operator=fire_confirmation_operator,
+            fire_confirmation_signals=fire_confirmation_signals,
             sticky_action_probability=sticky_action_probability,
         )
 

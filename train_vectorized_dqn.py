@@ -11,6 +11,7 @@ from typing import Any
 from breakout_env import make_breakout_vector_env
 from breakout_rl.evaluation_contract import (
     BreakoutEvaluationContractV2,
+    breakout_environment_kwargs,
     load_evaluation_contract,
     validate_breakout_runtime_contract,
 )
@@ -124,8 +125,7 @@ def main(argv: list[str] | None = None) -> int:
 
     env = make_breakout_vector_env(
         config.num_envs,
-        stack_size=contract.frame_stack,
-        fire_reset=contract.fire_reset,
+        **breakout_environment_kwargs(contract),
     )
     try:
         trainer = VectorizedDQNTrainer(env, config, run_dir=run_path)

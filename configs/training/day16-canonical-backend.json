@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "generated_at_utc": "2026-08-28T12:44:11.778447Z",
+  "backend_id": "day16-vectorized-dqn-n2",
+  "source_day": 16,
+  "environment_contract": {
+    "path": "configs/eval/breakout_contract_v2.json",
+    "contract_id": "day15-breakout-evaluation-v2-fire-reset"
+  },
+  "trainer": {
+    "type": "vectorized_dqn",
+    "num_envs": 2,
+    "strict_action_selection_parity": true,
+    "replay_backend": "gpu",
+    "device": "cuda",
+    "precision": "float32",
+    "cpu_threads": 2,
+    "config": {
+      "total_steps": 100000,
+      "seed": 42,
+      "gamma": 0.99,
+      "learning_rate": 0.0001,
+      "batch_size": 32,
+      "replay_capacity": 10000,
+      "learning_starts": 1000,
+      "train_frequency": 4,
+      "target_update_interval": 500,
+      "epsilon_start": 0.9,
+      "epsilon_end": 0.05,
+      "epsilon_decay_steps": 10000,
+      "gradient_clip_norm": 10.0,
+      "reward_clip": true,
+      "device": "cuda",
+      "precision": "float32",
+      "checkpoint_interval": 100000,
+      "diagnostics_interval": 100,
+      "metrics_flush_interval": 500,
+      "cpu_threads": 2,
+      "replay_transfer": "direct",
+      "replay_backend": "gpu",
+      "profile_stages": true,
+      "num_envs": 2,
+      "strict_action_selection_parity": true
+    }
+  },
+  "selection": {
+    "role": "selected_systems_backend",
+    "training_run_id": "envs-2",
+    "training_transitions": 100000,
+    "training_transitions_per_second": 380.74049328365203,
+    "evaluation_mean_return": 6.066666666666666,
+    "evaluation_protocol": "Contract v2, epsilon=0, raw reward, 15 fixed episodes"
+  },
+  "evidence": {
+    "training_report": {
+      "path": "assets/day16/vectorized-training-100k-n2.json",
+      "sha256": "0e1e9c8aa61fc1d67ad94a7cdcf4be48afcbd56e2f7057ab18cd442c73496934"
+    },
+    "evaluation_results": {
+      "path": "evaluations/day16-final-100k-envs2-contract-v2/results.json",
+      "sha256": "4086f1b0a7da1e803b58eae762242abf8bb1f29474af94b9bdbe5d3a49c9d4dc"
+    },
+    "checkpoint": {
+      "path": "runs/day16-finalization-100k-v2-n2/envs-2/checkpoints/step-00100000.pt",
+      "sha256": "69a60a90bd90ed4700581301ff089e42bacfb7f3d4246b68ee35a45ef230989d"
+    },
+    "evaluation_summary": {
+      "path": "assets/day16/evaluation-summary.json",
+      "sha256": "a617c1b6583815342975a508831d918bbbd77ce9122fc551642c5b3be2a41d77"
+    }
+  }
+}

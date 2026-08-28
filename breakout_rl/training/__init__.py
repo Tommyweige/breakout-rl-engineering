@@ -5,10 +5,15 @@ can run in a clean process without loading the training runtime first.
 """
 
 from breakout_rl.training.config import DQNConfig
+from breakout_rl.training.backend_manifest import (
+    load_day16_backend_manifest,
+    validate_day16_backend_manifest,
+)
 from breakout_rl.training.metrics import METRIC_FIELDS, MetricsLogger
 
 __all__ = [
     "DQNConfig",
+    "load_day16_backend_manifest",
     "DQNTrainer",
     "DQNTrainingStepResult",
     "METRIC_FIELDS",
@@ -19,6 +24,7 @@ __all__ = [
     "dqn_training_step",
     "resolve_device",
     "seed_everything",
+    "validate_day16_backend_manifest",
     "ACTION_SELECTION_BATCH_SEMANTICS",
     "STRICT_ACTION_SELECTION_PARITY_RULE",
     "VectorScheduleEventKind",

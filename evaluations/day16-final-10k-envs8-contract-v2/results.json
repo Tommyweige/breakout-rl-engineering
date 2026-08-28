@@ -1,6 +1,6 @@
 {
-  "schema_version": 1,
-  "created_at_utc": "2026-08-28T10:45:05.651235Z",
+  "schema_version": 2,
+  "created_at_utc": "2026-08-28T12:42:52.468687Z",
   "evaluation_id": "day16-final-10k-envs8-contract-v2",
   "policy_type": "dqn",
   "model_id": "envs-8@step-00010000",
@@ -50,8 +50,8 @@
     "resolved_device": "cuda:0",
     "cuda_available": true,
     "evaluation_steps": 1831,
-    "wall_clock_seconds": 3.342875399859622,
-    "steps_per_second": 547.732051298379,
+    "wall_clock_seconds": 3.4685025000944734,
+    "steps_per_second": 527.8935217576254,
     "cuda_device_index": 0,
     "gpu_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
     "cuda_device_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
@@ -847,6 +847,16 @@
       "frame_stack": 4,
       "sticky_action_probability": 0.25,
       "fire_reset": true,
+      "fire_reset_confirmation": {
+        "max_fire_attempts": 8,
+        "confirmation_steps": 2,
+        "min_observation_change_fraction": 0.0001,
+        "confirmation_operator": "any",
+        "confirmation_signals": [
+          "raw_reward",
+          "observation_activity_streak"
+        ]
+      },
       "terminal_on_life_loss": false,
       "time_limit_semantics": {
         "source": "ale.game_truncated",

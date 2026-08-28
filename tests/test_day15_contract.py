@@ -12,6 +12,7 @@ from pathlib import Path
 from breakout_rl.evaluation import load_evaluation_config
 from breakout_rl.evaluation_contract import (
     BreakoutEvaluationContractV2,
+    breakout_environment_kwargs,
     expand_concrete_episode_seeds,
     load_evaluation_contract,
     validate_breakout_runtime_contract,
@@ -42,6 +43,16 @@ class Day15ContractTests(unittest.TestCase):
                 "frame_stack": 4,
                 "sticky_action_probability": 0.25,
                 "fire_reset": True,
+                "fire_reset_confirmation": {
+                    "max_fire_attempts": 8,
+                    "confirmation_steps": 2,
+                    "min_observation_change_fraction": 1e-4,
+                    "confirmation_operator": "any",
+                    "confirmation_signals": [
+                        "raw_reward",
+                        "observation_activity_streak",
+                    ],
+                },
                 "terminal_on_life_loss": False,
                 "time_limit_semantics": {
                     "source": "ale.game_truncated",
@@ -57,6 +68,12 @@ class Day15ContractTests(unittest.TestCase):
 
         self.assertEqual(contract.schema_version, 2)
         self.assertTrue(contract.fire_reset)
+        self.assertEqual(contract.fire_reset_confirmation.max_fire_attempts, 8)
+        self.assertEqual(contract.fire_reset_confirmation.confirmation_steps, 2)
+        self.assertEqual(
+            contract.fire_reset_confirmation.min_observation_change_fraction,
+            1e-4,
+        )
         self.assertEqual(contract.time_limit_semantics["agent_step_limit"], 27000)
         self.assertEqual(contract.to_dict()["concrete_episode_seeds"], [101, 102, 202])
 
@@ -81,6 +98,16 @@ class Day15ContractTests(unittest.TestCase):
                     "frame_stack": 4,
                     "sticky_action_probability": 0.25,
                     "fire_reset": False,
+                    "fire_reset_confirmation": {
+                        "max_fire_attempts": 8,
+                        "confirmation_steps": 2,
+                        "min_observation_change_fraction": 1e-4,
+                        "confirmation_operator": "any",
+                        "confirmation_signals": [
+                            "raw_reward",
+                            "observation_activity_streak",
+                        ],
+                    },
                     "terminal_on_life_loss": False,
                     "time_limit_semantics": {"source": "unknown"},
                     "concrete_episode_seeds": [101],
@@ -96,8 +123,21 @@ class Day15ContractTests(unittest.TestCase):
 
         self.assertEqual(contract.contract_id, "day15-breakout-evaluation-v2-fire-reset")
         self.assertTrue(contract.fire_reset)
+        self.assertEqual(
+            contract.fire_reset_confirmation.confirmation_operator,
+            "any",
+        )
+        self.assertEqual(
+            contract.fire_reset_confirmation.confirmation_signals,
+            ("raw_reward", "observation_activity_streak"),
+        )
         self.assertEqual(len(contract.concrete_episode_seeds), 15)
         self.assertEqual(contract.time_limit_semantics["source"], "ale.game_truncated")
+        environment_kwargs = breakout_environment_kwargs(contract)
+        self.assertEqual(environment_kwargs["fire_reset_max_attempts"], 8)
+        self.assertEqual(environment_kwargs["fire_confirmation_steps"], 2)
+        self.assertEqual(environment_kwargs["fire_confirmation_change_fraction"], 1e-4)
+        self.assertEqual(environment_kwargs["sticky_action_probability"], 0.25)
         validate_breakout_runtime_contract(contract)
 
     def test_time_limit_summary_separates_finished_episode_outcomes(self) -> None:
@@ -169,6 +209,17 @@ class Day15ContractTests(unittest.TestCase):
             validate_breakout_runtime_contract(replace(contract, frame_stack=3))
         with self.assertRaisesRegex(ValueError, "fire_reset=true"):
             validate_breakout_runtime_contract(replace(contract, fire_reset=False))
+
+        with self.assertRaisesRegex(ValueError, "max_fire_attempts=8"):
+            validate_breakout_runtime_contract(
+                replace(
+                    contract,
+                    fire_reset_confirmation=replace(
+                        contract.fire_reset_confirmation,
+                        max_fire_attempts=4,
+                    ),
+                )
+            )
 
     def test_runtime_validator_rejects_noncanonical_evaluation_scoring(self) -> None:
         contract = load_evaluation_contract(

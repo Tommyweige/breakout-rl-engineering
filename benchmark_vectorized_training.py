@@ -13,6 +13,7 @@ from typing import Any, Sequence
 from breakout_env import make_breakout_vector_env
 from breakout_rl.evaluation_contract import (
     BreakoutEvaluationContractV2,
+    breakout_environment_kwargs,
     load_evaluation_contract,
     validate_breakout_runtime_contract,
 )
@@ -107,8 +108,7 @@ def _run_one(
     sample_path = args.samples_root / f"envs-{environment_count}" / "runtime-samples.csv"
     env = make_breakout_vector_env(
         environment_count,
-        stack_size=contract.frame_stack,
-        fire_reset=contract.fire_reset,
+        **breakout_environment_kwargs(contract),
     )
     sampler = RuntimeSampler(
         sample_path,

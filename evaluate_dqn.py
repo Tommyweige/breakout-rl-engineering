@@ -20,6 +20,7 @@ from breakout_rl.evaluation import (
 )
 from breakout_rl.evaluation_contract import (
     BreakoutEvaluationContractV2,
+    breakout_environment_kwargs,
     expand_concrete_episode_seeds,
     load_evaluation_contract,
     validate_breakout_runtime_contract,
@@ -194,10 +195,7 @@ def _validate_contract_for_config(
 def _contract_environment_factory(
     contract: BreakoutEvaluationContractV2,
 ) -> Callable[[], Any]:
-    return lambda: make_breakout_env(
-        stack_size=contract.frame_stack,
-        fire_reset=contract.fire_reset,
-    )
+    return lambda: make_breakout_env(**breakout_environment_kwargs(contract))
 
 
 def _portable_command(

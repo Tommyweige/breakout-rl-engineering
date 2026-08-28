@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "git_commit_sha": "70c9b3c7998f48d341c5767a326969a7d5a42285",
+  "git_commit_sha": "4402474a0b105e232fcda21a38c365596c162d05",
   "purpose": "Day 16 Contract v2 learning-regression guardrail",
   "protocol": {
     "evaluation_config": "configs/eval/breakout_eval.json",
@@ -13,6 +13,16 @@
       "frame_stack": 4,
       "sticky_action_probability": 0.25,
       "fire_reset": true,
+      "fire_reset_confirmation": {
+        "max_fire_attempts": 8,
+        "confirmation_steps": 2,
+        "min_observation_change_fraction": 0.0001,
+        "confirmation_operator": "any",
+        "confirmation_signals": [
+          "raw_reward",
+          "observation_activity_streak"
+        ]
+      },
       "terminal_on_life_loss": false,
       "time_limit_semantics": {
         "source": "ale.game_truncated",
@@ -42,6 +52,7 @@
       "raw_reward_rule": "sum environment rewards without clipping"
     },
     "episodes": 15,
+    "evaluation_artifact_schema_version": 2,
     "epsilon": 0.0,
     "raw_reward": true,
     "selection_rule": "the selected vector candidate is chosen from the near-top throughput settings and strict action-selection parity; quality is not selected from the 10K screening",
@@ -51,7 +62,12 @@
       "executed_action_distribution",
       "auto_fire_count",
       "auto_fire_reason_counts"
-    ]
+    ],
+    "candidate_roles": {
+      "quality_reference": 1,
+      "selected_systems_backend": 2,
+      "supplemental_candidate": 4
+    }
   },
   "screening_10k": {
     "training_report": "assets/day16/vectorized-training.json",
@@ -59,8 +75,9 @@
     "candidates": [
       {
         "environment_count": 1,
+        "role": "screening_reference",
         "results_path": "evaluations/day16-final-10k-envs1-contract-v2/results.json",
-        "results_sha256": "c5c72b006dcd569e86e7463b783ff801405c97f39dc7248c1ad9e93cc3fcfe71",
+        "results_sha256": "3f51c3518ad56b420c3867fe121046633d34b070184de23d169ad80dfa4fe845",
         "checkpoint_path": "runs/day16-finalization-10k-v2/envs-1/checkpoints/step-00010000.pt",
         "checkpoint_sha256": "cb3dc1bebef6c8485b5cc1e03dc554b28c63ed12e564a085229ec5ebb57c3767",
         "model_id": "envs-1@step-00010000",
@@ -110,8 +127,9 @@
       },
       {
         "environment_count": 2,
+        "role": "screening_candidate",
         "results_path": "evaluations/day16-final-10k-envs2-contract-v2/results.json",
-        "results_sha256": "18555555ac663ae28faa5c54fc76bb23021e88cfaace6572e606cbaaf4c9c11d",
+        "results_sha256": "47602e24b418ebc84a405739a39d31e1dd48f3718203c019b6ef1a738c6f5d78",
         "checkpoint_path": "runs/day16-finalization-10k-v2/envs-2/checkpoints/step-00010000.pt",
         "checkpoint_sha256": "77c38d714a9503e1b8a42a8025be6bab16701cb99901da381ddd412bf132aec4",
         "model_id": "envs-2@step-00010000",
@@ -164,8 +182,9 @@
   "candidates": [
     {
       "environment_count": 1,
+      "role": "screening_reference",
       "results_path": "evaluations/day16-final-10k-envs1-contract-v2/results.json",
-      "results_sha256": "c5c72b006dcd569e86e7463b783ff801405c97f39dc7248c1ad9e93cc3fcfe71",
+      "results_sha256": "3f51c3518ad56b420c3867fe121046633d34b070184de23d169ad80dfa4fe845",
       "checkpoint_path": "runs/day16-finalization-10k-v2/envs-1/checkpoints/step-00010000.pt",
       "checkpoint_sha256": "cb3dc1bebef6c8485b5cc1e03dc554b28c63ed12e564a085229ec5ebb57c3767",
       "model_id": "envs-1@step-00010000",
@@ -215,8 +234,9 @@
     },
     {
       "environment_count": 2,
+      "role": "screening_candidate",
       "results_path": "evaluations/day16-final-10k-envs2-contract-v2/results.json",
-      "results_sha256": "18555555ac663ae28faa5c54fc76bb23021e88cfaace6572e606cbaaf4c9c11d",
+      "results_sha256": "47602e24b418ebc84a405739a39d31e1dd48f3718203c019b6ef1a738c6f5d78",
       "checkpoint_path": "runs/day16-finalization-10k-v2/envs-2/checkpoints/step-00010000.pt",
       "checkpoint_sha256": "77c38d714a9503e1b8a42a8025be6bab16701cb99901da381ddd412bf132aec4",
       "model_id": "envs-2@step-00010000",
@@ -271,8 +291,9 @@
     "candidates": [
       {
         "environment_count": 1,
+        "role": "quality_reference",
         "results_path": "evaluations/day16-final-100k-envs1-contract-v2/results.json",
-        "results_sha256": "17722b58263003415edf4e34448a5ae8c1eff39fd5b446245144bfc4f6216aa1",
+        "results_sha256": "7ceeff34d2aaad6823e4bc18488d33c4bc3caa7fd53465ce54db26eb94d8475f",
         "checkpoint_path": "runs/day16-finalization-100k-v2/envs-1/checkpoints/step-00100000.pt",
         "checkpoint_sha256": "42a37be2f551881f704567d9acfb3476801d45f47b5234aff504ef42142af799",
         "model_id": "envs-1@step-00100000",
@@ -322,8 +343,9 @@
       },
       {
         "environment_count": 2,
+        "role": "selected_systems_backend",
         "results_path": "evaluations/day16-final-100k-envs2-contract-v2/results.json",
-        "results_sha256": "6eb4b4e93080a3bee93a8926eb6f4eb81850a1ace436627bd4b77654db067d9b",
+        "results_sha256": "4086f1b0a7da1e803b58eae762242abf8bb1f29474af94b9bdbe5d3a49c9d4dc",
         "checkpoint_path": "runs/day16-finalization-100k-v2-n2/envs-2/checkpoints/step-00100000.pt",
         "checkpoint_sha256": "69a60a90bd90ed4700581301ff089e42bacfb7f3d4246b68ee35a45ef230989d",
         "model_id": "envs-2@step-00100000",
@@ -370,12 +392,64 @@
             "initial_serve": 31
           }
         }
+      },
+      {
+        "environment_count": 4,
+        "role": "supplemental_candidate",
+        "results_path": "evaluations/day16-final-100k-envs4-contract-v2/results.json",
+        "results_sha256": "c8e02d2f05e45e8fe840f290a7d7f45ccc9aed6b722b4a65a79fee168560bb08",
+        "checkpoint_path": "runs/day16-finalization-100k-v2/envs-4/checkpoints/step-00100000.pt",
+        "checkpoint_sha256": "e0d550b46d4cf9af219a5513153cb643f67514fbbb103040b57a633495145823",
+        "model_id": "envs-4@step-00100000",
+        "summary": {
+          "count": 15,
+          "mean_return": 2.3333333333333335,
+          "median_return": 2.0,
+          "std_return": 1.0749676997731399,
+          "min_return": 1.0,
+          "max_return": 4.0,
+          "mean_episode_length": 201.26666666666668,
+          "complete_episodes": 15,
+          "finished_episode_count": 15,
+          "terminated_count": 15,
+          "truncated_count": 0,
+          "time_limit_truncated_count": 0,
+          "truncation_rate": 0.0,
+          "mean_return_terminated": 2.3333333333333335,
+          "mean_return_truncated": null,
+          "mean_length_terminated": 201.26666666666668,
+          "mean_length_truncated": null,
+          "action_distribution_semantics": "executed/wrapper-resolved action",
+          "action_distribution": {
+            "FIRE": 1614,
+            "LEFT": 682,
+            "NOOP": 323,
+            "RIGHT": 400
+          },
+          "requested_action_distribution": {
+            "FIRE": 1530,
+            "LEFT": 744,
+            "NOOP": 339,
+            "RIGHT": 406
+          },
+          "executed_action_distribution": {
+            "FIRE": 1614,
+            "LEFT": 682,
+            "NOOP": 323,
+            "RIGHT": 400
+          },
+          "auto_fire_count": 151,
+          "auto_fire_reason_counts": {
+            "after_life_loss": 120,
+            "initial_serve": 31
+          }
+        }
       }
     ]
   },
   "random_baseline": {
     "results_path": "evaluations/day16-contract-v2-random/results.json",
-    "results_sha256": "cdee3d8ace5710f4eab2360799d27262483c37c5e06fd9fd4f37633dbb1ad5c4",
+    "results_sha256": "0ae8056b52120ce72c75e094986ad875e8b644f689c4d50438bdf952a85c95a7",
     "policy_type": "random",
     "summary": {
       "count": 15,
@@ -424,15 +498,7 @@
   "diagnostics": {
     "fire_sticky": {
       "path": "assets/day16/fire-sticky-diagnostic.json",
-      "sha256": "9ab85bf77ce752da36ee8926fd6fab218b04d5e95376c3d3f0697a12d4095a87"
-    },
-    "q_value": {
-      "path": "assets/day16/q-value-diagnostics.json",
-      "sha256": "9b614568ed868bd4685fc94f187e2d9ca4bd1d7fb3e262308aa71b92e89604fc"
-    },
-    "overestimation_simulation": {
-      "path": "assets/day16/overestimation-bias.json",
-      "sha256": "27575d454ec785faa0c99b4787a7f6b49ac1a437dd8fc05dff782c7006a30455"
+      "sha256": "639183648c5978a920925e2e28da3cdaf482b25a75477a8826f07fc9df5a2ea6"
     }
   }
 }

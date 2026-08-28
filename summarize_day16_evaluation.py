@@ -10,6 +10,10 @@ from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 from breakout_rl.evaluation import load_evaluation_config
+from breakout_rl.evaluation_artifacts import (
+    EVALUATION_ARTIFACT_SCHEMA_VERSION,
+    read_evaluation_results,
+)
 from breakout_rl.evaluation_contract import (
     expand_concrete_episode_seeds,
     load_evaluation_contract,
@@ -26,9 +30,11 @@ def _sha256(path: Path) -> str:
 
 
 def _load(path: Path) -> Mapping[str, Any]:
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(payload, Mapping):
-        raise ValueError(f"{path} must contain a JSON object")
+    payload = read_evaluation_results(path)
+    if payload.get("schema_version") != EVALUATION_ARTIFACT_SCHEMA_VERSION:
+        raise ValueError(
+            f"{path}: Day 16 summary requires evaluation artifact schema v2"
+        )
     if not isinstance(payload.get("summary"), Mapping):
         raise ValueError(f"{path} must contain a summary object")
     return payload
@@ -51,12 +57,14 @@ def _git_commit_sha() -> str | None:
 def _candidate(
     *,
     environment_count: int,
+    role: str,
     results_path: Path,
     checkpoint_path: Path,
 ) -> dict[str, Any]:
     result = _load(results_path)
     return {
         "environment_count": environment_count,
+        "role": role,
         "results_path": results_path.as_posix(),
         "results_sha256": _sha256(results_path),
         "checkpoint_path": checkpoint_path.as_posix(),
@@ -91,7 +99,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--reference-checkpoint", type=Path, required=True)
     parser.add_argument("--candidate-results", type=Path, required=True)
     parser.add_argument("--candidate-checkpoint", type=Path, required=True)
-    parser.add_argument("--candidate-environment-count", type=int, default=4)
+    parser.add_argument("--candidate-environment-count", type=int, default=2)
     parser.add_argument(
         "--contract",
         type=Path,
@@ -111,18 +119,19 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--validation-reference-checkpoint", type=Path, default=None)
     parser.add_argument("--validation-candidate-results", type=Path, default=None)
     parser.add_argument("--validation-candidate-checkpoint", type=Path, default=None)
-    parser.add_argument("--validation-candidate-environment-count", type=int, default=4)
+    parser.add_argument("--validation-candidate-environment-count", type=int, default=2)
+    parser.add_argument("--validation-supplemental-results", type=Path, default=None)
+    parser.add_argument("--validation-supplemental-checkpoint", type=Path, default=None)
+    parser.add_argument("--validation-supplemental-environment-count", type=int, default=4)
     parser.add_argument(
         "--validation-training-report",
         type=Path,
-        default=Path("assets/day16/vectorized-training-100k.json"),
+        default=Path("assets/day16/vectorized-training-100k-n2.json"),
     )
     parser.add_argument("--screening-transitions", type=int, default=10_000)
     parser.add_argument("--validation-transitions", type=int, default=100_000)
     parser.add_argument("--random-results", type=Path, default=None)
     parser.add_argument("--fire-diagnostic", type=Path, default=None)
-    parser.add_argument("--q-value-diagnostic", type=Path, default=None)
-    parser.add_argument("--overestimation-report", type=Path, default=None)
     parser.add_argument(
         "--output",
         type=Path,
@@ -164,15 +173,27 @@ def main(argv: Sequence[str] | None = None) -> int:
         raise ValueError(
             "all four validation reference/candidate paths are required together"
         )
+    supplemental_values = (
+        args.validation_supplemental_results,
+        args.validation_supplemental_checkpoint,
+    )
+    if any(value is not None for value in supplemental_values) and not all(
+        value is not None for value in supplemental_values
+    ):
+        raise ValueError(
+            "validation supplemental results and checkpoint are required together"
+        )
 
     screening_candidates = [
         _candidate(
             environment_count=1,
+            role="screening_reference",
             results_path=args.reference_results,
             checkpoint_path=args.reference_checkpoint,
         ),
         _candidate(
             environment_count=args.candidate_environment_count,
+            role="screening_candidate",
             results_path=args.candidate_results,
             checkpoint_path=args.candidate_checkpoint,
         ),
@@ -186,6 +207,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             "evaluation_contract": args.contract.as_posix(),
             "contract": contract.to_dict(),
             "episodes": evaluation_config.total_episodes,
+            "evaluation_artifact_schema_version": EVALUATION_ARTIFACT_SCHEMA_VERSION,
             "epsilon": contract.evaluation_epsilon,
             "raw_reward": True,
             "selection_rule": (
@@ -200,6 +222,11 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "auto_fire_count",
                 "auto_fire_reason_counts",
             ],
+            "candidate_roles": {
+                "quality_reference": 1,
+                "selected_systems_backend": 2,
+                "supplemental_candidate": 4,
+            },
         },
         "screening_10k": {
             "training_report": args.screening_training_report.as_posix(),
@@ -217,22 +244,34 @@ def main(argv: Sequence[str] | None = None) -> int:
             "candidates": [
                 _candidate(
                     environment_count=1,
+                    role="quality_reference",
                     results_path=args.validation_reference_results,
                     checkpoint_path=args.validation_reference_checkpoint,
                 ),
                 _candidate(
                     environment_count=args.validation_candidate_environment_count,
+                    role="selected_systems_backend",
                     results_path=args.validation_candidate_results,
                     checkpoint_path=args.validation_candidate_checkpoint,
                 ),
-            ],
+            ]
+            + (
+                [
+                    _candidate(
+                        environment_count=args.validation_supplemental_environment_count,
+                        role="supplemental_candidate",
+                        results_path=args.validation_supplemental_results,
+                        checkpoint_path=args.validation_supplemental_checkpoint,
+                    )
+                ]
+                if all(value is not None for value in supplemental_values)
+                else []
+            ),
         }
     if args.random_results is not None:
         report["random_baseline"] = _random_baseline(args.random_results)
     diagnostic_paths = {
         "fire_sticky": args.fire_diagnostic,
-        "q_value": args.q_value_diagnostic,
-        "overestimation_simulation": args.overestimation_report,
     }
     selected_diagnostics = {
         name: _artifact_reference(path)

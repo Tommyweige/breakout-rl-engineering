@@ -22,7 +22,10 @@ the state after one call, and raises after a bounded eight attempts if serving
 cannot be confirmed. The wrapper records the
 policy request, action passed to the lower environment, confirmation signal,
 attempt number, life count, and life-loss transition. ALE's hidden sticky-action
-draw is not exposed and is not inferred as if it were observable.
+draw is not exposed and is not inferred as if it were observable. Contract v2
+now records the eight-attempt bound, two-step confirmation, 0.0001 activity
+threshold, and the `any(raw_reward, observation_activity_streak)` rule; all
+Contract-backed entrypoints derive their environment arguments from that block.
 
 The formal evaluator now stores both requested and executed/wrapper-resolved
 action distributions. The historical `action_distribution` field is retained
@@ -134,12 +137,12 @@ hidden random draw or a proof of causality.
 Source: `assets/day16/evaluation-summary.json`. Each row contains 15 fixed
 episodes, epsilon 0, raw reward, and requested/executed action provenance.
 
-| Run | mean return | median | std | mean length | terminated | truncated |
-|---|---:|---:|---:|---:|---:|---:|
-| Random Contract v2 | 1.73 | 2.00 | 1.12 | 197.40 | 15/15 | 0/15 |
-| N=1, 100K | 9.00 | 9.00 | 2.03 | 468.67 | 15/15 | 0/15 |
-| N=2, 100K | 6.07 | 6.00 | 2.54 | 352.33 | 15/15 | 0/15 |
-| N=4, 100K | 2.33 | 2.00 | 1.07 | 201.27 | 15/15 | 0/15 |
+| Run | role | mean return | median | std | mean length | terminated | truncated |
+|---|---|---:|---:|---:|---:|---:|---:|
+| Random Contract v2 | baseline | 1.73 | 2.00 | 1.12 | 197.40 | 15/15 | 0/15 |
+| N=1, 100K | quality reference | 9.00 | 9.00 | 2.03 | 468.67 | 15/15 | 0/15 |
+| N=2, 100K | selected systems backend | 6.07 | 6.00 | 2.54 | 352.33 | 15/15 | 0/15 |
+| N=4, 100K | supplemental candidate | 2.33 | 2.00 | 1.07 | 201.27 | 15/15 | 0/15 |
 
 The 100K guardrail finds no serve deadlock or TimeLimit regression. The
 selected N=2 return is below N=1 in this single-seed, 15-episode sample, while
@@ -147,22 +150,6 @@ remaining above the Contract v2 Random baseline; N=4 is lower still. The result
 therefore does not establish policy-quality equivalence. It supports N=2 as the
 best strict-parity systems candidate in this run while keeping N=1 as the
 quality reference.
-
-## Q-value evidence boundary
-
-The CPU toy simulation in `assets/day16/overestimation-bias.json` uses 500,000
-Monte Carlo trials with four equal true action values. At noise standard
-deviation 1.0, the measured vanilla maximum is 2.0294 against true value 1.0,
-while the independently evaluated decoupled estimator is 1.0002. This
-demonstrates why selecting and evaluating with the same noisy estimate can
-create an optimistic maximum; it is not a measurement of Breakout bias.
-
-`assets/day16/q-value-diagnostics.json` is deliberately separate: it contains
-80 real Breakout probe states from the selected N=2 100K checkpoint, with model
-inference on NVIDIA CUDA under `torch.no_grad()`, checkpoint SHA-256, and
-runtime metadata. Its mean maximum Q-value is 1.8653 and mean top-action gap is
-0.0162. Without a ground-truth Q-star oracle, those values are exploratory
-model outputs, not proof that the checkpoint is overestimating.
 
 ## Final backend decision
 
@@ -183,6 +170,8 @@ This is a systems choice supported by the 100K run's speed, strict parity, and
 the selected candidate's stronger fixed-seed return than N=4. N=2 still scores
 below the N=1 reference (6.07 versus 9.00), so this evidence does not establish
 policy-quality equivalence; N=1 remains the quality reference for later
-comparisons. The selected backend can be used for the next systems/algorithm
-experiment while keeping that limitation, action provenance, Contract v2, and
-the distinction between toy mechanism and real model diagnostics explicit.
+comparisons. The next roadmap entry can study the Vanilla DQN target and
+Double DQN while keeping the Contract v2 task and this systems backend fixed.
+The machine-readable training source of truth is
+`configs/training/day16-canonical-backend.json`; it is generated from the
+selected N=2 run config and records the evidence hashes.

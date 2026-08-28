@@ -28,6 +28,8 @@ from breakout_rl.models.dqn import DQNNetwork
 from breakout_rl.tensors import observation_to_tensor
 from breakout_rl.experiments import load_experiment_config
 from breakout_rl.evaluation_artifacts import (
+    ACTION_DISTRIBUTION_SEMANTICS,
+    EVALUATION_ARTIFACT_SCHEMA_VERSION,
     read_evaluation_results,
     summarize_returns,
     summary_from_episode_rows,
@@ -36,7 +38,8 @@ from breakout_rl.training.diagnostics import ATARI_ACTION_NAMES
 from breakout_rl.training.dqn_trainer import resolve_device
 
 
-EVALUATION_SCHEMA_VERSION = 1
+EVALUATION_CONFIG_SCHEMA_VERSION = 1
+EVALUATION_SCHEMA_VERSION = EVALUATION_ARTIFACT_SCHEMA_VERSION
 EnvironmentFactory = Callable[[], Any]
 
 
@@ -107,7 +110,7 @@ class EvaluationConfig:
 
     def to_dict(self) -> dict[str, Any]:
         return {
-            "schema_version": EVALUATION_SCHEMA_VERSION,
+            "schema_version": EVALUATION_CONFIG_SCHEMA_VERSION,
             "seeds": list(self.seeds),
             "episodes_per_seed": self.episodes_per_seed,
             "epsilon": self.epsilon,
@@ -207,7 +210,7 @@ class EpisodeResult:
             # Keep the historical field, but define it explicitly as the
             # action sent to the wrapped environment.
             "action_distribution": executed_distribution,
-            "action_distribution_semantics": "executed/wrapper-resolved action",
+            "action_distribution_semantics": ACTION_DISTRIBUTION_SEMANTICS,
             "requested_action_distribution": requested_distribution,
             "executed_action_distribution": executed_distribution,
             "auto_fire_count": int(self.auto_fire_count),
@@ -315,7 +318,7 @@ class EvaluationResult:
             "per_episode_returns": returns,
             "per_episode_lengths": lengths,
             "action_distribution": self.executed_action_distribution,
-            "action_distribution_semantics": "executed/wrapper-resolved action",
+            "action_distribution_semantics": ACTION_DISTRIBUTION_SEMANTICS,
             "requested_action_distribution": self.requested_action_distribution,
             "executed_action_distribution": self.executed_action_distribution,
             "auto_fire_count": self.auto_fire_count,
@@ -795,7 +798,9 @@ def write_evaluation_artifacts(
         f"executed_{column}" for column in action_columns
     ]
     fieldnames = [
+        "schema_version",
         "policy_type",
+        "action_distribution_semantics",
         "evaluation_seed",
         "seed_index",
         "episode_index",
@@ -828,7 +833,9 @@ def write_evaluation_artifacts(
                 episode.requested_action_distribution or executed_distribution
             )
             row: dict[str, Any] = {
+                "schema_version": EVALUATION_SCHEMA_VERSION,
                 "policy_type": result.policy_type,
+                "action_distribution_semantics": ACTION_DISTRIBUTION_SEMANTICS,
                 "evaluation_seed": episode.evaluation_seed,
                 "seed_index": episode.seed_index,
                 "episode_index": episode.episode_index,

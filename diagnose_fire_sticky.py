@@ -21,6 +21,7 @@ from breakout_env import make_breakout_env
 from breakout_rl.evaluation import load_dqn_checkpoint
 from breakout_rl.evaluation_contract import (
     BreakoutEvaluationContractV2,
+    breakout_environment_kwargs,
     load_evaluation_contract,
     validate_breakout_runtime_contract,
 )
@@ -524,10 +525,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     if max_steps < 1:
         raise ValueError("max-steps must be positive")
 
-    env_factory = lambda: make_breakout_env(
-        stack_size=contract.frame_stack,
-        fire_reset=contract.fire_reset,
-    )
+    contract_env_kwargs = breakout_environment_kwargs(contract)
+    confirmation = contract.fire_reset_confirmation
+    env_factory = lambda: make_breakout_env(**contract_env_kwargs)
     loaded = load_dqn_checkpoint(
         args.checkpoint,
         device=device,
@@ -549,16 +549,17 @@ def main(argv: Sequence[str] | None = None) -> int:
     control_started_at = time.perf_counter()
     if args.causal_control:
         same_sticky_env_factory = lambda: make_breakout_env(
-            stack_size=contract.frame_stack,
-            fire_reset=contract.fire_reset,
-            sticky_action_probability=contract.sticky_action_probability,
-            fire_confirmation_steps=1,
+            **{
+                **contract_env_kwargs,
+                "fire_confirmation_steps": 1,
+            },
         )
         no_sticky_env_factory = lambda: make_breakout_env(
-            stack_size=contract.frame_stack,
-            fire_reset=contract.fire_reset,
-            sticky_action_probability=0.0,
-            fire_confirmation_steps=1,
+            **{
+                **contract_env_kwargs,
+                "sticky_action_probability": 0.0,
+                "fire_confirmation_steps": 1,
+            },
         )
         same_sticky_rows, _ = _run_rows(
             loaded.model,
@@ -604,12 +605,19 @@ def main(argv: Sequence[str] | None = None) -> int:
             "trace_seeds": sorted(trace_seeds),
             "max_agent_steps": max_steps,
             "fire_confirmation_rule": (
-                "observable raw reward or two consecutive observations whose "
-                "change fraction reaches 0.0001 after wrapper-resolved FIRE"
+                f"observable {confirmation.confirmation_signals[0]} or "
+                f"{confirmation.confirmation_steps} consecutive observations whose "
+                "change fraction reaches "
+                f"{confirmation.min_observation_change_fraction} after "
+                "wrapper-resolved FIRE"
             ),
-            "max_fire_attempts": 8,
-            "fire_confirmation_steps": 2,
-            "fire_confirmation_change_fraction": 1e-4,
+            "max_fire_attempts": confirmation.max_fire_attempts,
+            "fire_confirmation_steps": confirmation.confirmation_steps,
+            "fire_confirmation_change_fraction": (
+                confirmation.min_observation_change_fraction
+            ),
+            "fire_confirmation_operator": confirmation.confirmation_operator,
+            "fire_confirmation_signals": list(confirmation.confirmation_signals),
             "hidden_ale_action_visibility": (
                 "ALE API does not expose the hidden sticky-action draw; "
                 "wrapper-resolved action means the action passed downward"

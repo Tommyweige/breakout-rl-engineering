@@ -164,10 +164,6 @@ N=2 在這台 RTX 4060 Laptop GPU 上完成相同 budget 約快 `1.60×`，N=4 �
 
 這個結果回答了兩件事：第一，新的 FIRE confirmation 沒有在這組 fixed seeds 造成 serve deadlock 或 TimeLimit failure；第二，N=2 與 N=4 的 15 局分數都低於 N=1，所以不能把 throughput speedup 寫成 quality equivalence。N=2 仍高於 Random baseline，因此在這次固定 100K guardrail 中，比 N=4 更適合作為 systems candidate；N=1 仍是 model-quality reference。完整結果與 checkpoint hashes 保存在 [`evaluation-summary.json`](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/de5616ce57c35d6ac7e01a40a6aa6e3daa5618bf/assets/day16/evaluation-summary.json)。
 
-## Day 16 的另一條線：`max` 也可能改變 value 的意義
-
-向量化解決的是資料收集和計算粒度，不會自動解決 DQN 的估計偏差。若每個 action 的 Q-value 都有一點誤差，`max` 可能偏向挑中誤差剛好為正的 action。這個機制用獨立的 [Q-value overestimation note](day16-q-value-overestimation.md) 說明：CPU toy simulation 展示可重現的選擇偏差，CUDA real-checkpoint probe 則只保存真實模型輸出，兩者不混為同一種證據。
-
 ## 最後選擇與下一個問題
 
 Day 16 的 selected systems backend 是 strict-parity N=2：
@@ -185,4 +181,4 @@ strict action-selection parity enabled
 
 這個選擇建立在三層證據上：10K screening 顯示 batching 的 systems 收益，crafted instrumentation 誠實標出 N=8 的 behavior-policy lag，fresh 100K 與 15-episode Contract v2 guardrail 則確認 N=2 沒有 serve deadlock 或 TimeLimit regression，且固定 seed 的 return 高於 N=4。N=2 的 return 仍低於 N=1 reference（`6.07` 對 `9.00`），所以這份 evidence 不宣稱 policy-quality equivalence；N=1 保留為後續品質比較的 reference。這個選擇也不是跨硬體、跨 seed 或跨演算法的普遍最優解。
 
-現在可以帶著一個比較準確的問題進入下一步：當 training pipeline 已經能有效率地批次處理 transition，Vanilla DQN target 中的 `max` 是否仍會放大 Q-value 的樂觀誤差？這正是 Double DQN 要處理的演算法問題。
+Vectorized backend 已經定版；下一篇再固定這個 systems backend，研究 Vanilla DQN 的 Q-value target 與 overestimation，並進入 Double DQN。

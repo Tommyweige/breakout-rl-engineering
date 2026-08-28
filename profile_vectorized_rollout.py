@@ -15,6 +15,7 @@ import torch
 from breakout_env import make_breakout_vector_env
 from breakout_rl.evaluation_contract import (
     BreakoutEvaluationContractV2,
+    breakout_environment_kwargs,
     load_evaluation_contract,
     validate_breakout_runtime_contract,
 )
@@ -30,10 +31,15 @@ def _build_vector_env(
     contract: BreakoutEvaluationContractV2 | None = None,
 ) -> gym.vector.SyncVectorEnv:
     active_contract = contract
+    if active_contract is not None:
+        return make_breakout_vector_env(
+            count,
+            **breakout_environment_kwargs(active_contract),
+        )
     return make_breakout_vector_env(
         count,
-        stack_size=active_contract.frame_stack if active_contract is not None else 4,
-        fire_reset=active_contract.fire_reset if active_contract is not None else True,
+        stack_size=4,
+        fire_reset=True,
     )
 
 

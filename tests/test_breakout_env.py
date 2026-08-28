@@ -71,6 +71,11 @@ class BreakoutEnvironmentTests(unittest.TestCase):
             self.assertEqual(info["fire_reset_reason"], "initial_serve")
             self.assertEqual(info["fire_reset_requested_action"], 2)
             self.assertEqual(info["fire_reset_executed_action"], 1)
+            self.assertEqual(info["fire_reset_confirmation_operator"], "any")
+            self.assertEqual(
+                info["fire_reset_confirmation_signals"],
+                ["raw_reward", "observation_activity_streak"],
+            )
         finally:
             env.close()
 
