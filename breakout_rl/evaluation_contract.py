@@ -214,11 +214,15 @@ def validate_breakout_runtime_contract(
         raise ValueError(
             f"Breakout runtime requires frame_skip={BREAKOUT_FRAME_SKIP}"
         )
+    if contract.frame_stack != 4:
+        raise ValueError("Breakout runtime requires frame_stack=4")
     if contract.sticky_action_probability != BREAKOUT_STICKY_ACTION_PROBABILITY:
         raise ValueError(
             "Breakout runtime requires sticky_action_probability="
             f"{BREAKOUT_STICKY_ACTION_PROBABILITY}"
         )
+    if not contract.fire_reset:
+        raise ValueError("Breakout runtime requires fire_reset=true")
     if contract.terminal_on_life_loss:
         raise ValueError(
             "Breakout runtime requires terminal_on_life_loss=false"

@@ -6,6 +6,7 @@ import json
 import tempfile
 import unittest
 from argparse import Namespace
+from dataclasses import replace
 from pathlib import Path
 
 from breakout_rl.evaluation import load_evaluation_config
@@ -159,6 +160,15 @@ class Day15ContractTests(unittest.TestCase):
         )
 
         _validate_contract_for_config(contract, evaluation_config)
+
+    def test_runtime_validator_rejects_noncanonical_stack_or_fire_reset(self) -> None:
+        contract = load_evaluation_contract(
+            Path("configs/eval/breakout_contract_v2.json")
+        )
+        with self.assertRaisesRegex(ValueError, "frame_stack=4"):
+            validate_breakout_runtime_contract(replace(contract, frame_stack=3))
+        with self.assertRaisesRegex(ValueError, "fire_reset=true"):
+            validate_breakout_runtime_contract(replace(contract, fire_reset=False))
 
 
 if __name__ == "__main__":

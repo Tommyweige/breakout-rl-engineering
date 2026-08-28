@@ -108,7 +108,7 @@ class BreakoutEnvironmentTests(unittest.TestCase):
                 if action == 1:
                     self.fire_attempts += 1
                     if self.fire_attempts >= 2:
-                        self.observation.fill(1)
+                        self.observation.fill(self.fire_attempts)
                 return self.observation.copy(), 0.0, False, False, {}
 
         env = StickyServeEnv()
@@ -117,18 +117,21 @@ class BreakoutEnvironmentTests(unittest.TestCase):
             wrapped.reset(seed=42)
             _, _, _, _, first_info = wrapped.step(2)
             _, _, _, _, second_info = wrapped.step(2)
+            _, _, _, _, third_info = wrapped.step(2)
 
-            self.assertEqual(env.actions, [1, 1])
+            self.assertEqual(env.actions, [1, 1, 1])
             self.assertEqual(first_info["fire_reset_attempt"], 1)
             self.assertFalse(first_info["fire_reset_confirmed"])
             self.assertTrue(first_info["fire_reset_needs_fire"])
             self.assertEqual(second_info["fire_reset_attempt"], 2)
-            self.assertTrue(second_info["fire_reset_confirmed"])
+            self.assertFalse(second_info["fire_reset_confirmed"])
+            self.assertEqual(third_info["fire_reset_attempt"], 3)
+            self.assertTrue(third_info["fire_reset_confirmed"])
             self.assertEqual(
-                second_info["fire_reset_confirmation"],
-                "observation_activity",
+                third_info["fire_reset_confirmation"],
+                "observation_activity_streak",
             )
-            self.assertFalse(second_info["fire_reset_needs_fire"])
+            self.assertFalse(third_info["fire_reset_needs_fire"])
         finally:
             wrapped.close()
 

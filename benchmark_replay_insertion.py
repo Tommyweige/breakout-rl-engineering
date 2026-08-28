@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import operator
 import subprocess
 import time
 from datetime import datetime, timezone
@@ -50,14 +51,22 @@ def _batch_from_real_observations(
     )
     try:
         state, _ = env.reset(seed=seed)
-        next_state, reward, terminated, truncated, _ = env.step(0)
+        next_state, reward, terminated, truncated, info = env.step(0)
+        info = info if isinstance(info, dict) else {}
+        raw_executed_action = info.get("fire_reset_executed_action", 0)
+        try:
+            executed_action = operator.index(raw_executed_action)
+        except TypeError as error:
+            raise ValueError(
+                "real observation source must report an integer executed action"
+            ) from error
     finally:
         env.close()
     states = np.repeat(np.asarray(state)[None, ...], batch_size, axis=0)
     next_states = np.repeat(np.asarray(next_state)[None, ...], batch_size, axis=0)
     return (
         states,
-        np.zeros(batch_size, dtype=np.int64),
+        np.full(batch_size, int(executed_action), dtype=np.int64),
         np.full(batch_size, float(reward), dtype=np.float32),
         next_states,
         np.full(batch_size, bool(terminated), dtype=np.bool_),
@@ -110,6 +119,8 @@ def _run_one(
         "latency_ms_per_call": elapsed / iterations * 1000.0,
         "buffer_capacity": capacity,
         "observation_shape": list(values[0].shape[1:]),
+        "source_requested_action": 0,
+        "source_executed_action": int(values[1][0]),
         "source": "one real ALE/Breakout-v5 reset and step, repeated for copy timing",
     }
 

@@ -19,7 +19,14 @@ ENVIRONMENT_ID = "ALE/Breakout-v5"
 class BreakoutFireResetWrapper(gym.Wrapper):
     """Insert FIRE only for the initial serve or after an observed life loss."""
 
-    def __init__(self, env: gym.Env, *, max_fire_attempts: int = 8) -> None:
+    def __init__(
+        self,
+        env: gym.Env,
+        *,
+        max_fire_attempts: int = 8,
+        confirmation_steps: int = 2,
+        min_observation_change_fraction: float = 1e-4,
+    ) -> None:
         super().__init__(env)
         if isinstance(max_fire_attempts, bool):
             raise TypeError("max_fire_attempts must be a positive integer")
@@ -29,6 +36,24 @@ class BreakoutFireResetWrapper(gym.Wrapper):
             raise TypeError("max_fire_attempts must be a positive integer") from error
         if parsed_max_fire_attempts < 1:
             raise ValueError("max_fire_attempts must be a positive integer")
+        if isinstance(confirmation_steps, bool):
+            raise TypeError("confirmation_steps must be a positive integer")
+        try:
+            parsed_confirmation_steps = operator.index(confirmation_steps)
+        except TypeError as error:
+            raise TypeError("confirmation_steps must be a positive integer") from error
+        if parsed_confirmation_steps < 1:
+            raise ValueError("confirmation_steps must be a positive integer")
+        try:
+            parsed_change_fraction = float(min_observation_change_fraction)
+        except (TypeError, ValueError) as error:
+            raise TypeError(
+                "min_observation_change_fraction must be finite and non-negative"
+            ) from error
+        if not np.isfinite(parsed_change_fraction) or parsed_change_fraction < 0.0:
+            raise ValueError(
+                "min_observation_change_fraction must be finite and non-negative"
+            )
         meanings = getattr(self.unwrapped, "get_action_meanings", None)
         action_names = tuple(str(value) for value in meanings()) if callable(meanings) else ()
         try:
@@ -36,9 +61,12 @@ class BreakoutFireResetWrapper(gym.Wrapper):
         except ValueError as error:
             raise ValueError("BreakoutFireResetWrapper requires a FIRE action") from error
         self.max_fire_attempts = int(parsed_max_fire_attempts)
+        self.confirmation_steps = int(parsed_confirmation_steps)
+        self.min_observation_change_fraction = parsed_change_fraction
         self._needs_fire = False
         self._pending_fire_reason: str | None = None
         self._fire_attempts = 0
+        self._fire_activity_streak = 0
         self._last_lives: int | None = None
         self._last_observation: np.ndarray | None = None
         self._auto_fire_count = 0
@@ -79,6 +107,7 @@ class BreakoutFireResetWrapper(gym.Wrapper):
         self._needs_fire = True
         self._pending_fire_reason = "initial_serve"
         self._fire_attempts = 0
+        self._fire_activity_streak = 0
         self._last_observation = np.array(observation, copy=True)
         self._auto_fire_count = 0
         self.last_requested_action = None
@@ -92,6 +121,8 @@ class BreakoutFireResetWrapper(gym.Wrapper):
                 "fire_reset_needs_fire": True,
                 "fire_reset_pending_reason": "initial_serve",
                 "fire_reset_max_attempts": self.max_fire_attempts,
+                "fire_reset_confirmation_steps": self.confirmation_steps,
+                "fire_reset_observation_change_threshold": self.min_observation_change_fraction,
             }
         )
         return observation, reset_info
@@ -121,13 +152,21 @@ class BreakoutFireResetWrapper(gym.Wrapper):
             if float(reward) != 0.0:
                 fire_confirmed = True
                 fire_confirmation = "reward"
-            elif observation_changed_fraction > 0.0:
-                fire_confirmed = True
-                fire_confirmation = "observation_activity"
+            elif (
+                observation_changed_fraction
+                >= self.min_observation_change_fraction
+            ):
+                self._fire_activity_streak += 1
+                if self._fire_activity_streak >= self.confirmation_steps:
+                    fire_confirmed = True
+                    fire_confirmation = "observation_activity_streak"
+            else:
+                self._fire_activity_streak = 0
             if fire_confirmed or bool(terminated) or bool(truncated):
                 self._needs_fire = False
                 self._pending_fire_reason = None
                 self._fire_attempts = 0
+                self._fire_activity_streak = 0
             elif fire_attempt >= self.max_fire_attempts:
                 self._last_observation = np.array(observation, copy=True)
                 raise RuntimeError(
@@ -145,6 +184,9 @@ class BreakoutFireResetWrapper(gym.Wrapper):
             self._needs_fire = True
             self._pending_fire_reason = "after_life_loss"
             self._fire_attempts = 0
+            self._fire_activity_streak = 0
+        elif not auto_fire:
+            self._fire_activity_streak = 0
         self._last_lives = current_lives
         self._last_observation = np.array(observation, copy=True)
         self.last_fire_reset_confirmed = fire_confirmed
@@ -159,8 +201,11 @@ class BreakoutFireResetWrapper(gym.Wrapper):
                 "fire_reset_attempt": fire_attempt,
                 "fire_reset_confirmed": fire_confirmed,
                 "fire_reset_confirmation": fire_confirmation,
+                "fire_reset_activity_streak": self._fire_activity_streak,
+                "fire_reset_confirmation_steps": self.confirmation_steps,
+                "fire_reset_observation_change_threshold": self.min_observation_change_fraction,
                 "fire_reset_observation_changed_fraction": observation_changed_fraction,
-                "fire_reset_serve_attempts": self._auto_fire_count,
+                "fire_reset_auto_fire_count": self._auto_fire_count,
                 "fire_reset_needs_fire": self._needs_fire,
             }
         )
@@ -203,6 +248,9 @@ def make_breakout_env(
     render_mode: str | None = None,
     stack_size: int = 4,
     fire_reset: bool = False,
+    fire_reset_max_attempts: int = 8,
+    fire_confirmation_steps: int = 2,
+    fire_confirmation_change_fraction: float = 1e-4,
 ) -> gym.Env:
     """Create the project's baseline preprocessed Breakout environment.
 
@@ -221,7 +269,16 @@ def make_breakout_env(
     # Frame skip controls action frequency; stacking supplies short-term
     # history so a policy can infer motion from successive observations.
     stacked = FrameStackObservation(env, stack_size=stack_size)
-    return BreakoutFireResetWrapper(stacked) if fire_reset else stacked
+    return (
+        BreakoutFireResetWrapper(
+            stacked,
+            max_fire_attempts=fire_reset_max_attempts,
+            confirmation_steps=fire_confirmation_steps,
+            min_observation_change_fraction=fire_confirmation_change_fraction,
+        )
+        if fire_reset
+        else stacked
+    )
 
 
 def make_breakout_vector_env(
@@ -230,6 +287,9 @@ def make_breakout_vector_env(
     render_mode: str | None = None,
     stack_size: int = 4,
     fire_reset: bool = True,
+    fire_reset_max_attempts: int = 8,
+    fire_confirmation_steps: int = 2,
+    fire_confirmation_change_fraction: float = 1e-4,
 ) -> gym.vector.SyncVectorEnv:
     """Create independent Breakout environments with explicit manual reset.
 
@@ -252,6 +312,9 @@ def make_breakout_vector_env(
             render_mode=render_mode,
             stack_size=stack_size,
             fire_reset=fire_reset,
+            fire_reset_max_attempts=fire_reset_max_attempts,
+            fire_confirmation_steps=fire_confirmation_steps,
+            fire_confirmation_change_fraction=fire_confirmation_change_fraction,
         )
 
     return gym.vector.SyncVectorEnv(

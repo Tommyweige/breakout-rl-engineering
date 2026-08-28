@@ -9,6 +9,13 @@ import subprocess
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
+from breakout_rl.evaluation import load_evaluation_config
+from breakout_rl.evaluation_contract import (
+    expand_concrete_episode_seeds,
+    load_evaluation_contract,
+    validate_breakout_runtime_contract,
+)
+
 
 def _sha256(path: Path) -> str:
     digest = hashlib.sha256()
@@ -86,6 +93,16 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--candidate-checkpoint", type=Path, required=True)
     parser.add_argument("--candidate-environment-count", type=int, default=4)
     parser.add_argument(
+        "--contract",
+        type=Path,
+        default=Path("configs/eval/breakout_contract_v2.json"),
+    )
+    parser.add_argument(
+        "--evaluation-config",
+        type=Path,
+        default=Path("configs/eval/breakout_eval.json"),
+    )
+    parser.add_argument(
         "--screening-training-report",
         type=Path,
         default=Path("assets/day16/vectorized-training.json"),
@@ -100,6 +117,8 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         default=Path("assets/day16/vectorized-training-100k.json"),
     )
+    parser.add_argument("--screening-transitions", type=int, default=10_000)
+    parser.add_argument("--validation-transitions", type=int, default=100_000)
     parser.add_argument("--random-results", type=Path, default=None)
     parser.add_argument("--fire-diagnostic", type=Path, default=None)
     parser.add_argument("--q-value-diagnostic", type=Path, default=None)
@@ -114,6 +133,25 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    contract = load_evaluation_contract(args.contract)
+    validate_breakout_runtime_contract(contract)
+    evaluation_config = load_evaluation_config(args.evaluation_config)
+    if evaluation_config.environment_id != contract.environment_id:
+        raise ValueError("evaluation config and contract must use the same environment_id")
+    expected_concrete_seeds = expand_concrete_episode_seeds(
+        evaluation_config.seeds,
+        episodes_per_seed=evaluation_config.episodes_per_seed,
+    )
+    if contract.concrete_episode_seeds != expected_concrete_seeds:
+        raise ValueError("evaluation config concrete episode seeds do not match the contract")
+    if contract.evaluation_epsilon != evaluation_config.epsilon:
+        raise ValueError("evaluation config epsilon does not match the contract")
+    if contract.evaluation_epsilon != 0.0:
+        raise ValueError("Day 16 formal evaluation requires epsilon=0")
+    if contract.raw_reward_rule != "sum environment rewards without clipping":
+        raise ValueError("Day 16 formal evaluation requires the Contract v2 raw reward rule")
+    if args.screening_transitions < 1 or args.validation_transitions < 1:
+        raise ValueError("transition budgets must be positive")
     validation_values = (
         args.validation_reference_results,
         args.validation_reference_checkpoint,
@@ -144,10 +182,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         "git_commit_sha": _git_commit_sha(),
         "purpose": "Day 16 Contract v2 learning-regression guardrail",
         "protocol": {
-            "evaluation_config": "configs/eval/breakout_eval.json",
-            "evaluation_contract": "configs/eval/breakout_contract_v2.json",
-            "episodes": 15,
-            "epsilon": 0.0,
+            "evaluation_config": args.evaluation_config.as_posix(),
+            "evaluation_contract": args.contract.as_posix(),
+            "contract": contract.to_dict(),
+            "episodes": evaluation_config.total_episodes,
+            "epsilon": contract.evaluation_epsilon,
             "raw_reward": True,
             "selection_rule": (
                 "the selected vector candidate is chosen from the near-top throughput "
@@ -164,7 +203,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         },
         "screening_10k": {
             "training_report": args.screening_training_report.as_posix(),
-            "total_transitions": 10_000,
+            "total_transitions": args.screening_transitions,
             "candidates": screening_candidates,
         },
         # Keep the original top-level field for small downstream readers that
@@ -174,7 +213,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if all(value is not None for value in validation_values):
         report["long_validation_100k"] = {
             "training_report": args.validation_training_report.as_posix(),
-            "total_transitions": 100_000,
+            "total_transitions": args.validation_transitions,
             "candidates": [
                 _candidate(
                     environment_count=1,
