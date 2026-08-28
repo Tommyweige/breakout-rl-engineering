@@ -1,21 +1,22 @@
 {
   "schema_version": 1,
-  "generated_at_utc": "2026-08-28T07:14:48.732734+00:00",
+  "generated_at_utc": "2026-08-28T09:28:11.625689+00:00",
   "device": "cuda:0",
   "protocol": {
     "operation": "GPUReplayBuffer.add_batch or ReplayBuffer.add_batch",
     "seed": 42,
     "synchronize_cuda_before_and_after_measurement": true,
-    "contract_path": "configs/eval/breakout_contract_v2.json"
+    "contract_path": "configs/eval/breakout_contract_v2.json",
+    "git_commit_sha": "59707b76c2906afb16f79b1476f733c2d296a70d"
   },
   "results": [
     {
       "batch_size": 1,
       "iterations": 500,
       "transitions": 500,
-      "wall_clock_seconds": 0.11996850022114813,
-      "transitions_per_second": 4167.76069616864,
-      "latency_ms_per_call": 0.23993700044229627,
+      "wall_clock_seconds": 0.18673499999567866,
+      "transitions_per_second": 2677.59123898343,
+      "latency_ms_per_call": 0.3734699999913573,
       "buffer_capacity": 1024,
       "observation_shape": [
         4,
@@ -28,9 +29,9 @@
       "batch_size": 2,
       "iterations": 500,
       "transitions": 1000,
-      "wall_clock_seconds": 0.15936620021238923,
-      "transitions_per_second": 6274.8562660544585,
-      "latency_ms_per_call": 0.31873240042477846,
+      "wall_clock_seconds": 0.1859178999438882,
+      "transitions_per_second": 5378.718242309157,
+      "latency_ms_per_call": 0.3718357998877764,
       "buffer_capacity": 1024,
       "observation_shape": [
         4,
@@ -43,9 +44,9 @@
       "batch_size": 4,
       "iterations": 500,
       "transitions": 2000,
-      "wall_clock_seconds": 0.15467389998957515,
-      "transitions_per_second": 12930.42976310029,
-      "latency_ms_per_call": 0.3093477999791503,
+      "wall_clock_seconds": 0.2045233000535518,
+      "transitions_per_second": 9778.836931911062,
+      "latency_ms_per_call": 0.4090466001071036,
       "buffer_capacity": 1024,
       "observation_shape": [
         4,
@@ -58,9 +59,9 @@
       "batch_size": 8,
       "iterations": 500,
       "transitions": 4000,
-      "wall_clock_seconds": 0.1798596999142319,
-      "transitions_per_second": 22239.556731760615,
-      "latency_ms_per_call": 0.3597193998284638,
+      "wall_clock_seconds": 0.23971290001645684,
+      "transitions_per_second": 16686.62804432048,
+      "latency_ms_per_call": 0.4794258000329137,
       "buffer_capacity": 1024,
       "observation_shape": [
         4,
@@ -73,9 +74,9 @@
       "batch_size": 16,
       "iterations": 500,
       "transitions": 8000,
-      "wall_clock_seconds": 0.23444320005364716,
-      "transitions_per_second": 34123.40386997523,
-      "latency_ms_per_call": 0.4688864001072943,
+      "wall_clock_seconds": 0.29571649990975857,
+      "transitions_per_second": 27052.937534568737,
+      "latency_ms_per_call": 0.5914329998195171,
       "buffer_capacity": 1024,
       "observation_shape": [
         4,

@@ -1,0 +1,849 @@
+{
+  "schema_version": 1,
+  "created_at_utc": "2026-08-28T09:25:23.723314Z",
+  "evaluation_id": "day16-contract-v2-random",
+  "policy_type": "random",
+  "model_id": "random-policy",
+  "environment_id": "ALE/Breakout-v5",
+  "environment": {
+    "id": "ALE/Breakout-v5",
+    "observation_shape": [
+      4,
+      84,
+      84
+    ],
+    "action_count": 4,
+    "action_names": [
+      "NOOP",
+      "FIRE",
+      "RIGHT",
+      "LEFT"
+    ]
+  },
+  "observation_shape": [
+    4,
+    84,
+    84
+  ],
+  "action_count": 4,
+  "action_names": [
+    "NOOP",
+    "FIRE",
+    "RIGHT",
+    "LEFT"
+  ],
+  "evaluation_seeds": [
+    101,
+    202,
+    303
+  ],
+  "episodes_per_seed": 5,
+  "total_episodes": 15,
+  "evaluation_epsilon": 0.0,
+  "requested_device": "cpu",
+  "resolved_device": "cpu",
+  "runtime": {
+    "python_version": "3.12.13",
+    "pytorch_version": "2.13.0+cu130",
+    "torch_cuda_version": "13.0",
+    "requested_device": "cpu",
+    "resolved_device": "cpu",
+    "cuda_available": true,
+    "evaluation_steps": 2761,
+    "wall_clock_seconds": 2.767738699913025,
+    "steps_per_second": 997.5652687469245,
+    "cuda_device_index": null,
+    "gpu_name": null,
+    "cuda_device_name": null,
+    "gpu_model": null
+  },
+  "training": {
+    "training_seed": null,
+    "training_budget": null,
+    "learning_rate": null,
+    "batch_size": null,
+    "train_frequency": null,
+    "replay_backend": null,
+    "config_reference": null,
+    "source_day14_manifest": null
+  },
+  "checkpoint": {},
+  "per_episode": [
+    {
+      "evaluation_seed": 101,
+      "seed": 101,
+      "episode_seed": 101,
+      "seed_index": 0,
+      "episode_index": 1,
+      "episode_return": 3.0,
+      "return": 3.0,
+      "episode_length": 248,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "complete": true,
+      "stop_reason": "terminated",
+      "action_distribution": {
+        "NOOP": 64,
+        "FIRE": 73,
+        "RIGHT": 54,
+        "LEFT": 57
+      },
+      "action_distribution_semantics": "executed/wrapper-resolved action",
+      "requested_action_distribution": {
+        "NOOP": 66,
+        "FIRE": 69,
+        "RIGHT": 55,
+        "LEFT": 58
+      },
+      "executed_action_distribution": {
+        "NOOP": 64,
+        "FIRE": 73,
+        "RIGHT": 54,
+        "LEFT": 57
+      },
+      "auto_fire_count": 6,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 4,
+        "initial_serve": 2
+      }
+    },
+    {
+      "evaluation_seed": 101,
+      "seed": 102,
+      "episode_seed": 102,
+      "seed_index": 0,
+      "episode_index": 2,
+      "episode_return": 1.0,
+      "return": 1.0,
+      "episode_length": 153,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "complete": true,
+      "stop_reason": "terminated",
+      "action_distribution": {
+        "NOOP": 33,
+        "FIRE": 40,
+        "RIGHT": 36,
+        "LEFT": 44
+      },
+      "action_distribution_semantics": "executed/wrapper-resolved action",
+      "requested_action_distribution": {
+        "NOOP": 34,
+        "FIRE": 37,
+        "RIGHT": 37,
+        "LEFT": 45
+      },
+      "executed_action_distribution": {
+        "NOOP": 33,
+        "FIRE": 40,
+        "RIGHT": 36,
+        "LEFT": 44
+      },
+      "auto_fire_count": 5,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 4,
+        "initial_serve": 1
+      }
+    },
+    {
+      "evaluation_seed": 101,
+      "seed": 103,
+      "episode_seed": 103,
+      "seed_index": 0,
+      "episode_index": 3,
+      "episode_return": 1.0,
+      "return": 1.0,
+      "episode_length": 153,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "complete": true,
+      "stop_reason": "terminated",
+      "action_distribution": {
+        "NOOP": 44,
+        "FIRE": 43,
+        "RIGHT": 31,
+        "LEFT": 35
+      },
+      "action_distribution_semantics": "executed/wrapper-resolved action",
+      "requested_action_distribution": {
+        "NOOP": 44,
+        "FIRE": 39,
+        "RIGHT": 35,
+        "LEFT": 35
+      },
+      "executed_action_distribution": {
+        "NOOP": 44,
+        "FIRE": 43,
+        "RIGHT": 31,
+        "LEFT": 35
+      },
+      "auto_fire_count": 5,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 4,
+        "initial_serve": 1
+      }
+    },
+    {
+      "evaluation_seed": 101,
+      "seed": 104,
+      "episode_seed": 104,
+      "seed_index": 0,
+      "episode_index": 4,
+      "episode_return": 1.0,
+      "return": 1.0,
+      "episode_length": 170,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "complete": true,
+      "stop_reason": "terminated",
+      "action_distribution": {
+        "NOOP": 28,
+        "FIRE": 60,
+        "RIGHT": 43,
+        "LEFT": 39
+      },
+      "action_distribution_semantics": "executed/wrapper-resolved action",
+      "requested_action_distribution": {
+        "NOOP": 29,
+        "FIRE": 56,
+        "RIGHT": 44,
+        "LEFT": 41
+      },
+      "executed_action_distribution": {
+        "NOOP": 28,
+        "FIRE": 60,
+        "RIGHT": 43,
+        "LEFT": 39
+      },
+      "auto_fire_count": 5,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 4,
+        "initial_serve": 1
+      }
+    },
+    {
+      "evaluation_seed": 101,
+      "seed": 105,
+      "episode_seed": 105,
+      "seed_index": 0,
+      "episode_index": 5,
+      "episode_return": 3.0,
+      "return": 3.0,
+      "episode_length": 246,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "complete": true,
+      "stop_reason": "terminated",
+      "action_distribution": {
+        "NOOP": 50,
+        "FIRE": 65,
+        "RIGHT": 75,
+        "LEFT": 56
+      },
+      "action_distribution_semantics": "executed/wrapper-resolved action",
+      "requested_action_distribution": {
+        "NOOP": 52,
+        "FIRE": 61,
+        "RIGHT": 75,
+        "LEFT": 58
+      },
+      "executed_action_distribution": {
+        "NOOP": 50,
+        "FIRE": 65,
+        "RIGHT": 75,
+        "LEFT": 56
+      },
+      "auto_fire_count": 5,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 4,
+        "initial_serve": 1
+      }
+    },
+    {
+      "evaluation_seed": 202,
+      "seed": 202,
+      "episode_seed": 202,
+      "seed_index": 1,
+      "episode_index": 1,
+      "episode_return": 0.0,
+      "return": 0.0,
+      "episode_length": 125,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "complete": true,
+      "stop_reason": "terminated",
+      "action_distribution": {
+        "NOOP": 36,
+        "FIRE": 39,
+        "RIGHT": 26,
+        "LEFT": 24
+      },
+      "action_distribution_semantics": "executed/wrapper-resolved action",
+      "requested_action_distribution": {
+        "NOOP": 38,
+        "FIRE": 34,
+        "RIGHT": 29,
+        "LEFT": 24
+      },
+      "executed_action_distribution": {
+        "NOOP": 36,
+        "FIRE": 39,
+        "RIGHT": 26,
+        "LEFT": 24
+      },
+      "auto_fire_count": 5,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 4,
+        "initial_serve": 1
+      }
+    },
+    {
+      "evaluation_seed": 202,
+      "seed": 203,
+      "episode_seed": 203,
+      "seed_index": 1,
+      "episode_index": 2,
+      "episode_return": 1.0,
+      "return": 1.0,
+      "episode_length": 154,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "complete": true,
+      "stop_reason": "terminated",
+      "action_distribution": {
+        "NOOP": 37,
+        "FIRE": 44,
+        "RIGHT": 33,
+        "LEFT": 40
+      },
+      "action_distribution_semantics": "executed/wrapper-resolved action",
+      "requested_action_distribution": {
+        "NOOP": 37,
+        "FIRE": 43,
+        "RIGHT": 34,
+        "LEFT": 40
+      },
+      "executed_action_distribution": {
+        "NOOP": 37,
+        "FIRE": 44,
+        "RIGHT": 33,
+        "LEFT": 40
+      },
+      "auto_fire_count": 5,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 4,
+        "initial_serve": 1
+      }
+    },
+    {
+      "evaluation_seed": 202,
+      "seed": 204,
+      "episode_seed": 204,
+      "seed_index": 1,
+      "episode_index": 3,
+      "episode_return": 4.0,
+      "return": 4.0,
+      "episode_length": 319,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "complete": true,
+      "stop_reason": "terminated",
+      "action_distribution": {
+        "NOOP": 80,
+        "FIRE": 83,
+        "RIGHT": 77,
+        "LEFT": 79
+      },
+      "action_distribution_semantics": "executed/wrapper-resolved action",
+      "requested_action_distribution": {
+        "NOOP": 80,
+        "FIRE": 79,
+        "RIGHT": 79,
+        "LEFT": 81
+      },
+      "executed_action_distribution": {
+        "NOOP": 80,
+        "FIRE": 83,
+        "RIGHT": 77,
+        "LEFT": 79
+      },
+      "auto_fire_count": 5,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 4,
+        "initial_serve": 1
+      }
+    },
+    {
+      "evaluation_seed": 202,
+      "seed": 205,
+      "episode_seed": 205,
+      "seed_index": 1,
+      "episode_index": 4,
+      "episode_return": 1.0,
+      "return": 1.0,
+      "episode_length": 153,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "complete": true,
+      "stop_reason": "terminated",
+      "action_distribution": {
+        "NOOP": 33,
+        "FIRE": 50,
+        "RIGHT": 30,
+        "LEFT": 40
+      },
+      "action_distribution_semantics": "executed/wrapper-resolved action",
+      "requested_action_distribution": {
+        "NOOP": 33,
+        "FIRE": 47,
+        "RIGHT": 32,
+        "LEFT": 41
+      },
+      "executed_action_distribution": {
+        "NOOP": 33,
+        "FIRE": 50,
+        "RIGHT": 30,
+        "LEFT": 40
+      },
+      "auto_fire_count": 5,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 4,
+        "initial_serve": 1
+      }
+    },
+    {
+      "evaluation_seed": 202,
+      "seed": 206,
+      "episode_seed": 206,
+      "seed_index": 1,
+      "episode_index": 5,
+      "episode_return": 2.0,
+      "return": 2.0,
+      "episode_length": 197,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "complete": true,
+      "stop_reason": "terminated",
+      "action_distribution": {
+        "NOOP": 38,
+        "FIRE": 50,
+        "RIGHT": 54,
+        "LEFT": 55
+      },
+      "action_distribution_semantics": "executed/wrapper-resolved action",
+      "requested_action_distribution": {
+        "NOOP": 39,
+        "FIRE": 47,
+        "RIGHT": 55,
+        "LEFT": 56
+      },
+      "executed_action_distribution": {
+        "NOOP": 38,
+        "FIRE": 50,
+        "RIGHT": 54,
+        "LEFT": 55
+      },
+      "auto_fire_count": 5,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 4,
+        "initial_serve": 1
+      }
+    },
+    {
+      "evaluation_seed": 303,
+      "seed": 303,
+      "episode_seed": 303,
+      "seed_index": 2,
+      "episode_index": 1,
+      "episode_return": 1.0,
+      "return": 1.0,
+      "episode_length": 152,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "complete": true,
+      "stop_reason": "terminated",
+      "action_distribution": {
+        "NOOP": 38,
+        "FIRE": 42,
+        "RIGHT": 31,
+        "LEFT": 41
+      },
+      "action_distribution_semantics": "executed/wrapper-resolved action",
+      "requested_action_distribution": {
+        "NOOP": 38,
+        "FIRE": 39,
+        "RIGHT": 32,
+        "LEFT": 43
+      },
+      "executed_action_distribution": {
+        "NOOP": 38,
+        "FIRE": 42,
+        "RIGHT": 31,
+        "LEFT": 41
+      },
+      "auto_fire_count": 5,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 4,
+        "initial_serve": 1
+      }
+    },
+    {
+      "evaluation_seed": 303,
+      "seed": 304,
+      "episode_seed": 304,
+      "seed_index": 2,
+      "episode_index": 2,
+      "episode_return": 0.0,
+      "return": 0.0,
+      "episode_length": 124,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "complete": true,
+      "stop_reason": "terminated",
+      "action_distribution": {
+        "NOOP": 34,
+        "FIRE": 39,
+        "RIGHT": 30,
+        "LEFT": 21
+      },
+      "action_distribution_semantics": "executed/wrapper-resolved action",
+      "requested_action_distribution": {
+        "NOOP": 34,
+        "FIRE": 35,
+        "RIGHT": 32,
+        "LEFT": 23
+      },
+      "executed_action_distribution": {
+        "NOOP": 34,
+        "FIRE": 39,
+        "RIGHT": 30,
+        "LEFT": 21
+      },
+      "auto_fire_count": 5,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 4,
+        "initial_serve": 1
+      }
+    },
+    {
+      "evaluation_seed": 303,
+      "seed": 305,
+      "episode_seed": 305,
+      "seed_index": 2,
+      "episode_index": 3,
+      "episode_return": 2.0,
+      "return": 2.0,
+      "episode_length": 199,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "complete": true,
+      "stop_reason": "terminated",
+      "action_distribution": {
+        "NOOP": 48,
+        "FIRE": 59,
+        "RIGHT": 54,
+        "LEFT": 38
+      },
+      "action_distribution_semantics": "executed/wrapper-resolved action",
+      "requested_action_distribution": {
+        "NOOP": 48,
+        "FIRE": 58,
+        "RIGHT": 54,
+        "LEFT": 39
+      },
+      "executed_action_distribution": {
+        "NOOP": 48,
+        "FIRE": 59,
+        "RIGHT": 54,
+        "LEFT": 38
+      },
+      "auto_fire_count": 5,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 4,
+        "initial_serve": 1
+      }
+    },
+    {
+      "evaluation_seed": 303,
+      "seed": 306,
+      "episode_seed": 306,
+      "seed_index": 2,
+      "episode_index": 4,
+      "episode_return": 0.0,
+      "return": 0.0,
+      "episode_length": 122,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "complete": true,
+      "stop_reason": "terminated",
+      "action_distribution": {
+        "NOOP": 31,
+        "FIRE": 36,
+        "RIGHT": 27,
+        "LEFT": 28
+      },
+      "action_distribution_semantics": "executed/wrapper-resolved action",
+      "requested_action_distribution": {
+        "NOOP": 32,
+        "FIRE": 32,
+        "RIGHT": 28,
+        "LEFT": 30
+      },
+      "executed_action_distribution": {
+        "NOOP": 31,
+        "FIRE": 36,
+        "RIGHT": 27,
+        "LEFT": 28
+      },
+      "auto_fire_count": 5,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 4,
+        "initial_serve": 1
+      }
+    },
+    {
+      "evaluation_seed": 303,
+      "seed": 307,
+      "episode_seed": 307,
+      "seed_index": 2,
+      "episode_index": 5,
+      "episode_return": 3.0,
+      "return": 3.0,
+      "episode_length": 246,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "complete": true,
+      "stop_reason": "terminated",
+      "action_distribution": {
+        "NOOP": 57,
+        "FIRE": 55,
+        "RIGHT": 70,
+        "LEFT": 64
+      },
+      "action_distribution_semantics": "executed/wrapper-resolved action",
+      "requested_action_distribution": {
+        "NOOP": 58,
+        "FIRE": 52,
+        "RIGHT": 71,
+        "LEFT": 65
+      },
+      "executed_action_distribution": {
+        "NOOP": 57,
+        "FIRE": 55,
+        "RIGHT": 70,
+        "LEFT": 64
+      },
+      "auto_fire_count": 5,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 4,
+        "initial_serve": 1
+      }
+    }
+  ],
+  "per_episode_returns": [
+    3.0,
+    1.0,
+    1.0,
+    1.0,
+    3.0,
+    0.0,
+    1.0,
+    4.0,
+    1.0,
+    2.0,
+    1.0,
+    0.0,
+    2.0,
+    0.0,
+    3.0
+  ],
+  "per_episode_lengths": [
+    248,
+    153,
+    153,
+    170,
+    246,
+    125,
+    154,
+    319,
+    153,
+    197,
+    152,
+    124,
+    199,
+    122,
+    246
+  ],
+  "action_distribution": {
+    "NOOP": 651,
+    "FIRE": 778,
+    "RIGHT": 671,
+    "LEFT": 661
+  },
+  "action_distribution_semantics": "executed/wrapper-resolved action",
+  "requested_action_distribution": {
+    "NOOP": 662,
+    "FIRE": 728,
+    "RIGHT": 692,
+    "LEFT": 679
+  },
+  "executed_action_distribution": {
+    "NOOP": 651,
+    "FIRE": 778,
+    "RIGHT": 671,
+    "LEFT": 661
+  },
+  "auto_fire_count": 76,
+  "auto_fire_reason_counts": {
+    "after_life_loss": 60,
+    "initial_serve": 16
+  },
+  "summary": {
+    "count": 15,
+    "mean_return": 1.5333333333333334,
+    "median_return": 1.0,
+    "std_return": 1.2036980056845192,
+    "min_return": 0.0,
+    "max_return": 4.0,
+    "mean_episode_length": 184.06666666666666,
+    "complete_episodes": 15,
+    "finished_episode_count": 15,
+    "terminated_count": 15,
+    "truncated_count": 0,
+    "time_limit_truncated_count": 0,
+    "truncation_rate": 0.0,
+    "mean_return_terminated": 1.5333333333333334,
+    "mean_return_truncated": null,
+    "mean_length_terminated": 184.06666666666666,
+    "mean_length_truncated": null,
+    "action_distribution_semantics": "executed/wrapper-resolved action",
+    "action_distribution": {
+      "FIRE": 778,
+      "LEFT": 661,
+      "NOOP": 651,
+      "RIGHT": 671
+    },
+    "requested_action_distribution": {
+      "FIRE": 728,
+      "LEFT": 679,
+      "NOOP": 662,
+      "RIGHT": 692
+    },
+    "executed_action_distribution": {
+      "FIRE": 778,
+      "LEFT": 661,
+      "NOOP": 651,
+      "RIGHT": 671
+    },
+    "auto_fire_count": 76,
+    "auto_fire_reason_counts": {
+      "after_life_loss": 60,
+      "initial_serve": 16
+    }
+  },
+  "metadata": {
+    "evaluation_config_path": "configs/eval/breakout_eval.json",
+    "evaluation_config": {
+      "schema_version": 1,
+      "seeds": [
+        101,
+        202,
+        303
+      ],
+      "episodes_per_seed": 5,
+      "epsilon": 0.0,
+      "environment_id": "ALE/Breakout-v5",
+      "source_day14_manifest": "experiments/day14-final-frozen-100k/manifest.json",
+      "source_day14_profiling_report": "experiments/day14-batch-size-profiling-final/batch-size-comparison.json",
+      "checkpoint_rule": "final checkpoint at the completed 100000 environment-step budget"
+    },
+    "command": [
+      "evaluate_dqn.py",
+      "--policy",
+      "random",
+      "--config",
+      "configs/eval/breakout_eval.json",
+      "--contract",
+      "configs/eval/breakout_contract_v2.json",
+      "--device",
+      "cpu",
+      "--output-dir",
+      "evaluations/day16-contract-v2-random",
+      "--evaluation-id",
+      "day16-contract-v2-random"
+    ],
+    "raw_reward": true,
+    "policy_protocol": "shared environment construction, seed handling, episode loop, and schema",
+    "evaluation_contract_path": "configs/eval/breakout_contract_v2.json",
+    "evaluation_contract": {
+      "schema_version": 2,
+      "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+      "environment_id": "ALE/Breakout-v5",
+      "frame_skip": 4,
+      "frame_stack": 4,
+      "sticky_action_probability": 0.25,
+      "fire_reset": true,
+      "terminal_on_life_loss": false,
+      "time_limit_semantics": {
+        "source": "ale.game_truncated",
+        "max_num_frames_per_episode": 108000,
+        "agent_step_limit": 27000,
+        "truncated_is_finished": true,
+        "external_time_limit_wrapper": false
+      },
+      "concrete_episode_seeds": [
+        101,
+        102,
+        103,
+        104,
+        105,
+        202,
+        203,
+        204,
+        205,
+        206,
+        303,
+        304,
+        305,
+        306,
+        307
+      ],
+      "evaluation_epsilon": 0.0,
+      "raw_reward_rule": "sum environment rewards without clipping"
+    }
+  },
+  "artifacts": {
+    "results_json": "results.json",
+    "episodes_csv": "episodes.csv"
+  }
+}

@@ -1,102 +1,148 @@
-# Day 16 — Vectorized DQN Training evidence review
+# Day 16 — Finalization evidence review
 
 ## Scope
 
-This report covers the transition-counted vectorized vanilla-DQN backend in
-Issue #18. It uses the Day 15 Contract v2 environment construction: real
-`ALE/Breakout-v5`, frame stack 4, frame skip 4, sticky-action probability 0.25,
-environment-side FIRE, raw evaluation reward, and separate `terminated` /
-`truncated` fields.
+This report covers the transition-counted vectorized vanilla-DQN backend after
+the Issue #18 finalization gate. It uses the committed Contract v2 environment:
+real `ALE/Breakout-v5`, frame skip 4, frame stack 4, sticky-action probability
+0.25, environment-owned serve FIRE, raw evaluation reward, and separate
+`terminated` / `truncated` signals.
 
-The implementation keeps DQN hyperparameters fixed within the systems A/B. It
-does not introduce Double DQN, Dueling, prioritized replay, mixed precision, or
-model-capacity changes.
+The systems comparison keeps the DQN update, GPU Replay, batch size, seed,
+learning schedule, reward handling, precision, and CPU thread setting fixed.
+It does not introduce Double DQN, Dueling, prioritized replay, or mixed
+precision.
 
-## Implementation seams
+## Correctness gates
 
-- `breakout_rl/replay.py` and `breakout_rl/replay_gpu.py` provide ordered
-  `add_batch` ring-buffer writes with wraparound and separate episode flags.
-- `breakout_rl/exploration.py` provides batched Q-value action selection with
-  independent per-environment random/greedy decisions.
-- `breakout_env.py` provides `make_breakout_vector_env` with disabled autoreset;
-  the trainer captures final observations before resetting only done envs.
-- `breakout_rl/training/vectorized.py` counts accepted environment transitions,
-  enumerates every crossed train/target boundary, writes per-environment
-  metrics, and reuses the existing vanilla-DQN update.
-- `train_vectorized_dqn.py` is the portable CLI; `benchmark_vectorized_training.py`
-  and `benchmark_replay_insertion.py` produce the evidence artifacts.
+`BreakoutFireResetWrapper` keeps a pending serve state until an observable raw
+reward or observation activity follows the wrapper-resolved FIRE. It retries
+FIRE instead of silently releasing the state after one call, and raises after a
+bounded eight attempts if serving cannot be confirmed. The wrapper records the
+policy request, action passed to the lower environment, confirmation signal,
+attempt number, life count, and life-loss transition. ALE's hidden sticky-action
+draw is not exposed and is not inferred as if it were observable.
+
+The formal evaluator now stores both requested and executed/wrapper-resolved
+action distributions. The historical `action_distribution` field is retained
+with the explicit meaning `executed/wrapper-resolved action`; named provenance
+fields, auto-FIRE counts, and auto-FIRE reason counts are present in JSON and
+CSV artifacts.
+
+The action-selection parity rule is:
+
+```text
+num_envs <= train_frequency
+and train_frequency % num_envs == 0
+```
+
+This ensures a batched action selection does not span an optimizer boundary.
+The trainer supports screening outside this rule, but emits a warning and
+records that later transitions in a crossing vector batch use the pre-update
+online-network snapshot. A crafted test changes the preferred action at the
+update boundary: N=8 keeps all eight old actions in one crossing batch, while
+strict N=4 selects the new action in the following vector batch.
 
 ## 10K systems screening
 
-Source: `assets/day16/vectorized-training.json`.
+Source: `assets/day16/vectorized-training.json`. All four runs completed
+10,000 accepted transitions, 2,251 optimizer updates, and 21 target
+synchronizations on the recorded RTX 4060 Laptop GPU.
 
-| N | vector iterations | transitions/s | action calls | replay insert calls | optimizer updates | target syncs |
+| N | vector iterations | transitions/s | action calls | replay insert calls | strict parity |
+|---:|---:|---:|---:|---:|:---:|
+| 1 | 10,000 | 254.35 | 10,000 | 10,000 | yes |
+| 2 | 5,000 | 275.98 | 5,000 | 5,000 | yes |
+| 4 | 2,500 | 359.84 | 2,500 | 2,500 | yes |
+| 8 | 1,250 | 439.67 | 1,250 | 2,500 | no |
+
+N=8 is faster in this short systems run, but it crosses the update boundary
+when `train_frequency=4`. N=4 is therefore the strict-parity candidate; the
+selection is a semantics decision, not a claim that its 10K checkpoint is the
+best model.
+
+## Fresh 100K validation
+
+Source: `assets/day16/vectorized-training-100k.json`. N=1 and N=4 both start
+fresh under Contract v2 and strict action-selection parity.
+
+| N | transitions/s | wall-clock s | action calls | replay insert calls | optimizer updates | target syncs |
 |---:|---:|---:|---:|---:|---:|---:|
-| 1 | 10,000 | 214.99 | 10,000 | 10,000 | 2,251 | 21 |
-| 2 | 5,000 | 232.98 | 5,000 | 5,000 | 2,251 | 21 |
-| 4 | 2,500 | 310.26 | 2,500 | 2,500 | 2,251 | 21 |
-| 8 | 1,250 | 318.57 | 1,250 | 2,500 | 2,251 | 21 |
+| 1 | 217.90 | 458.94 | 100,000 | 100,000 | 24,751 | 201 |
+| 4 | 299.66 | 333.71 | 25,000 | 25,000 | 24,751 | 201 |
 
-N=8 is approximately 1.48x the N=1 accepted-transition throughput under this
-single-seed, single-hardware screening. N=4 is only about 2.7% behind N=8, so
-the guardrail candidate is N=4 as the simpler near-top setting. The result is a
-systems observation, not a claim that either setting is universally optimal.
+The strict N=4 candidate completes the same transition budget about 1.38× as
+fast as N=1. The report also preserves stage timing, GPU power/utilization,
+VRAM, CPU utilization, action-inference, replay-insertion, optimizer-update,
+and training-sample rates. `SyncVectorEnv` still steps ALE environments in the
+same process; the result should be attributed to batched inference and replay
+insertion, not to a claim of multi-process CPU ALE parallelism.
 
-The stage timings show why the result is plausible: the N=8 run has 1,250
-batched action calls and 2,500 replay insertion calls instead of 10,000 action
-calls and 10,000 replay insertion calls. Replay insertion is split at exact
-transition boundaries when one vector step crosses an update boundary.
-The CPU `env_step` stage remains material, so this change does not make ALE
-itself GPU-parallel.
+## FIRE/sticky-action diagnostic
 
-## Replay insertion microbenchmark
+Source: `assets/day16/fire-sticky-diagnostic.json` and its trace. The diagnostic
+uses the fresh N=4 100K checkpoint, all 15 Contract v2 concrete seeds, and
+CUDA inference. Every episode terminated normally: 15/15 terminated, 0/15
+truncated, and 0/15 TimeLimit.
 
-Source: `assets/day16/replay-insertion.json`.
+For seed 101, the old implementation reproduced a 26,998-step TimeLimit. The
+final wrapper run ends at 181 steps with raw return 2.0. The initial serve has
+one unconfirmed FIRE attempt with zero observation change, followed by a
+second FIRE confirmed by observation activity. The later four life-loss serve
+events each confirm on their first attempt. Across all 15 seeds there are 76
+environment-side FIRE attempts, 60 after life loss and 16 at initial serve;
+one attempt required a retry. The trace records the action passed downward,
+but does not pretend to know whether ALE's hidden sticky draw accepted it.
 
-| batch size | transitions/s | latency/call |
-|---:|---:|---:|
-| 1 | 4,167.76 | 0.240 ms |
-| 2 | 6,274.86 | 0.319 ms |
-| 4 | 12,930.43 | 0.309 ms |
-| 8 | 22,239.56 | 0.360 ms |
-| 16 | 34,123.40 | 0.469 ms |
+## Contract v2 evaluation guardrail
 
-The source observation was produced by a real Breakout reset/step; repeated
-rows were used only to measure storage copy cost. This benchmark does not
-measure policy quality.
+Source: `assets/day16/evaluation-summary.json`. Each row contains 15 fixed
+episodes, epsilon 0, raw reward, and requested/executed action provenance.
 
-## Contract v2 guardrail
-
-Source: `assets/day16/evaluation-summary.json`.
-
-| Candidate | mean return | median | std | mean length | terminated | truncated |
+| Run | mean return | median | std | mean length | terminated | truncated |
 |---|---:|---:|---:|---:|---:|---:|
-| N=1 | 1.53 | 0.00 | 2.36 | 186.53 | 15/15 | 0/15 |
-| N=4 | 2.80 | 2.00 | 2.74 | 2,030.67 | 14/15 | 1/15 |
+| Random Contract v2 | 1.53 | 1.00 | 1.20 | 184.07 | 15/15 | 0/15 |
+| N=1, 100K | 9.73 | 11.00 | 3.40 | 458.00 | 15/15 | 0/15 |
+| N=4, 100K | 5.40 | 5.00 | 2.75 | 312.00 | 15/15 | 0/15 |
 
-N=4 has one more TimeLimit truncation than N=1 in this 15-episode check, so the
-guardrail does not establish quality equivalence. It is retained as a warning
-against selecting a systems setting from throughput alone, not as a final
-model-quality claim.
+The 100K guardrail finds no serve deadlock or TimeLimit regression. N=4's
+return is lower than N=1 in this single-seed, 15-episode sample, so the result
+does not establish quality equivalence; it only clears the contract-failure
+gate and keeps the quality difference visible.
 
-## Schedule and reproducibility boundary
+## Q-value evidence boundary
 
-All candidates used `total_transitions=10000`, `batch_size=32`,
-`learning_starts=1000`, `train_frequency=4`, `target_update_interval=500`,
-`learning_rate=0.0001`, `epsilon_decay_steps=10000`, float32, seed 42, and GPU
-Replay on the recorded RTX 4060 Laptop GPU. The four runs each produced 2,251
-optimizer updates and 21 target synchronizations including the initial sync.
+The CPU toy simulation in `assets/day16/overestimation-bias.json` uses 500,000
+Monte Carlo trials with four equal true action values. At noise standard
+deviation 1.0, the measured vanilla maximum is 2.0294 against true value 1.0,
+while the independently evaluated decoupled estimator is 1.0002. This
+demonstrates why selecting and evaluating with the same noisy estimate can
+create an optimistic maximum; it is not a measurement of Breakout bias.
 
-The trainer splits replay insertion into transition chunks when a vector step
-crosses a train, target, or checkpoint boundary. Boundary counts and event order
-are therefore exact, while the vectorized trace is still not bit-for-bit
-identical to a single-environment trace because N actions are selected together.
-The report treats this as a declared batching boundary, not hidden equivalence.
+`assets/day16/q-value-diagnostics.json` is deliberately separate: it contains
+80 real Breakout probe states from the N=4 100K checkpoint, with model
+inference on NVIDIA CUDA under `torch.no_grad()`, checkpoint SHA-256, and
+runtime metadata. Its mean maximum Q-value is 2.0805 and mean top-action gap is
+0.0203. Without a ground-truth Q-star oracle, those values are exploratory
+model outputs, not proof that the checkpoint is overestimating.
 
-## Limitations and next step
+## Final backend decision
 
-This is a 10K single-seed screening, not the later multi-seed model comparison.
-It does not establish that N=4 is best on another GPU, CPU thread setting, or
-longer training budget. The next experiment can reuse this backend to compare
-vanilla DQN and Double DQN while keeping the transition budget and evaluation
-contract visible.
+The Day 16 candidate backend is N=4 with:
+
+```text
+ALE/Breakout-v5 / Contract v2
+frame_skip=4, frame_stack=4, sticky_action_probability=0.25
+environment-owned FIRE serve reset
+GPU Replay, float32, batch_size=32
+learning_starts=1000, train_frequency=4
+target_update_interval=500, epsilon_decay_steps=10000
+training seed=42, CPU threads=2
+strict action-selection parity enabled
+```
+
+This is a systems choice supported by the 100K run's speed and absence of
+contract failure, not a claim that N=4 learns better than N=1. The next entry
+can study Double DQN with this backend while keeping action provenance,
+Contract v2, and the distinction between toy mechanism and real model
+diagnostics explicit.

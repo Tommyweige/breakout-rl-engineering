@@ -1,0 +1,1923 @@
+{
+  "schema_version": 1,
+  "created_at_utc": "2026-08-28T09:28:38.299341Z",
+  "purpose": "Contract v2 FIRE/sticky-action root-cause diagnostic",
+  "git_commit_sha": "59707b76c2906afb16f79b1476f733c2d296a70d",
+  "contract_path": "configs/eval/breakout_contract_v2.json",
+  "contract": {
+    "schema_version": 2,
+    "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+    "environment_id": "ALE/Breakout-v5",
+    "frame_skip": 4,
+    "frame_stack": 4,
+    "sticky_action_probability": 0.25,
+    "fire_reset": true,
+    "terminal_on_life_loss": false,
+    "time_limit_semantics": {
+      "source": "ale.game_truncated",
+      "max_num_frames_per_episode": 108000,
+      "agent_step_limit": 27000,
+      "truncated_is_finished": true,
+      "external_time_limit_wrapper": false
+    },
+    "concrete_episode_seeds": [
+      101,
+      102,
+      103,
+      104,
+      105,
+      202,
+      203,
+      204,
+      205,
+      206,
+      303,
+      304,
+      305,
+      306,
+      307
+    ],
+    "evaluation_epsilon": 0.0,
+    "raw_reward_rule": "sum environment rewards without clipping"
+  },
+  "checkpoint": {
+    "path": "C:/Users/tommy/.codex/worktrees/a23d/breakout-rl-engineering/runs/day16-finalization-100k/envs-4/checkpoints/step-00100000.pt",
+    "sha256": "8facd3931cc5e8f4b3a9b6dbd16dd177399cb683776efcbd53d235274003fcf4",
+    "step": 100000,
+    "source_day14_run_id": null,
+    "source_day14_manifest": null,
+    "format_version": 1,
+    "model_config": {
+      "num_actions": 4,
+      "input_shape": [
+        4,
+        84,
+        84
+      ],
+      "hidden_dim": 512
+    },
+    "requested_device": "cuda",
+    "resolved_device": "cuda:0",
+    "source_day16_run_id": "envs-4"
+  },
+  "training": {
+    "source_day14_run_id": null,
+    "training_seed": 42,
+    "training_budget": 100000,
+    "learning_rate": 0.0001,
+    "batch_size": 32,
+    "train_frequency": 4,
+    "replay_backend": "gpu",
+    "training_device": "cuda",
+    "training_precision": "float32",
+    "training_config": {
+      "total_steps": 100000,
+      "seed": 42,
+      "gamma": 0.99,
+      "learning_rate": 0.0001,
+      "batch_size": 32,
+      "replay_capacity": 10000,
+      "learning_starts": 1000,
+      "train_frequency": 4,
+      "target_update_interval": 500,
+      "epsilon_start": 0.9,
+      "epsilon_end": 0.05,
+      "epsilon_decay_steps": 10000,
+      "gradient_clip_norm": 10.0,
+      "reward_clip": true,
+      "device": "cuda",
+      "precision": "float32",
+      "checkpoint_interval": 100000,
+      "diagnostics_interval": 100,
+      "metrics_flush_interval": 500,
+      "cpu_threads": 2,
+      "replay_transfer": "direct",
+      "replay_backend": "gpu",
+      "profile_stages": true,
+      "num_envs": 4,
+      "strict_action_selection_parity": true
+    },
+    "config_reference": null,
+    "source_day14_manifest": null,
+    "source_day16_run_id": "envs-4"
+  },
+  "protocol": {
+    "policy": "greedy DQN, epsilon=0",
+    "seeds": [
+      101,
+      102,
+      103,
+      104,
+      105,
+      202,
+      203,
+      204,
+      205,
+      206,
+      303,
+      304,
+      305,
+      306,
+      307
+    ],
+    "trace_seeds": [
+      101,
+      102
+    ],
+    "max_agent_steps": 27000,
+    "fire_confirmation_rule": "observable raw reward or non-zero observation change after the wrapper-resolved FIRE step",
+    "max_fire_attempts": 8,
+    "hidden_ale_action_visibility": "ALE API does not expose the hidden sticky-action draw; wrapper-resolved action means the action passed downward"
+  },
+  "runtime": {
+    "pytorch_version": "2.13.0+cu130",
+    "torch_cuda_version": "13.0",
+    "resolved_device": "cuda",
+    "cuda_available": true,
+    "cuda_device_index": 0,
+    "gpu_model": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "wall_clock_seconds": 13.174987600184977
+  },
+  "per_episode": [
+    {
+      "episode_seed": 101,
+      "episode_return": 2.0,
+      "episode_length": 181,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "initial_lives": 5,
+      "final_lives": 0,
+      "lives_observation_reliable": true,
+      "life_loss_count": 5,
+      "life_loss_events": [
+        {
+          "step": 26,
+          "lives_before": 5,
+          "lives_after": 4
+        },
+        {
+          "step": 50,
+          "lives_before": 4,
+          "lives_after": 3
+        },
+        {
+          "step": 103,
+          "lives_before": 3,
+          "lives_after": 2
+        },
+        {
+          "step": 127,
+          "lives_before": 2,
+          "lives_after": 1
+        },
+        {
+          "step": 181,
+          "lives_before": 1,
+          "lives_after": 0
+        }
+      ],
+      "requested_action_distribution": {
+        "FIRE": 46,
+        "LEFT": 42,
+        "RIGHT": 93
+      },
+      "wrapper_resolved_action_distribution": {
+        "FIRE": 50,
+        "LEFT": 42,
+        "RIGHT": 89
+      },
+      "executed_action_distribution": {
+        "FIRE": 50,
+        "LEFT": 42,
+        "RIGHT": 89
+      },
+      "auto_fire_count": 6,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 4,
+        "initial_serve": 2
+      },
+      "serve_attempts": [
+        {
+          "step": 1,
+          "reason": "initial_serve",
+          "attempt": 1,
+          "confirmed": false,
+          "confirmation": null,
+          "observation_changed_fraction": 0.0,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 2,
+          "reason": "initial_serve",
+          "attempt": 2,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.0002834467120181406,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 27,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.001240079365079365,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 51,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.0012046485260770975,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 104,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.0013109410430839003,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 128,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.001240079365079365,
+          "raw_reward": 0.0
+        }
+      ],
+      "serve_retry_count": 1,
+      "serve_confirmation_failures": 1,
+      "observation_changed_step_fraction": 0.9613259668508287,
+      "mean_observation_changed_fraction": 0.00404459666002681,
+      "unchanged_observation_step_fraction": 0.03867403314917127,
+      "max_consecutive_unchanged_observation": 2,
+      "diagnostic_wall_clock_seconds": 0.635736099909991
+    },
+    {
+      "episode_seed": 102,
+      "episode_return": 2.0,
+      "episode_length": 200,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "initial_lives": 5,
+      "final_lives": 0,
+      "lives_observation_reliable": true,
+      "life_loss_count": 5,
+      "life_loss_events": [
+        {
+          "step": 25,
+          "lives_before": 5,
+          "lives_after": 4
+        },
+        {
+          "step": 49,
+          "lives_before": 4,
+          "lives_after": 3
+        },
+        {
+          "step": 102,
+          "lives_before": 3,
+          "lives_after": 2
+        },
+        {
+          "step": 126,
+          "lives_before": 2,
+          "lives_after": 1
+        },
+        {
+          "step": 200,
+          "lives_before": 1,
+          "lives_after": 0
+        }
+      ],
+      "requested_action_distribution": {
+        "FIRE": 54,
+        "LEFT": 48,
+        "RIGHT": 98
+      },
+      "wrapper_resolved_action_distribution": {
+        "FIRE": 58,
+        "LEFT": 48,
+        "RIGHT": 94
+      },
+      "executed_action_distribution": {
+        "FIRE": 58,
+        "LEFT": 48,
+        "RIGHT": 94
+      },
+      "auto_fire_count": 5,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 4,
+        "initial_serve": 1
+      },
+      "serve_attempts": [
+        {
+          "step": 1,
+          "reason": "initial_serve",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.0002834467120181406,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 26,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.001240079365079365,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 50,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.0012046485260770975,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 103,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.0013109410430839003,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 127,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.001240079365079365,
+          "raw_reward": 0.0
+        }
+      ],
+      "serve_retry_count": 0,
+      "serve_confirmation_failures": 0,
+      "observation_changed_step_fraction": 0.97,
+      "mean_observation_changed_fraction": 0.004062145691609977,
+      "unchanged_observation_step_fraction": 0.03,
+      "max_consecutive_unchanged_observation": 2,
+      "diagnostic_wall_clock_seconds": 0.49363650009036064
+    },
+    {
+      "episode_seed": 103,
+      "episode_return": 3.0,
+      "episode_length": 213,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "initial_lives": 5,
+      "final_lives": 0,
+      "lives_observation_reliable": true,
+      "life_loss_count": 5,
+      "life_loss_events": [
+        {
+          "step": 54,
+          "lives_before": 5,
+          "lives_after": 4
+        },
+        {
+          "step": 78,
+          "lives_before": 4,
+          "lives_after": 3
+        },
+        {
+          "step": 133,
+          "lives_before": 3,
+          "lives_after": 2
+        },
+        {
+          "step": 157,
+          "lives_before": 2,
+          "lives_after": 1
+        },
+        {
+          "step": 213,
+          "lives_before": 1,
+          "lives_after": 0
+        }
+      ],
+      "requested_action_distribution": {
+        "FIRE": 70,
+        "LEFT": 65,
+        "RIGHT": 78
+      },
+      "wrapper_resolved_action_distribution": {
+        "FIRE": 73,
+        "LEFT": 65,
+        "RIGHT": 75
+      },
+      "executed_action_distribution": {
+        "FIRE": 73,
+        "LEFT": 65,
+        "RIGHT": 75
+      },
+      "auto_fire_count": 5,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 4,
+        "initial_serve": 1
+      },
+      "serve_attempts": [
+        {
+          "step": 1,
+          "reason": "initial_serve",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.00021258503401360543,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 55,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.001240079365079365,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 79,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.0012046485260770975,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 134,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.0013109410430839003,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 158,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.0015943877551020409,
+          "raw_reward": 0.0
+        }
+      ],
+      "serve_retry_count": 0,
+      "serve_confirmation_failures": 0,
+      "observation_changed_step_fraction": 0.9859154929577465,
+      "mean_observation_changed_fraction": 0.004792644757433489,
+      "unchanged_observation_step_fraction": 0.014084507042253521,
+      "max_consecutive_unchanged_observation": 2,
+      "diagnostic_wall_clock_seconds": 0.5065197998192161
+    },
+    {
+      "episode_seed": 104,
+      "episode_return": 5.0,
+      "episode_length": 305,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "initial_lives": 5,
+      "final_lives": 0,
+      "lives_observation_reliable": true,
+      "life_loss_count": 5,
+      "life_loss_events": [
+        {
+          "step": 100,
+          "lives_before": 5,
+          "lives_after": 4
+        },
+        {
+          "step": 124,
+          "lives_before": 4,
+          "lives_after": 3
+        },
+        {
+          "step": 178,
+          "lives_before": 3,
+          "lives_after": 2
+        },
+        {
+          "step": 252,
+          "lives_before": 2,
+          "lives_after": 1
+        },
+        {
+          "step": 305,
+          "lives_before": 1,
+          "lives_after": 0
+        }
+      ],
+      "requested_action_distribution": {
+        "FIRE": 82,
+        "LEFT": 70,
+        "NOOP": 5,
+        "RIGHT": 148
+      },
+      "wrapper_resolved_action_distribution": {
+        "FIRE": 83,
+        "LEFT": 70,
+        "NOOP": 5,
+        "RIGHT": 147
+      },
+      "executed_action_distribution": {
+        "FIRE": 83,
+        "LEFT": 70,
+        "NOOP": 5,
+        "RIGHT": 147
+      },
+      "auto_fire_count": 5,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 4,
+        "initial_serve": 1
+      },
+      "serve_attempts": [
+        {
+          "step": 1,
+          "reason": "initial_serve",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.00021258503401360543,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 101,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.001240079365079365,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 125,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.0012755102040816326,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 179,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.006271258503401361,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 253,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.0018778344671201814,
+          "raw_reward": 0.0
+        }
+      ],
+      "serve_retry_count": 0,
+      "serve_confirmation_failures": 0,
+      "observation_changed_step_fraction": 0.9901639344262295,
+      "mean_observation_changed_fraction": 0.0038850786216125797,
+      "unchanged_observation_step_fraction": 0.009836065573770493,
+      "max_consecutive_unchanged_observation": 2,
+      "diagnostic_wall_clock_seconds": 0.7190904000308365
+    },
+    {
+      "episode_seed": 105,
+      "episode_return": 5.0,
+      "episode_length": 286,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "initial_lives": 5,
+      "final_lives": 0,
+      "lives_observation_reliable": true,
+      "life_loss_count": 5,
+      "life_loss_events": [
+        {
+          "step": 100,
+          "lives_before": 5,
+          "lives_after": 4
+        },
+        {
+          "step": 124,
+          "lives_before": 4,
+          "lives_after": 3
+        },
+        {
+          "step": 178,
+          "lives_before": 3,
+          "lives_after": 2
+        },
+        {
+          "step": 233,
+          "lives_before": 2,
+          "lives_after": 1
+        },
+        {
+          "step": 286,
+          "lives_before": 1,
+          "lives_after": 0
+        }
+      ],
+      "requested_action_distribution": {
+        "FIRE": 75,
+        "LEFT": 77,
+        "NOOP": 2,
+        "RIGHT": 132
+      },
+      "wrapper_resolved_action_distribution": {
+        "FIRE": 76,
+        "LEFT": 77,
+        "NOOP": 2,
+        "RIGHT": 131
+      },
+      "executed_action_distribution": {
+        "FIRE": 76,
+        "LEFT": 77,
+        "NOOP": 2,
+        "RIGHT": 131
+      },
+      "auto_fire_count": 5,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 4,
+        "initial_serve": 1
+      },
+      "serve_attempts": [
+        {
+          "step": 1,
+          "reason": "initial_serve",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.00021258503401360543,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 101,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.001240079365079365,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 125,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.0012755102040816326,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 179,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.005491780045351474,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 234,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.005066609977324263,
+          "raw_reward": 0.0
+        }
+      ],
+      "serve_retry_count": 0,
+      "serve_confirmation_failures": 0,
+      "observation_changed_step_fraction": 0.9895104895104895,
+      "mean_observation_changed_fraction": 0.004686285936285937,
+      "unchanged_observation_step_fraction": 0.01048951048951049,
+      "max_consecutive_unchanged_observation": 2,
+      "diagnostic_wall_clock_seconds": 0.6772742001339793
+    },
+    {
+      "episode_seed": 202,
+      "episode_return": 6.0,
+      "episode_length": 326,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "initial_lives": 5,
+      "final_lives": 0,
+      "lives_observation_reliable": true,
+      "life_loss_count": 5,
+      "life_loss_events": [
+        {
+          "step": 25,
+          "lives_before": 5,
+          "lives_after": 4
+        },
+        {
+          "step": 49,
+          "lives_before": 4,
+          "lives_after": 3
+        },
+        {
+          "step": 102,
+          "lives_before": 3,
+          "lives_after": 2
+        },
+        {
+          "step": 126,
+          "lives_before": 2,
+          "lives_after": 1
+        },
+        {
+          "step": 326,
+          "lives_before": 1,
+          "lives_after": 0
+        }
+      ],
+      "requested_action_distribution": {
+        "FIRE": 46,
+        "LEFT": 82,
+        "NOOP": 1,
+        "RIGHT": 197
+      },
+      "wrapper_resolved_action_distribution": {
+        "FIRE": 50,
+        "LEFT": 82,
+        "NOOP": 1,
+        "RIGHT": 193
+      },
+      "executed_action_distribution": {
+        "FIRE": 50,
+        "LEFT": 82,
+        "NOOP": 1,
+        "RIGHT": 193
+      },
+      "auto_fire_count": 5,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 4,
+        "initial_serve": 1
+      },
+      "serve_attempts": [
+        {
+          "step": 1,
+          "reason": "initial_serve",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.0002834467120181406,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 26,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.001240079365079365,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 50,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.0012046485260770975,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 103,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.0013109410430839003,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 127,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.001240079365079365,
+          "raw_reward": 0.0
+        }
+      ],
+      "serve_retry_count": 0,
+      "serve_confirmation_failures": 0,
+      "observation_changed_step_fraction": 0.9815950920245399,
+      "mean_observation_changed_fraction": 0.004856850715746421,
+      "unchanged_observation_step_fraction": 0.018404907975460124,
+      "max_consecutive_unchanged_observation": 2,
+      "diagnostic_wall_clock_seconds": 0.7488796000834554
+    },
+    {
+      "episode_seed": 203,
+      "episode_return": 8.0,
+      "episode_length": 434,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "initial_lives": 5,
+      "final_lives": 0,
+      "lives_observation_reliable": true,
+      "life_loss_count": 5,
+      "life_loss_events": [
+        {
+          "step": 100,
+          "lives_before": 5,
+          "lives_after": 4
+        },
+        {
+          "step": 124,
+          "lives_before": 4,
+          "lives_after": 3
+        },
+        {
+          "step": 227,
+          "lives_before": 3,
+          "lives_after": 2
+        },
+        {
+          "step": 350,
+          "lives_before": 2,
+          "lives_after": 1
+        },
+        {
+          "step": 434,
+          "lives_before": 1,
+          "lives_after": 0
+        }
+      ],
+      "requested_action_distribution": {
+        "FIRE": 154,
+        "LEFT": 109,
+        "NOOP": 2,
+        "RIGHT": 169
+      },
+      "wrapper_resolved_action_distribution": {
+        "FIRE": 156,
+        "LEFT": 109,
+        "NOOP": 2,
+        "RIGHT": 167
+      },
+      "executed_action_distribution": {
+        "FIRE": 156,
+        "LEFT": 109,
+        "NOOP": 2,
+        "RIGHT": 167
+      },
+      "auto_fire_count": 5,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 4,
+        "initial_serve": 1
+      },
+      "serve_attempts": [
+        {
+          "step": 1,
+          "reason": "initial_serve",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.00021258503401360543,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 101,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.001240079365079365,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 125,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.0012755102040816326,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 228,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.001240079365079365,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 351,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.0018778344671201814,
+          "raw_reward": 0.0
+        }
+      ],
+      "serve_retry_count": 0,
+      "serve_confirmation_failures": 0,
+      "observation_changed_step_fraction": 0.9861751152073732,
+      "mean_observation_changed_fraction": 0.0043761168061694725,
+      "unchanged_observation_step_fraction": 0.013824884792626729,
+      "max_consecutive_unchanged_observation": 2,
+      "diagnostic_wall_clock_seconds": 1.06936309998855
+    },
+    {
+      "episode_seed": 204,
+      "episode_return": 4.0,
+      "episode_length": 255,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "initial_lives": 5,
+      "final_lives": 0,
+      "lives_observation_reliable": true,
+      "life_loss_count": 5,
+      "life_loss_events": [
+        {
+          "step": 100,
+          "lives_before": 5,
+          "lives_after": 4
+        },
+        {
+          "step": 124,
+          "lives_before": 4,
+          "lives_after": 3
+        },
+        {
+          "step": 177,
+          "lives_before": 3,
+          "lives_after": 2
+        },
+        {
+          "step": 230,
+          "lives_before": 2,
+          "lives_after": 1
+        },
+        {
+          "step": 255,
+          "lives_before": 1,
+          "lives_after": 0
+        }
+      ],
+      "requested_action_distribution": {
+        "FIRE": 71,
+        "LEFT": 56,
+        "NOOP": 2,
+        "RIGHT": 126
+      },
+      "wrapper_resolved_action_distribution": {
+        "FIRE": 74,
+        "LEFT": 56,
+        "NOOP": 2,
+        "RIGHT": 123
+      },
+      "executed_action_distribution": {
+        "FIRE": 74,
+        "LEFT": 56,
+        "NOOP": 2,
+        "RIGHT": 123
+      },
+      "auto_fire_count": 5,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 4,
+        "initial_serve": 1
+      },
+      "serve_attempts": [
+        {
+          "step": 1,
+          "reason": "initial_serve",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.00021258503401360543,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 101,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.001240079365079365,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 125,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.0012755102040816326,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 178,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.0060232426303854876,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 231,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.001240079365079365,
+          "raw_reward": 0.0
+        }
+      ],
+      "serve_retry_count": 0,
+      "serve_confirmation_failures": 0,
+      "observation_changed_step_fraction": 0.9921568627450981,
+      "mean_observation_changed_fraction": 0.0044709550486861415,
+      "unchanged_observation_step_fraction": 0.00784313725490196,
+      "max_consecutive_unchanged_observation": 2,
+      "diagnostic_wall_clock_seconds": 0.7124363998882473
+    },
+    {
+      "episode_seed": 205,
+      "episode_return": 9.0,
+      "episode_length": 500,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "initial_lives": 5,
+      "final_lives": 0,
+      "lives_observation_reliable": true,
+      "life_loss_count": 5,
+      "life_loss_events": [
+        {
+          "step": 100,
+          "lives_before": 5,
+          "lives_after": 4
+        },
+        {
+          "step": 124,
+          "lives_before": 4,
+          "lives_after": 3
+        },
+        {
+          "step": 277,
+          "lives_before": 3,
+          "lives_after": 2
+        },
+        {
+          "step": 380,
+          "lives_before": 2,
+          "lives_after": 1
+        },
+        {
+          "step": 500,
+          "lives_before": 1,
+          "lives_after": 0
+        }
+      ],
+      "requested_action_distribution": {
+        "FIRE": 123,
+        "LEFT": 134,
+        "NOOP": 55,
+        "RIGHT": 188
+      },
+      "wrapper_resolved_action_distribution": {
+        "FIRE": 126,
+        "LEFT": 134,
+        "NOOP": 54,
+        "RIGHT": 186
+      },
+      "executed_action_distribution": {
+        "FIRE": 126,
+        "LEFT": 134,
+        "NOOP": 54,
+        "RIGHT": 186
+      },
+      "auto_fire_count": 5,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 4,
+        "initial_serve": 1
+      },
+      "serve_attempts": [
+        {
+          "step": 1,
+          "reason": "initial_serve",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.00021258503401360543,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 101,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.001240079365079365,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 125,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.0012755102040816326,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 278,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.000744047619047619,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 381,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.001736111111111111,
+          "raw_reward": 0.0
+        }
+      ],
+      "serve_retry_count": 0,
+      "serve_confirmation_failures": 0,
+      "observation_changed_step_fraction": 0.988,
+      "mean_observation_changed_fraction": 0.005133503401360544,
+      "unchanged_observation_step_fraction": 0.012,
+      "max_consecutive_unchanged_observation": 3,
+      "diagnostic_wall_clock_seconds": 1.4865657000336796
+    },
+    {
+      "episode_seed": 206,
+      "episode_return": 4.0,
+      "episode_length": 292,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "initial_lives": 5,
+      "final_lives": 0,
+      "lives_observation_reliable": true,
+      "life_loss_count": 5,
+      "life_loss_events": [
+        {
+          "step": 25,
+          "lives_before": 5,
+          "lives_after": 4
+        },
+        {
+          "step": 96,
+          "lives_before": 4,
+          "lives_after": 3
+        },
+        {
+          "step": 120,
+          "lives_before": 3,
+          "lives_after": 2
+        },
+        {
+          "step": 222,
+          "lives_before": 2,
+          "lives_after": 1
+        },
+        {
+          "step": 292,
+          "lives_before": 1,
+          "lives_after": 0
+        }
+      ],
+      "requested_action_distribution": {
+        "FIRE": 54,
+        "LEFT": 65,
+        "RIGHT": 173
+      },
+      "wrapper_resolved_action_distribution": {
+        "FIRE": 56,
+        "LEFT": 65,
+        "RIGHT": 171
+      },
+      "executed_action_distribution": {
+        "FIRE": 56,
+        "LEFT": 65,
+        "RIGHT": 171
+      },
+      "auto_fire_count": 5,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 4,
+        "initial_serve": 1
+      },
+      "serve_attempts": [
+        {
+          "step": 1,
+          "reason": "initial_serve",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.0002834467120181406,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 26,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.00116921768707483,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 97,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.0012046485260770975,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 121,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.0024447278911564627,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 223,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.006944444444444444,
+          "raw_reward": 0.0
+        }
+      ],
+      "serve_retry_count": 0,
+      "serve_confirmation_failures": 0,
+      "observation_changed_step_fraction": 0.9897260273972602,
+      "mean_observation_changed_fraction": 0.004092140566272172,
+      "unchanged_observation_step_fraction": 0.010273972602739725,
+      "max_consecutive_unchanged_observation": 2,
+      "diagnostic_wall_clock_seconds": 0.8033841999713331
+    },
+    {
+      "episode_seed": 303,
+      "episode_return": 2.0,
+      "episode_length": 180,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "initial_lives": 5,
+      "final_lives": 0,
+      "lives_observation_reliable": true,
+      "life_loss_count": 5,
+      "life_loss_events": [
+        {
+          "step": 25,
+          "lives_before": 5,
+          "lives_after": 4
+        },
+        {
+          "step": 49,
+          "lives_before": 4,
+          "lives_after": 3
+        },
+        {
+          "step": 102,
+          "lives_before": 3,
+          "lives_after": 2
+        },
+        {
+          "step": 126,
+          "lives_before": 2,
+          "lives_after": 1
+        },
+        {
+          "step": 180,
+          "lives_before": 1,
+          "lives_after": 0
+        }
+      ],
+      "requested_action_distribution": {
+        "FIRE": 45,
+        "LEFT": 43,
+        "RIGHT": 92
+      },
+      "wrapper_resolved_action_distribution": {
+        "FIRE": 49,
+        "LEFT": 43,
+        "RIGHT": 88
+      },
+      "executed_action_distribution": {
+        "FIRE": 49,
+        "LEFT": 43,
+        "RIGHT": 88
+      },
+      "auto_fire_count": 5,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 4,
+        "initial_serve": 1
+      },
+      "serve_attempts": [
+        {
+          "step": 1,
+          "reason": "initial_serve",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.0002834467120181406,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 26,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.001240079365079365,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 50,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.0012046485260770975,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 103,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.0013109410430839003,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 127,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.001240079365079365,
+          "raw_reward": 0.0
+        }
+      ],
+      "serve_retry_count": 0,
+      "serve_confirmation_failures": 0,
+      "observation_changed_step_fraction": 0.9666666666666667,
+      "mean_observation_changed_fraction": 0.0040739559712774,
+      "unchanged_observation_step_fraction": 0.03333333333333333,
+      "max_consecutive_unchanged_observation": 2,
+      "diagnostic_wall_clock_seconds": 0.5218398000579327
+    },
+    {
+      "episode_seed": 304,
+      "episode_return": 11.0,
+      "episode_length": 414,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "initial_lives": 5,
+      "final_lives": 0,
+      "lives_observation_reliable": true,
+      "life_loss_count": 5,
+      "life_loss_events": [
+        {
+          "step": 55,
+          "lives_before": 5,
+          "lives_after": 4
+        },
+        {
+          "step": 154,
+          "lives_before": 4,
+          "lives_after": 3
+        },
+        {
+          "step": 178,
+          "lives_before": 3,
+          "lives_after": 2
+        },
+        {
+          "step": 251,
+          "lives_before": 2,
+          "lives_after": 1
+        },
+        {
+          "step": 414,
+          "lives_before": 1,
+          "lives_after": 0
+        }
+      ],
+      "requested_action_distribution": {
+        "FIRE": 80,
+        "LEFT": 137,
+        "NOOP": 2,
+        "RIGHT": 195
+      },
+      "wrapper_resolved_action_distribution": {
+        "FIRE": 81,
+        "LEFT": 137,
+        "NOOP": 2,
+        "RIGHT": 194
+      },
+      "executed_action_distribution": {
+        "FIRE": 81,
+        "LEFT": 137,
+        "NOOP": 2,
+        "RIGHT": 194
+      },
+      "auto_fire_count": 5,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 4,
+        "initial_serve": 1
+      },
+      "serve_attempts": [
+        {
+          "step": 1,
+          "reason": "initial_serve",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.0002834467120181406,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 56,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.003755668934240363,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 155,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.005562641723356009,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 179,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.0008149092970521542,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 252,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.0015589569160997733,
+          "raw_reward": 0.0
+        }
+      ],
+      "serve_retry_count": 0,
+      "serve_confirmation_failures": 0,
+      "observation_changed_step_fraction": 0.9975845410628019,
+      "mean_observation_changed_fraction": 0.0061358681959096046,
+      "unchanged_observation_step_fraction": 0.0024154589371980675,
+      "max_consecutive_unchanged_observation": 1,
+      "diagnostic_wall_clock_seconds": 1.1070232999045402
+    },
+    {
+      "episode_seed": 305,
+      "episode_return": 9.0,
+      "episode_length": 427,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "initial_lives": 5,
+      "final_lives": 0,
+      "lives_observation_reliable": true,
+      "life_loss_count": 5,
+      "life_loss_events": [
+        {
+          "step": 53,
+          "lives_before": 5,
+          "lives_after": 4
+        },
+        {
+          "step": 77,
+          "lives_before": 4,
+          "lives_after": 3
+        },
+        {
+          "step": 132,
+          "lives_before": 3,
+          "lives_after": 2
+        },
+        {
+          "step": 236,
+          "lives_before": 2,
+          "lives_after": 1
+        },
+        {
+          "step": 427,
+          "lives_before": 1,
+          "lives_after": 0
+        }
+      ],
+      "requested_action_distribution": {
+        "FIRE": 77,
+        "LEFT": 123,
+        "RIGHT": 227
+      },
+      "wrapper_resolved_action_distribution": {
+        "FIRE": 78,
+        "LEFT": 123,
+        "RIGHT": 226
+      },
+      "executed_action_distribution": {
+        "FIRE": 78,
+        "LEFT": 123,
+        "RIGHT": 226
+      },
+      "auto_fire_count": 5,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 4,
+        "initial_serve": 1
+      },
+      "serve_attempts": [
+        {
+          "step": 1,
+          "reason": "initial_serve",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.00021258503401360543,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 54,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.0010983560090702948,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 78,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.0007794784580498867,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 133,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.0011337868480725624,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 237,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.007369614512471655,
+          "raw_reward": 0.0
+        }
+      ],
+      "serve_retry_count": 0,
+      "serve_confirmation_failures": 0,
+      "observation_changed_step_fraction": 0.9953161592505855,
+      "mean_observation_changed_fraction": 0.005065531286675483,
+      "unchanged_observation_step_fraction": 0.00468384074941452,
+      "max_consecutive_unchanged_observation": 2,
+      "diagnostic_wall_clock_seconds": 0.9897658999543637
+    },
+    {
+      "episode_seed": 306,
+      "episode_return": 7.0,
+      "episode_length": 367,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "initial_lives": 5,
+      "final_lives": 0,
+      "lives_observation_reliable": true,
+      "life_loss_count": 5,
+      "life_loss_events": [
+        {
+          "step": 53,
+          "lives_before": 5,
+          "lives_after": 4
+        },
+        {
+          "step": 77,
+          "lives_before": 4,
+          "lives_after": 3
+        },
+        {
+          "step": 132,
+          "lives_before": 3,
+          "lives_after": 2
+        },
+        {
+          "step": 267,
+          "lives_before": 2,
+          "lives_after": 1
+        },
+        {
+          "step": 367,
+          "lives_before": 1,
+          "lives_after": 0
+        }
+      ],
+      "requested_action_distribution": {
+        "FIRE": 96,
+        "LEFT": 130,
+        "NOOP": 3,
+        "RIGHT": 138
+      },
+      "wrapper_resolved_action_distribution": {
+        "FIRE": 97,
+        "LEFT": 129,
+        "NOOP": 3,
+        "RIGHT": 138
+      },
+      "executed_action_distribution": {
+        "FIRE": 97,
+        "LEFT": 129,
+        "NOOP": 3,
+        "RIGHT": 138
+      },
+      "auto_fire_count": 5,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 4,
+        "initial_serve": 1
+      },
+      "serve_attempts": [
+        {
+          "step": 1,
+          "reason": "initial_serve",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.00021258503401360543,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 54,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.0010983560090702948,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 78,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.0007794784580498867,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 133,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.0011337868480725624,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 268,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.004854024943310657,
+          "raw_reward": 0.0
+        }
+      ],
+      "serve_retry_count": 0,
+      "serve_confirmation_failures": 0,
+      "observation_changed_step_fraction": 0.9945504087193461,
+      "mean_observation_changed_fraction": 0.0061701792433594685,
+      "unchanged_observation_step_fraction": 0.005449591280653951,
+      "max_consecutive_unchanged_observation": 2,
+      "diagnostic_wall_clock_seconds": 0.826545299962163
+    },
+    {
+      "episode_seed": 307,
+      "episode_return": 4.0,
+      "episode_length": 300,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "initial_lives": 5,
+      "final_lives": 0,
+      "lives_observation_reliable": true,
+      "life_loss_count": 5,
+      "life_loss_events": [
+        {
+          "step": 25,
+          "lives_before": 5,
+          "lives_after": 4
+        },
+        {
+          "step": 99,
+          "lives_before": 4,
+          "lives_after": 3
+        },
+        {
+          "step": 123,
+          "lives_before": 3,
+          "lives_after": 2
+        },
+        {
+          "step": 198,
+          "lives_before": 2,
+          "lives_after": 1
+        },
+        {
+          "step": 300,
+          "lives_before": 1,
+          "lives_after": 0
+        }
+      ],
+      "requested_action_distribution": {
+        "FIRE": 48,
+        "LEFT": 65,
+        "RIGHT": 187
+      },
+      "wrapper_resolved_action_distribution": {
+        "FIRE": 52,
+        "LEFT": 65,
+        "RIGHT": 183
+      },
+      "executed_action_distribution": {
+        "FIRE": 52,
+        "LEFT": 65,
+        "RIGHT": 183
+      },
+      "auto_fire_count": 5,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 4,
+        "initial_serve": 1
+      },
+      "serve_attempts": [
+        {
+          "step": 1,
+          "reason": "initial_serve",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.0002834467120181406,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 26,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.00116921768707483,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 100,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.0013463718820861678,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 124,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.001240079365079365,
+          "raw_reward": 0.0
+        },
+        {
+          "step": 199,
+          "reason": "after_life_loss",
+          "attempt": 1,
+          "confirmed": true,
+          "confirmation": "observation_activity",
+          "observation_changed_fraction": 0.001488095238095238,
+          "raw_reward": 0.0
+        }
+      ],
+      "serve_retry_count": 0,
+      "serve_confirmation_failures": 0,
+      "observation_changed_step_fraction": 0.9766666666666667,
+      "mean_observation_changed_fraction": 0.004423894557823129,
+      "unchanged_observation_step_fraction": 0.023333333333333334,
+      "max_consecutive_unchanged_observation": 2,
+      "diagnostic_wall_clock_seconds": 0.7062204000540078
+    }
+  ],
+  "summary": {
+    "episode_count": 15,
+    "terminated_count": 15,
+    "truncated_count": 0,
+    "time_limit_count": 0,
+    "requested_action_distribution": {
+      "FIRE": 1121,
+      "LEFT": 1246,
+      "NOOP": 72,
+      "RIGHT": 2241
+    },
+    "wrapper_resolved_action_distribution": {
+      "FIRE": 1159,
+      "LEFT": 1245,
+      "NOOP": 71,
+      "RIGHT": 2205
+    },
+    "executed_action_distribution": {
+      "FIRE": 1159,
+      "LEFT": 1245,
+      "NOOP": 71,
+      "RIGHT": 2205
+    },
+    "auto_fire_count": 76,
+    "auto_fire_reason_counts": {
+      "after_life_loss": 60,
+      "initial_serve": 16
+    },
+    "serve_retry_count": 1,
+    "serve_confirmation_failures": 1,
+    "life_loss_count": 75,
+    "max_consecutive_unchanged_observation": 3
+  },
+  "trace": {
+    "path": "assets/day16/fire-sticky-trace.jsonl",
+    "row_count": 381
+  }
+}

@@ -1,0 +1,589 @@
+{
+  "schema_version": 1,
+  "generated_at_utc": "2026-08-28T09:24:53.422080+00:00",
+  "device": "cuda:0",
+  "replay_backend": "gpu",
+  "contract_path": "configs/eval/breakout_contract_v2.json",
+  "contract": {
+    "schema_version": 2,
+    "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+    "environment_id": "ALE/Breakout-v5",
+    "frame_skip": 4,
+    "frame_stack": 4,
+    "sticky_action_probability": 0.25,
+    "fire_reset": true,
+    "terminal_on_life_loss": false,
+    "time_limit_semantics": {
+      "source": "ale.game_truncated",
+      "max_num_frames_per_episode": 108000,
+      "agent_step_limit": 27000,
+      "truncated_is_finished": true,
+      "external_time_limit_wrapper": false
+    },
+    "concrete_episode_seeds": [
+      101,
+      102,
+      103,
+      104,
+      105,
+      202,
+      203,
+      204,
+      205,
+      206,
+      303,
+      304,
+      305,
+      306,
+      307
+    ],
+    "evaluation_epsilon": 0.0,
+    "raw_reward_rule": "sum environment rewards without clipping"
+  },
+  "protocol": {
+    "environment_id": "ALE/Breakout-v5",
+    "algorithm": "vanilla DQN",
+    "total_transitions": 100000,
+    "seed": 42,
+    "batch_size": 32,
+    "learning_rate": 0.0001,
+    "learning_starts": 1000,
+    "train_frequency": 4,
+    "target_update_interval": 500,
+    "epsilon_decay_steps": 10000,
+    "checkpoint_interval": 100000,
+    "precision": "float32",
+    "fire_reset": true,
+    "frame_skip": 4,
+    "frame_stack": 4,
+    "sticky_action_probability": 0.25,
+    "terminal_on_life_loss": false,
+    "schedule_semantics": "exact transition boundaries with replay chunks when a vector step crosses an event",
+    "action_selection_batch_semantics": "one batched forward selects all N actions before env.step; later transitions in a crossing batch use the pre-update online-network snapshot",
+    "strict_action_selection_parity_rule": "strict parity requires num_envs <= train_frequency and train_frequency % num_envs == 0",
+    "strict_action_selection_parity_requested": true,
+    "git_commit_sha": "59707b76c2906afb16f79b1476f733c2d296a70d",
+    "profile_stages": true
+  },
+  "results": [
+    {
+      "environment_count": 1,
+      "run_dir": "runs\\day16-finalization-100k\\envs-1",
+      "resolved_device": "cuda:0",
+      "summary": {
+        "status": "completed",
+        "trainer": "vectorized_dqn",
+        "run_id": "envs-1",
+        "run_dir": "runs\\day16-finalization-100k\\envs-1",
+        "seed": 42,
+        "num_envs": 1,
+        "total_steps": 100000,
+        "total_transitions": 100000,
+        "physical_environment_steps": 100000,
+        "vector_iterations": 100000,
+        "episodes": 426,
+        "per_environment_episode_counts": [
+          426
+        ],
+        "optimizer_updates": 24751,
+        "target_sync_count": 201,
+        "last_target_sync_step": 100000,
+        "replay_backend": "gpu",
+        "replay_transfer": "direct",
+        "replay_bytes": 564620000,
+        "replay_rewarm_steps_remaining": 0,
+        "replay_size": 10000,
+        "replay_occupancy": {
+          "size": 10000,
+          "capacity": 10000,
+          "ratio": 1.0
+        },
+        "steps_per_second": 217.89573738518857,
+        "environment_transitions_per_second": 217.89573738518857,
+        "physical_environment_steps_per_second": 217.89573738518857,
+        "vector_iterations_per_second": 217.89573738518857,
+        "action_inference_batches": 100000,
+        "action_inference_transitions": 100000,
+        "action_inference_transitions_per_second": 217.89573738518857,
+        "action_inference_batches_per_second": 217.89573738518857,
+        "replay_insertion_calls": 100000,
+        "replay_insertion_transitions": 100000,
+        "replay_insertion_transitions_per_second": 217.89573738518857,
+        "replay_insertion_calls_per_second": 217.89573738518857,
+        "optimizer_updates_per_second": 53.93137396020803,
+        "training_samples_per_second": 1725.8039667266569,
+        "runtime": {
+          "python_version": "3.12.13",
+          "pytorch_version": "2.13.0+cu130",
+          "torch_cuda_version": "13.0",
+          "gymnasium_version": "1.3.0",
+          "ale_version": "0.12.0",
+          "numpy_version": "2.5.1",
+          "cpu_logical_count": 16,
+          "cpu_thread_count": 2,
+          "cpu_interop_thread_count": 12,
+          "device": "cuda:0",
+          "requested_device": "cuda",
+          "resolved_device": "cuda:0",
+          "precision": "float32",
+          "cuda_device_index": 0,
+          "cuda_available": true,
+          "cuda_device_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+          "gpu_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+          "gpu_model": "NVIDIA GeForce RTX 4060 Laptop GPU",
+          "cuda_allocated_bytes": 627733504,
+          "cuda_peak_allocated_bytes": 639140864,
+          "cuda_reserved_bytes": 658505728,
+          "cuda_peak_reserved_bytes": 658505728,
+          "gpu_utilization_percent": 16.0,
+          "gpu_memory_total_bytes": 8585740288,
+          "gpu_utilization_source": "nvidia-smi",
+          "wall_clock_seconds": 458.9350906999316,
+          "steps_per_second": 217.89573738518857,
+          "seed": 42,
+          "git_commit_sha": "59707b76c2906afb16f79b1476f733c2d296a70d",
+          "environment_id": "ALE/Breakout-v5",
+          "vectorized": true,
+          "num_envs": 1,
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "action_count": 4,
+          "environment_transitions_per_second": 217.89573738518857,
+          "physical_environment_steps": 100000,
+          "physical_environment_steps_per_second": 217.89573738518857,
+          "vector_iterations": 100000,
+          "vector_iterations_per_second": 217.89573738518857,
+          "action_inference_batches": 100000,
+          "action_inference_transitions": 100000,
+          "action_inference_transitions_per_second": 217.89573738518857,
+          "action_inference_batches_per_second": 217.89573738518857,
+          "replay_insertion_calls": 100000,
+          "replay_insertion_transitions": 100000,
+          "replay_insertion_transitions_per_second": 217.89573738518857,
+          "replay_insertion_calls_per_second": 217.89573738518857,
+          "optimizer_updates_per_second": 53.93137396020803,
+          "training_samples_per_second": 1725.8039667266569,
+          "diagnostics_interval": 100,
+          "metrics_flush_interval": 500,
+          "metrics_row_cadence": 1,
+          "global_step_definition": "accepted environment transitions",
+          "schedule_semantics": "optimizer, target, and checkpoint events execute at exact transition boundaries; replay insertion is chunked when crossed",
+          "action_selection_batch_semantics": "one batched forward selects all N actions before env.step; if the vector step crosses an optimizer boundary, later transitions use the pre-update online-network snapshot",
+          "strict_action_selection_parity_rule": "strict parity requires num_envs <= train_frequency and train_frequency % num_envs == 0",
+          "strict_action_selection_parity_requested": true,
+          "strict_action_selection_parity_satisfied": true,
+          "behavior_policy_lag_warning": null,
+          "configured_cpu_threads": 2,
+          "replay_transfer": "direct",
+          "replay_backend": "gpu",
+          "replay_storage_device": "cuda:0",
+          "replay_bytes": 564620000,
+          "replay_rewarm_steps_remaining": 0,
+          "stage_timings": {
+            "batched_action_inference": {
+              "calls": 100000,
+              "wall_seconds": 157.65299530583434,
+              "cpu_seconds": 146.40625,
+              "gpu_seconds": 153.52509028220177
+            },
+            "env_step": {
+              "calls": 100000,
+              "wall_seconds": 78.75644639832899,
+              "cpu_seconds": 62.921875
+            },
+            "batched_replay_insert": {
+              "calls": 100000,
+              "wall_seconds": 51.509808488888666,
+              "cpu_seconds": 57.4375,
+              "gpu_seconds": 49.44357645432651
+            },
+            "metrics_write": {
+              "calls": 100000,
+              "wall_seconds": 3.5593765678349882,
+              "cpu_seconds": 2.546875
+            },
+            "gpu_replay_gather_cast": {
+              "calls": 24751,
+              "wall_seconds": 14.252192894928157,
+              "cpu_seconds": 12.5,
+              "gpu_seconds": 14.226974941715598
+            },
+            "forward": {
+              "calls": 24751,
+              "wall_seconds": 19.4422619943507,
+              "cpu_seconds": 18.1875,
+              "gpu_seconds": 18.97477184124291
+            },
+            "target_forward": {
+              "calls": 24751,
+              "wall_seconds": 20.59007230727002,
+              "cpu_seconds": 19.0625,
+              "gpu_seconds": 20.240438623934985
+            },
+            "loss": {
+              "calls": 24751,
+              "wall_seconds": 3.4925955925136805,
+              "cpu_seconds": 3.96875,
+              "gpu_seconds": 3.0102889479137955
+            },
+            "backward": {
+              "calls": 24751,
+              "wall_seconds": 37.39790799515322,
+              "cpu_seconds": 47.03125,
+              "gpu_seconds": 37.227530399620534
+            },
+            "optimizer_step": {
+              "calls": 24751,
+              "wall_seconds": 30.55040269717574,
+              "cpu_seconds": 17.9375,
+              "gpu_seconds": 30.677784897863866
+            },
+            "dqn_update": {
+              "calls": 24751,
+              "wall_seconds": 122.88724730559625,
+              "cpu_seconds": 115.0,
+              "gpu_seconds": 122.84398884868622
+            },
+            "gradient_diagnostics": {
+              "calls": 248,
+              "wall_seconds": 0.6514423990156502,
+              "cpu_seconds": 0.375,
+              "gpu_seconds": 0.6397031047344208
+            },
+            "diagnostics": {
+              "calls": 248,
+              "wall_seconds": 0.5517675019800663,
+              "cpu_seconds": 0.4375,
+              "gpu_seconds": 0.5401986571550369
+            },
+            "checkpoint": {
+              "calls": 1,
+              "wall_seconds": 0.03314809990115464,
+              "cpu_seconds": 0.03125
+            }
+          }
+        },
+        "last_loss": 0.004615290090441704,
+        "last_q_mean": 1.481823444366455,
+        "last_q_max": 2.746983051300049,
+        "last_q_min": 0.21073727309703827,
+        "last_target_mean": 1.518850564956665,
+        "last_target_max": 2.7149012088775635,
+        "last_td_error_mean_abs": 0.059617601335048676,
+        "last_td_error_max_abs": 0.42131638526916504,
+        "action_distribution": {
+          "NOOP": 18550,
+          "FIRE": 25805,
+          "RIGHT": 32883,
+          "LEFT": 22762
+        },
+        "random_decision_count": 9283,
+        "greedy_decision_count": 90717,
+        "random_decision_ratio": 0.09283,
+        "last_checkpoint": "runs\\day16-finalization-100k\\envs-1\\checkpoints\\step-00100000.pt",
+        "action_selection_batch_semantics": "one batched forward selects all N actions before env.step; if the vector step crosses an optimizer boundary, later transitions use the pre-update online-network snapshot",
+        "strict_action_selection_parity_rule": "strict parity requires num_envs <= train_frequency and train_frequency % num_envs == 0",
+        "strict_action_selection_parity_requested": true,
+        "strict_action_selection_parity_satisfied": true,
+        "behavior_policy_lag_warning": null
+      },
+      "runtime_profile": {
+        "sampling_method": "in-process fixed-interval sampler; nvidia-smi query per sample",
+        "sampling_interval_seconds": 1.0,
+        "process_cpu_percent_method": "time.process_time normalized by wall time and logical CPU count",
+        "cpu_logical_count": 16,
+        "sample_count": 461,
+        "gpu_sample_count": 461,
+        "gpu_utilization_percent": {
+          "mean": 26.863340563991322,
+          "p50": 25.0,
+          "p95": 36.0,
+          "max": 97.0
+        },
+        "gpu_power_watts": {
+          "mean": 27.18698481561822,
+          "p50": 25.8,
+          "p95": 32.3,
+          "max": 80.67
+        },
+        "gpu_memory_used_bytes": {
+          "mean": 2600277416.2603035,
+          "peak": 3253731328.0
+        },
+        "gpu_memory_total_bytes": 8585740288.0,
+        "process_cpu_percent": {
+          "mean": 5.754960591938036,
+          "p50": 5.791825818974801,
+          "p95": 6.115905794373355,
+          "max": 6.654444189231103
+        },
+        "available": true
+      },
+      "wall_clock_seconds_from_benchmark": 460.91167000005953
+    },
+    {
+      "environment_count": 4,
+      "run_dir": "runs\\day16-finalization-100k\\envs-4",
+      "resolved_device": "cuda:0",
+      "summary": {
+        "status": "completed",
+        "trainer": "vectorized_dqn",
+        "run_id": "envs-4",
+        "run_dir": "runs\\day16-finalization-100k\\envs-4",
+        "seed": 42,
+        "num_envs": 4,
+        "total_steps": 100000,
+        "total_transitions": 100000,
+        "physical_environment_steps": 100000,
+        "vector_iterations": 25000,
+        "episodes": 402,
+        "per_environment_episode_counts": [
+          100,
+          98,
+          101,
+          103
+        ],
+        "optimizer_updates": 24751,
+        "target_sync_count": 201,
+        "last_target_sync_step": 100000,
+        "replay_backend": "gpu",
+        "replay_transfer": "direct",
+        "replay_bytes": 564620000,
+        "replay_rewarm_steps_remaining": 0,
+        "replay_size": 10000,
+        "replay_occupancy": {
+          "size": 10000,
+          "capacity": 10000,
+          "ratio": 1.0
+        },
+        "steps_per_second": 299.65754961440405,
+        "environment_transitions_per_second": 299.65754961440405,
+        "physical_environment_steps_per_second": 299.65754961440405,
+        "vector_iterations_per_second": 74.91438740360101,
+        "action_inference_batches": 25000,
+        "action_inference_transitions": 100000,
+        "action_inference_transitions_per_second": 299.65754961440405,
+        "action_inference_batches_per_second": 74.91438740360101,
+        "replay_insertion_calls": 25000,
+        "replay_insertion_transitions": 100000,
+        "replay_insertion_transitions_per_second": 299.65754961440405,
+        "replay_insertion_calls_per_second": 74.91438740360101,
+        "optimizer_updates_per_second": 74.16824010506114,
+        "training_samples_per_second": 2373.3836833619566,
+        "runtime": {
+          "python_version": "3.12.13",
+          "pytorch_version": "2.13.0+cu130",
+          "torch_cuda_version": "13.0",
+          "gymnasium_version": "1.3.0",
+          "ale_version": "0.12.0",
+          "numpy_version": "2.5.1",
+          "cpu_logical_count": 16,
+          "cpu_thread_count": 2,
+          "cpu_interop_thread_count": 12,
+          "device": "cuda:0",
+          "requested_device": "cuda",
+          "resolved_device": "cuda:0",
+          "precision": "float32",
+          "cuda_device_index": 0,
+          "cuda_available": true,
+          "cuda_device_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+          "gpu_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+          "gpu_model": "NVIDIA GeForce RTX 4060 Laptop GPU",
+          "cuda_allocated_bytes": 627733504,
+          "cuda_peak_allocated_bytes": 639140864,
+          "cuda_reserved_bytes": 658505728,
+          "cuda_peak_reserved_bytes": 658505728,
+          "gpu_utilization_percent": 31.0,
+          "gpu_memory_total_bytes": 8585740288,
+          "gpu_utilization_source": "nvidia-smi",
+          "wall_clock_seconds": 333.7142685998697,
+          "steps_per_second": 299.65754961440405,
+          "seed": 42,
+          "git_commit_sha": "59707b76c2906afb16f79b1476f733c2d296a70d",
+          "environment_id": "ALE/Breakout-v5",
+          "vectorized": true,
+          "num_envs": 4,
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "action_count": 4,
+          "environment_transitions_per_second": 299.65754961440405,
+          "physical_environment_steps": 100000,
+          "physical_environment_steps_per_second": 299.65754961440405,
+          "vector_iterations": 25000,
+          "vector_iterations_per_second": 74.91438740360101,
+          "action_inference_batches": 25000,
+          "action_inference_transitions": 100000,
+          "action_inference_transitions_per_second": 299.65754961440405,
+          "action_inference_batches_per_second": 74.91438740360101,
+          "replay_insertion_calls": 25000,
+          "replay_insertion_transitions": 100000,
+          "replay_insertion_transitions_per_second": 299.65754961440405,
+          "replay_insertion_calls_per_second": 74.91438740360101,
+          "optimizer_updates_per_second": 74.16824010506114,
+          "training_samples_per_second": 2373.3836833619566,
+          "diagnostics_interval": 100,
+          "metrics_flush_interval": 500,
+          "metrics_row_cadence": 1,
+          "global_step_definition": "accepted environment transitions",
+          "schedule_semantics": "optimizer, target, and checkpoint events execute at exact transition boundaries; replay insertion is chunked when crossed",
+          "action_selection_batch_semantics": "one batched forward selects all N actions before env.step; if the vector step crosses an optimizer boundary, later transitions use the pre-update online-network snapshot",
+          "strict_action_selection_parity_rule": "strict parity requires num_envs <= train_frequency and train_frequency % num_envs == 0",
+          "strict_action_selection_parity_requested": true,
+          "strict_action_selection_parity_satisfied": true,
+          "behavior_policy_lag_warning": null,
+          "configured_cpu_threads": 2,
+          "replay_transfer": "direct",
+          "replay_backend": "gpu",
+          "replay_storage_device": "cuda:0",
+          "replay_bytes": 564620000,
+          "replay_rewarm_steps_remaining": 0,
+          "stage_timings": {
+            "batched_action_inference": {
+              "calls": 25000,
+              "wall_seconds": 50.16182720428333,
+              "cpu_seconds": 99.84375,
+              "gpu_seconds": 48.264067771554
+            },
+            "env_step": {
+              "calls": 25000,
+              "wall_seconds": 81.82313219713978,
+              "cpu_seconds": 148.828125
+            },
+            "batched_replay_insert": {
+              "calls": 25000,
+              "wall_seconds": 18.555288300616667,
+              "cpu_seconds": 42.265625,
+              "gpu_seconds": 17.395694400563837
+            },
+            "metrics_write": {
+              "calls": 100000,
+              "wall_seconds": 2.931293138768524,
+              "cpu_seconds": 4.265625
+            },
+            "gpu_replay_gather_cast": {
+              "calls": 24751,
+              "wall_seconds": 17.650390615686774,
+              "cpu_seconds": 30.53125,
+              "gpu_seconds": 17.645561347261072
+            },
+            "forward": {
+              "calls": 24751,
+              "wall_seconds": 24.284284381894395,
+              "cpu_seconds": 44.65625,
+              "gpu_seconds": 23.80921456950903
+            },
+            "target_forward": {
+              "calls": 24751,
+              "wall_seconds": 25.35313509008847,
+              "cpu_seconds": 48.65625,
+              "gpu_seconds": 24.871786502078177
+            },
+            "loss": {
+              "calls": 24751,
+              "wall_seconds": 4.091362310107797,
+              "cpu_seconds": 8.3125,
+              "gpu_seconds": 3.470399256375618
+            },
+            "backward": {
+              "calls": 24751,
+              "wall_seconds": 43.901370586128905,
+              "cpu_seconds": 90.71875,
+              "gpu_seconds": 43.567417530804875
+            },
+            "optimizer_step": {
+              "calls": 24751,
+              "wall_seconds": 34.122231900226325,
+              "cpu_seconds": 55.265625,
+              "gpu_seconds": 33.98137037152052
+            },
+            "dqn_update": {
+              "calls": 24751,
+              "wall_seconds": 145.07126990775578,
+              "cpu_seconds": 268.421875,
+              "gpu_seconds": 144.8682959599495
+            },
+            "gradient_diagnostics": {
+              "calls": 248,
+              "wall_seconds": 0.7907459035050124,
+              "cpu_seconds": 1.375,
+              "gpu_seconds": 0.7758052153587341
+            },
+            "diagnostics": {
+              "calls": 248,
+              "wall_seconds": 0.6673803003504872,
+              "cpu_seconds": 1.015625,
+              "gpu_seconds": 0.6536978240013123
+            },
+            "checkpoint": {
+              "calls": 1,
+              "wall_seconds": 0.029691800009459257,
+              "cpu_seconds": 0.046875
+            }
+          }
+        },
+        "last_loss": 0.001794893410988152,
+        "last_q_mean": 1.7015260457992554,
+        "last_q_max": 2.444206714630127,
+        "last_q_min": 0.5001342296600342,
+        "last_target_mean": 1.6923123598098755,
+        "last_target_max": 2.3890953063964844,
+        "last_td_error_mean_abs": 0.04038132727146149,
+        "last_td_error_max_abs": 0.24135136604309082,
+        "action_distribution": {
+          "NOOP": 14780,
+          "FIRE": 21928,
+          "RIGHT": 31357,
+          "LEFT": 31935
+        },
+        "random_decision_count": 9306,
+        "greedy_decision_count": 90694,
+        "random_decision_ratio": 0.09306,
+        "last_checkpoint": "runs\\day16-finalization-100k\\envs-4\\checkpoints\\step-00100000.pt",
+        "action_selection_batch_semantics": "one batched forward selects all N actions before env.step; if the vector step crosses an optimizer boundary, later transitions use the pre-update online-network snapshot",
+        "strict_action_selection_parity_rule": "strict parity requires num_envs <= train_frequency and train_frequency % num_envs == 0",
+        "strict_action_selection_parity_requested": true,
+        "strict_action_selection_parity_satisfied": true,
+        "behavior_policy_lag_warning": null
+      },
+      "runtime_profile": {
+        "sampling_method": "in-process fixed-interval sampler; nvidia-smi query per sample",
+        "sampling_interval_seconds": 1.0,
+        "process_cpu_percent_method": "time.process_time normalized by wall time and logical CPU count",
+        "cpu_logical_count": 16,
+        "sample_count": 335,
+        "gpu_sample_count": 335,
+        "gpu_utilization_percent": {
+          "mean": 30.77313432835821,
+          "p50": 30.0,
+          "p95": 36.0,
+          "max": 65.0
+        },
+        "gpu_power_watts": {
+          "mean": 29.571671641791045,
+          "p50": 28.62,
+          "p95": 33.80500000000001,
+          "max": 53.55
+        },
+        "gpu_memory_used_bytes": {
+          "mean": 2637074737.671642,
+          "peak": 2905604096.0
+        },
+        "gpu_memory_total_bytes": 8585740288.0,
+        "process_cpu_percent": {
+          "mean": 11.642138470258136,
+          "p50": 11.70738822152086,
+          "p95": 12.217799771163966,
+          "max": 12.445107629931773
+        },
+        "available": true
+      },
+      "wall_clock_seconds_from_benchmark": 334.19598890002817
+    }
+  ]
+}
