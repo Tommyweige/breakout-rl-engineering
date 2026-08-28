@@ -413,6 +413,61 @@ class DQNTrainerTests(unittest.TestCase):
         self.assertEqual(payload["replay_backend"], "cpu")
         self.assertEqual(saved_config["algorithm"], "double_dqn")
 
+    def test_single_trainer_preserves_requested_and_executed_fire_actions(self) -> None:
+        class FireOverrideEnv(ShortEpisodeEnv):
+            def step(self, action: int):
+                observation, reward, _terminated, _truncated, _ = super().step(action)
+                return (
+                    observation,
+                    reward,
+                    True,
+                    False,
+                    {
+                        "fire_reset_auto": True,
+                        "fire_reset_reason": "initial_serve",
+                        "fire_reset_executed_action": 1,
+                    },
+                )
+
+        config = DQNConfig(
+            total_steps=1,
+            batch_size=1,
+            replay_capacity=2,
+            learning_starts=2,
+            train_frequency=1,
+            target_update_interval=1,
+            checkpoint_interval=1,
+            epsilon_start=0.0,
+            epsilon_end=0.0,
+            device="cpu",
+        )
+        network = TinyImageQNetwork()
+        with torch.no_grad():
+            network.head.weight.zero_()
+            network.head.bias.copy_(torch.tensor([1.0, 0.0]))
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            run_dir = Path(temporary_directory) / "fire-provenance"
+            trainer = DQNTrainer(
+                FireOverrideEnv(),
+                config,
+                run_dir=run_dir,
+                online_network=network,
+            )
+            summary = trainer.train()
+            with (run_dir / "metrics.csv").open(
+                newline="",
+                encoding="utf-8",
+            ) as stream:
+                row = next(csv.DictReader(stream))
+
+        self.assertEqual(row["requested_action"], "0")
+        self.assertEqual(row["action"], "1")
+        self.assertEqual(row["action_overridden"], "True")
+        self.assertEqual(row["fire_reset_reason"], "initial_serve")
+        self.assertEqual(summary["action_overridden_count"], 1)
+        self.assertEqual(summary["fire_reset_auto_count"], 1)
+
     def test_sparse_diagnostics_still_sample_checkpoint_steps(self) -> None:
         config = DQNConfig(
             total_steps=16,

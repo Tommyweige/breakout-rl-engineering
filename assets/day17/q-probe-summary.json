@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "checkpoint": {
-    "path": "runs/day17-double-dqn-smoke-seed42-final2/checkpoints/step-00010000.pt",
-    "sha256": "5004007913b9bcbc0312a10168099119a5840b8367a6f94b48cc8d339be015c6",
+    "path": "runs/day17-double-dqn-smoke-seed42-final3/checkpoints/step-00010000.pt",
+    "sha256": "13fb96ea6e92216548fcd09801161a6c54c7f9d357203a1675234cadd1f25fd5",
     "algorithm": "double_dqn",
     "architecture": "standard",
     "num_envs": 2,
@@ -20,7 +20,7 @@
   },
   "probe_states": {
     "path": "assets/day17/probe_states.npz",
-    "sha256": "0f261af91a7c24b2ee4241dc459d18ee5e5cd2abdab503aca93ed23bfb271d79",
+    "sha256": "c14c780c89a3b7d71584fcf1283e9e180a4d85e357fbdd8a50ff6bc8bf965a9f",
     "metadata": {
       "contract_id": "day15-breakout-evaluation-v2-fire-reset",
       "contract_path": "configs/eval/breakout_contract_v2.json",
@@ -35,664 +35,1144 @@
       ],
       "records": [
         {
+          "action_overridden": false,
           "concrete_seed": 101,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": true,
+          "fire_reset_reason": "initial_serve",
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 0
+          "raw_reward": 0.0,
+          "requested_action": 1,
+          "step": 0,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": false,
           "concrete_seed": 101,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 3,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 32
+          "raw_reward": 0.0,
+          "requested_action": 3,
+          "step": 32,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": false,
           "concrete_seed": 101,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 2,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 64
+          "raw_reward": 0.0,
+          "requested_action": 2,
+          "step": 64,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": false,
           "concrete_seed": 101,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 0,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 96
+          "raw_reward": 0.0,
+          "requested_action": 0,
+          "step": 96,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": false,
           "concrete_seed": 102,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": true,
+          "fire_reset_reason": "initial_serve",
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 0
+          "raw_reward": 0.0,
+          "requested_action": 1,
+          "step": 0,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": false,
           "concrete_seed": 102,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 2,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 32
+          "raw_reward": 0.0,
+          "requested_action": 2,
+          "step": 32,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": false,
           "concrete_seed": 102,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 64
+          "raw_reward": 0.0,
+          "requested_action": 1,
+          "step": 64,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": false,
           "concrete_seed": 102,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 2,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 96
+          "raw_reward": 0.0,
+          "requested_action": 2,
+          "step": 96,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": true,
           "concrete_seed": 103,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": true,
+          "fire_reset_reason": "initial_serve",
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 0
+          "raw_reward": 0.0,
+          "requested_action": 2,
+          "step": 0,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": false,
           "concrete_seed": 103,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 3,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 32
+          "raw_reward": 0.0,
+          "requested_action": 3,
+          "step": 32,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": false,
           "concrete_seed": 103,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 64
+          "raw_reward": 0.0,
+          "requested_action": 1,
+          "step": 64,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": false,
           "concrete_seed": 103,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 96
+          "raw_reward": 0.0,
+          "requested_action": 1,
+          "step": 96,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": true,
           "concrete_seed": 104,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": true,
+          "fire_reset_reason": "initial_serve",
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 0
+          "raw_reward": 0.0,
+          "requested_action": 2,
+          "step": 0,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": false,
           "concrete_seed": 104,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 0,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 32
+          "raw_reward": 0.0,
+          "requested_action": 0,
+          "step": 32,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": false,
           "concrete_seed": 104,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 3,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 64
+          "raw_reward": 0.0,
+          "requested_action": 3,
+          "step": 64,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": false,
           "concrete_seed": 104,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 96
+          "raw_reward": 0.0,
+          "requested_action": 1,
+          "step": 96,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": false,
           "concrete_seed": 105,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": true,
+          "fire_reset_reason": "initial_serve",
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 0
+          "raw_reward": 0.0,
+          "requested_action": 1,
+          "step": 0,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": false,
           "concrete_seed": 105,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 3,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 32
+          "raw_reward": 0.0,
+          "requested_action": 3,
+          "step": 32,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": false,
           "concrete_seed": 105,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 64
+          "raw_reward": 0.0,
+          "requested_action": 1,
+          "step": 64,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": false,
           "concrete_seed": 105,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 3,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 96
+          "raw_reward": 0.0,
+          "requested_action": 3,
+          "step": 96,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": true,
           "concrete_seed": 202,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": true,
+          "fire_reset_reason": "initial_serve",
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 0
+          "raw_reward": 0.0,
+          "requested_action": 0,
+          "step": 0,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": false,
           "concrete_seed": 202,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 2,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 32
+          "raw_reward": 0.0,
+          "requested_action": 2,
+          "step": 32,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": false,
           "concrete_seed": 202,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 0,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 64
+          "raw_reward": 0.0,
+          "requested_action": 0,
+          "step": 64,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": false,
           "concrete_seed": 202,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 0,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 96
+          "raw_reward": 0.0,
+          "requested_action": 0,
+          "step": 96,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": false,
           "concrete_seed": 203,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": true,
+          "fire_reset_reason": "initial_serve",
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 0
+          "raw_reward": 0.0,
+          "requested_action": 1,
+          "step": 0,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": false,
           "concrete_seed": 203,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 32
+          "raw_reward": 0.0,
+          "requested_action": 1,
+          "step": 32,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": false,
           "concrete_seed": 203,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 3,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 64
+          "raw_reward": 0.0,
+          "requested_action": 3,
+          "step": 64,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": false,
           "concrete_seed": 203,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 3,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 96
+          "raw_reward": 0.0,
+          "requested_action": 3,
+          "step": 96,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": true,
           "concrete_seed": 204,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": true,
+          "fire_reset_reason": "initial_serve",
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 0
+          "raw_reward": 0.0,
+          "requested_action": 2,
+          "step": 0,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": false,
           "concrete_seed": 204,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 2,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 32
+          "raw_reward": 0.0,
+          "requested_action": 2,
+          "step": 32,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": false,
           "concrete_seed": 204,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 3,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 64
+          "raw_reward": 0.0,
+          "requested_action": 3,
+          "step": 64,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": false,
           "concrete_seed": 204,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 3,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 96
+          "raw_reward": 0.0,
+          "requested_action": 3,
+          "step": 96,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": true,
           "concrete_seed": 205,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": true,
+          "fire_reset_reason": "initial_serve",
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 0
+          "raw_reward": 0.0,
+          "requested_action": 2,
+          "step": 0,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": false,
           "concrete_seed": 205,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 3,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 32
+          "raw_reward": 0.0,
+          "requested_action": 3,
+          "step": 32,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": false,
           "concrete_seed": 205,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 0,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 64
+          "raw_reward": 0.0,
+          "requested_action": 0,
+          "step": 64,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": false,
           "concrete_seed": 205,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 96
+          "raw_reward": 0.0,
+          "requested_action": 1,
+          "step": 96,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": true,
           "concrete_seed": 206,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": true,
+          "fire_reset_reason": "initial_serve",
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 0
+          "raw_reward": 0.0,
+          "requested_action": 2,
+          "step": 0,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": false,
           "concrete_seed": 206,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 32
+          "raw_reward": 0.0,
+          "requested_action": 1,
+          "step": 32,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": false,
           "concrete_seed": 206,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 64
+          "raw_reward": 0.0,
+          "requested_action": 1,
+          "step": 64,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": false,
           "concrete_seed": 206,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 2,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 96
+          "raw_reward": 0.0,
+          "requested_action": 2,
+          "step": 96,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": false,
           "concrete_seed": 303,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": true,
+          "fire_reset_reason": "initial_serve",
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 0
+          "raw_reward": 0.0,
+          "requested_action": 1,
+          "step": 0,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": false,
           "concrete_seed": 303,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 3,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 32
+          "raw_reward": 0.0,
+          "requested_action": 3,
+          "step": 32,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": false,
           "concrete_seed": 303,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 3,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 64
+          "raw_reward": 0.0,
+          "requested_action": 3,
+          "step": 64,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": false,
           "concrete_seed": 303,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 0,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 96
+          "raw_reward": 0.0,
+          "requested_action": 0,
+          "step": 96,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": true,
           "concrete_seed": 304,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": true,
+          "fire_reset_reason": "initial_serve",
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 0
+          "raw_reward": 0.0,
+          "requested_action": 3,
+          "step": 0,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": false,
           "concrete_seed": 304,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 3,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 32
+          "raw_reward": 0.0,
+          "requested_action": 3,
+          "step": 32,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": false,
           "concrete_seed": 304,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 64
+          "raw_reward": 0.0,
+          "requested_action": 1,
+          "step": 64,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": false,
           "concrete_seed": 304,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 96
+          "raw_reward": 0.0,
+          "requested_action": 1,
+          "step": 96,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": false,
           "concrete_seed": 305,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": true,
+          "fire_reset_reason": "initial_serve",
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 0
+          "raw_reward": 0.0,
+          "requested_action": 1,
+          "step": 0,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": false,
           "concrete_seed": 305,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 32
+          "raw_reward": 0.0,
+          "requested_action": 1,
+          "step": 32,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": false,
           "concrete_seed": 305,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 0,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 64
+          "raw_reward": 0.0,
+          "requested_action": 0,
+          "step": 64,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": false,
           "concrete_seed": 305,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 3,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 96
+          "raw_reward": 0.0,
+          "requested_action": 3,
+          "step": 96,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": true,
           "concrete_seed": 306,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": true,
+          "fire_reset_reason": "initial_serve",
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 0
+          "raw_reward": 0.0,
+          "requested_action": 3,
+          "step": 0,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": false,
           "concrete_seed": 306,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 32
+          "raw_reward": 0.0,
+          "requested_action": 1,
+          "step": 32,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": false,
           "concrete_seed": 306,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 64
+          "raw_reward": 0.0,
+          "requested_action": 1,
+          "step": 64,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": false,
           "concrete_seed": 306,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 2,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 96
+          "raw_reward": 0.0,
+          "requested_action": 2,
+          "step": 96,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": true,
           "concrete_seed": 307,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": true,
+          "fire_reset_reason": "initial_serve",
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 0
+          "raw_reward": 0.0,
+          "requested_action": 3,
+          "step": 0,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": false,
           "concrete_seed": 307,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 2,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 32
+          "raw_reward": 0.0,
+          "requested_action": 2,
+          "step": 32,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": false,
           "concrete_seed": 307,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 0,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 64
+          "raw_reward": 0.0,
+          "requested_action": 0,
+          "step": 64,
+          "terminated": false,
+          "truncated": false
         },
         {
+          "action_overridden": false,
           "concrete_seed": 307,
           "dtype": "uint8",
           "episode": 1,
+          "executed_action": 0,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
           "observation_shape": [
             4,
             84,
             84
           ],
-          "step": 96
+          "raw_reward": 0.0,
+          "requested_action": 0,
+          "step": 96,
+          "terminated": false,
+          "truncated": false
         }
       ],
       "schema_version": 1,
@@ -722,77 +1202,78 @@
   "analysis": {
     "probe_count": 60,
     "action_count": 4,
-    "q_mean": 0.2001067825903495,
-    "q_std": 0.09193619678915434,
-    "q_min": 0.13351872563362122,
-    "q_max": 0.9936975240707397,
-    "max_q_mean": 0.22025375068187714,
-    "max_q_std": 0.10644328022276602,
+    "q_mean": 0.1937049629477163,
+    "q_std": 0.10421634427490063,
+    "q_min": 0.1248534545302391,
+    "q_max": 1.0282814502716064,
+    "max_q_mean": 0.20622150152921676,
+    "max_q_std": 0.11735576098516456,
     "selected_action_distribution": {
-      "FIRE": 1,
-      "LEFT": 59
+      "FIRE": 18,
+      "RIGHT": 41,
+      "LEFT": 1
     },
     "selected_action_indices": [
-      3,
-      3,
+      2,
       1,
+      2,
+      1,
+      2,
+      1,
+      2,
+      2,
+      2,
+      1,
+      1,
+      2,
+      2,
+      1,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      1,
+      2,
+      2,
+      2,
+      1,
+      1,
+      1,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      1,
+      1,
+      2,
+      1,
+      1,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      1,
+      2,
       3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3,
-      3
+      2,
+      1,
+      2,
+      2,
+      2,
+      2,
+      1,
+      2,
+      2,
+      2,
+      1,
+      2
     ],
     "observation_shape": [
       4,
@@ -802,364 +1283,364 @@
     "observation_dtype": "uint8",
     "q_values": [
       [
-        0.1856984943151474,
-        0.1772077977657318,
-        0.1913101077079773,
-        0.20035237073898315
+        0.18122711777687073,
+        0.18308430910110474,
+        0.191237211227417,
+        0.1659003496170044
       ],
       [
-        0.16384664177894592,
-        0.14507296681404114,
-        0.15204575657844543,
-        0.18153610825538635
+        0.16639024019241333,
+        0.17181597650051117,
+        0.1563045084476471,
+        0.14903520047664642
       ],
       [
-        0.8380925059318542,
-        0.9936975240707397,
-        0.6204002499580383,
-        0.9043782353401184
+        0.8618954420089722,
+        0.9130499958992004,
+        1.0282814502716064,
+        0.8761837482452393
       ],
       [
-        0.18302549421787262,
-        0.1725032925605774,
-        0.18361148238182068,
-        0.20804503560066223
+        0.19216299057006836,
+        0.20476147532463074,
+        0.19401411712169647,
+        0.18226298689842224
       ],
       [
-        0.1856984943151474,
-        0.1772077977657318,
-        0.1913101077079773,
-        0.20035237073898315
+        0.18122711777687073,
+        0.18308430910110474,
+        0.191237211227417,
+        0.1659003496170044
       ],
       [
-        0.18818406760692596,
-        0.18122780323028564,
-        0.19409319758415222,
-        0.21151846647262573
+        0.167994424700737,
+        0.17458316683769226,
+        0.1702585369348526,
+        0.1621749848127365
       ],
       [
-        0.177787184715271,
-        0.1652754843235016,
-        0.18311282992362976,
-        0.1940576136112213
+        0.16889728605747223,
+        0.16842946410179138,
+        0.1796589195728302,
+        0.1542457789182663
       ],
       [
-        0.1673431396484375,
-        0.16079792380332947,
-        0.17864102125167847,
-        0.19785892963409424
+        0.16623856127262115,
+        0.17277081310749054,
+        0.17400990426540375,
+        0.16356123983860016
       ],
       [
-        0.1856984943151474,
-        0.1772077977657318,
-        0.1913101077079773,
-        0.20035237073898315
+        0.18122711777687073,
+        0.18308430910110474,
+        0.191237211227417,
+        0.1659003496170044
       ],
       [
-        0.18818406760692596,
-        0.18122780323028564,
-        0.19409319758415222,
-        0.21151846647262573
+        0.167994424700737,
+        0.17458316683769226,
+        0.1702585369348526,
+        0.1621749848127365
       ],
       [
-        0.16923601925373077,
-        0.15713846683502197,
-        0.16082751750946045,
-        0.18020060658454895
+        0.1705806404352188,
+        0.18176846206188202,
+        0.17609602212905884,
+        0.15755672752857208
       ],
       [
-        0.1539648324251175,
-        0.1339728832244873,
-        0.1591840386390686,
-        0.1801580786705017
+        0.17341485619544983,
+        0.1725546270608902,
+        0.18161816895008087,
+        0.17509253323078156
       ],
       [
-        0.1856984943151474,
-        0.1772077977657318,
-        0.1913101077079773,
-        0.20035237073898315
+        0.18122711777687073,
+        0.18308430910110474,
+        0.191237211227417,
+        0.1659003496170044
       ],
       [
-        0.1641131490468979,
-        0.14108464121818542,
-        0.1466711312532425,
-        0.2020028829574585
+        0.13807184994220734,
+        0.15605099499225616,
+        0.15298783779144287,
+        0.14802247285842896
       ],
       [
-        0.21881866455078125,
-        0.2207438051700592,
-        0.22142404317855835,
-        0.23737746477127075
+        0.22870029509067535,
+        0.23764605820178986,
+        0.24423003196716309,
+        0.2104390263557434
       ],
       [
-        0.2018829584121704,
-        0.1934693157672882,
-        0.20458710193634033,
-        0.22324016690254211
+        0.19292932748794556,
+        0.1874837577342987,
+        0.21594461798667908,
+        0.17453788220882416
       ],
       [
-        0.1856984943151474,
-        0.1772077977657318,
-        0.1913101077079773,
-        0.20035237073898315
+        0.18122711777687073,
+        0.18308430910110474,
+        0.191237211227417,
+        0.1659003496170044
       ],
       [
-        0.2599635124206543,
-        0.26939478516578674,
-        0.2460104525089264,
-        0.28504446148872375
+        0.3232586085796356,
+        0.3425441086292267,
+        0.3635028898715973,
+        0.3116036057472229
       ],
       [
-        0.18277841806411743,
-        0.1749442219734192,
-        0.18463975191116333,
-        0.20287272334098816
+        0.16795960068702698,
+        0.16202294826507568,
+        0.17795808613300323,
+        0.1556081920862198
       ],
       [
-        0.33677592873573303,
-        0.34534963965415955,
-        0.354735404253006,
-        0.38306954503059387
+        0.3615166246891022,
+        0.37495720386505127,
+        0.43080222606658936,
+        0.33830469846725464
       ],
       [
-        0.1856984943151474,
-        0.1772077977657318,
-        0.1913101077079773,
-        0.20035237073898315
+        0.18122711777687073,
+        0.18308430910110474,
+        0.191237211227417,
+        0.1659003496170044
       ],
       [
-        0.17696847021579742,
-        0.16866406798362732,
-        0.1765781044960022,
-        0.21402040123939514
+        0.1735231727361679,
+        0.19000042974948883,
+        0.17214475572109222,
+        0.17386117577552795
       ],
       [
-        0.17135177552700043,
-        0.16179361939430237,
-        0.17522773146629333,
-        0.18518128991127014
+        0.16564251482486725,
+        0.16720083355903625,
+        0.1782587617635727,
+        0.150332972407341
       ],
       [
-        0.16980475187301636,
-        0.16223448514938354,
-        0.17634513974189758,
-        0.19436588883399963
+        0.17313067615032196,
+        0.17793062329292297,
+        0.17953476309776306,
+        0.16821323335170746
       ],
       [
-        0.1856984943151474,
-        0.1772077977657318,
-        0.1913101077079773,
-        0.20035237073898315
+        0.18122711777687073,
+        0.18308430910110474,
+        0.191237211227417,
+        0.1659003496170044
       ],
       [
-        0.1796429455280304,
-        0.16820919513702393,
-        0.18157383799552917,
-        0.20136675238609314
+        0.15828633308410645,
+        0.16065555810928345,
+        0.15987499058246613,
+        0.14885802567005157
       ],
       [
-        0.16779392957687378,
-        0.16352233290672302,
-        0.17908230423927307,
-        0.20198532938957214
+        0.17651407420635223,
+        0.18681569397449493,
+        0.18334873020648956,
+        0.17875993251800537
       ],
       [
-        0.17305825650691986,
-        0.16236749291419983,
-        0.1763763129711151,
-        0.20881474018096924
+        0.18745343387126923,
+        0.19836749136447906,
+        0.1899559050798416,
+        0.1862608939409256
       ],
       [
-        0.1856984943151474,
-        0.1772077977657318,
-        0.1913101077079773,
-        0.20035237073898315
+        0.18122711777687073,
+        0.18308430910110474,
+        0.191237211227417,
+        0.1659003496170044
       ],
       [
-        0.200311541557312,
-        0.19083929061889648,
-        0.19716474413871765,
-        0.22843918204307556
+        0.16675463318824768,
+        0.16916772723197937,
+        0.17241056263446808,
+        0.15738527476787567
       ],
       [
-        0.18058380484580994,
-        0.1706998646259308,
-        0.1859239935874939,
-        0.1989676058292389
+        0.17283280193805695,
+        0.1757328361272812,
+        0.1814536303281784,
+        0.16045252978801727
       ],
       [
-        0.16782034933567047,
-        0.1616472601890564,
-        0.16862967610359192,
-        0.18420028686523438
+        0.15819670259952545,
+        0.15722648799419403,
+        0.162075012922287,
+        0.1387331187725067
       ],
       [
-        0.1856984943151474,
-        0.1772077977657318,
-        0.1913101077079773,
-        0.20035237073898315
+        0.18122711777687073,
+        0.18308430910110474,
+        0.191237211227417,
+        0.1659003496170044
       ],
       [
-        0.19025184214115143,
-        0.18903708457946777,
-        0.19614580273628235,
-        0.2206268310546875
+        0.16054311394691467,
+        0.15834179520606995,
+        0.16897349059581757,
+        0.15296167135238647
       ],
       [
-        0.17087650299072266,
-        0.1572657823562622,
-        0.17587381601333618,
-        0.1982470452785492
+        0.1743132472038269,
+        0.17896103858947754,
+        0.17797166109085083,
+        0.1669471710920334
       ],
       [
-        0.18871760368347168,
-        0.17912381887435913,
-        0.18519315123558044,
-        0.21420755982398987
+        0.18853263556957245,
+        0.20294485986232758,
+        0.19130441546440125,
+        0.17778266966342926
       ],
       [
-        0.1856984943151474,
-        0.1772077977657318,
-        0.1913101077079773,
-        0.20035237073898315
+        0.18122711777687073,
+        0.18308430910110474,
+        0.191237211227417,
+        0.1659003496170044
       ],
       [
-        0.18052364885807037,
-        0.16257286071777344,
-        0.16715317964553833,
-        0.2016429305076599
+        0.16979795694351196,
+        0.17594775557518005,
+        0.17020638287067413,
+        0.15561631321907043
       ],
       [
-        0.17356686294078827,
-        0.16247522830963135,
-        0.17025235295295715,
-        0.18953105807304382
+        0.17737287282943726,
+        0.18846866488456726,
+        0.1802135556936264,
+        0.1653250902891159
       ],
       [
-        0.1608401983976364,
-        0.15243136882781982,
-        0.16376879811286926,
-        0.174483984708786
+        0.1505841761827469,
+        0.1396273821592331,
+        0.15938685834407806,
+        0.1248534545302391
       ],
       [
-        0.1856984943151474,
-        0.1772077977657318,
-        0.1913101077079773,
-        0.20035237073898315
+        0.18122711777687073,
+        0.18308430910110474,
+        0.191237211227417,
+        0.1659003496170044
       ],
       [
-        0.17963531613349915,
-        0.1771344244480133,
-        0.19077718257904053,
-        0.20758235454559326
+        0.1638282835483551,
+        0.16805289685726166,
+        0.1695270538330078,
+        0.16001860797405243
       ],
       [
-        0.1648664027452469,
-        0.15065044164657593,
-        0.1694130003452301,
-        0.18379035592079163
+        0.16393785178661346,
+        0.16376887261867523,
+        0.17196863889694214,
+        0.15492945909500122
       ],
       [
-        0.1636439710855484,
-        0.16034474968910217,
-        0.17687249183654785,
-        0.1939813494682312
+        0.16357585787773132,
+        0.16345348954200745,
+        0.17251227796077728,
+        0.15564510226249695
       ],
       [
-        0.1856984943151474,
-        0.1772077977657318,
-        0.1913101077079773,
-        0.20035237073898315
+        0.18122711777687073,
+        0.18308430910110474,
+        0.191237211227417,
+        0.1659003496170044
       ],
       [
-        0.1717686504125595,
-        0.15776994824409485,
-        0.16597390174865723,
-        0.1852722465991974
+        0.16343683004379272,
+        0.16537584364414215,
+        0.16092264652252197,
+        0.14770229160785675
       ],
       [
-        0.16127099096775055,
-        0.1488356590270996,
-        0.17105546593666077,
-        0.18612325191497803
+        0.16165205836296082,
+        0.16244156658649445,
+        0.1705160290002823,
+        0.1541040688753128
       ],
       [
-        0.14774399995803833,
-        0.13351872563362122,
-        0.16976362466812134,
-        0.21750912070274353
+        0.14191070199012756,
+        0.18258997797966003,
+        0.13558301329612732,
+        0.18802966177463531
       ],
       [
-        0.1856984943151474,
-        0.1772077977657318,
-        0.1913101077079773,
-        0.20035237073898315
+        0.18122711777687073,
+        0.18308430910110474,
+        0.191237211227417,
+        0.1659003496170044
       ],
       [
-        0.18760940432548523,
-        0.18323636054992676,
-        0.19497159123420715,
-        0.21325552463531494
+        0.16364368796348572,
+        0.16924364864826202,
+        0.1661643534898758,
+        0.15833091735839844
       ],
       [
-        0.1777438372373581,
-        0.16212323307991028,
-        0.17883554100990295,
-        0.19039100408554077
+        0.16810397803783417,
+        0.16695351898670197,
+        0.17988954484462738,
+        0.15551087260246277
       ],
       [
-        0.1699390709400177,
-        0.1623610556125641,
-        0.17121446132659912,
-        0.18662109971046448
+        0.16100218892097473,
+        0.16095498204231262,
+        0.16419266164302826,
+        0.14330902695655823
       ],
       [
-        0.1856984943151474,
-        0.1772077977657318,
-        0.1913101077079773,
-        0.20035237073898315
+        0.18122711777687073,
+        0.18308430910110474,
+        0.191237211227417,
+        0.1659003496170044
       ],
       [
-        0.16054776310920715,
-        0.14826464653015137,
-        0.1700345277786255,
-        0.18289673328399658
+        0.14559593796730042,
+        0.14350567758083344,
+        0.14905986189842224,
+        0.1371603012084961
       ],
       [
-        0.17418110370635986,
-        0.16055023670196533,
-        0.17352959513664246,
-        0.19087597727775574
+        0.15429064631462097,
+        0.15818460285663605,
+        0.15639819204807281,
+        0.14926119148731232
       ],
       [
-        0.17790283262729645,
-        0.17397138476371765,
-        0.18478846549987793,
-        0.19315338134765625
+        0.1755608320236206,
+        0.1760115921497345,
+        0.18086937069892883,
+        0.16402052342891693
       ],
       [
-        0.1856984943151474,
-        0.1772077977657318,
-        0.1913101077079773,
-        0.20035237073898315
+        0.18122711777687073,
+        0.18308430910110474,
+        0.191237211227417,
+        0.1659003496170044
       ],
       [
-        0.18946760892868042,
-        0.18639084696769714,
-        0.19036704301834106,
-        0.21312430500984192
+        0.16178733110427856,
+        0.15960487723350525,
+        0.1696072816848755,
+        0.14948821067810059
       ],
       [
-        0.18044817447662354,
-        0.1724664568901062,
-        0.18263614177703857,
-        0.19843032956123352
+        0.17294470965862274,
+        0.1773737221956253,
+        0.17495162785053253,
+        0.15879841148853302
       ],
       [
-        0.31635579466819763,
-        0.3129624128341675,
-        0.3282780349254608,
-        0.3586534857749939
+        0.3421615660190582,
+        0.36236780881881714,
+        0.37455761432647705,
+        0.3170301020145416
       ]
     ]
   }

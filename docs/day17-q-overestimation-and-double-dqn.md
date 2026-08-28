@@ -110,7 +110,7 @@ target 輸出是：
 
 toy experiment 裡的兩個 estimator 是獨立產生的，真實的 online/target network 卻來自同一條 training history，因此不能把 toy 的 bias 數字直接貼到 Breakout 上。要觀察真實模型，我先在 Contract v2 下固定一批 probe states，也就是之後會反覆餵給模型的 observations：使用 15 個 concrete seeds，每個 seed 取 4 張 observation；狀態形狀是 `(4, 84, 84)`，每個像素以 0–255 的整數資料型別 `uint8` 保存，由 seeded random requested actions 產生，環境仍保有 Contract v2 的 mandatory serve FIRE。
 
-這批 states 只做 diagnostics，不參與訓練，也不因為換 DQN family 而換一批。對 Day 17 smoke checkpoint 做 no-grad inference 後，60 個 probe 中有 59 個選到 `LEFT`、1 個選到 `FIRE`；Q-value 的整體平均是 `0.200107`，標準差是 `0.091936`，每個 probe 的最大 Q-value 平均是 `0.220254`。
+這批 states 只做 diagnostics，不參與訓練，也不因為換 DQN family 而換一批。對 Day 17 smoke checkpoint 做 no-grad inference 後，60 個 probe 中有 41 個選到 `RIGHT`、18 個選到 `FIRE`、1 個選到 `LEFT`；Q-value 的整體平均是 `0.193705`，標準差是 `0.104216`，每個 probe 的最大 Q-value 平均是 `0.206222`。
 
 [![Day 17 smoke checkpoint 在固定 Contract v2 probes 上的 Q-value 分布與 greedy action](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/5b34e43/assets/day17/q-probe-summary.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/5b34e43/assets/day17/q-probe-summary.png)
 
@@ -124,12 +124,12 @@ toy experiment 裡的兩個 estimator 是獨立產生的，真實的 online/targ
 
 | target rule | optimizer updates | transitions/s（每秒 transition） | optimizer updates/s | target forward GPU seconds | peak VRAM（最高顯存） |
 |---|---:|---:|---:|---:|---:|
-| DQN | 2,251 | 248.31 | 55.89 | 2.48 | 639,140,864 bytes |
-| Double DQN | 2,251 | 237.54 | 53.47 | 4.27 | 639,140,864 bytes |
+| DQN | 2,251 | 248.62 | 55.96 | 2.48 | 639,140,864 bytes |
+| Double DQN | 2,251 | 237.81 | 53.53 | 4.25 | 639,140,864 bytes |
 
 [![同一 N=2 GPU smoke config 下 DQN 與 Double DQN 的實際吞吐與 target-forward 成本](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/5b34e43/assets/day17/smoke-performance.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/5b34e43/assets/day17/smoke-performance.png)
 
-結果符合機制預期：Double DQN 的 next-state target branch 多做一次 online forward，所以 `target_forward` 的 GPU 累計時間較高，整體 transitions/s 約低 4.3%。但 replay sampling、backward、optimizer step、target sync 都確實跑過，兩邊的 checkpoint metadata 也保存了 `algorithm`、`architecture=standard`、`num_envs=2`、replay backend、training steps，以及 GPU/CUDA/runtime 資訊。這表示新的 target rule 接上了既有 pipeline，也沒有因為追速度而偷偷改 batch、environment count 或 precision。
+結果符合機制預期：Double DQN 的 next-state target branch 多做一次 online forward，所以 `target_forward` 的 GPU 累計時間較高，整體 transitions/s 約低 4.4%。但 replay sampling、backward、optimizer step、target sync 都確實跑過，兩邊的 checkpoint metadata 也保存了 `algorithm`、`architecture=standard`、`num_envs=2`、replay backend、training steps，以及 GPU/CUDA/runtime 資訊。這表示新的 target rule 接上了既有 pipeline，也沒有因為追速度而偷偷改 batch、environment count 或 precision。
 
 ## 這次學到的是機制，不是「Double DQN 已經贏了」
 

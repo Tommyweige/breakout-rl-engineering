@@ -11,23 +11,23 @@
   "runs": [
     {
       "algorithm": "dqn",
-      "steps_per_second": 248.3054500094179,
-      "optimizer_updates_per_second": 55.89355679711997,
+      "steps_per_second": 248.62184436422694,
+      "optimizer_updates_per_second": 55.964777166387485,
       "optimizer_updates": 2251,
-      "wall_clock_seconds": 40.272978299995884,
+      "wall_clock_seconds": 40.2217272000853,
       "peak_vram_bytes": 639140864,
-      "gpu_utilization_percent": 11.0,
-      "target_forward_gpu_seconds": 2.484203906476498
+      "gpu_utilization_percent": 12.0,
+      "target_forward_gpu_seconds": 2.4814115191996096
     },
     {
       "algorithm": "double_dqn",
-      "steps_per_second": 237.5392785438535,
-      "optimizer_updates_per_second": 53.47009160022142,
+      "steps_per_second": 237.8139670229945,
+      "optimizer_updates_per_second": 53.53192397687606,
       "optimizer_updates": 2251,
-      "wall_clock_seconds": 42.0983008001931,
+      "wall_clock_seconds": 42.049674900015816,
       "peak_vram_bytes": 639140864,
-      "gpu_utilization_percent": 12.0,
-      "target_forward_gpu_seconds": 4.269155000567436
+      "gpu_utilization_percent": 0.0,
+      "target_forward_gpu_seconds": 4.252403971016407
     }
   ]
 }
