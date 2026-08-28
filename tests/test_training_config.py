@@ -24,6 +24,16 @@ class DQNConfigTests(unittest.TestCase):
 
         self.assertEqual(restored, config)
         self.assertEqual(config.replay_backend, "cpu")
+        self.assertEqual(config.algorithm, "dqn")
+
+    def test_algorithm_is_validated_and_round_trips_through_metadata(self) -> None:
+        config = DQNConfig(algorithm="DOUBLE_DQN")
+
+        self.assertEqual(config.algorithm, "double_dqn")
+        self.assertEqual(DQNConfig.from_dict(config.to_dict()).algorithm, "double_dqn")
+
+        with self.assertRaises(ValueError):
+            DQNConfig(algorithm="dueling")
 
     def test_smoke_preset_keeps_real_training_order_but_is_small(self) -> None:
         config = DQNConfig.smoke(total_steps=1000, device="cpu")
@@ -49,6 +59,13 @@ class DQNConfigTests(unittest.TestCase):
         config = _config_from_args(args)
 
         self.assertEqual(config.device, "cuda")
+
+    def test_cli_can_select_double_dqn(self) -> None:
+        args = build_parser().parse_args(["--algorithm", "double_dqn", "--device", "cpu"])
+
+        config = _config_from_args(args)
+
+        self.assertEqual(config.algorithm, "double_dqn")
 
     def test_zero_discount_is_a_valid_boundary_value(self) -> None:
         self.assertEqual(DQNConfig(gamma=0.0).gamma, 0.0)

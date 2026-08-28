@@ -25,9 +25,14 @@ from breakout_rl.replay_tensors import (
     ReplayTensorBatch,
     replay_batch_to_tensors,
 )
-from breakout_rl.targets import hard_update, should_update_target
+from breakout_rl.targets import (
+    compute_double_dqn_targets,
+    compute_dqn_targets,
+    hard_update,
+    should_update_target,
+)
 from breakout_rl.tensors import observation_to_tensor
-from breakout_rl.training.config import DQNConfig
+from breakout_rl.training.config import DQNConfig, SUPPORTED_ALGORITHMS
 from breakout_rl.training.diagnostics import (
     ATARI_ACTION_NAMES,
     collect_runtime_metadata,
@@ -38,6 +43,20 @@ from breakout_rl.training.metrics import MetricsLogger
 
 class NonFiniteTrainingError(RuntimeError):
     """Raised when a training value becomes NaN or infinity."""
+
+
+MODEL_ARCHITECTURE = "standard"
+
+
+def _validate_algorithm(algorithm: str) -> str:
+    if (
+        not isinstance(algorithm, str)
+        or algorithm.strip().lower() not in SUPPORTED_ALGORITHMS
+    ):
+        raise ValueError(
+            f"algorithm must be one of {', '.join(SUPPORTED_ALGORITHMS)}"
+        )
+    return algorithm.strip().lower()
 
 
 class _StageProfiler:
@@ -280,21 +299,24 @@ def dqn_training_step(
     *,
     gamma: float,
     gradient_clip_norm: float | None,
+    algorithm: str = "dqn",
     loss_fn: nn.Module | None = None,
     collect_diagnostics: bool = True,
     stage_measure: Callable[[str, Callable[[], Any]], Any] | None = None,
 ) -> DQNTrainingStepResult:
-    """Perform one vanilla-DQN Huber-loss update.
+    """Perform one configurable DQN-family Huber-loss update.
 
     The online network predicts every action, then ``gather`` selects the Q
     value for the action actually recorded in each transition. The target
-    network supplies the detached vanilla-DQN Bellman target, so its
-    parameters are not part of the backward pass or optimizer update.
+    branch supplies a detached Bellman target: ``dqn`` uses the target-network
+    maximum, while ``double_dqn`` selects with the online network and evaluates
+    that action with the target network.
 
     ``gradient_norm`` is the total norm before clipping when clipping is
     enabled. This makes the metric useful for spotting exploding gradients.
     """
 
+    parsed_algorithm = _validate_algorithm(algorithm)
     if not isinstance(online_network, nn.Module):
         raise TypeError("online_network must be a torch.nn.Module")
     if not isinstance(target_network, nn.Module):
@@ -331,16 +353,25 @@ def dqn_training_step(
         raise ValueError("actions must be valid indices for the network output")
     selected_q_values = all_q_values.gather(1, actions[:, None]).squeeze(1)
 
-    from breakout_rl.targets import compute_dqn_targets
-
     targets = measure_stage(
         "target_forward",
-        lambda: compute_dqn_targets(
-            batch.rewards,
-            batch.next_states,
-            batch.terminated,
-            target_network,
-            gamma,
+        lambda: (
+            compute_double_dqn_targets(
+                batch.rewards,
+                batch.next_states,
+                batch.terminated,
+                online_network,
+                target_network,
+                gamma,
+            )
+            if parsed_algorithm == "double_dqn"
+            else compute_dqn_targets(
+                batch.rewards,
+                batch.next_states,
+                batch.terminated,
+                target_network,
+                gamma,
+            )
         ),
     )
     if collect_diagnostics:
@@ -635,6 +666,9 @@ class DQNTrainer:
             config,
             metadata={
                 "environment_id": self._environment_id,
+                "algorithm": self.config.algorithm,
+                "architecture": MODEL_ARCHITECTURE,
+                "num_envs": 1,
                 "observation_shape": list(self.observation_shape),
                 "action_count": self.action_count,
                 "requested_device": self.requested_device,
@@ -707,6 +741,7 @@ class DQNTrainer:
                 tensor_batch,
                 gamma=self.config.gamma,
                 gradient_clip_norm=self.config.gradient_clip_norm,
+                algorithm=self.config.algorithm,
                 collect_diagnostics=collect_diagnostics,
                 stage_measure=self._stage_profiler.measure_cuda,
             ),
@@ -798,6 +833,7 @@ class DQNTrainer:
         sps = float(self.global_step / elapsed)
         return {
             "global_step": self.global_step,
+            "algorithm": self.config.algorithm,
             "episode": self.episode,
             "raw_episode_return": completed_return,
             "episode_length": completed_length,
@@ -879,6 +915,10 @@ class DQNTrainer:
             run_dir=self.run_dir,
             extra={
                 "environment_id": self._environment_id,
+                "algorithm": self.config.algorithm,
+                "architecture": MODEL_ARCHITECTURE,
+                "num_envs": 1,
+                "training_steps": self.global_step,
                 "observation_shape": list(self.observation_shape),
                 "action_count": self.action_count,
                 "wall_clock_seconds": float(elapsed),
@@ -904,10 +944,15 @@ class DQNTrainer:
         elapsed = max(time.perf_counter() - self._started_at, 1e-9)
         summary: dict[str, Any] = {
             "status": status,
+            "trainer": "dqn",
             "run_id": self.run_dir.name,
             "run_dir": str(self.run_dir),
             "seed": self.config.seed,
+            "algorithm": self.config.algorithm,
+            "architecture": MODEL_ARCHITECTURE,
+            "num_envs": 1,
             "total_steps": self.global_step,
+            "training_steps": self.global_step,
             "episodes": self.episode,
             "optimizer_updates": self.optimizer_updates,
             "replay_backend": self.config.replay_backend,
@@ -984,6 +1029,7 @@ class DQNTrainer:
         """Save model/optimizer/RNG state without serializing the replay arrays."""
 
         self.metrics.flush()
+        elapsed = max(time.perf_counter() - self._started_at, 1e-9)
         filename = f"step-{self.global_step:08d}"
         if suffix:
             filename += f"-{suffix}"
@@ -991,6 +1037,19 @@ class DQNTrainer:
         temporary_path = path.with_suffix(".tmp")
         payload = {
             "format_version": 1,
+            "trainer": "dqn",
+            "algorithm": self.config.algorithm,
+            "architecture": MODEL_ARCHITECTURE,
+            "num_envs": 1,
+            "replay_backend": self.config.replay_backend,
+            "training_steps": self.global_step,
+            "runtime": self._runtime_metadata(elapsed),
+            "model_config": {
+                "architecture": MODEL_ARCHITECTURE,
+                "num_actions": self.action_count,
+                "input_shape": list(self.observation_shape),
+                "hidden_dim": getattr(self.online_network, "hidden_dim", None),
+            },
             "online_network": self.online_network.state_dict(),
             "target_network": self.target_network.state_dict(),
             "optimizer": self.optimizer.state_dict(),
@@ -1029,6 +1088,18 @@ class DQNTrainer:
             payload = torch.load(checkpoint_path, map_location=self.device)
         if not isinstance(payload, dict):
             raise ValueError("checkpoint must contain a mapping")
+
+        saved_algorithm = payload.get("algorithm")
+        if saved_algorithm is None and isinstance(payload.get("config"), Mapping):
+            saved_algorithm = payload["config"].get("algorithm", "dqn")
+        if (
+            saved_algorithm is not None
+            and _validate_algorithm(str(saved_algorithm)) != self.config.algorithm
+        ):
+            raise ValueError(
+                "checkpoint algorithm does not match trainer config: "
+                f"checkpoint={saved_algorithm!r}, config={self.config.algorithm!r}"
+            )
 
         self.online_network.load_state_dict(payload["online_network"])
         self.target_network.load_state_dict(payload["target_network"])

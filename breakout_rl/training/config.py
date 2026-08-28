@@ -9,6 +9,9 @@ from numbers import Integral, Real
 from typing import Any, Mapping
 
 
+SUPPORTED_ALGORITHMS = ("dqn", "double_dqn")
+
+
 def _validated_int(value: int, *, name: str, minimum: int) -> int:
     if isinstance(value, bool):
         raise TypeError(f"{name} must be an integer")
@@ -78,6 +81,19 @@ def _replay_backend_request(value: str, *, name: str) -> str:
     return normalized
 
 
+def _algorithm_request(value: str, *, name: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(
+            f"{name} must be one of {', '.join(SUPPORTED_ALGORITHMS)}"
+        )
+    normalized = value.strip().lower()
+    if normalized not in SUPPORTED_ALGORITHMS:
+        raise ValueError(
+            f"{name} must be one of {', '.join(SUPPORTED_ALGORITHMS)}"
+        )
+    return normalized
+
+
 @dataclass(frozen=True)
 class DQNConfig:
     """Development defaults for one reproducible DQN training run.
@@ -89,6 +105,7 @@ class DQNConfig:
 
     total_steps: int = 10_000
     seed: int = 42
+    algorithm: str = "dqn"
     gamma: float = 0.99
     learning_rate: float = 1e-4
     batch_size: int = 32
@@ -116,6 +133,11 @@ class DQNConfig:
     def __post_init__(self) -> None:
         _validated_int(self.total_steps, name="total_steps", minimum=1)
         _validated_int(self.seed, name="seed", minimum=0)
+        object.__setattr__(
+            self,
+            "algorithm",
+            _algorithm_request(self.algorithm, name="algorithm"),
+        )
 
         _probability(self.gamma, name="gamma")
 
@@ -202,11 +224,18 @@ class DQNConfig:
         )
 
     @classmethod
-    def smoke(cls, *, total_steps: int = 1_000, device: str = "cpu") -> "DQNConfig":
+    def smoke(
+        cls,
+        *,
+        total_steps: int = 1_000,
+        device: str = "cpu",
+        algorithm: str = "dqn",
+    ) -> "DQNConfig":
         """Return a small preset that still executes the real update order."""
 
         return cls(
             total_steps=total_steps,
+            algorithm=algorithm,
             batch_size=8,
             replay_capacity=256,
             learning_starts=32,
@@ -218,7 +247,13 @@ class DQNConfig:
         )
 
     @classmethod
-    def debug(cls, *, total_steps: int = 10_000, device: str = "cuda") -> "DQNConfig":
+    def debug(
+        cls,
+        *,
+        total_steps: int = 10_000,
+        device: str = "cuda",
+        algorithm: str = "dqn",
+    ) -> "DQNConfig":
         """Return the CUDA-first diagnostic run with frequent checkpoints.
 
         CPU remains an explicit portability override for tests and small
@@ -227,6 +262,7 @@ class DQNConfig:
 
         return cls(
             total_steps=total_steps,
+            algorithm=algorithm,
             batch_size=32,
             replay_capacity=10_000,
             learning_starts=1_000,
@@ -263,4 +299,4 @@ class DQNConfig:
         return replace(self, **overrides)
 
 
-__all__ = ["DQNConfig"]
+__all__ = ["DQNConfig", "SUPPORTED_ALGORITHMS"]

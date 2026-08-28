@@ -15,6 +15,7 @@ from breakout_rl.training.diagnostics import collect_runtime_metadata
 
 METRIC_FIELDS: tuple[str, ...] = (
     "global_step",
+    "algorithm",
     "episode",
     "raw_episode_return",
     "episode_length",

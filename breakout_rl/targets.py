@@ -93,20 +93,13 @@ def _terminated_mask(terminated: torch.Tensor) -> torch.Tensor:
     return terminated.to(dtype=torch.bool)
 
 
-def compute_dqn_targets(
+def _validate_target_batch(
     rewards: torch.Tensor,
     next_states: torch.Tensor,
     terminated: torch.Tensor,
-    target_network: nn.Module,
     gamma: float,
-) -> torch.Tensor:
-    """Compute vanilla DQN Bellman targets with a frozen target-network pass.
-
-    The helper uses ``target_network`` only to estimate the best next-state
-    value. ``terminated`` controls bootstrapping; ``truncated`` is deliberately
-    not inferred here because an externally truncated transition is not
-    automatically a true terminal state.
-    """
+) -> tuple[float, int, torch.Tensor]:
+    """Validate shared Bellman-target inputs and return normalized values."""
 
     parsed_gamma = _validate_gamma(gamma)
     batch_size = _validate_batch_vector(rewards, name="rewards")
@@ -122,29 +115,130 @@ def compute_dqn_targets(
         raise ValueError("rewards, next_states, and terminated must share batch size")
     if rewards.device != next_states.device or terminated.device != next_states.device:
         raise ValueError("rewards, next_states, and terminated must share a device")
+
+    return parsed_gamma, batch_size, _terminated_mask(terminated)
+
+
+def _validate_q_values(
+    q_values: torch.Tensor,
+    *,
+    batch_size: int,
+    device: torch.device,
+    name: str,
+    action_count: int | None = None,
+) -> None:
+    """Validate a network output used by a Bellman target."""
+
+    if not isinstance(q_values, torch.Tensor):
+        raise TypeError(f"{name} must return a torch.Tensor")
+    if q_values.ndim != 2 or int(q_values.shape[0]) != batch_size:
+        raise ValueError(f"{name} output must have shape (B, action_count)")
+    if int(q_values.shape[1]) < 1:
+        raise ValueError(f"{name} must return at least one action value")
+    if action_count is not None and int(q_values.shape[1]) != action_count:
+        raise ValueError("online_network and target_network must return the same action count")
+    if not q_values.is_floating_point():
+        raise TypeError(f"{name} output must be a floating-point tensor")
+    if q_values.device != device:
+        raise ValueError(f"{name} output must share the input device")
+
+
+def compute_dqn_targets(
+    rewards: torch.Tensor,
+    next_states: torch.Tensor,
+    terminated: torch.Tensor,
+    target_network: nn.Module,
+    gamma: float,
+) -> torch.Tensor:
+    """Compute vanilla DQN Bellman targets with a frozen target-network pass.
+
+    The helper uses ``target_network`` only to estimate the best next-state
+    value. ``terminated`` controls bootstrapping; ``truncated`` is deliberately
+    not inferred here because an externally truncated transition is not
+    automatically a true terminal state.
+    """
+
+    parsed_gamma, batch_size, done_mask = _validate_target_batch(
+        rewards,
+        next_states,
+        terminated,
+        gamma,
+    )
     if not isinstance(target_network, nn.Module):
         raise TypeError("target_network must be a torch.nn.Module")
-
-    done_mask = _terminated_mask(terminated)
 
     with torch.no_grad():
         next_q_values = target_network(next_states)
 
-    if not isinstance(next_q_values, torch.Tensor):
-        raise TypeError("target_network must return a torch.Tensor")
-    if next_q_values.ndim != 2 or int(next_q_values.shape[0]) != batch_size:
-        raise ValueError("target_network output must have shape (B, action_count)")
-    if int(next_q_values.shape[1]) < 1:
-        raise ValueError("target_network must return at least one action value")
-    if not next_q_values.is_floating_point():
-        raise TypeError("target_network output must be a floating-point tensor")
-    if next_q_values.device != rewards.device:
-        raise ValueError("target_network output must share the input device")
+    _validate_q_values(
+        next_q_values,
+        batch_size=batch_size,
+        device=rewards.device,
+        name="target_network",
+    )
 
     next_q_max = next_q_values.max(dim=1).values
     reward_values = rewards.to(dtype=next_q_values.dtype)
     bootstrap_mask = (~done_mask).to(dtype=next_q_values.dtype)
     return reward_values + parsed_gamma * bootstrap_mask * next_q_max
+
+
+def compute_double_dqn_targets(
+    rewards: torch.Tensor,
+    next_states: torch.Tensor,
+    terminated: torch.Tensor,
+    online_network: nn.Module,
+    target_network: nn.Module,
+    gamma: float,
+) -> torch.Tensor:
+    """Compute Double DQN targets with separate selection and evaluation.
+
+    The online network chooses the best next action, while the target network
+    evaluates only that action. Both next-state passes are detached because
+    they define the Bellman target rather than the current-state prediction.
+    ``terminated`` controls bootstrapping; truncated transitions remain
+    eligible unless the caller has explicitly represented them as terminated.
+    """
+
+    parsed_gamma, batch_size, done_mask = _validate_target_batch(
+        rewards,
+        next_states,
+        terminated,
+        gamma,
+    )
+    if not isinstance(online_network, nn.Module):
+        raise TypeError("online_network must be a torch.nn.Module")
+    if not isinstance(target_network, nn.Module):
+        raise TypeError("target_network must be a torch.nn.Module")
+    if online_network is target_network:
+        raise ValueError("online_network and target_network must be distinct objects")
+
+    with torch.no_grad():
+        online_next_q = online_network(next_states)
+        _validate_q_values(
+            online_next_q,
+            batch_size=batch_size,
+            device=rewards.device,
+            name="online_network",
+        )
+        next_actions = online_next_q.argmax(dim=1)
+
+        target_next_q = target_network(next_states)
+        _validate_q_values(
+            target_next_q,
+            batch_size=batch_size,
+            device=rewards.device,
+            name="target_network",
+            action_count=int(online_next_q.shape[1]),
+        )
+        next_values = target_next_q.gather(
+            1,
+            next_actions[:, None],
+        ).squeeze(1)
+
+    reward_values = rewards.to(dtype=next_values.dtype)
+    bootstrap_mask = (~done_mask).to(dtype=next_values.dtype)
+    return reward_values + parsed_gamma * bootstrap_mask * next_values
 
 
 def should_update_target(step: int, interval: int) -> bool:
@@ -156,6 +250,7 @@ def should_update_target(step: int, interval: int) -> bool:
 
 
 __all__ = [
+    "compute_double_dqn_targets",
     "compute_dqn_targets",
     "hard_update",
     "should_update_target",

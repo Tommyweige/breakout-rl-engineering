@@ -6,7 +6,7 @@ import argparse
 import json
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 
 from breakout_env import make_breakout_vector_env
 from breakout_rl.evaluation_contract import (
@@ -21,7 +21,19 @@ from breakout_rl.training.vectorized import VectorizedDQNTrainer
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Train vanilla DQN with batched Breakout environments."
+        description="Train a configurable DQN-family policy with batched Breakout environments."
+    )
+    parser.add_argument(
+        "--algorithm",
+        choices=("dqn", "double_dqn"),
+        default=None,
+        help="target rule to train (default: dqn)",
+    )
+    parser.add_argument(
+        "--config",
+        type=Path,
+        default=None,
+        help="JSON training config; command-line values override its fields",
     )
     parser.add_argument(
         "--preset",
@@ -29,7 +41,7 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="validated configuration preset (default: development)",
     )
-    parser.add_argument("--num-envs", type=int, default=4)
+    parser.add_argument("--num-envs", type=int, default=None)
     parser.add_argument("--total-steps", type=int, default=None)
     parser.add_argument("--seed", type=int, default=None)
     parser.add_argument("--device", default=None, help="cpu, cuda, cuda:<index>, or auto")
@@ -47,7 +59,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--strict-action-selection-parity",
         action=argparse.BooleanOptionalAction,
-        default=True,
+        default=None,
         help=(
             "require each vector batch to fit within one optimizer interval "
             "(default: enabled)"
@@ -56,7 +68,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--contract",
         type=Path,
-        default=Path("configs/eval/breakout_contract_v2.json"),
+        default=None,
         help="load a machine-readable Breakout environment contract",
     )
     parser.add_argument("--output", type=Path, default=None)
@@ -64,14 +76,43 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def _config_from_args(args: argparse.Namespace) -> DQNConfig:
-    if args.preset == "debug":
-        base = DQNConfig.debug(device=args.device or "cuda")
+    config_payload: Mapping[str, Any] = {}
+    if args.config is not None:
+        if not args.config.is_file():
+            raise FileNotFoundError(args.config)
+        try:
+            loaded = json.loads(args.config.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as error:
+            raise ValueError(f"{args.config}: invalid JSON") from error
+        if not isinstance(loaded, Mapping):
+            raise ValueError("training config must be a JSON object")
+        config_payload = loaded
+        raw_config = loaded.get("training_config", loaded)
+        if not isinstance(raw_config, Mapping):
+            raise ValueError("training_config must be a JSON object")
+        base = DQNConfig.from_dict(raw_config)
+    elif args.preset == "debug":
+        base = DQNConfig.debug(
+            device=args.device or "cuda",
+            algorithm=args.algorithm or "dqn",
+        )
     elif args.preset == "smoke":
-        base = DQNConfig.smoke(device=args.device or "cpu")
+        base = DQNConfig.smoke(
+            device=args.device or "cpu",
+            algorithm=args.algorithm or "dqn",
+        )
     else:
-        base = DQNConfig(device=args.device or "cpu")
+        base = DQNConfig(
+            device=args.device or "cpu",
+            algorithm=args.algorithm or "dqn",
+            num_envs=4,
+        )
 
-    overrides: dict[str, Any] = {"num_envs": args.num_envs}
+    overrides: dict[str, Any] = {}
+    if args.num_envs is not None:
+        overrides["num_envs"] = args.num_envs
+    elif args.config is None:
+        overrides["num_envs"] = 4
     for name in (
         "total_steps",
         "seed",
@@ -90,8 +131,31 @@ def _config_from_args(args: argparse.Namespace) -> DQNConfig:
             overrides[name] = value
     if args.profile_stages:
         overrides["profile_stages"] = True
-    overrides["strict_action_selection_parity"] = args.strict_action_selection_parity
+    if args.strict_action_selection_parity is not None:
+        overrides["strict_action_selection_parity"] = args.strict_action_selection_parity
+    elif args.config is None:
+        overrides["strict_action_selection_parity"] = True
+    if args.algorithm is not None:
+        overrides["algorithm"] = args.algorithm
     return base.with_overrides(**overrides)
+
+
+def _config_contract_path(args: argparse.Namespace) -> Path:
+    if args.contract is not None:
+        return args.contract
+    if args.config is not None:
+        try:
+            loaded = json.loads(args.config.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as error:
+            raise ValueError(f"{args.config}: invalid JSON") from error
+        if isinstance(loaded, Mapping):
+            for key in ("contract", "environment_contract", "contract_path"):
+                value = loaded.get(key)
+                if isinstance(value, str) and value.strip():
+                    return Path(value)
+                if isinstance(value, Mapping) and isinstance(value.get("path"), str):
+                    return Path(value["path"])
+    return Path("configs/eval/breakout_contract_v2.json")
 
 
 def _run_path(args: argparse.Namespace, config: DQNConfig) -> Path:
@@ -99,8 +163,9 @@ def _run_path(args: argparse.Namespace, config: DQNConfig) -> Path:
     if args.run_id is None:
         timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
         preset_name = args.preset or "development"
+        day_prefix = "day17" if config.algorithm == "double_dqn" else "day16"
         run_id = (
-            f"day16-{preset_name}-envs{config.num_envs}-seed{config.seed}-"
+            f"{day_prefix}-{preset_name}-envs{config.num_envs}-seed{config.seed}-"
             f"{timestamp}"
         )
     else:
@@ -115,9 +180,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         config = _config_from_args(args)
         run_path = _run_path(args, config)
-        contract: BreakoutEvaluationContractV2 | None = (
-            load_evaluation_contract(args.contract) if args.contract is not None else None
-        )
+        contract_path = _config_contract_path(args)
+        contract: BreakoutEvaluationContractV2 | None = load_evaluation_contract(contract_path)
         validate_breakout_runtime_contract(contract)
     except (TypeError, ValueError, FileNotFoundError) as error:
         print(f"Invalid vectorized training configuration: {error}")

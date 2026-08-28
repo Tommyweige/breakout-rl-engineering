@@ -1,0 +1,21 @@
+flowchart LR
+    S["next_state"]
+    R["reward"]
+    T["terminated"] --> M["bootstrap mask"]
+
+    S --> VM["target network max"]
+    VM --> VV["Vanilla next value"]
+    VV --> VY["Vanilla Bellman target"]
+
+    S --> O["online network"]
+    O --> A["argmax action a*"]
+    S --> N["target network"]
+    A --> G["gather Q_target(a*)"]
+    N --> G
+    G --> DV["Double next value"]
+    DV --> DY["Double Bellman target"]
+
+    R --> VY
+    R --> DY
+    M --> VY
+    M --> DY

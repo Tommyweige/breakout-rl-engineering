@@ -991,12 +991,21 @@ def load_dqn_checkpoint(
     )
     training_metadata: dict[str, Any] = {
         "source_day14_run_id": source_run_id,
+        "algorithm": payload.get("algorithm", saved_config.get("algorithm", "dqn")),
+        "architecture": payload.get(
+            "architecture",
+            model_config.get("architecture", "standard"),
+        ),
+        "num_envs": payload.get("num_envs", saved_config.get("num_envs", 1)),
         "training_seed": saved_config.get("seed"),
         "training_budget": saved_config.get("total_steps"),
         "learning_rate": saved_config.get("learning_rate"),
         "batch_size": saved_config.get("batch_size"),
         "train_frequency": saved_config.get("train_frequency"),
-        "replay_backend": saved_config.get("replay_backend", "cpu"),
+        "replay_backend": payload.get(
+            "replay_backend",
+            saved_config.get("replay_backend", "cpu"),
+        ),
         "training_device": saved_config.get("device"),
         "training_precision": saved_config.get("precision"),
         "training_config": dict(saved_config),
@@ -1010,6 +1019,17 @@ def load_dqn_checkpoint(
         "source_day14_run_id": source_run_id,
         "source_day14_manifest": manifest_value,
         "format_version": payload.get("format_version"),
+        "algorithm": payload.get("algorithm", saved_config.get("algorithm", "dqn")),
+        "architecture": payload.get(
+            "architecture",
+            model_config.get("architecture", "standard"),
+        ),
+        "num_envs": payload.get("num_envs", saved_config.get("num_envs", 1)),
+        "replay_backend": payload.get(
+            "replay_backend",
+            saved_config.get("replay_backend", "cpu"),
+        ),
+        "training_steps": payload.get("training_steps", payload.get("global_step")),
         "model_config": {
             "num_actions": action_count,
             "input_shape": list(observation_shape),

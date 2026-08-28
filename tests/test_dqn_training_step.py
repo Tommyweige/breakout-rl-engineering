@@ -105,6 +105,44 @@ class DQNTrainingStepTests(unittest.TestCase):
         )
         self.assertTrue(all(parameter.grad is None for parameter in self.target.parameters()))
 
+    def test_double_dqn_update_keeps_current_state_online_gradient(self) -> None:
+        with torch.no_grad():
+            self.online.linear.weight.copy_(
+                torch.tensor(
+                    [
+                        [1.0, 0.0],
+                        [0.0, 2.0],
+                        [-1.0, 0.5],
+                    ]
+                )
+            )
+            self.target.linear.weight.copy_(
+                torch.tensor(
+                    [
+                        [4.0, 0.0],
+                        [0.0, 1.0],
+                        [-1.0, 0.5],
+                    ]
+                )
+            )
+        optimizer = torch.optim.SGD(self.online.parameters(), lr=0.01)
+
+        result = dqn_training_step(
+            self.online,
+            self.target,
+            optimizer,
+            make_batch(),
+            gamma=0.5,
+            gradient_clip_norm=None,
+            algorithm="double_dqn",
+        )
+
+        # Row 0: online next Q [1, 4, 0] selects action 1; target evaluates
+        # it as 2. Row 1 is terminal and keeps its reward -1.
+        torch.testing.assert_close(result.targets, torch.tensor([2.0, -1.0]))
+        self.assertTrue(any(parameter.grad is not None for parameter in self.online.parameters()))
+        self.assertTrue(all(parameter.grad is None for parameter in self.target.parameters()))
+
     def test_non_finite_q_values_are_rejected_before_optimizer_step(self) -> None:
         with torch.no_grad():
             self.online.linear.weight[0, 0] = float("nan")
