@@ -14,7 +14,7 @@ Day 14 把 Replay Buffer 放進 GPU 後，得到一個有點反直覺的結果�
 
 這個實作的結構性資料流如下。圖中的 single-env reference 是原本的對照路徑；vectorized trainer 則把模型 forward 和 replay insertion 的細碎呼叫合併起來。
 
-[![單一環境與向量化 DQN trainer 的資料流，以及 done environment 的局部 reset](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/codex/issue-18-day16/assets/day16/vectorized-pipeline.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/codex/issue-18-day16/assets/day16/vectorized-pipeline.png)
+[![單一環境與向量化 DQN trainer 的資料流，以及 done environment 的局部 reset](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/b884fd7965801151d532998569459d7dc2f389ac/assets/day16/vectorized-pipeline.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/b884fd7965801151d532998569459d7dc2f389ac/assets/day16/vectorized-pipeline.png)
 
 這不是把一個環境複製 N 次就結束。圖上有三個會影響正確性的順序：先保存 done transition 的 final observation，再只 reset 已結束的環境，最後才把實際新增的 transition 數加入 `global_step`。任何一個順序錯了，速度數字都可能很好看，但 Replay 裡的資料已經不是原本的資料。
 
@@ -70,7 +70,7 @@ GPU Replay 原本的 `add` 每次只處理一筆資料。Day 16 新增 `add_batc
 
 ## 10K transitions 的完整 systems screening
 
-下面的數字來自真的 `ALE/Breakout-v5`、PyTorch CUDA、GPU Replay 和固定 seed `42`。四組設定都使用相同的 10,000 accepted transitions、batch size 32、`learning_starts = 1,000`、`train_frequency = 4`、target interval 500、float32 與 Contract v2 的 FIRE reset。完整的 machine-readable source 是 [`vectorized-training.json`](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/codex/issue-18-day16/assets/day16/vectorized-training.json)。
+下面的數字來自真的 `ALE/Breakout-v5`、PyTorch CUDA、GPU Replay 和固定 seed `42`。四組設定都使用相同的 10,000 accepted transitions、batch size 32、`learning_starts = 1,000`、`train_frequency = 4`、target interval 500、float32 與 Contract v2 的 FIRE reset。完整的 machine-readable source 是 [`vectorized-training.json`](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/b884fd7965801151d532998569459d7dc2f389ac/assets/day16/vectorized-training.json)。
 
 | 環境數 N | vector iterations | accepted transitions/s | batched action calls | `add_batch` calls | optimizer updates | target syncs |
 |---:|---:|---:|---:|---:|---:|---:|
@@ -81,7 +81,7 @@ GPU Replay 原本的 `add` 每次只處理一筆資料。Day 16 新增 `add_batc
 
 這張圖的左側是每個設定在相同 transition budget 下的 end-to-end throughput（整條資料流每秒完成的 transition 數），右側是完成同一個 budget 實際花費的 wall-clock（真實經過的秒數）。`accepted transitions/s` 是 `global_step` 的速度，不是把 vector iteration 誤當成 transition 的速度。
 
-[![1、2、4、8 個環境在相同 10K transition budget 下的吞吐與 wall-clock](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/codex/issue-18-day16/assets/day16/vectorized-throughput.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/codex/issue-18-day16/assets/day16/vectorized-throughput.png)
+[![1、2、4、8 個環境在相同 10K transition budget 下的吞吐與 wall-clock](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/b884fd7965801151d532998569459d7dc2f389ac/assets/day16/vectorized-throughput.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/b884fd7965801151d532998569459d7dc2f389ac/assets/day16/vectorized-throughput.png)
 
 在這次 RTX 4060 Laptop GPU 與 2 個 CPU threads 的測試上，N=8 比 N=1 約快 `1.48×`。N=4 與 N=8 的差距只有約 2.7%，所以後續 guardrail 選用較簡單的 N=4 作為 candidate；這個結果支持 batching 確實減少了零碎呼叫，但不代表 N 越大永遠越好。當環境 step、CPU 記憶體或 GPU batch 已經飽和後，繼續增加 N 可能只會讓 reset 和主機端的管理工作變重。
 
@@ -89,7 +89,7 @@ GPU Replay 原本的 `add` 每次只處理一筆資料。Day 16 新增 `add_batc
 
 完整 trainer 的 batched inference stage 從 N=1 的 10,000 次 model call，降到 N=8 的 1,250 次。每次 call 的輸入是 `(N, 4, 84, 84)`，輸出是 `(N, 4)` Q-values；四個 action 的意義仍然是 `NOOP`、`FIRE`、`RIGHT`、`LEFT`。
 
-[![不同 environment count 的 batched inference throughput 與單次 forward 成本](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/codex/issue-18-day16/assets/day16/batched-inference.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/codex/issue-18-day16/assets/day16/batched-inference.png)
+[![不同 environment count 的 batched inference throughput 與單次 forward 成本](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/b884fd7965801151d532998569459d7dc2f389ac/assets/day16/batched-inference.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/b884fd7965801151d532998569459d7dc2f389ac/assets/day16/batched-inference.png)
 
 Replay insertion 另外做了 batch size 1、2、4、8、16 的獨立 microbenchmark。輸入 observation 來自一次真實 Breakout reset/step，之後只為了量測 copy cost 而重複成指定大小；這個測試不是拿重複畫面宣稱模型學習效果。
 
@@ -103,7 +103,7 @@ Replay insertion 另外做了 batch size 1、2、4、8、16 的獨立 microbench
 
 N=16 時，一次呼叫的成本只從 0.240 ms 增加到 0.469 ms，但同一段時間寫入的 transition 數大幅增加。這正是 batching 的工程價值：不是每一筆資料都變得免費，而是把固定的函式呼叫與小型 GPU copy overhead 攤到更多 transition 上。
 
-[![batch size 1、2、4、8、16 的真實 replay insertion microbenchmark](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/codex/issue-18-day16/assets/day16/replay-insertion.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/codex/issue-18-day16/assets/day16/replay-insertion.png)
+[![batch size 1、2、4、8、16 的真實 replay insertion microbenchmark](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/b884fd7965801151d532998569459d7dc2f389ac/assets/day16/replay-insertion.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/b884fd7965801151d532998569459d7dc2f389ac/assets/day16/replay-insertion.png)
 
 最後看 utilization。固定間隔 sampler 觀察到的 GPU 平均使用率從 N=1 的 `40.61%` 到 N=8 的 `45.19%`，process CPU 平均值則約從 `5.49%` 上升到 `11.30%`。這再次提醒我們：
 
@@ -114,7 +114,7 @@ trainer 更快 ≠ policy 一定學得更好
 
 這次 throughput 的改善來自整個資料流縮短；GPU utilization 只是其中一個觀察值，不能單獨當成選擇依據。
 
-[![1、2、4、8 個環境的固定間隔 CPU/GPU utilization sampling](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/codex/issue-18-day16/assets/day16/system-utilization.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/codex/issue-18-day16/assets/day16/system-utilization.png)
+[![1、2、4、8 個環境的固定間隔 CPU/GPU utilization sampling](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/b884fd7965801151d532998569459d7dc2f389ac/assets/day16/system-utilization.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/b884fd7965801151d532998569459d7dc2f389ac/assets/day16/system-utilization.png)
 
 ## 速度 candidate 還要經過固定 evaluation
 
@@ -125,7 +125,7 @@ systems benchmark 只回答「資料流跑得多快」，不能回答「模型�
 | N=1 | 1.53 | 0.00 | 2.36 | 186.53 | 15/15 | 0/15 |
 | N=4 | 2.80 | 2.00 | 2.74 | 2,030.67 | 14/15 | 1/15 |
 
-N=4 的平均回報比 N=1 高 `1.27`，但它也多了一次 TimeLimit truncation；這個差異不能被解讀成向量化讓 policy 變強。這次 guardrail 沒有證明 candidate 的學習品質相同，只證明在這個小樣本下沒有一個可以直接宣布的速度換品質結論。完整結果與 checkpoint SHA-256 在 [`evaluation-summary.json`](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/codex/issue-18-day16/assets/day16/evaluation-summary.json)。
+N=4 的平均回報比 N=1 高 `1.27`，但它也多了一次 TimeLimit truncation；這個差異不能被解讀成向量化讓 policy 變強。這次 guardrail 沒有證明 candidate 的學習品質相同，只證明在這個小樣本下沒有一個可以直接宣布的速度換品質結論。完整結果與 checkpoint SHA-256 在 [`evaluation-summary.json`](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/b884fd7965801151d532998569459d7dc2f389ac/assets/day16/evaluation-summary.json)。
 
 這裡也要保留一個重要的實作邊界：trainer 會在跨過 boundary 的地方拆分 transition chunks，因此 update、target sync 和 checkpoint 的 transition boundary 是精確對齊的；但它仍不是 single-env 的 bit-for-bit（每一步 action、資料順序與更新都完全相同）replay/update trace，因為 N 個環境的 action 會先以同一批 Q-values 決定。若後續實驗需要逐 transition 完全重現，就必須再付出同步 action 與資料收集的成本，不能只看目前的 throughput 數字。
 
