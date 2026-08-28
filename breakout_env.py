@@ -7,6 +7,7 @@ from typing import Any
 
 import ale_py
 import gymnasium as gym
+import numpy as np
 from gymnasium.wrappers import AtariPreprocessing, FrameStackObservation
 
 
@@ -18,21 +19,34 @@ ENVIRONMENT_ID = "ALE/Breakout-v5"
 class BreakoutFireResetWrapper(gym.Wrapper):
     """Insert FIRE only for the initial serve or after an observed life loss."""
 
-    def __init__(self, env: gym.Env) -> None:
+    def __init__(self, env: gym.Env, *, max_fire_attempts: int = 8) -> None:
         super().__init__(env)
+        if isinstance(max_fire_attempts, bool):
+            raise TypeError("max_fire_attempts must be a positive integer")
+        try:
+            parsed_max_fire_attempts = operator.index(max_fire_attempts)
+        except TypeError as error:
+            raise TypeError("max_fire_attempts must be a positive integer") from error
+        if parsed_max_fire_attempts < 1:
+            raise ValueError("max_fire_attempts must be a positive integer")
         meanings = getattr(self.unwrapped, "get_action_meanings", None)
         action_names = tuple(str(value) for value in meanings()) if callable(meanings) else ()
         try:
             self.fire_action = action_names.index("FIRE")
         except ValueError as error:
             raise ValueError("BreakoutFireResetWrapper requires a FIRE action") from error
+        self.max_fire_attempts = int(parsed_max_fire_attempts)
         self._needs_fire = False
         self._pending_fire_reason: str | None = None
+        self._fire_attempts = 0
         self._last_lives: int | None = None
+        self._last_observation: np.ndarray | None = None
         self._auto_fire_count = 0
         self.last_requested_action: int | None = None
         self.last_executed_action: int | None = None
         self.last_action_was_auto_fire = False
+        self.last_fire_reset_confirmed: bool | None = None
+        self.last_fire_reset_confirmation: str | None = None
 
     def _lives(self) -> int | None:
         lives = getattr(getattr(self.unwrapped, "ale", None), "lives", None)
@@ -47,31 +61,80 @@ class BreakoutFireResetWrapper(gym.Wrapper):
     def auto_fire_count(self) -> int:
         return self._auto_fire_count
 
+    @staticmethod
+    def _observation_changed_fraction(
+        previous: np.ndarray | None,
+        current: Any,
+    ) -> float:
+        if previous is None:
+            return 0.0
+        current_array = np.asarray(current)
+        if previous.shape != current_array.shape or previous.size == 0:
+            return 0.0
+        return float(np.count_nonzero(previous != current_array) / previous.size)
+
     def reset(self, **kwargs: Any) -> tuple[Any, dict[str, Any]]:
         observation, info = self.env.reset(**kwargs)
         self._last_lives = self._lives()
         self._needs_fire = True
         self._pending_fire_reason = "initial_serve"
+        self._fire_attempts = 0
+        self._last_observation = np.array(observation, copy=True)
         self._auto_fire_count = 0
         self.last_requested_action = None
         self.last_executed_action = None
         self.last_action_was_auto_fire = False
-        return observation, dict(info)
+        self.last_fire_reset_confirmed = None
+        self.last_fire_reset_confirmation = None
+        reset_info = dict(info)
+        reset_info.update(
+            {
+                "fire_reset_needs_fire": True,
+                "fire_reset_pending_reason": "initial_serve",
+                "fire_reset_max_attempts": self.max_fire_attempts,
+            }
+        )
+        return observation, reset_info
 
     def step(self, action: int) -> tuple[Any, float, bool, bool, dict[str, Any]]:
         requested_action = int(action)
         auto_fire = self._needs_fire
         fire_reason = self._pending_fire_reason if auto_fire else None
+        previous_observation = self._last_observation
         executed_action = self.fire_action if auto_fire else requested_action
         observation, reward, terminated, truncated, info = self.env.step(executed_action)
         info = dict(info)
+        observation_changed_fraction = self._observation_changed_fraction(
+            previous_observation,
+            observation,
+        )
+        fire_attempt = 0
+        fire_confirmed: bool | None = False if auto_fire else None
+        fire_confirmation: str | None = None
         self.last_requested_action = requested_action
         self.last_executed_action = executed_action
         self.last_action_was_auto_fire = auto_fire
         if auto_fire:
+            self._fire_attempts += 1
+            fire_attempt = self._fire_attempts
             self._auto_fire_count += 1
-            self._needs_fire = False
-            self._pending_fire_reason = None
+            if float(reward) != 0.0:
+                fire_confirmed = True
+                fire_confirmation = "reward"
+            elif observation_changed_fraction > 0.0:
+                fire_confirmed = True
+                fire_confirmation = "observation_activity"
+            if fire_confirmed or bool(terminated) or bool(truncated):
+                self._needs_fire = False
+                self._pending_fire_reason = None
+                self._fire_attempts = 0
+            elif fire_attempt >= self.max_fire_attempts:
+                self._last_observation = np.array(observation, copy=True)
+                raise RuntimeError(
+                    "FIRE serve was not confirmed after "
+                    f"{self.max_fire_attempts} attempts for {fire_reason}; "
+                    "the wrapper refuses to continue with a possible serve deadlock"
+                )
         current_lives = self._lives()
         life_loss = (
             self._last_lives is not None
@@ -81,7 +144,11 @@ class BreakoutFireResetWrapper(gym.Wrapper):
         if life_loss:
             self._needs_fire = True
             self._pending_fire_reason = "after_life_loss"
+            self._fire_attempts = 0
         self._last_lives = current_lives
+        self._last_observation = np.array(observation, copy=True)
+        self.last_fire_reset_confirmed = fire_confirmed
+        self.last_fire_reset_confirmation = fire_confirmation
         info.update(
             {
                 "fire_reset_auto": auto_fire,
@@ -89,6 +156,12 @@ class BreakoutFireResetWrapper(gym.Wrapper):
                 "fire_reset_life_loss": life_loss,
                 "fire_reset_requested_action": requested_action,
                 "fire_reset_executed_action": executed_action,
+                "fire_reset_attempt": fire_attempt,
+                "fire_reset_confirmed": fire_confirmed,
+                "fire_reset_confirmation": fire_confirmation,
+                "fire_reset_observation_changed_fraction": observation_changed_fraction,
+                "fire_reset_serve_attempts": self._auto_fire_count,
+                "fire_reset_needs_fire": self._needs_fire,
             }
         )
         return observation, float(reward), bool(terminated), bool(truncated), info

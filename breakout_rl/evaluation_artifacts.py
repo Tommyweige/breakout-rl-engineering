@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import math
+from collections import Counter
 from pathlib import Path
 from statistics import fmean, median, pstdev
 from typing import Any, Mapping, Sequence
@@ -185,7 +186,7 @@ def validate_episode_rows(
 
 def summary_from_episode_rows(
     rows: Sequence[Mapping[str, Any]],
-) -> dict[str, float | int | None]:
+) -> dict[str, Any]:
     if not rows:
         raise ValueError("at least one episode row is required")
     summary = summarize_returns([float(row["episode_return"]) for row in rows])
@@ -215,6 +216,55 @@ def summary_from_episode_rows(
             "mean_length_truncated": _mean("episode_length", truncated_rows),
         }
     )
+    requested_action_counts: Counter[str] = Counter()
+    executed_action_counts: Counter[str] = Counter()
+    auto_fire_reason_counts: Counter[str] = Counter()
+    auto_fire_count = 0
+    has_action_provenance = False
+    for row in rows:
+        raw_requested = row.get("requested_action_distribution")
+        raw_executed = row.get(
+            "executed_action_distribution",
+            row.get("action_distribution"),
+        )
+        if isinstance(raw_requested, Mapping):
+            has_action_provenance = True
+            requested_action_counts.update(
+                {str(name): int(count) for name, count in raw_requested.items()}
+            )
+        if isinstance(raw_executed, Mapping):
+            has_action_provenance = True
+            executed_action_counts.update(
+                {str(name): int(count) for name, count in raw_executed.items()}
+            )
+        raw_reason_counts = row.get("auto_fire_reason_counts")
+        if isinstance(raw_reason_counts, Mapping):
+            auto_fire_reason_counts.update(
+                {str(name): int(count) for name, count in raw_reason_counts.items()}
+            )
+        try:
+            auto_fire_count += int(row.get("auto_fire_count", 0))
+        except (TypeError, ValueError):
+            raise ValueError("auto_fire_count must be an integer when present") from None
+    if has_action_provenance:
+        if not requested_action_counts:
+            requested_action_counts.update(executed_action_counts)
+        summary.update(
+            {
+                "action_distribution_semantics": "executed/wrapper-resolved action",
+                "action_distribution": dict(sorted(executed_action_counts.items())),
+                "requested_action_distribution": dict(
+                    sorted(requested_action_counts.items())
+                ),
+                "executed_action_distribution": dict(
+                    sorted(executed_action_counts.items())
+                ),
+                "auto_fire_count": auto_fire_count,
+                "auto_fire_reason_counts": dict(
+                    sorted(auto_fire_reason_counts.items())
+                ),
+            }
+        )
     return summary
 
 

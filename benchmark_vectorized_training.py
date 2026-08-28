@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -19,6 +20,20 @@ from breakout_rl.training.config import DQNConfig
 from breakout_rl.training.dqn_trainer import resolve_device
 from breakout_rl.training.vectorized import VectorizedDQNTrainer
 from profile_batch_size_experiment import RuntimeSampler, _sample_summary
+
+
+def _git_commit_sha() -> str | None:
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    value = result.stdout.strip()
+    return value or None
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -51,6 +66,15 @@ def build_parser() -> argparse.ArgumentParser:
         action=argparse.BooleanOptionalAction,
         default=True,
         help="record stage timings in each run summary (default: enabled)",
+    )
+    parser.add_argument(
+        "--strict-action-selection-parity",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help=(
+            "reject environment counts whose batched actions can span an "
+            "optimizer boundary (default: disabled for screening)"
+        ),
     )
     parser.add_argument("--gpu-index", type=int, default=0)
     parser.add_argument("--sample-interval", type=float, default=1.0)
@@ -110,6 +134,7 @@ def _run_one(
         device=args.device,
         replay_backend=args.replay_backend,
         profile_stages=args.profile_stages,
+        strict_action_selection_parity=args.strict_action_selection_parity,
     )
     started_at = time.perf_counter()
     try:
@@ -185,6 +210,17 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "exact transition boundaries with replay chunks when a vector "
                 "step crosses an event"
             ),
+            "action_selection_batch_semantics": (
+                "one batched forward selects all N actions before env.step; "
+                "later transitions in a crossing batch use the pre-update "
+                "online-network snapshot"
+            ),
+            "strict_action_selection_parity_rule": (
+                "strict parity requires num_envs <= train_frequency and "
+                "train_frequency % num_envs == 0"
+            ),
+            "strict_action_selection_parity_requested": args.strict_action_selection_parity,
+            "git_commit_sha": _git_commit_sha(),
             "profile_stages": args.profile_stages,
         },
         "results": results,

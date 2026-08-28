@@ -13,6 +13,7 @@ import operator
 import os
 import random
 import time
+import warnings
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Literal, Mapping, Sequence
@@ -60,6 +61,16 @@ VectorScheduleEventKind = Literal[
     "target_sync",
     "checkpoint",
 ]
+
+ACTION_SELECTION_BATCH_SEMANTICS = (
+    "one batched forward selects all N actions before env.step; if the vector "
+    "step crosses an optimizer boundary, later transitions use the pre-update "
+    "online-network snapshot"
+)
+STRICT_ACTION_SELECTION_PARITY_RULE = (
+    "strict parity requires num_envs <= train_frequency and "
+    "train_frequency % num_envs == 0"
+)
 
 
 @dataclass(frozen=True)
@@ -115,6 +126,23 @@ def crossed_transition_boundaries(
         raise ValueError("current_step must be >= previous_step >= 0")
     first_boundary = ((previous // parsed_interval) + 1) * parsed_interval
     return tuple(range(first_boundary, current + 1, parsed_interval))
+
+
+def strict_action_selection_parity_satisfied(
+    num_envs: int,
+    train_frequency: int,
+) -> bool:
+    """Return whether one vector batch can fit inside one update interval."""
+
+    parsed_num_envs = _positive_int(num_envs, name="num_envs")
+    parsed_train_frequency = _positive_int(
+        train_frequency,
+        name="train_frequency",
+    )
+    return (
+        parsed_num_envs <= parsed_train_frequency
+        and parsed_train_frequency % parsed_num_envs == 0
+    )
 
 
 def _schedule_events(
@@ -336,6 +364,27 @@ class VectorizedDQNTrainer:
                 "config.total_steps must be divisible by config.num_envs so "
                 "each vector step contributes exactly N transitions"
             )
+        self.strict_action_selection_parity_satisfied = (
+            strict_action_selection_parity_satisfied(
+                self.num_envs,
+                config.train_frequency,
+            )
+        )
+        if config.strict_action_selection_parity and not (
+            self.strict_action_selection_parity_satisfied
+        ):
+            raise ValueError(
+                "strict action-selection parity is unavailable: "
+                f"{STRICT_ACTION_SELECTION_PARITY_RULE}"
+            )
+        if not self.strict_action_selection_parity_satisfied:
+            warnings.warn(
+                "vectorized action selection has behavior-policy lag because "
+                f"{STRICT_ACTION_SELECTION_PARITY_RULE}; metadata records the "
+                "declared batching semantics",
+                RuntimeWarning,
+                stacklevel=2,
+            )
         if config.cpu_threads is not None:
             torch.set_num_threads(config.cpu_threads)
 
@@ -480,6 +529,15 @@ class VectorizedDQNTrainer:
                 "schedule_semantics": (
                     "optimizer, target, and checkpoint events execute at exact "
                     "transition boundaries; replay insertion is chunked when crossed"
+                ),
+                "action_selection_batch_semantics": ACTION_SELECTION_BATCH_SEMANTICS,
+                "strict_action_selection_parity_rule": STRICT_ACTION_SELECTION_PARITY_RULE,
+                "strict_action_selection_parity_requested": config.strict_action_selection_parity,
+                "strict_action_selection_parity_satisfied": self.strict_action_selection_parity_satisfied,
+                "behavior_policy_lag_warning": (
+                    None
+                    if self.strict_action_selection_parity_satisfied
+                    else "later transitions in a vector batch can use pre-update online-network weights"
                 ),
                 "replay_transfer": self.config.replay_transfer,
                 "replay_backend": self.config.replay_backend,
@@ -841,6 +899,15 @@ class VectorizedDQNTrainer:
                     "optimizer, target, and checkpoint events execute at exact "
                     "transition boundaries; replay insertion is chunked when crossed"
                 ),
+                "action_selection_batch_semantics": ACTION_SELECTION_BATCH_SEMANTICS,
+                "strict_action_selection_parity_rule": STRICT_ACTION_SELECTION_PARITY_RULE,
+                "strict_action_selection_parity_requested": self.config.strict_action_selection_parity,
+                "strict_action_selection_parity_satisfied": self.strict_action_selection_parity_satisfied,
+                "behavior_policy_lag_warning": (
+                    None
+                    if self.strict_action_selection_parity_satisfied
+                    else "later transitions in a vector batch can use pre-update online-network weights"
+                ),
                 "configured_cpu_threads": self.config.cpu_threads,
                 "replay_transfer": self.config.replay_transfer,
                 "replay_backend": self.config.replay_backend,
@@ -939,6 +1006,15 @@ class VectorizedDQNTrainer:
             "last_checkpoint": None
             if self._last_checkpoint is None
             else str(self._last_checkpoint),
+            "action_selection_batch_semantics": ACTION_SELECTION_BATCH_SEMANTICS,
+            "strict_action_selection_parity_rule": STRICT_ACTION_SELECTION_PARITY_RULE,
+            "strict_action_selection_parity_requested": self.config.strict_action_selection_parity,
+            "strict_action_selection_parity_satisfied": self.strict_action_selection_parity_satisfied,
+            "behavior_policy_lag_warning": (
+                None
+                if self.strict_action_selection_parity_satisfied
+                else "later transitions in a vector batch can use pre-update online-network weights"
+            ),
         }
         summary.update(extra)
         return summary
@@ -1347,9 +1423,12 @@ class VectorizedDQNTrainer:
 
 
 __all__ = [
+    "ACTION_SELECTION_BATCH_SEMANTICS",
+    "STRICT_ACTION_SELECTION_PARITY_RULE",
     "VectorScheduleEventKind",
     "VectorizedDQNTrainer",
     "VectorizedTrainingStepCallback",
     "VectorizedTrainingStepSnapshot",
     "crossed_transition_boundaries",
+    "strict_action_selection_parity_satisfied",
 ]

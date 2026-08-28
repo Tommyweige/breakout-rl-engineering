@@ -65,7 +65,12 @@ def _bar_axis(ax: plt.Axes, counts: list[int]) -> None:
     ax.grid(axis="y", alpha=0.25)
 
 
-def plot_throughput(records: Sequence[Mapping[str, Any]], output: Path) -> None:
+def plot_throughput(
+    records: Sequence[Mapping[str, Any]],
+    output: Path,
+    *,
+    filename: str = "vectorized-throughput.png",
+) -> None:
     counts = [int(record["environment_count"]) for record in records]
     transition_sps = [
         float(_summary(record)["environment_transitions_per_second"])
@@ -86,10 +91,15 @@ def plot_throughput(records: Sequence[Mapping[str, Any]], output: Path) -> None:
     _bar_axis(axes[1], counts)
     fig.suptitle("Vectorized DQN systems screening")
     fig.tight_layout()
-    _save(fig, output, "vectorized-throughput.png")
+    _save(fig, output, filename)
 
 
-def plot_batched_inference(records: Sequence[Mapping[str, Any]], output: Path) -> None:
+def plot_batched_inference(
+    records: Sequence[Mapping[str, Any]],
+    output: Path,
+    *,
+    filename: str = "batched-inference.png",
+) -> None:
     counts = [int(record["environment_count"]) for record in records]
     throughputs: list[float] = []
     batch_latencies_ms: list[float] = []
@@ -118,10 +128,15 @@ def plot_batched_inference(records: Sequence[Mapping[str, Any]], output: Path) -
     for ax in axes:
         ax.set_xlabel("Number of environments")
     fig.tight_layout()
-    _save(fig, output, "batched-inference.png")
+    _save(fig, output, filename)
 
 
-def plot_replay_insertion(records: Sequence[Mapping[str, Any]], output: Path) -> None:
+def plot_replay_insertion(
+    records: Sequence[Mapping[str, Any]],
+    output: Path,
+    *,
+    filename: str = "replay-insertion.png",
+) -> None:
     counts = [int(record["environment_count"]) for record in records]
     throughputs: list[float] = []
     latencies_ms: list[float] = []
@@ -148,12 +163,14 @@ def plot_replay_insertion(records: Sequence[Mapping[str, Any]], output: Path) ->
         ax.set_xticks(counts)
         ax.grid(alpha=0.25)
     fig.tight_layout()
-    _save(fig, output, "replay-insertion.png")
+    _save(fig, output, filename)
 
 
 def plot_replay_insertion_microbenchmark(
     report: Mapping[str, Any],
     output: Path,
+    *,
+    filename: str = "replay-insertion.png",
 ) -> None:
     values = report.get("results")
     if not isinstance(values, list) or not values:
@@ -177,10 +194,15 @@ def plot_replay_insertion_microbenchmark(
         ax.set_xticks(batch_sizes)
         ax.grid(alpha=0.25)
     fig.tight_layout()
-    _save(fig, output, "replay-insertion.png")
+    _save(fig, output, filename)
 
 
-def plot_system_utilization(records: Sequence[Mapping[str, Any]], output: Path) -> None:
+def plot_system_utilization(
+    records: Sequence[Mapping[str, Any]],
+    output: Path,
+    *,
+    filename: str = "system-utilization.png",
+) -> None:
     counts = [int(record["environment_count"]) for record in records]
     gpu_values: list[float] = []
     cpu_values: list[float] = []
@@ -213,7 +235,11 @@ def plot_system_utilization(records: Sequence[Mapping[str, Any]], output: Path) 
     ax.grid(alpha=0.25)
     ax.legend()
     fig.tight_layout()
-    _save(fig, output, "system-utilization.png")
+    _save(fig, output, filename)
+
+
+def _prefixed_filename(prefix: str, filename: str) -> str:
+    return f"{prefix}-{filename}" if prefix else filename
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -221,23 +247,48 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("report", type=Path)
     parser.add_argument("--insertion-report", type=Path, default=None)
     parser.add_argument("--output-dir", type=Path, default=Path("assets/day16"))
+    parser.add_argument(
+        "--file-prefix",
+        default="",
+        help="prefix output PNG names so multiple validation runs can coexist",
+    )
     args = parser.parse_args(argv)
     report = json.loads(args.report.read_text(encoding="utf-8"))
     if not isinstance(report, Mapping):
         raise ValueError("benchmark report must contain a JSON object")
     records = _records(report)
-    plot_throughput(records, args.output_dir)
-    plot_batched_inference(records, args.output_dir)
+    plot_throughput(
+        records,
+        args.output_dir,
+        filename=_prefixed_filename(args.file_prefix, "vectorized-throughput.png"),
+    )
+    plot_batched_inference(
+        records,
+        args.output_dir,
+        filename=_prefixed_filename(args.file_prefix, "batched-inference.png"),
+    )
     if args.insertion_report is None:
-        plot_replay_insertion(records, args.output_dir)
+        plot_replay_insertion(
+            records,
+            args.output_dir,
+            filename=_prefixed_filename(args.file_prefix, "replay-insertion.png"),
+        )
     else:
         insertion_report = json.loads(
             args.insertion_report.read_text(encoding="utf-8")
         )
         if not isinstance(insertion_report, Mapping):
             raise ValueError("insertion report must contain a JSON object")
-        plot_replay_insertion_microbenchmark(insertion_report, args.output_dir)
-    plot_system_utilization(records, args.output_dir)
+        plot_replay_insertion_microbenchmark(
+            insertion_report,
+            args.output_dir,
+            filename=_prefixed_filename(args.file_prefix, "replay-insertion.png"),
+        )
+    plot_system_utilization(
+        records,
+        args.output_dir,
+        filename=_prefixed_filename(args.file_prefix, "system-utilization.png"),
+    )
     print(f"Wrote Day 16 figures to {args.output_dir}")
     return 0
 

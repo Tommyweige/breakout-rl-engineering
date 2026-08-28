@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -21,6 +22,20 @@ from breakout_rl.evaluation_contract import (
 from breakout_rl.replay import ReplayBuffer
 from breakout_rl.replay_gpu import GPUReplayBuffer
 from breakout_rl.training.dqn_trainer import resolve_device
+
+
+def _git_commit_sha() -> str | None:
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    value = result.stdout.strip()
+    return value or None
 
 
 def _batch_from_real_observations(
@@ -148,6 +163,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             "seed": args.seed,
             "synchronize_cuda_before_and_after_measurement": device.type == "cuda",
             "contract_path": args.contract.as_posix(),
+            "git_commit_sha": _git_commit_sha(),
         },
         "results": results,
     }

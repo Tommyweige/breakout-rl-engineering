@@ -113,6 +113,28 @@ class ScriptedEvaluationEnv:
         self.closed = True
 
 
+class FireOverrideEvaluationEnv(ScriptedEvaluationEnv):
+    """Scripted seam exposing the same provenance keys as the FIRE wrapper."""
+
+    def step(self, action: int) -> tuple[np.ndarray, float, bool, bool, dict]:
+        observation, reward, terminated, truncated, info = super().step(action)
+        if self.step_count == 1:
+            info = {
+                "fire_reset_auto": True,
+                "fire_reset_requested_action": action,
+                "fire_reset_executed_action": 1,
+                "fire_reset_reason": "initial_serve",
+            }
+        else:
+            info = {
+                "fire_reset_auto": False,
+                "fire_reset_requested_action": action,
+                "fire_reset_executed_action": action,
+                "fire_reset_reason": None,
+            }
+        return observation, reward, terminated, truncated, info
+
+
 class ConstantQNetwork(nn.Module):
     def __init__(self) -> None:
         super().__init__()
@@ -150,6 +172,51 @@ class EvaluationTests(unittest.TestCase):
         self.assertTrue(result.episodes[0].complete)
         self.assertEqual(result.action_distribution["LEFT"], 2)
         self.assertTrue(env.closed)
+
+    def test_evaluation_preserves_requested_and_wrapper_resolved_actions(self) -> None:
+        env = FireOverrideEvaluationEnv()
+        model = ConstantQNetwork()
+        with torch.no_grad():
+            model.q_values.copy_(torch.tensor([0.0, 1.0, 3.0, 2.0]))
+
+        result = evaluate_policy(
+            model,
+            episodes=1,
+            seeds=[11],
+            device="cpu",
+            epsilon=0.0,
+            env_factory=lambda: env,
+        )
+
+        episode = result.episodes[0]
+        self.assertEqual(episode.requested_action_distribution["RIGHT"], 2)
+        self.assertEqual(episode.executed_action_distribution["FIRE"], 1)
+        self.assertEqual(episode.executed_action_distribution["RIGHT"], 1)
+        self.assertEqual(result.action_distribution["FIRE"], 1)
+        self.assertEqual(result.requested_action_distribution["RIGHT"], 2)
+        self.assertEqual(result.auto_fire_count, 1)
+        self.assertEqual(result.auto_fire_reason_counts, {"initial_serve": 1})
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            results_path, episodes_path = write_evaluation_artifacts(
+                result,
+                Path(temporary_directory) / "evaluation",
+            )
+            payload = json.loads(results_path.read_text(encoding="utf-8"))
+            with episodes_path.open(newline="", encoding="utf-8") as stream:
+                row = next(csv.DictReader(stream))
+
+        self.assertEqual(
+            payload["action_distribution_semantics"],
+            "executed/wrapper-resolved action",
+        )
+        self.assertEqual(json.loads(row["requested_action_distribution_json"])["RIGHT"], 2)
+        self.assertEqual(json.loads(row["executed_action_distribution_json"])["FIRE"], 1)
+        self.assertEqual(int(row["auto_fire_count"]), 1)
+        self.assertEqual(
+            json.loads(row["auto_fire_reason_counts_json"]),
+            {"initial_serve": 1},
+        )
 
     def test_seed_groups_episode_count_and_raw_reward_are_preserved(self) -> None:
         env = ScriptedEvaluationEnv()

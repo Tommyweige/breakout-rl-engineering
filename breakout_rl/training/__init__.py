@@ -19,11 +19,14 @@ __all__ = [
     "dqn_training_step",
     "resolve_device",
     "seed_everything",
+    "ACTION_SELECTION_BATCH_SEMANTICS",
+    "STRICT_ACTION_SELECTION_PARITY_RULE",
     "VectorScheduleEventKind",
     "VectorizedDQNTrainer",
     "VectorizedTrainingStepCallback",
     "VectorizedTrainingStepSnapshot",
     "crossed_transition_boundaries",
+    "strict_action_selection_parity_satisfied",
 ]
 
 
@@ -42,6 +45,9 @@ def __getattr__(name: str):
         "VectorizedTrainingStepCallback",
         "VectorizedTrainingStepSnapshot",
         "crossed_transition_boundaries",
+        "ACTION_SELECTION_BATCH_SEMANTICS",
+        "STRICT_ACTION_SELECTION_PARITY_RULE",
+        "strict_action_selection_parity_satisfied",
     }:
         raise AttributeError(name)
 
@@ -51,6 +57,9 @@ def __getattr__(name: str):
         "VectorizedTrainingStepCallback",
         "VectorizedTrainingStepSnapshot",
         "crossed_transition_boundaries",
+        "ACTION_SELECTION_BATCH_SEMANTICS",
+        "STRICT_ACTION_SELECTION_PARITY_RULE",
+        "strict_action_selection_parity_satisfied",
     }:
         from breakout_rl.training import vectorized
 

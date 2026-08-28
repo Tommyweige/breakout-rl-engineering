@@ -44,6 +44,15 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--cpu-threads", type=int, default=None)
     parser.add_argument("--profile-stages", action="store_true")
     parser.add_argument(
+        "--strict-action-selection-parity",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help=(
+            "require each vector batch to fit within one optimizer interval "
+            "(default: enabled)"
+        ),
+    )
+    parser.add_argument(
         "--contract",
         type=Path,
         default=Path("configs/eval/breakout_contract_v2.json"),
@@ -80,6 +89,7 @@ def _config_from_args(args: argparse.Namespace) -> DQNConfig:
             overrides[name] = value
     if args.profile_stages:
         overrides["profile_stages"] = True
+    overrides["strict_action_selection_parity"] = args.strict_action_selection_parity
     return base.with_overrides(**overrides)
 
 

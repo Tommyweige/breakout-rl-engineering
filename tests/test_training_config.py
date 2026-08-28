@@ -127,6 +127,13 @@ class DQNConfigTests(unittest.TestCase):
         with self.assertRaises((TypeError, ValueError)):
             DQNConfig(num_envs=True)
 
+    def test_strict_action_selection_parity_flag_is_boolean(self) -> None:
+        self.assertTrue(
+            DQNConfig(strict_action_selection_parity=True).strict_action_selection_parity
+        )
+        with self.assertRaises(TypeError):
+            DQNConfig(strict_action_selection_parity=1)
+
     def test_auto_can_use_cpu_but_explicit_cuda_never_falls_back(self) -> None:
         with patch("breakout_rl.training.dqn_trainer.torch.cuda.is_available", return_value=False):
             self.assertEqual(str(resolve_device("auto")), "cpu")

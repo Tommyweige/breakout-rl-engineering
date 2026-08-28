@@ -5,6 +5,7 @@ from __future__ import annotations
 import csv
 import tempfile
 import unittest
+import warnings
 from pathlib import Path
 
 import numpy as np
@@ -95,6 +96,73 @@ class CountingQNetwork(nn.Module):
         return self.head(self.flatten(observations))
 
 
+class SwitchingQNetwork(nn.Module):
+    """Network whose preferred action changes when the fake optimizer runs."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.anchor = nn.Parameter(torch.tensor(0.0))
+        self.preferred_action = 0
+
+    def forward(self, observations: torch.Tensor) -> torch.Tensor:
+        values = torch.zeros(
+            (observations.shape[0], 2),
+            dtype=torch.float32,
+            device=observations.device,
+        )
+        values[:, self.preferred_action] = 1.0
+        return values + self.anchor * 0.0
+
+
+class SwitchingVectorEnv:
+    """Minimal vector seam for exposing action-selection/update ordering."""
+
+    def __init__(self, num_envs: int) -> None:
+        self.num_envs = num_envs
+        self.single_action_space = FakeActionSpace()
+        self.single_observation_space = FakeObservationSpace()
+        self.step_index = 0
+        self.action_batches: list[np.ndarray] = []
+
+    def reset(
+        self,
+        *,
+        seed: int | None = None,
+        options: dict[str, object] | None = None,
+    ) -> tuple[np.ndarray, dict[str, object]]:
+        del seed, options
+        self.step_index = 0
+        return np.zeros((self.num_envs, *OBSERVATION_SHAPE), dtype=np.uint8), {}
+
+    def step(
+        self,
+        actions: np.ndarray,
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, dict[str, object]]:
+        self.action_batches.append(np.asarray(actions, dtype=np.int64).copy())
+        self.step_index += 1
+        observations = np.full(
+            (self.num_envs, *OBSERVATION_SHAPE),
+            self.step_index,
+            dtype=np.uint8,
+        )
+        return (
+            observations,
+            np.zeros(self.num_envs, dtype=np.float32),
+            np.zeros(self.num_envs, dtype=np.bool_),
+            np.zeros(self.num_envs, dtype=np.bool_),
+            {},
+        )
+
+
+class SwitchingTrainer(VectorizedDQNTrainer):
+    """Change the network's preferred action at the scheduled update boundary."""
+
+    def _update_once(self):
+        self.online_network.preferred_action = 1  # type: ignore[attr-defined]
+        self.optimizer_updates += 1
+        return None
+
+
 class VectorizedTrainingTests(unittest.TestCase):
     def test_total_transition_budget_must_be_a_full_vector_step_count(self) -> None:
         config = DQNConfig(
@@ -169,6 +237,95 @@ class VectorizedTrainingTests(unittest.TestCase):
             crossed_transition_boundaries(8, 15, 4),
             (12,),
         )
+
+    def test_strict_parity_rule_rejects_batches_that_cross_update_boundaries(self) -> None:
+        config = DQNConfig(
+            total_steps=8,
+            num_envs=8,
+            batch_size=4,
+            replay_capacity=8,
+            learning_starts=4,
+            train_frequency=4,
+            target_update_interval=100,
+            checkpoint_interval=8,
+            epsilon_start=0.0,
+            epsilon_end=0.0,
+            device="cpu",
+            strict_action_selection_parity=True,
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            with self.assertRaisesRegex(ValueError, "strict action-selection parity"):
+                SwitchingTrainer(
+                    SwitchingVectorEnv(8),
+                    config,
+                    run_dir=Path(directory) / "strict-reject",
+                    online_network=SwitchingQNetwork(),
+                )
+
+    def test_action_selection_metadata_exposes_crossing_batch_lag(self) -> None:
+        config = DQNConfig(
+            total_steps=8,
+            num_envs=8,
+            batch_size=4,
+            replay_capacity=8,
+            learning_starts=4,
+            train_frequency=4,
+            target_update_interval=100,
+            checkpoint_interval=8,
+            epsilon_start=0.0,
+            epsilon_end=0.0,
+            device="cpu",
+        )
+        env = SwitchingVectorEnv(8)
+        with tempfile.TemporaryDirectory() as directory:
+            with warnings.catch_warnings(record=True) as caught:
+                warnings.simplefilter("always")
+                trainer = SwitchingTrainer(
+                    env,
+                    config,
+                    run_dir=Path(directory) / "lag",
+                    online_network=SwitchingQNetwork(),
+                )
+                summary = trainer.train()
+
+        self.assertTrue(
+            any("behavior-policy lag" in str(warning.message) for warning in caught)
+        )
+        self.assertEqual(len(env.action_batches), 1)
+        np.testing.assert_array_equal(env.action_batches[0], np.zeros(8, dtype=np.int64))
+        self.assertEqual(trainer.online_network.preferred_action, 1)
+        self.assertFalse(summary["strict_action_selection_parity_satisfied"])
+        self.assertIn("pre-update", summary["action_selection_batch_semantics"])
+
+    def test_strict_parity_keeps_later_batch_actions_after_the_update(self) -> None:
+        config = DQNConfig(
+            total_steps=8,
+            num_envs=4,
+            batch_size=4,
+            replay_capacity=8,
+            learning_starts=4,
+            train_frequency=4,
+            target_update_interval=100,
+            checkpoint_interval=8,
+            epsilon_start=0.0,
+            epsilon_end=0.0,
+            device="cpu",
+            strict_action_selection_parity=True,
+        )
+        env = SwitchingVectorEnv(4)
+        with tempfile.TemporaryDirectory() as directory:
+            trainer = SwitchingTrainer(
+                env,
+                config,
+                run_dir=Path(directory) / "strict",
+                online_network=SwitchingQNetwork(),
+            )
+            summary = trainer.train()
+
+        self.assertEqual(len(env.action_batches), 2)
+        np.testing.assert_array_equal(env.action_batches[0], np.zeros(4, dtype=np.int64))
+        np.testing.assert_array_equal(env.action_batches[1], np.ones(4, dtype=np.int64))
+        self.assertTrue(summary["strict_action_selection_parity_satisfied"])
 
     def test_trainer_counts_transitions_and_keeps_per_env_episode_state(self) -> None:
         env = DeterministicVectorEnv()
