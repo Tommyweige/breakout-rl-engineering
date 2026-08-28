@@ -101,6 +101,31 @@ DQN 的模型推論確實在 NVIDIA CUDA 上執行；Random 沒有 neural-networ
 | 303 | 3 | 305 | 2.00 | 6.00 |
 | 303 | 4 | 306 | 0.00 | 6.00 |
 | 303 | 5 | 307 | 2.00 | 11.00 |
+## FIRE / TimeLimit root-cause audit
+
+Evaluation Contract v1 的原始 `results.json` 保留不變；下面的 sidecar 與新 diagnostic artifacts 將 `truncated` 細分為可追蹤的 ALE TimeLimit，並比較兩種不改 checkpoint 的 diagnostic。
+
+| Mode | epsilon | FIRE assist | mean return | median | terminated | TimeLimit | truncation rate | mean length | term mean | trunc mean | dominant action fraction | life-loss → FIRE latency | auto-FIRE |
+|---|---:|:---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| v1 greedy/no assist | 0.00 | no | 4.53 | 5.00 | 5 | 10 | 0.67 | 18131.33 | 8.00 | 2.80 | — | — | 0 |
+| Diagnostic A | 0.0 | yes | 8.80 | 8.00 | 15 | 0 | 0.00 | 429.93 | 8.80 | — | 0.58 | 1.00 | 75 |
+| Diagnostic B | 0.05 | no | 9.20 | 8.00 | 15 | 0 | 0.00 | 508.53 | 9.20 | — | 0.55 | 30.45 | 0 |
+
+v1 root-cause trace 的 selected episodes 如下：
+
+- seed `101`：`time_limit`, length `26998`, dominant `RIGHT` (0.96), unchanged observation fraction `0.96`；life loss step 54 → FIRE step 16449 (latency 16395)
+- seed `102`：`terminated`, length `405`, dominant `RIGHT` (0.53), unchanged observation fraction `0.00`；life loss step 71 → FIRE step 104 (latency 33)；life loss step 203 → FIRE step 204 (latency 1)；life loss step 279 → FIRE step 280 (latency 1)；life loss step 352 → FIRE step 353 (latency 1)；life loss step 405 → FIRE step None (latency None)
+- seed `103`：`time_limit`, length `26995`, dominant `RIGHT` (0.97), unchanged observation fraction `0.96`；life loss step 54 → FIRE step 16446 (latency 16392)
+
+root trace summary：`2` 個 TimeLimit、最大連續不變 observation `16323` steps，dominant action `RIGHT` fraction `0.96`。這支持 timeout 的主要近因是 life loss 後長時間沒有有效重發球，並伴隨 action/observation collapse；它不支持把長 episode 直接解讀成模型能正常存活。
+
+Diagnostic A 在相同 checkpoint、concrete seeds、preprocessing 和 raw reward 下加入環境側 FIRE：mean return 8.80、15/15 terminated、auto-FIRE 75 次，平均 life-loss → FIRE latency 1.00 steps。
+Diagnostic B 保持 policy-responsible FIRE，只把 epsilon 設為 0.05：mean return 9.20、15/15 terminated，但平均 latency 30.45 steps，它證明少量探索可以偶爾解鎖 serve，卻不是穩定且可重現的 environment contract。
+
+因此 Contract v2 選 Option B：`fire_reset=true`，由 environment 在 initial serve 和觀察到 life loss 後執行 FIRE；仍保留 `terminal_on_life_loss=false`，TimeLimit 只由 ALE 的 `game_truncated` 標記。這是對 serve deadlock 的修正，不是把 v1 與 v2 的分數當成同一環境規格直接比較。
+Contract v2 machine-readable 定義保存於 `configs/eval/breakout_contract_v2.json`，Day 16 可直接載入。
+比較圖由真實 v1 sidecar 與兩份 diagnostic JSON 重新產生，保存於 `assets/day15/fire-time-limit-diagnostics.png`。
+
 
 ## 這次結果能說到哪裡
 
@@ -121,4 +146,4 @@ Day 16 會把 single-environment training 改成多環境、批次 action infere
 - 圖表由 `visualize_day15_evaluation.py` 從兩份 JSON 重新產生。
 - 結果由 `evaluate_dqn.py` 使用 `configs/eval/breakout_eval.json` 產生；正式 DQN 命令指定 `--device cuda`。
 
-Report generated at `2026-08-27T13:47:52.924128Z`。
+Report generated at `2026-08-28T03:57:59.034188Z`。

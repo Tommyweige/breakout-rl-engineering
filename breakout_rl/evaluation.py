@@ -160,6 +160,8 @@ class EpisodeResult:
     terminated: bool
     truncated: bool
     action_distribution: Mapping[str, int]
+    time_limit: bool = False
+    time_limit_source: str | None = None
 
     @property
     def complete(self) -> bool:
@@ -167,6 +169,8 @@ class EpisodeResult:
 
     @property
     def stop_reason(self) -> str:
+        if self.time_limit:
+            return "time_limit"
         if self.terminated:
             return "terminated"
         if self.truncated:
@@ -185,6 +189,8 @@ class EpisodeResult:
             "episode_length": self.episode_length,
             "terminated": self.terminated,
             "truncated": self.truncated,
+            "time_limit": self.time_limit,
+            "time_limit_source": self.time_limit_source,
             "complete": self.complete,
             "stop_reason": self.stop_reason,
             "action_distribution": dict(self.action_distribution),
@@ -400,6 +406,31 @@ def _seed_action_space(env: Any, seed: int) -> None:
         seed_method(seed)
 
 
+def _time_limit_signal(
+    env: Any,
+    truncated: bool,
+    info: Mapping[str, Any] | None,
+) -> tuple[bool, str | None]:
+    """Identify ALE/TimeLimit truncation without inferring it from score."""
+
+    if not truncated:
+        return False, None
+    ale = getattr(getattr(env, "unwrapped", env), "ale", None)
+    game_truncated = getattr(ale, "game_truncated", None)
+    if callable(game_truncated):
+        try:
+            if bool(game_truncated()):
+                return True, "ale.game_truncated"
+        except RuntimeError:
+            pass
+    if isinstance(info, Mapping):
+        if bool(info.get("TimeLimit.truncated", False)):
+            return True, "info.TimeLimit.truncated"
+        if bool(info.get("time_limit", False)):
+            return True, "info.time_limit"
+    return False, None
+
+
 def _runtime_metadata(
     *,
     requested_device: str,
@@ -531,13 +562,18 @@ def evaluate_policy(
                                 f"expected 0 <= action < {action_count}"
                             )
                         action_values.append(action)
-                        observation, reward, terminated_raw, truncated_raw, _ = env.step(action)
+                        observation, reward, terminated_raw, truncated_raw, info = env.step(action)
                         reward_value = float(reward)
                         if not math.isfinite(reward_value):
                             raise ValueError("environment reward must be finite")
                         episode_return += reward_value
                         terminated = bool(terminated_raw)
                         truncated = bool(truncated_raw)
+                        time_limit, time_limit_source = _time_limit_signal(
+                            env,
+                            truncated,
+                            info if isinstance(info, Mapping) else None,
+                        )
                         if terminated or truncated:
                             break
 
@@ -555,6 +591,8 @@ def evaluate_policy(
                             terminated=terminated,
                             truncated=truncated,
                             action_distribution=counts,
+                            time_limit=time_limit,
+                            time_limit_source=time_limit_source,
                         )
                     )
     finally:
@@ -638,6 +676,8 @@ def write_evaluation_artifacts(
         "episode_length",
         "terminated",
         "truncated",
+        "time_limit",
+        "time_limit_source",
         "complete",
         "stop_reason",
         *action_columns,
@@ -657,6 +697,8 @@ def write_evaluation_artifacts(
                 "episode_length": episode.episode_length,
                 "terminated": episode.terminated,
                 "truncated": episode.truncated,
+                "time_limit": episode.time_limit,
+                "time_limit_source": episode.time_limit_source,
                 "complete": episode.complete,
                 "stop_reason": episode.stop_reason,
                 "action_distribution_json": json.dumps(

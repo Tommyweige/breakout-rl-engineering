@@ -1,0 +1,51 @@
+{
+  "schema_version": 2,
+  "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+  "environment_id": "ALE/Breakout-v5",
+  "frame_skip": 4,
+  "frame_stack": 4,
+  "sticky_action_probability": 0.25,
+  "fire_reset": true,
+  "fire_reset_rule": "The environment executes FIRE at the initial serve and immediately after each observed life loss; it reports requested and executed actions.",
+  "terminal_on_life_loss": false,
+  "time_limit_semantics": {
+    "source": "ale.game_truncated",
+    "max_num_frames_per_episode": 108000,
+    "agent_step_limit": 27000,
+    "truncated_is_finished": true,
+    "external_time_limit_wrapper": false
+  },
+  "concrete_episode_seeds": [
+    101,
+    102,
+    103,
+    104,
+    105,
+    202,
+    203,
+    204,
+    205,
+    206,
+    303,
+    304,
+    305,
+    306,
+    307
+  ],
+  "evaluation_epsilon": 0.0,
+  "raw_reward_rule": "sum environment rewards without clipping",
+  "v1_legacy_contract": {
+    "path": "evaluations/day15-dqn-cuda/contract-v1.json",
+    "fire_reset": false,
+    "policy_responsible_fire": true
+  },
+  "decision": {
+    "selected_option": "B",
+    "reason": "FIRE assist changed all 15 diagnostic episodes from the v1 timeout pattern to terminated episodes while retaining greedy inference; epsilon=0.05 was retained as a diagnostic and not selected as the contract.",
+    "diagnostic_manifest": "evaluations/day15-diagnostics/manifest.json",
+    "root_cause_trace": "evaluations/day15-diagnostics/root-cause/trace.jsonl",
+    "fire_assist_summary": "evaluations/day15-diagnostics/fire-assist/results.json",
+    "epsilon005_summary": "evaluations/day15-diagnostics/epsilon005/results.json"
+  },
+  "day16_reuse_rule": "Vectorized training must use this same environment construction, serve semantics, termination semantics, concrete seeds, epsilon, and raw reward rule."
+}

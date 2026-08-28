@@ -16,6 +16,8 @@ training seed 會影響模型初始化、探索和 Replay 抽樣；evaluation se
 
 這種「先選模型，再選評估條件」的順序，是避免資料洩漏（data leakage）的基本界線：evaluation 結果可以告訴我們模型表現如何，但不能反過來改寫模型選擇規則。
 
+原始的 Random 與 DQN 結果現在明確標記為 Evaluation Contract v1：FIRE 由 policy 負責、`epsilon = 0`，環境不自動代替 policy 發 FIRE。這些 `results.json` 保留作為歷史基準，後續診斷會寫到新的目錄，不覆寫 v1。
+
 ## 凍結模型，也凍結評估時的行為
 
 訓練中的 DQN 會從 Replay Buffer（保存過去互動資料、供模型重複抽樣的資料區）取資料，透過 optimizer（根據誤差更新權重的工具）調整網路，並定期同步 target network（暫時固定的目標網路）。那時候的回報描述的是「模型一邊改變自己、一邊玩遊戲」。
@@ -54,26 +56,44 @@ Random policy 的作用是提供一個容易解釋的 baseline：如果凍結 DQ
 
 一局遊戲結束時，Gymnasium 會回傳兩個不同的訊號。`terminated` 表示環境本身達到了終止條件；`truncated` 表示環境或 wrapper 因外部限制截斷了這局。對統計來說，兩者都代表 episode loop 可以進入下一局，但原因不能被混成一個模糊的 `done`。
 
-Day 15 沒有另外加一個會改變正式分數的評估器步數上限（evaluator cap），而是讓 Arcade Learning Environment（ALE）的 Breakout-v5 使用自己的 episode 邊界。實際結果中，DQN 的 15 局全部有環境終止訊號：5 局是 `terminated`，10 局是 ALE 的 `truncated`；Random 則是 15 局 `terminated`。因此結果中的每一局都是完整的 environment episode，但報告仍保留是哪一種結束方式。
+Day 15 沒有另外加一個會改變正式分數的評估器步數上限（evaluator cap），而是讓 Arcade Learning Environment（ALE）的 Breakout-v5 使用自己的 episode 邊界。v1 的 DQN 有 5 局 `terminated`，另 10 局是由 ALE 的 `game_truncated` 標記的 TimeLimit；Random 則是 15 局 `terminated`。`complete = terminated or truncated` 只表示 episode loop 已結束，不表示 DQN 在 timeout 前仍然正常控制遊戲。
 
 [![Day 15 episode loop：分開保存 terminated 與 truncated 狀態](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/3f599ba/assets/day15/evaluation-episode-loop.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/3f599ba/assets/day15/evaluation-episode-loop.png)
 
-這個區分也解釋了為什麼 DQN 的平均 episode length 約為 `18,131`，遠高於 Random 的約 `186`：部分 DQN rollout 能長時間維持遊戲，最後由 ALE 的環境限制截斷。這是一個行為觀察，不等於模型已經清除更多磚塊；回報和結束原因必須一起看。
+10 個 TimeLimit episode 的 agent steps 幾乎都在 `26,993`～`27,000`，所以平均長度 `18,131` 不能被當成「存活能力」的證據。這個數字只告訴我們 evaluator 等到了環境上限；回報、結束原因和中間的 action/observation 行為必須一起看。
 
 ## 平均值之外，還要看整個分布
 
 這次固定 protocol 的實際結果如下。mean 是所有局回報的平均；median 是排序後位於中間的回報，較不容易被極端局拉動；std 是 standard deviation（標準差），用來描述回報的 spread，也就是每局離平均值有多分散。
 
-| Policy | 局數 | terminated | truncated | mean | median | std | min | max |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| Random | 15 | 15 | 0 | 1.33 | 1.00 | 1.30 | 0 | 5 |
-| DQN | 15 | 5 | 10 | 4.53 | 5.00 | 3.07 | 1 | 11 |
+| Policy | 局數 | terminated | truncated | TimeLimit | mean | median | std | min | max |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Random | 15 | 15 | 0 | 0 | 1.33 | 1.00 | 1.30 | 0 | 5 |
+| DQN | 15 | 5 | 10 | 10 | 4.53 | 5.00 | 3.07 | 1 | 11 |
 
 如果只畫兩根 mean bar，會看見 DQN `4.53` 高於 Random `1.33`，卻看不見每一局的差異。下面的圖直接讀取兩份 evaluation JSON：每個點是一局，箱型圖保留中間分布，菱形是 mean，短線是 median；右側則按 evaluation seed group 畫出平均和 population std。population std 把這次收集到的 episodes 當成要描述的整體，不把它包裝成多 training seeds 的不確定性估計。
 
 [![Random 與凍結 DQN 的每局 raw return 分布，以及各 evaluation seed group 的平均與 spread](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/3f599ba/assets/day15/random-vs-dqn-returns.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/3f599ba/assets/day15/random-vs-dqn-returns.png)
 
-圖中可以同時看到兩件事：DQN 在三個 evaluation seed group 的平均都高於 Random，median 也從 `1` 提高到 `5`；另一方面，DQN 的 spread 更大，且有許多長時間才由 ALE `truncated` 的局。這份 evidence 支持「Day 14 checkpoint 在這批固定 episodes 中展現較高回報」，但不能單獨證明所有未來起始狀態都會得到同樣結果。
+圖中可以同時看到兩件事：DQN 在三個 evaluation seed group 的平均都高於 Random，median 也從 `1` 提高到 `5`；另一方面，DQN 的 spread 更大，且有 10 局長度碰到 ALE 的 TimeLimit。這份 evidence 支持「Day 14 checkpoint 在這批固定 episodes 中展現較高回報」，但不能單獨證明所有未來起始狀態都會得到同樣結果。
+
+## 27K timeout 其實發生了什麼
+
+要分辨「遊戲真的持續進行」和「畫面卡在某種狀態」，需要把一局中的每一步攤開來看。root-cause trace 讀取同一個 frozen checkpoint 的 Q-values、greedy action、ALE lives、raw reward、life-loss event、FIRE 時間點，以及前後 observation 的變化比例；lives 與 TimeLimit 都直接來自 ALE，沒有從分數猜測。
+
+在 concrete seed `101` 和 `103`，life loss 都發生在 agent step `54`，但第一次 FIRE 分別延遲到 `16,449` 與 `16,446`，latency 是 `16,395` 與 `16,392` steps。這兩局最後都 TimeLimit；trace 中約 `96%` 的 observation 完全不變，greedy/action 約 `96%` 固定為 `RIGHT`，最長連續不變 observation 超過 `16,000` steps。相對地，terminated seed `102` 在 405 steps 結束，第一次 life loss 後 33 steps 就 FIRE，後續重發球多為 1 step 內。這組對照支持的 root cause 是 **life loss 後的 serve deadlock，加上 RIGHT action collapse**，不是「模型能正常存活很久」。
+
+接著用同一個 checkpoint、同一組 15 個 concrete episode seeds、相同 preprocessing 和 raw reward 做兩個只供診斷的 ablation（只改一個行為因素的對照實驗）：
+
+| Mode | epsilon | FIRE assist | mean return | median | terminated | TimeLimit | mean length | dominant action fraction | life-loss → FIRE latency | auto-FIRE |
+|---|---:|:---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Contract v1 | 0.00 | no | 4.53 | 5 | 5 | 10 | 18,131.33 | — | — | 0 |
+| Diagnostic A | 0.00 | yes | 8.80 | 8 | 15 | 0 | 429.93 | 0.58 | 1.00 | 75 |
+| Diagnostic B | 0.05 | no | 9.20 | 8 | 15 | 0 | 508.53 | 0.55 | 30.45 | 0 |
+
+Diagnostic A 把 FIRE 放到 environment-side serve assist：initial serve 和每次觀察到 life loss 後都執行一次 FIRE。15 局全部正常 `terminated`，且 observation unchanged 的最長 streak 降到 3。Diagnostic B 不代替 FIRE，只加入 `epsilon = 0.05` 的隨機 action；它也讓 15 局全部結束，但平均 life-loss → FIRE latency 是 30.45 steps，代表少量探索偶爾能救回 serve，卻不是固定且可重現的語義。
+
+因此 Contract v2 選 Option B：`fire_reset = true`，由 environment 在 initial serve 和觀察到 life loss 後執行 FIRE；`terminal_on_life_loss = false` 保留完整遊戲 episode，TimeLimit 明確以 `ale.game_truncated` 標記。這不是把 v1 分數改名，而是根據 trace 和 A/B evidence 定義下一個公平的 environment contract。v1 仍是 legacy baseline，Contract v2 保存在 `configs/eval/breakout_contract_v2.json`，Day 16 應直接載入同一份語義。
 
 ## 這次的答案是「有訊號，但還不能過度宣稱」
 
@@ -85,7 +105,7 @@ Day 15 沒有另外加一個會改變正式分數的評估器步數上限（eval
 
 Day 16 會把 single-environment training 改成多環境、批次 action inference（一次替多個 observation 選 action）和批次 GPU Replay insertion。系統最佳化可能提高 throughput，但也可能因 autoreset（一局結束後自動開始下一局）、global step（已走過的環境步數）、done semantics（如何解讀 terminated/truncated 結束訊號）或 Replay ordering（資料寫入 Replay 的先後順序）改變 policy quality。
 
-因此 Day 16、Day 18 和 Day 20 都應重用本日的 evaluation contract：相同的 Breakout preprocessing、evaluation seeds、每組 episode 數、greedy epsilon、raw reward、`terminated`／`truncated` semantics 和 JSON/CSV schema。這樣下一次比較的差異才主要來自 training system 或 DQN variant，而不是評估規則被換掉。
+因此 Day 16、Day 17、Day 18 和 Day 20 都應重用本日的 evaluation contract：相同的 Breakout preprocessing、concrete evaluation seeds、每組 episode 數、greedy epsilon、raw reward、`terminated`／`truncated`／TimeLimit semantics 和 JSON/CSV schema。這樣下一次比較的差異才主要來自 training system 或 DQN variant，而不是評估規則被換掉。
 
 可重建的原始結果保存在 `evaluations/day15-random-baseline/` 和 `evaluations/day15-dqn-cuda/`；圖表由兩份 `results.json` 重新產生，完整 provenance 和 GPU metadata 則保存在 DQN result 與 milestone report 中。這些 artifacts 讓後續比較可以重新使用同一份 evaluation contract。
 

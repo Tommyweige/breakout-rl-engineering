@@ -1,0 +1,326 @@
+{
+  "schema_version": 1,
+  "generated_at_utc": "2026-08-28T03:56:39.386677Z",
+  "command": [
+    "visualize_day15_diagnostics.py",
+    "--manifest",
+    "evaluations/day15-diagnostics/manifest.json",
+    "--output",
+    "assets/day15/fire-time-limit-diagnostics.png",
+    "--metadata-output",
+    "assets/day15/fire-time-limit-diagnostics.json"
+  ],
+  "question": "FIRE assist or epsilon exploration removes the v1 TimeLimit/deadlock pattern?",
+  "source_artifacts": {
+    "C:/Users/tommy/.codex/worktrees/360d/breakout-rl-engineering/evaluations/day15-dqn-cuda/time-limit-summary.json": "cacf0a754670d79fe206b5dbc9d9cbfa2a4320b56cc5856e0be76e35d53417f1",
+    "C:/Users/tommy/.codex/worktrees/360d/breakout-rl-engineering/evaluations/day15-diagnostics/fire-assist/results.json": "90d352cf82467f536c57a3e12be0a4a70819d0609983b9a6e66596cb4ef7c284",
+    "C:/Users/tommy/.codex/worktrees/360d/breakout-rl-engineering/evaluations/day15-diagnostics/epsilon005/results.json": "da766de53575f3e1ad22bc18f9f3d7b9e462a893824babb4c1c92a320ecfc741",
+    "configs/eval/breakout_contract_v2.json": "9d8c13a9d3ee42ae2f82255f65a2b4346bcec75401b6d6da5e67cd640a2422fd"
+  },
+  "contract_v2": {
+    "schema_version": 2,
+    "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+    "environment_id": "ALE/Breakout-v5",
+    "frame_skip": 4,
+    "frame_stack": 4,
+    "sticky_action_probability": 0.25,
+    "fire_reset": true,
+    "terminal_on_life_loss": false,
+    "time_limit_semantics": {
+      "source": "ale.game_truncated",
+      "max_num_frames_per_episode": 108000,
+      "agent_step_limit": 27000,
+      "truncated_is_finished": true,
+      "external_time_limit_wrapper": false
+    },
+    "concrete_episode_seeds": [
+      101,
+      102,
+      103,
+      104,
+      105,
+      202,
+      203,
+      204,
+      205,
+      206,
+      303,
+      304,
+      305,
+      306,
+      307
+    ],
+    "evaluation_epsilon": 0.0,
+    "raw_reward_rule": "sum environment rewards without clipping"
+  },
+  "summaries": {
+    "v1": {
+      "count": 15,
+      "mean_return": 4.533333333333333,
+      "median_return": 5.0,
+      "std_return": 3.0739045022396008,
+      "min_return": 1.0,
+      "max_return": 11.0,
+      "mean_episode_length": 18131.333333333332,
+      "complete_episodes": 15,
+      "finished_episode_count": 15,
+      "terminated_count": 5,
+      "truncated_count": 10,
+      "time_limit_truncated_count": 10,
+      "truncation_rate": 0.6666666666666666,
+      "mean_return_terminated": 8.0,
+      "mean_return_truncated": 2.8,
+      "mean_length_terminated": 400.2,
+      "mean_length_truncated": 26996.9
+    },
+    "fire_assist": {
+      "count": 15,
+      "mean_return": 8.8,
+      "median_return": 8.0,
+      "std_return": 3.2083225108042575,
+      "min_return": 3.0,
+      "max_return": 18.0,
+      "mean_episode_length": 429.93333333333334,
+      "complete_episodes": 15,
+      "finished_episode_count": 15,
+      "terminated_count": 15,
+      "truncated_count": 0,
+      "time_limit_truncated_count": 0,
+      "truncation_rate": 0.0,
+      "mean_return_terminated": 8.8,
+      "mean_return_truncated": null,
+      "mean_length_terminated": 429.93333333333334,
+      "mean_length_truncated": null,
+      "dominant_action": "RIGHT",
+      "dominant_action_fraction": 0.5796247480229493,
+      "mean_dominant_action_fraction": 0.5817402364121421,
+      "action_distribution": {
+        "FIRE": 558,
+        "LEFT": 1498,
+        "NOOP": 655,
+        "RIGHT": 3738
+      },
+      "dominant_greedy_action": "RIGHT",
+      "dominant_greedy_action_fraction": 0.5838114436346721,
+      "mean_dominant_greedy_action_fraction": 0.5863930191147406,
+      "greedy_action_distribution": {
+        "FIRE": 512,
+        "LEFT": 1509,
+        "NOOP": 663,
+        "RIGHT": 3765
+      },
+      "max_consecutive_action": 66,
+      "max_consecutive_greedy_action": 73,
+      "max_consecutive_unchanged_observation": 3,
+      "mean_observation_changed_fraction": 0.004457469030433493,
+      "unchanged_observation_step_fraction": 0.007809494688028712,
+      "life_loss_event_count": 75,
+      "life_loss_events_without_fire": 15,
+      "mean_life_loss_fire_latency": 1.0,
+      "life_loss_fire_latency_observed": true,
+      "auto_fire_count": 75,
+      "auto_fire_steps": [
+        {
+          "episode_seed": 101,
+          "steps": [
+            1,
+            55,
+            160,
+            185,
+            210
+          ]
+        },
+        {
+          "episode_seed": 102,
+          "steps": [
+            1,
+            72,
+            204,
+            280,
+            353
+          ]
+        },
+        {
+          "episode_seed": 103,
+          "steps": [
+            1,
+            55,
+            159,
+            212,
+            284
+          ]
+        },
+        {
+          "episode_seed": 104,
+          "steps": [
+            1,
+            193,
+            368,
+            444,
+            497
+          ]
+        },
+        {
+          "episode_seed": 105,
+          "steps": [
+            1,
+            169,
+            242,
+            316,
+            369
+          ]
+        },
+        {
+          "episode_seed": 202,
+          "steps": [
+            1,
+            54,
+            128,
+            278,
+            331
+          ]
+        },
+        {
+          "episode_seed": 203,
+          "steps": [
+            1,
+            169,
+            242,
+            297,
+            421
+          ]
+        },
+        {
+          "episode_seed": 204,
+          "steps": [
+            1,
+            169,
+            242,
+            316,
+            392
+          ]
+        },
+        {
+          "episode_seed": 205,
+          "steps": [
+            1,
+            169,
+            242,
+            316,
+            392
+          ]
+        },
+        {
+          "episode_seed": 206,
+          "steps": [
+            1,
+            150,
+            318,
+            392,
+            417
+          ]
+        },
+        {
+          "episode_seed": 303,
+          "steps": [
+            1,
+            54,
+            155,
+            208,
+            260
+          ]
+        },
+        {
+          "episode_seed": 304,
+          "steps": [
+            1,
+            86,
+            158,
+            211,
+            332
+          ]
+        },
+        {
+          "episode_seed": 305,
+          "steps": [
+            1,
+            54,
+            156,
+            227,
+            282
+          ]
+        },
+        {
+          "episode_seed": 306,
+          "steps": [
+            1,
+            54,
+            173,
+            226,
+            362
+          ]
+        },
+        {
+          "episode_seed": 307,
+          "steps": [
+            1,
+            54,
+            222,
+            296,
+            373
+          ]
+        }
+      ]
+    },
+    "epsilon005": {
+      "count": 15,
+      "mean_return": 9.2,
+      "median_return": 8.0,
+      "std_return": 3.037542866638538,
+      "min_return": 6.0,
+      "max_return": 18.0,
+      "mean_episode_length": 508.53333333333336,
+      "complete_episodes": 15,
+      "finished_episode_count": 15,
+      "terminated_count": 15,
+      "truncated_count": 0,
+      "time_limit_truncated_count": 0,
+      "truncation_rate": 0.0,
+      "mean_return_terminated": 9.2,
+      "mean_return_truncated": null,
+      "mean_length_terminated": 508.53333333333336,
+      "mean_length_truncated": null,
+      "dominant_action": "RIGHT",
+      "dominant_action_fraction": 0.5508652333508128,
+      "mean_dominant_action_fraction": 0.5492825400803797,
+      "action_distribution": {
+        "FIRE": 672,
+        "LEFT": 1905,
+        "NOOP": 849,
+        "RIGHT": 4202
+      },
+      "dominant_greedy_action": "RIGHT",
+      "dominant_greedy_action_fraction": 0.565416885159937,
+      "mean_dominant_greedy_action_fraction": 0.5637348711121211,
+      "greedy_action_distribution": {
+        "FIRE": 611,
+        "LEFT": 1908,
+        "NOOP": 796,
+        "RIGHT": 4313
+      },
+      "max_consecutive_action": 85,
+      "max_consecutive_greedy_action": 246,
+      "max_consecutive_unchanged_observation": 193,
+      "mean_observation_changed_fraction": 0.0044288216588091334,
+      "unchanged_observation_step_fraction": 0.07173659319285594,
+      "life_loss_event_count": 75,
+      "life_loss_events_without_fire": 17,
+      "mean_life_loss_fire_latency": 30.448275862068964,
+      "life_loss_fire_latency_observed": true,
+      "auto_fire_count": 0,
+      "auto_fire_steps": []
+    }
+  },
+  "output": "assets/day15/fire-time-limit-diagnostics.png",
+  "metadata_output": "assets/day15/fire-time-limit-diagnostics.json"
+}

@@ -10,6 +10,18 @@ The machine-readable source artifacts are:
 
 - `evaluations/day15-random-baseline/results.json` and `episodes.csv`;
 - `evaluations/day15-dqn-cuda/results.json` and `episodes.csv`;
+- `evaluations/day15-random-baseline/contract-v1.json` and
+  `evaluations/day15-dqn-cuda/contract-v1.json`, which mark the preserved
+  policy-responsible-FIRE baseline;
+- `evaluations/day15-random-baseline/time-limit-summary.json` and
+  `evaluations/day15-dqn-cuda/time-limit-summary.json`, which add the
+  TimeLimit-aware summary without changing the v1 results;
+- `evaluations/day15-diagnostics/`, containing the root-cause trace and both
+  diagnostic ablations;
+- `configs/eval/breakout_contract_v2.json`, the machine-readable contract for
+  Day 16;
+- `fire-time-limit-diagnostics.png` and its metadata, generated from the real
+  v1 sidecars and diagnostic JSON artifacts;
 - `random-vs-dqn-returns.json`, which records source hashes, protocol, and the
   plotting command;
 - `evaluation-contract.mmd` / `evaluation-contract.png`;
@@ -23,6 +35,9 @@ is authoritative for the effective replay backend and frozen configuration.
 The formal DQN CLI also checks Day 14 Gate A from the final run summary,
 metrics, and explicit batch-size profiling source before writing the CUDA
 evaluation artifact; it refuses to label an unverified run as the milestone.
+The formal v1 evaluator remains the default. To run a future evaluation under
+Contract v2, pass `--contract configs/eval/breakout_contract_v2.json`; it uses
+separate `evaluations/day15-contract-v2-*` directories by default.
 
 Recreate the evaluation artifacts from a local copy of that checkpoint:
 
@@ -36,6 +51,16 @@ Recreate the plot and report:
 ```powershell
 python visualize_day15_evaluation.py evaluations/day15-random-baseline/results.json evaluations/day15-dqn-cuda/results.json --output assets/day15/random-vs-dqn-returns.png --metadata-output assets/day15/random-vs-dqn-returns.json
 python generate_dqn_milestone_report.py --random-results evaluations/day15-random-baseline/results.json --dqn-results evaluations/day15-dqn-cuda/results.json --output reports/day15-dqn-milestone.md
+```
+
+Run the FIRE/TimeLimit root-cause trace and the two diagnostic ablations with
+the same frozen checkpoint. These commands write only to
+`evaluations/day15-diagnostics/` and do not replace the v1 results:
+
+```powershell
+python diagnose_day15_fire.py --checkpoint assets/day14/final-runs/day14-final-frozen-100k/day14-final-vanilla-dqn-seed42/checkpoints/step-00100000.pt --config configs/eval/breakout_eval.json --device cuda --output-root evaluations/day15-diagnostics
+python visualize_day15_diagnostics.py --manifest evaluations/day15-diagnostics/manifest.json --output assets/day15/fire-time-limit-diagnostics.png --metadata-output assets/day15/fire-time-limit-diagnostics.json
+python generate_dqn_milestone_report.py --random-results evaluations/day15-random-baseline/results.json --dqn-results evaluations/day15-dqn-cuda/results.json --diagnostic-manifest evaluations/day15-diagnostics/manifest.json --output reports/day15-dqn-milestone.md
 ```
 
 The Mermaid figures were rendered with:

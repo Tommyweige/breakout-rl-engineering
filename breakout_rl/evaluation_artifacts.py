@@ -9,6 +9,19 @@ from statistics import fmean, median, pstdev
 from typing import Any, Mapping, Sequence
 
 
+TIME_LIMIT_SUMMARY_FIELDS = (
+    "finished_episode_count",
+    "terminated_count",
+    "truncated_count",
+    "time_limit_truncated_count",
+    "truncation_rate",
+    "mean_return_terminated",
+    "mean_return_truncated",
+    "mean_length_terminated",
+    "mean_length_truncated",
+)
+
+
 def read_evaluation_results(path: str | Path) -> dict[str, Any]:
     source = Path(path)
     if not source.is_file():
@@ -111,6 +124,12 @@ def validate_episode_rows(
         truncated = raw_truncated
         if terminated and truncated:
             raise ValueError(f"{source_path}: terminated and truncated cannot both be true")
+        raw_time_limit = raw_row.get("time_limit", False)
+        if not isinstance(raw_time_limit, bool):
+            raise ValueError(f"{source_path}: time_limit must be a boolean")
+        time_limit = raw_time_limit
+        if time_limit and not truncated:
+            raise ValueError(f"{source_path}: time_limit requires truncated=true")
         complete = terminated or truncated
         if "complete" in raw_row:
             stored_complete = raw_row["complete"]
@@ -119,7 +138,13 @@ def validate_episode_rows(
             if stored_complete != complete:
                 raise ValueError(f"{source_path}: complete disagrees with termination flags")
         expected_stop_reason = (
-            "terminated" if terminated else "truncated" if truncated else "incomplete"
+            "time_limit"
+            if time_limit
+            else "terminated"
+            if terminated
+            else "truncated"
+            if truncated
+            else "incomplete"
         )
         if "stop_reason" in raw_row and raw_row["stop_reason"] != expected_stop_reason:
             raise ValueError(f"{source_path}: stop_reason disagrees with termination flags")
@@ -136,8 +161,9 @@ def validate_episode_rows(
                 "episode_length": episode_length,
                 "terminated": terminated,
                 "truncated": truncated,
+                "time_limit": time_limit,
                 "complete": complete,
-                "stop_reason": "terminated" if terminated else "truncated" if truncated else "incomplete",
+                "stop_reason": expected_stop_reason,
             }
         )
 
@@ -157,14 +183,38 @@ def validate_episode_rows(
     return rows
 
 
-def summary_from_episode_rows(rows: Sequence[Mapping[str, Any]]) -> dict[str, float | int]:
+def summary_from_episode_rows(
+    rows: Sequence[Mapping[str, Any]],
+) -> dict[str, float | int | None]:
     if not rows:
         raise ValueError("at least one episode row is required")
     summary = summarize_returns([float(row["episode_return"]) for row in rows])
+    terminated_rows = [row for row in rows if bool(row["terminated"])]
+    truncated_rows = [row for row in rows if bool(row["truncated"])]
+    time_limit_rows = [row for row in rows if bool(row.get("time_limit", False))]
+
+    def _mean(field: str, selected: Sequence[Mapping[str, Any]]) -> float | None:
+        if not selected:
+            return None
+        return float(fmean([float(row[field]) for row in selected]))
+
     summary["mean_episode_length"] = float(
         fmean([int(row["episode_length"]) for row in rows])
     )
     summary["complete_episodes"] = sum(bool(row["complete"]) for row in rows)
+    summary.update(
+        {
+            "finished_episode_count": sum(bool(row["complete"]) for row in rows),
+            "terminated_count": len(terminated_rows),
+            "truncated_count": len(truncated_rows),
+            "time_limit_truncated_count": len(time_limit_rows),
+            "truncation_rate": float(len(truncated_rows) / len(rows)),
+            "mean_return_terminated": _mean("episode_return", terminated_rows),
+            "mean_return_truncated": _mean("episode_return", truncated_rows),
+            "mean_length_terminated": _mean("episode_length", terminated_rows),
+            "mean_length_truncated": _mean("episode_length", truncated_rows),
+        }
+    )
     return summary
 
 
@@ -173,11 +223,12 @@ def validate_embedded_summary(
     computed: Mapping[str, Any],
     *,
     source: str | Path,
+    require_time_limit_fields: bool = False,
 ) -> None:
     embedded = payload.get("summary")
     if not isinstance(embedded, Mapping):
         raise ValueError(f"{source}: summary is required")
-    for field in (
+    fields = (
         "count",
         "mean_return",
         "median_return",
@@ -186,9 +237,18 @@ def validate_embedded_summary(
         "max_return",
         "mean_episode_length",
         "complete_episodes",
-    ):
+    )
+    if require_time_limit_fields:
+        fields += TIME_LIMIT_SUMMARY_FIELDS
+    for field in fields:
         if field not in embedded:
             raise ValueError(f"{source}: summary is missing {field}")
+        if computed[field] is None:
+            if embedded[field] is not None:
+                raise ValueError(
+                    f"{source}: summary.{field} does not match per_episode artifacts"
+                )
+            continue
         if not math.isclose(
             float(embedded[field]),
             float(computed[field]),
@@ -204,6 +264,7 @@ __all__ = [
     "read_evaluation_results",
     "summarize_returns",
     "summary_from_episode_rows",
+    "TIME_LIMIT_SUMMARY_FIELDS",
     "validate_embedded_summary",
     "validate_episode_rows",
 ]

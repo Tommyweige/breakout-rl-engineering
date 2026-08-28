@@ -10,7 +10,7 @@ import random
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Iterable
+from typing import Any, Callable, Iterable, Mapping
 
 import numpy as np
 import torch
@@ -1089,12 +1089,37 @@ class DQNTrainer:
                     self._random_decision_count += 1
                 elif action_source == "greedy":
                     self._greedy_decision_count += 1
-                next_observation, raw_reward, terminated, truncated, _ = (
+                next_observation, raw_reward, terminated, truncated, step_info = (
                     self._stage_profiler.measure(
                         "env_step",
                         lambda: self.env.step(action),
                     )
                 )
+                executed_action = action
+                auto_fire = False
+                if isinstance(step_info, Mapping):
+                    raw_executed_action = step_info.get(
+                        "fire_reset_executed_action",
+                        action,
+                    )
+                    try:
+                        executed_action = operator.index(raw_executed_action)
+                    except TypeError as error:
+                        raise ValueError(
+                            "fire_reset_executed_action must be an integer"
+                        ) from error
+                    auto_fire = bool(step_info.get("fire_reset_auto", False))
+                if not 0 <= executed_action < self.action_count:
+                    raise ValueError(
+                        f"environment executed illegal action {executed_action}; "
+                        f"expected 0 <= action < {self.action_count}"
+                    )
+                if executed_action != action:
+                    self._action_counts[action] -= 1
+                    self._action_counts[executed_action] += 1
+                    action = executed_action
+                    if auto_fire:
+                        action_source = "fire_reset"
                 next_observation_array = _as_uint8_observation(
                     next_observation,
                     expected_shape=self.observation_shape,

@@ -1,0 +1,1986 @@
+{
+  "diagnostic_schema_version": 1,
+  "created_at_utc": "2026-08-28T03:55:54.666318Z",
+  "diagnostic_mode": "fire_assist",
+  "diagnostic_description": "Diagnostic A: greedy policy with environment-side FIRE assist",
+  "based_on_evaluation_contract": "v1",
+  "policy_type": "dqn",
+  "evaluation_seeds": [
+    101,
+    202,
+    303
+  ],
+  "episodes_per_seed": 5,
+  "concrete_episode_seeds": [
+    101,
+    102,
+    103,
+    104,
+    105,
+    202,
+    203,
+    204,
+    205,
+    206,
+    303,
+    304,
+    305,
+    306,
+    307
+  ],
+  "evaluation_epsilon": 0.0,
+  "fire_assist": true,
+  "environment_fire_assist": true,
+  "requested_device": "cuda",
+  "resolved_device": "cuda:0",
+  "checkpoint": {
+    "path": "assets/day14/final-runs/day14-final-frozen-100k/day14-final-vanilla-dqn-seed42/checkpoints/step-00100000.pt",
+    "sha256": "022bda1ea5bb1ebcb0535ebb522fc954af11fd43607e124d5e5dc7a2aec3b79b",
+    "step": 100000,
+    "source_day14_run_id": "day14-final-vanilla-dqn-seed42",
+    "source_day14_manifest": "experiments/day14-final-frozen-100k/manifest.json",
+    "format_version": 1,
+    "model_config": {
+      "num_actions": 4,
+      "input_shape": [
+        4,
+        84,
+        84
+      ],
+      "hidden_dim": 512
+    },
+    "requested_device": "cuda",
+    "resolved_device": "cuda:0"
+  },
+  "training": {
+    "source_day14_run_id": "day14-final-vanilla-dqn-seed42",
+    "training_seed": 42,
+    "training_budget": 100000,
+    "learning_rate": 0.0002,
+    "batch_size": 32,
+    "train_frequency": 4,
+    "replay_backend": "cpu",
+    "training_device": "cuda",
+    "training_precision": "float32",
+    "training_config": {
+      "total_steps": 100000,
+      "seed": 42,
+      "gamma": 0.99,
+      "learning_rate": 0.0002,
+      "batch_size": 32,
+      "replay_capacity": 10000,
+      "learning_starts": 1000,
+      "train_frequency": 4,
+      "target_update_interval": 500,
+      "epsilon_start": 0.9,
+      "epsilon_end": 0.05,
+      "epsilon_decay_steps": 10000,
+      "gradient_clip_norm": 10.0,
+      "reward_clip": true,
+      "device": "cuda",
+      "precision": "float32",
+      "checkpoint_interval": 25000,
+      "diagnostics_interval": 100,
+      "metrics_flush_interval": 100,
+      "cpu_threads": 2
+    },
+    "config_reference": "configs/final/day14-vanilla-dqn.json",
+    "source_day14_manifest": "experiments/day14-final-frozen-100k/manifest.json",
+    "source_of_truth": "latest Day 14 final manifest and referenced run artifacts",
+    "selection_rule": "final checkpoint at 100000 environment steps",
+    "selection_rationale": {
+      "short_stage": "candidate requires completed 10K, finite metrics, and end-to-end SPS strictly above batch 32",
+      "long_stage": "validate every short-stage candidate with 100K learning metrics before freezing",
+      "quality_over_speed": "do not select a batch size from GPU utilization alone when return or numerical guardrails regress"
+    },
+    "day14_experiment_id": "day14-final-frozen-100k",
+    "day14_run_artifact_dir": "assets/day14/final-runs/day14-final-frozen-100k/day14-final-vanilla-dqn-seed42",
+    "trainer_runtime": {
+      "python_version": "3.12.13",
+      "pytorch_version": "2.13.0+cu130",
+      "torch_cuda_version": "13.0",
+      "gymnasium_version": "1.3.0",
+      "ale_version": "0.12.0",
+      "numpy_version": "2.5.1",
+      "cpu_logical_count": 16,
+      "cpu_thread_count": 2,
+      "cpu_interop_thread_count": 12,
+      "device": "cuda:0",
+      "requested_device": "cuda",
+      "resolved_device": "cuda:0",
+      "precision": "float32",
+      "cuda_device_index": 0,
+      "cuda_available": true,
+      "cuda_device_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+      "gpu_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+      "gpu_model": "NVIDIA GeForce RTX 4060 Laptop GPU",
+      "cuda_allocated_bytes": 51090432,
+      "cuda_peak_allocated_bytes": 70963200,
+      "cuda_reserved_bytes": 90177536,
+      "cuda_peak_reserved_bytes": 90177536,
+      "gpu_utilization_percent": 31.0,
+      "gpu_memory_total_bytes": 8585740288,
+      "gpu_utilization_source": "nvidia-smi",
+      "wall_clock_seconds": 452.3894775999943,
+      "steps_per_second": 221.04846587174745,
+      "seed": 42,
+      "git_commit_sha": "8696d6eaf8a8f3cab18f75661e83113ad5025102",
+      "environment_id": "ALE/Breakout-v5",
+      "observation_shape": [
+        4,
+        84,
+        84
+      ],
+      "action_count": 4,
+      "diagnostics_interval": 100,
+      "metrics_flush_interval": 100,
+      "metrics_row_cadence": 1,
+      "configured_cpu_threads": 2
+    },
+    "gpu_profiling_summary": {
+      "source": "experiments/day14-batch-size-profiling-final/batch-size-comparison.json",
+      "selected_batch_size": 32,
+      "selection_rule": {
+        "short_stage": "candidate requires completed 10K, finite metrics, and end-to-end SPS strictly above batch 32",
+        "long_stage": "validate every short-stage candidate with 100K learning metrics before freezing",
+        "quality_over_speed": "do not select a batch size from GPU utilization alone when return or numerical guardrails regress"
+      },
+      "selected_run_id": "batch-size-32-seed42",
+      "selected_run_status": "completed",
+      "baseline_recent_episode_return": 1.5,
+      "baseline_recent_episode_count": 20,
+      "regression_guardrails_passed": true,
+      "end_to_end_sps": 235.73711983468988,
+      "training_samples_per_second": 1698.061621593238,
+      "profiling": {
+        "sample_csv": "assets/day14/batch-size-profiling/day14-batch-size-profiling-final/batch-size-32/runtime-samples.csv",
+        "sampling_method": "in-process fixed-interval sampler; nvidia-smi query per sample",
+        "gpu_utilization_percent": {
+          "mean": 30.133333333333333,
+          "p50": 32.0,
+          "p95": 36.0,
+          "max": 38.0
+        },
+        "gpu_power_watts": {
+          "mean": 25.59111111111111,
+          "p50": 26.55,
+          "p95": 27.434,
+          "max": 27.63
+        },
+        "gpu_memory_used_bytes": {
+          "mean": 1837874107.7333333,
+          "peak": 1885339648.0
+        },
+        "gpu_memory_total_bytes": 8585740288.0
+      }
+    },
+    "source_day14_profiling_report": "experiments/day14-batch-size-profiling-final/batch-size-comparison.json",
+    "day14_gate": {
+      "status": "passed",
+      "criteria": {
+        "return_signal": true,
+        "diagnostics_healthy": true,
+        "selection_not_single_best_episode": true,
+        "checkpoint_provenance_complete": true
+      },
+      "return_signal": {
+        "reference_10k_recent_mean": 1.5,
+        "reference_recent_episode_count": 20,
+        "final_100k_recent_mean": 6.15,
+        "improvement": 4.65
+      },
+      "diagnostics": {
+        "summary_status": "completed",
+        "summary_values_finite": true,
+        "metrics_values_finite": true,
+        "field_counts": {
+          "loss": {
+            "observed": 251,
+            "finite": 251
+          },
+          "q_mean": {
+            "observed": 251,
+            "finite": 251
+          },
+          "q_max": {
+            "observed": 251,
+            "finite": 251
+          },
+          "q_min": {
+            "observed": 251,
+            "finite": 251
+          },
+          "target_mean": {
+            "observed": 251,
+            "finite": 251
+          },
+          "target_max": {
+            "observed": 251,
+            "finite": 251
+          },
+          "td_error_mean_abs": {
+            "observed": 251,
+            "finite": 251
+          },
+          "td_error_max_abs": {
+            "observed": 251,
+            "finite": 251
+          },
+          "gradient_norm": {
+            "observed": 251,
+            "finite": 251
+          }
+        },
+        "summary_source": "assets/day14/final-runs/day14-final-frozen-100k/day14-final-vanilla-dqn-seed42/summary.json",
+        "metrics_source": "assets/day14/final-runs/day14-final-frozen-100k/day14-final-vanilla-dqn-seed42/metrics.csv"
+      },
+      "selection": {
+        "rationale": {
+          "short_stage": "candidate requires completed 10K, finite metrics, and end-to-end SPS strictly above batch 32",
+          "long_stage": "validate every short-stage candidate with 100K learning metrics before freezing",
+          "quality_over_speed": "do not select a batch size from GPU utilization alone when return or numerical guardrails regress"
+        },
+        "selected_profile_run_id": "batch-size-32-seed42",
+        "regression_guardrails_passed": true,
+        "final_run_episode_count": 329
+      },
+      "provenance": {
+        "run_id": "day14-final-vanilla-dqn-seed42",
+        "expected_step": 100000,
+        "summary_step": 100000,
+        "config_reference": "../../configs/final/day14-vanilla-dqn.json",
+        "run_dir": "assets/day14/final-runs/day14-final-frozen-100k/day14-final-vanilla-dqn-seed42"
+      },
+      "reasons": []
+    }
+  },
+  "per_episode": [
+    {
+      "evaluation_seed": 101,
+      "episode_index": 1,
+      "episode_seed": 101,
+      "episode_return": 3.0,
+      "episode_length": 234,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "complete": true,
+      "stop_reason": "terminated",
+      "time_limit_agent_step_limit": 27000,
+      "lives_observation_reliable": true,
+      "initial_lives": 5,
+      "final_lives": 0,
+      "life_loss_count": 5,
+      "life_loss_events": [
+        {
+          "step": 54,
+          "lives_before": 5,
+          "lives_after": 4,
+          "first_fire_step": 55,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 159,
+          "lives_before": 4,
+          "lives_after": 3,
+          "first_fire_step": 160,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 184,
+          "lives_before": 3,
+          "lives_after": 2,
+          "first_fire_step": 185,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 209,
+          "lives_before": 2,
+          "lives_after": 1,
+          "first_fire_step": 210,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 234,
+          "lives_before": 1,
+          "lives_after": 0,
+          "first_fire_step": null,
+          "fire_latency_steps": null
+        }
+      ],
+      "first_fire_after_life_loss_steps": [
+        55,
+        160,
+        185,
+        210
+      ],
+      "life_loss_to_fire_latencies": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "life_loss_events_without_fire": 1,
+      "max_steps_since_last_reward": 96,
+      "max_steps_since_life_loss": 104,
+      "observation_changed_step_fraction": 0.9658119658119658,
+      "mean_observation_changed_fraction": 0.0038889131151035915,
+      "unchanged_observation_step_fraction": 0.03418803418803419,
+      "max_consecutive_unchanged_observation": 3,
+      "action_distribution": {
+        "NOOP": 18,
+        "FIRE": 24,
+        "RIGHT": 152,
+        "LEFT": 40
+      },
+      "dominant_action": "RIGHT",
+      "dominant_action_fraction": 0.6495726495726496,
+      "max_consecutive_action": 24,
+      "greedy_action_distribution": {
+        "NOOP": 18,
+        "FIRE": 20,
+        "RIGHT": 156,
+        "LEFT": 40
+      },
+      "dominant_greedy_action": "RIGHT",
+      "dominant_greedy_action_fraction": 0.6666666666666666,
+      "max_consecutive_greedy_action": 34,
+      "auto_fire_count": 5,
+      "auto_fire_steps": [
+        1,
+        55,
+        160,
+        185,
+        210
+      ]
+    },
+    {
+      "evaluation_seed": 101,
+      "episode_index": 2,
+      "episode_seed": 102,
+      "episode_return": 7.0,
+      "episode_length": 405,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "complete": true,
+      "stop_reason": "terminated",
+      "time_limit_agent_step_limit": 27000,
+      "lives_observation_reliable": true,
+      "initial_lives": 5,
+      "final_lives": 0,
+      "life_loss_count": 5,
+      "life_loss_events": [
+        {
+          "step": 71,
+          "lives_before": 5,
+          "lives_after": 4,
+          "first_fire_step": 72,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 203,
+          "lives_before": 4,
+          "lives_after": 3,
+          "first_fire_step": 204,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 279,
+          "lives_before": 3,
+          "lives_after": 2,
+          "first_fire_step": 280,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 352,
+          "lives_before": 2,
+          "lives_after": 1,
+          "first_fire_step": 353,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 405,
+          "lives_before": 1,
+          "lives_after": 0,
+          "first_fire_step": null,
+          "fire_latency_steps": null
+        }
+      ],
+      "first_fire_after_life_loss_steps": [
+        72,
+        204,
+        280,
+        353
+      ],
+      "life_loss_to_fire_latencies": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "life_loss_events_without_fire": 1,
+      "max_steps_since_last_reward": 73,
+      "max_steps_since_life_loss": 131,
+      "observation_changed_step_fraction": 1.0,
+      "mean_observation_changed_fraction": 0.0046266551888245015,
+      "unchanged_observation_step_fraction": 0.0,
+      "max_consecutive_unchanged_observation": 0,
+      "action_distribution": {
+        "NOOP": 31,
+        "FIRE": 48,
+        "RIGHT": 213,
+        "LEFT": 113
+      },
+      "dominant_action": "RIGHT",
+      "dominant_action_fraction": 0.5259259259259259,
+      "max_consecutive_action": 19,
+      "greedy_action_distribution": {
+        "NOOP": 32,
+        "FIRE": 47,
+        "RIGHT": 213,
+        "LEFT": 113
+      },
+      "dominant_greedy_action": "RIGHT",
+      "dominant_greedy_action_fraction": 0.5259259259259259,
+      "max_consecutive_greedy_action": 19,
+      "auto_fire_count": 5,
+      "auto_fire_steps": [
+        1,
+        72,
+        204,
+        280,
+        353
+      ]
+    },
+    {
+      "evaluation_seed": 101,
+      "episode_index": 3,
+      "episode_seed": 103,
+      "episode_return": 9.0,
+      "episode_length": 453,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "complete": true,
+      "stop_reason": "terminated",
+      "time_limit_agent_step_limit": 27000,
+      "lives_observation_reliable": true,
+      "initial_lives": 5,
+      "final_lives": 0,
+      "life_loss_count": 5,
+      "life_loss_events": [
+        {
+          "step": 54,
+          "lives_before": 5,
+          "lives_after": 4,
+          "first_fire_step": 55,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 158,
+          "lives_before": 4,
+          "lives_after": 3,
+          "first_fire_step": 159,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 211,
+          "lives_before": 3,
+          "lives_after": 2,
+          "first_fire_step": 212,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 283,
+          "lives_before": 2,
+          "lives_after": 1,
+          "first_fire_step": 284,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 453,
+          "lives_before": 1,
+          "lives_after": 0,
+          "first_fire_step": null,
+          "fire_latency_steps": null
+        }
+      ],
+      "first_fire_after_life_loss_steps": [
+        55,
+        159,
+        212,
+        284
+      ],
+      "life_loss_to_fire_latencies": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "life_loss_events_without_fire": 1,
+      "max_steps_since_last_reward": 70,
+      "max_steps_since_life_loss": 169,
+      "observation_changed_step_fraction": 1.0,
+      "mean_observation_changed_fraction": 0.005525490181355838,
+      "unchanged_observation_step_fraction": 0.0,
+      "max_consecutive_unchanged_observation": 0,
+      "action_distribution": {
+        "NOOP": 49,
+        "FIRE": 40,
+        "RIGHT": 231,
+        "LEFT": 133
+      },
+      "dominant_action": "RIGHT",
+      "dominant_action_fraction": 0.5099337748344371,
+      "max_consecutive_action": 21,
+      "greedy_action_distribution": {
+        "NOOP": 49,
+        "FIRE": 37,
+        "RIGHT": 234,
+        "LEFT": 133
+      },
+      "dominant_greedy_action": "RIGHT",
+      "dominant_greedy_action_fraction": 0.5165562913907285,
+      "max_consecutive_greedy_action": 21,
+      "auto_fire_count": 5,
+      "auto_fire_steps": [
+        1,
+        55,
+        159,
+        212,
+        284
+      ]
+    },
+    {
+      "evaluation_seed": 101,
+      "episode_index": 4,
+      "episode_seed": 104,
+      "episode_return": 18.0,
+      "episode_length": 553,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "complete": true,
+      "stop_reason": "terminated",
+      "time_limit_agent_step_limit": 27000,
+      "lives_observation_reliable": true,
+      "initial_lives": 5,
+      "final_lives": 0,
+      "life_loss_count": 5,
+      "life_loss_events": [
+        {
+          "step": 192,
+          "lives_before": 5,
+          "lives_after": 4,
+          "first_fire_step": 193,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 367,
+          "lives_before": 4,
+          "lives_after": 3,
+          "first_fire_step": 368,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 443,
+          "lives_before": 3,
+          "lives_after": 2,
+          "first_fire_step": 444,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 496,
+          "lives_before": 2,
+          "lives_after": 1,
+          "first_fire_step": 497,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 553,
+          "lives_before": 1,
+          "lives_after": 0,
+          "first_fire_step": null,
+          "fire_latency_steps": null
+        }
+      ],
+      "first_fire_after_life_loss_steps": [
+        193,
+        368,
+        444,
+        497
+      ],
+      "life_loss_to_fire_latencies": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "life_loss_events_without_fire": 1,
+      "max_steps_since_last_reward": 65,
+      "max_steps_since_life_loss": 191,
+      "observation_changed_step_fraction": 1.0,
+      "mean_observation_changed_fraction": 0.004696091818282467,
+      "unchanged_observation_step_fraction": 0.0,
+      "max_consecutive_unchanged_observation": 0,
+      "action_distribution": {
+        "NOOP": 82,
+        "FIRE": 53,
+        "RIGHT": 276,
+        "LEFT": 142
+      },
+      "dominant_action": "RIGHT",
+      "dominant_action_fraction": 0.49909584086799275,
+      "max_consecutive_action": 18,
+      "greedy_action_distribution": {
+        "NOOP": 84,
+        "FIRE": 49,
+        "RIGHT": 276,
+        "LEFT": 144
+      },
+      "dominant_greedy_action": "RIGHT",
+      "dominant_greedy_action_fraction": 0.49909584086799275,
+      "max_consecutive_greedy_action": 18,
+      "auto_fire_count": 5,
+      "auto_fire_steps": [
+        1,
+        193,
+        368,
+        444,
+        497
+      ]
+    },
+    {
+      "evaluation_seed": 101,
+      "episode_index": 5,
+      "episode_seed": 105,
+      "episode_return": 8.0,
+      "episode_length": 444,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "complete": true,
+      "stop_reason": "terminated",
+      "time_limit_agent_step_limit": 27000,
+      "lives_observation_reliable": true,
+      "initial_lives": 5,
+      "final_lives": 0,
+      "life_loss_count": 5,
+      "life_loss_events": [
+        {
+          "step": 168,
+          "lives_before": 5,
+          "lives_after": 4,
+          "first_fire_step": 169,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 241,
+          "lives_before": 4,
+          "lives_after": 3,
+          "first_fire_step": 242,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 315,
+          "lives_before": 3,
+          "lives_after": 2,
+          "first_fire_step": 316,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 368,
+          "lives_before": 2,
+          "lives_after": 1,
+          "first_fire_step": 369,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 444,
+          "lives_before": 1,
+          "lives_after": 0,
+          "first_fire_step": null,
+          "fire_latency_steps": null
+        }
+      ],
+      "first_fire_after_life_loss_steps": [
+        169,
+        242,
+        316,
+        369
+      ],
+      "life_loss_to_fire_latencies": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "life_loss_events_without_fire": 1,
+      "max_steps_since_last_reward": 73,
+      "max_steps_since_life_loss": 167,
+      "observation_changed_step_fraction": 0.990990990990991,
+      "mean_observation_changed_fraction": 0.00333432922718637,
+      "unchanged_observation_step_fraction": 0.009009009009009009,
+      "max_consecutive_unchanged_observation": 3,
+      "action_distribution": {
+        "NOOP": 24,
+        "FIRE": 16,
+        "RIGHT": 316,
+        "LEFT": 88
+      },
+      "dominant_action": "RIGHT",
+      "dominant_action_fraction": 0.7117117117117117,
+      "max_consecutive_action": 45,
+      "greedy_action_distribution": {
+        "NOOP": 25,
+        "FIRE": 13,
+        "RIGHT": 318,
+        "LEFT": 88
+      },
+      "dominant_greedy_action": "RIGHT",
+      "dominant_greedy_action_fraction": 0.7162162162162162,
+      "max_consecutive_greedy_action": 49,
+      "auto_fire_count": 5,
+      "auto_fire_steps": [
+        1,
+        169,
+        242,
+        316,
+        369
+      ]
+    },
+    {
+      "evaluation_seed": 202,
+      "episode_index": 1,
+      "episode_seed": 202,
+      "episode_return": 6.0,
+      "episode_length": 355,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "complete": true,
+      "stop_reason": "terminated",
+      "time_limit_agent_step_limit": 27000,
+      "lives_observation_reliable": true,
+      "initial_lives": 5,
+      "final_lives": 0,
+      "life_loss_count": 5,
+      "life_loss_events": [
+        {
+          "step": 53,
+          "lives_before": 5,
+          "lives_after": 4,
+          "first_fire_step": 54,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 127,
+          "lives_before": 4,
+          "lives_after": 3,
+          "first_fire_step": 128,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 277,
+          "lives_before": 3,
+          "lives_after": 2,
+          "first_fire_step": 278,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 330,
+          "lives_before": 2,
+          "lives_after": 1,
+          "first_fire_step": 331,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 355,
+          "lives_before": 1,
+          "lives_after": 0,
+          "first_fire_step": null,
+          "fire_latency_steps": null
+        }
+      ],
+      "first_fire_after_life_loss_steps": [
+        54,
+        128,
+        278,
+        331
+      ],
+      "life_loss_to_fire_latencies": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "life_loss_events_without_fire": 1,
+      "max_steps_since_last_reward": 70,
+      "max_steps_since_life_loss": 149,
+      "observation_changed_step_fraction": 1.0,
+      "mean_observation_changed_fraction": 0.006143907093353772,
+      "unchanged_observation_step_fraction": 0.0,
+      "max_consecutive_unchanged_observation": 0,
+      "action_distribution": {
+        "NOOP": 36,
+        "FIRE": 40,
+        "RIGHT": 156,
+        "LEFT": 123
+      },
+      "dominant_action": "RIGHT",
+      "dominant_action_fraction": 0.4394366197183099,
+      "max_consecutive_action": 21,
+      "greedy_action_distribution": {
+        "NOOP": 36,
+        "FIRE": 36,
+        "RIGHT": 158,
+        "LEFT": 125
+      },
+      "dominant_greedy_action": "RIGHT",
+      "dominant_greedy_action_fraction": 0.4450704225352113,
+      "max_consecutive_greedy_action": 21,
+      "auto_fire_count": 5,
+      "auto_fire_steps": [
+        1,
+        54,
+        128,
+        278,
+        331
+      ]
+    },
+    {
+      "evaluation_seed": 202,
+      "episode_index": 2,
+      "episode_seed": 203,
+      "episode_return": 8.0,
+      "episode_length": 445,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "complete": true,
+      "stop_reason": "terminated",
+      "time_limit_agent_step_limit": 27000,
+      "lives_observation_reliable": true,
+      "initial_lives": 5,
+      "final_lives": 0,
+      "life_loss_count": 5,
+      "life_loss_events": [
+        {
+          "step": 168,
+          "lives_before": 5,
+          "lives_after": 4,
+          "first_fire_step": 169,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 241,
+          "lives_before": 4,
+          "lives_after": 3,
+          "first_fire_step": 242,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 296,
+          "lives_before": 3,
+          "lives_after": 2,
+          "first_fire_step": 297,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 420,
+          "lives_before": 2,
+          "lives_after": 1,
+          "first_fire_step": 421,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 445,
+          "lives_before": 1,
+          "lives_after": 0,
+          "first_fire_step": null,
+          "fire_latency_steps": null
+        }
+      ],
+      "first_fire_after_life_loss_steps": [
+        169,
+        242,
+        297,
+        421
+      ],
+      "life_loss_to_fire_latencies": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "life_loss_events_without_fire": 1,
+      "max_steps_since_last_reward": 65,
+      "max_steps_since_life_loss": 167,
+      "observation_changed_step_fraction": 0.9887640449438202,
+      "mean_observation_changed_fraction": 0.0036449973247726056,
+      "unchanged_observation_step_fraction": 0.011235955056179775,
+      "max_consecutive_unchanged_observation": 3,
+      "action_distribution": {
+        "NOOP": 23,
+        "FIRE": 11,
+        "RIGHT": 324,
+        "LEFT": 87
+      },
+      "dominant_action": "RIGHT",
+      "dominant_action_fraction": 0.7280898876404495,
+      "max_consecutive_action": 42,
+      "greedy_action_distribution": {
+        "NOOP": 23,
+        "FIRE": 8,
+        "RIGHT": 327,
+        "LEFT": 87
+      },
+      "dominant_greedy_action": "RIGHT",
+      "dominant_greedy_action_fraction": 0.7348314606741573,
+      "max_consecutive_greedy_action": 48,
+      "auto_fire_count": 5,
+      "auto_fire_steps": [
+        1,
+        169,
+        242,
+        297,
+        421
+      ]
+    },
+    {
+      "evaluation_seed": 202,
+      "episode_index": 3,
+      "episode_seed": 204,
+      "episode_return": 7.0,
+      "episode_length": 416,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "complete": true,
+      "stop_reason": "terminated",
+      "time_limit_agent_step_limit": 27000,
+      "lives_observation_reliable": true,
+      "initial_lives": 5,
+      "final_lives": 0,
+      "life_loss_count": 5,
+      "life_loss_events": [
+        {
+          "step": 168,
+          "lives_before": 5,
+          "lives_after": 4,
+          "first_fire_step": 169,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 241,
+          "lives_before": 4,
+          "lives_after": 3,
+          "first_fire_step": 242,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 315,
+          "lives_before": 3,
+          "lives_after": 2,
+          "first_fire_step": 316,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 391,
+          "lives_before": 2,
+          "lives_after": 1,
+          "first_fire_step": 392,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 416,
+          "lives_before": 1,
+          "lives_after": 0,
+          "first_fire_step": null,
+          "fire_latency_steps": null
+        }
+      ],
+      "first_fire_after_life_loss_steps": [
+        169,
+        242,
+        316,
+        392
+      ],
+      "life_loss_to_fire_latencies": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "life_loss_events_without_fire": 1,
+      "max_steps_since_last_reward": 73,
+      "max_steps_since_life_loss": 167,
+      "observation_changed_step_fraction": 0.9855769230769231,
+      "mean_observation_changed_fraction": 0.003197292538810396,
+      "unchanged_observation_step_fraction": 0.014423076923076924,
+      "max_consecutive_unchanged_observation": 3,
+      "action_distribution": {
+        "NOOP": 21,
+        "FIRE": 15,
+        "RIGHT": 315,
+        "LEFT": 65
+      },
+      "dominant_action": "RIGHT",
+      "dominant_action_fraction": 0.7572115384615384,
+      "max_consecutive_action": 42,
+      "greedy_action_distribution": {
+        "NOOP": 21,
+        "FIRE": 13,
+        "RIGHT": 317,
+        "LEFT": 65
+      },
+      "dominant_greedy_action": "RIGHT",
+      "dominant_greedy_action_fraction": 0.7620192307692307,
+      "max_consecutive_greedy_action": 55,
+      "auto_fire_count": 5,
+      "auto_fire_steps": [
+        1,
+        169,
+        242,
+        316,
+        392
+      ]
+    },
+    {
+      "evaluation_seed": 202,
+      "episode_index": 4,
+      "episode_seed": 205,
+      "episode_return": 7.0,
+      "episode_length": 416,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "complete": true,
+      "stop_reason": "terminated",
+      "time_limit_agent_step_limit": 27000,
+      "lives_observation_reliable": true,
+      "initial_lives": 5,
+      "final_lives": 0,
+      "life_loss_count": 5,
+      "life_loss_events": [
+        {
+          "step": 168,
+          "lives_before": 5,
+          "lives_after": 4,
+          "first_fire_step": 169,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 241,
+          "lives_before": 4,
+          "lives_after": 3,
+          "first_fire_step": 242,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 315,
+          "lives_before": 3,
+          "lives_after": 2,
+          "first_fire_step": 316,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 391,
+          "lives_before": 2,
+          "lives_after": 1,
+          "first_fire_step": 392,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 416,
+          "lives_before": 1,
+          "lives_after": 0,
+          "first_fire_step": null,
+          "fire_latency_steps": null
+        }
+      ],
+      "first_fire_after_life_loss_steps": [
+        169,
+        242,
+        316,
+        392
+      ],
+      "life_loss_to_fire_latencies": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "life_loss_events_without_fire": 1,
+      "max_steps_since_last_reward": 73,
+      "max_steps_since_life_loss": 167,
+      "observation_changed_step_fraction": 0.9855769230769231,
+      "mean_observation_changed_fraction": 0.0032177334074655504,
+      "unchanged_observation_step_fraction": 0.014423076923076924,
+      "max_consecutive_unchanged_observation": 3,
+      "action_distribution": {
+        "NOOP": 17,
+        "FIRE": 17,
+        "RIGHT": 317,
+        "LEFT": 65
+      },
+      "dominant_action": "RIGHT",
+      "dominant_action_fraction": 0.7620192307692307,
+      "max_consecutive_action": 42,
+      "greedy_action_distribution": {
+        "NOOP": 18,
+        "FIRE": 14,
+        "RIGHT": 319,
+        "LEFT": 65
+      },
+      "dominant_greedy_action": "RIGHT",
+      "dominant_greedy_action_fraction": 0.7668269230769231,
+      "max_consecutive_greedy_action": 55,
+      "auto_fire_count": 5,
+      "auto_fire_steps": [
+        1,
+        169,
+        242,
+        316,
+        392
+      ]
+    },
+    {
+      "evaluation_seed": 202,
+      "episode_index": 5,
+      "episode_seed": 206,
+      "episode_return": 9.0,
+      "episode_length": 492,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "complete": true,
+      "stop_reason": "terminated",
+      "time_limit_agent_step_limit": 27000,
+      "lives_observation_reliable": true,
+      "initial_lives": 5,
+      "final_lives": 0,
+      "life_loss_count": 5,
+      "life_loss_events": [
+        {
+          "step": 149,
+          "lives_before": 5,
+          "lives_after": 4,
+          "first_fire_step": 150,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 317,
+          "lives_before": 4,
+          "lives_after": 3,
+          "first_fire_step": 318,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 391,
+          "lives_before": 3,
+          "lives_after": 2,
+          "first_fire_step": 392,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 416,
+          "lives_before": 2,
+          "lives_after": 1,
+          "first_fire_step": 417,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 492,
+          "lives_before": 1,
+          "lives_after": 0,
+          "first_fire_step": null,
+          "fire_latency_steps": null
+        }
+      ],
+      "first_fire_after_life_loss_steps": [
+        150,
+        318,
+        392,
+        417
+      ],
+      "life_loss_to_fire_latencies": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "life_loss_events_without_fire": 1,
+      "max_steps_since_last_reward": 98,
+      "max_steps_since_life_loss": 167,
+      "observation_changed_step_fraction": 0.983739837398374,
+      "mean_observation_changed_fraction": 0.003305726084471729,
+      "unchanged_observation_step_fraction": 0.016260162601626018,
+      "max_consecutive_unchanged_observation": 3,
+      "action_distribution": {
+        "NOOP": 31,
+        "FIRE": 29,
+        "RIGHT": 368,
+        "LEFT": 64
+      },
+      "dominant_action": "RIGHT",
+      "dominant_action_fraction": 0.7479674796747967,
+      "max_consecutive_action": 66,
+      "greedy_action_distribution": {
+        "NOOP": 31,
+        "FIRE": 25,
+        "RIGHT": 372,
+        "LEFT": 64
+      },
+      "dominant_greedy_action": "RIGHT",
+      "dominant_greedy_action_fraction": 0.7560975609756098,
+      "max_consecutive_greedy_action": 73,
+      "auto_fire_count": 5,
+      "auto_fire_steps": [
+        1,
+        150,
+        318,
+        392,
+        417
+      ]
+    },
+    {
+      "evaluation_seed": 303,
+      "episode_index": 1,
+      "episode_seed": 303,
+      "episode_return": 9.0,
+      "episode_length": 452,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "complete": true,
+      "stop_reason": "terminated",
+      "time_limit_agent_step_limit": 27000,
+      "lives_observation_reliable": true,
+      "initial_lives": 5,
+      "final_lives": 0,
+      "life_loss_count": 5,
+      "life_loss_events": [
+        {
+          "step": 53,
+          "lives_before": 5,
+          "lives_after": 4,
+          "first_fire_step": 54,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 154,
+          "lives_before": 4,
+          "lives_after": 3,
+          "first_fire_step": 155,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 207,
+          "lives_before": 3,
+          "lives_after": 2,
+          "first_fire_step": 208,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 259,
+          "lives_before": 2,
+          "lives_after": 1,
+          "first_fire_step": 260,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 452,
+          "lives_before": 1,
+          "lives_after": 0,
+          "first_fire_step": null,
+          "fire_latency_steps": null
+        }
+      ],
+      "first_fire_after_life_loss_steps": [
+        54,
+        155,
+        208,
+        260
+      ],
+      "life_loss_to_fire_latencies": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "life_loss_events_without_fire": 1,
+      "max_steps_since_last_reward": 61,
+      "max_steps_since_life_loss": 192,
+      "observation_changed_step_fraction": 1.0,
+      "mean_observation_changed_fraction": 0.005997766916501114,
+      "unchanged_observation_step_fraction": 0.0,
+      "max_consecutive_unchanged_observation": 0,
+      "action_distribution": {
+        "NOOP": 53,
+        "FIRE": 65,
+        "RIGHT": 193,
+        "LEFT": 141
+      },
+      "dominant_action": "RIGHT",
+      "dominant_action_fraction": 0.4269911504424779,
+      "max_consecutive_action": 20,
+      "greedy_action_distribution": {
+        "NOOP": 53,
+        "FIRE": 61,
+        "RIGHT": 194,
+        "LEFT": 144
+      },
+      "dominant_greedy_action": "RIGHT",
+      "dominant_greedy_action_fraction": 0.42920353982300885,
+      "max_consecutive_greedy_action": 20,
+      "auto_fire_count": 5,
+      "auto_fire_steps": [
+        1,
+        54,
+        155,
+        208,
+        260
+      ]
+    },
+    {
+      "evaluation_seed": 303,
+      "episode_index": 2,
+      "episode_seed": 304,
+      "episode_return": 10.0,
+      "episode_length": 408,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "complete": true,
+      "stop_reason": "terminated",
+      "time_limit_agent_step_limit": 27000,
+      "lives_observation_reliable": true,
+      "initial_lives": 5,
+      "final_lives": 0,
+      "life_loss_count": 5,
+      "life_loss_events": [
+        {
+          "step": 85,
+          "lives_before": 5,
+          "lives_after": 4,
+          "first_fire_step": 86,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 157,
+          "lives_before": 4,
+          "lives_after": 3,
+          "first_fire_step": 158,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 210,
+          "lives_before": 3,
+          "lives_after": 2,
+          "first_fire_step": 211,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 331,
+          "lives_before": 2,
+          "lives_after": 1,
+          "first_fire_step": 332,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 408,
+          "lives_before": 1,
+          "lives_after": 0,
+          "first_fire_step": null,
+          "fire_latency_steps": null
+        }
+      ],
+      "first_fire_after_life_loss_steps": [
+        86,
+        158,
+        211,
+        332
+      ],
+      "life_loss_to_fire_latencies": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "life_loss_events_without_fire": 1,
+      "max_steps_since_last_reward": 73,
+      "max_steps_since_life_loss": 120,
+      "observation_changed_step_fraction": 0.9975490196078431,
+      "mean_observation_changed_fraction": 0.004550691804499577,
+      "unchanged_observation_step_fraction": 0.0024509803921568627,
+      "max_consecutive_unchanged_observation": 1,
+      "action_distribution": {
+        "NOOP": 45,
+        "FIRE": 48,
+        "RIGHT": 222,
+        "LEFT": 93
+      },
+      "dominant_action": "RIGHT",
+      "dominant_action_fraction": 0.5441176470588235,
+      "max_consecutive_action": 33,
+      "greedy_action_distribution": {
+        "NOOP": 46,
+        "FIRE": 44,
+        "RIGHT": 224,
+        "LEFT": 94
+      },
+      "dominant_greedy_action": "RIGHT",
+      "dominant_greedy_action_fraction": 0.5490196078431373,
+      "max_consecutive_greedy_action": 33,
+      "auto_fire_count": 5,
+      "auto_fire_steps": [
+        1,
+        86,
+        158,
+        211,
+        332
+      ]
+    },
+    {
+      "evaluation_seed": 303,
+      "episode_index": 3,
+      "episode_seed": 305,
+      "episode_return": 8.0,
+      "episode_length": 450,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "complete": true,
+      "stop_reason": "terminated",
+      "time_limit_agent_step_limit": 27000,
+      "lives_observation_reliable": true,
+      "initial_lives": 5,
+      "final_lives": 0,
+      "life_loss_count": 5,
+      "life_loss_events": [
+        {
+          "step": 53,
+          "lives_before": 5,
+          "lives_after": 4,
+          "first_fire_step": 54,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 155,
+          "lives_before": 4,
+          "lives_after": 3,
+          "first_fire_step": 156,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 226,
+          "lives_before": 3,
+          "lives_after": 2,
+          "first_fire_step": 227,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 281,
+          "lives_before": 2,
+          "lives_after": 1,
+          "first_fire_step": 282,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 450,
+          "lives_before": 1,
+          "lives_after": 0,
+          "first_fire_step": null,
+          "fire_latency_steps": null
+        }
+      ],
+      "first_fire_after_life_loss_steps": [
+        54,
+        156,
+        227,
+        282
+      ],
+      "life_loss_to_fire_latencies": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "life_loss_events_without_fire": 1,
+      "max_steps_since_last_reward": 63,
+      "max_steps_since_life_loss": 168,
+      "observation_changed_step_fraction": 0.9955555555555555,
+      "mean_observation_changed_fraction": 0.005662320483749055,
+      "unchanged_observation_step_fraction": 0.0044444444444444444,
+      "max_consecutive_unchanged_observation": 2,
+      "action_distribution": {
+        "NOOP": 116,
+        "FIRE": 57,
+        "RIGHT": 146,
+        "LEFT": 131
+      },
+      "dominant_action": "RIGHT",
+      "dominant_action_fraction": 0.3244444444444444,
+      "max_consecutive_action": 14,
+      "greedy_action_distribution": {
+        "NOOP": 116,
+        "FIRE": 55,
+        "RIGHT": 146,
+        "LEFT": 133
+      },
+      "dominant_greedy_action": "RIGHT",
+      "dominant_greedy_action_fraction": 0.3244444444444444,
+      "max_consecutive_greedy_action": 14,
+      "auto_fire_count": 5,
+      "auto_fire_steps": [
+        1,
+        54,
+        156,
+        227,
+        282
+      ]
+    },
+    {
+      "evaluation_seed": 303,
+      "episode_index": 4,
+      "episode_seed": 306,
+      "episode_return": 11.0,
+      "episode_length": 435,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "complete": true,
+      "stop_reason": "terminated",
+      "time_limit_agent_step_limit": 27000,
+      "lives_observation_reliable": true,
+      "initial_lives": 5,
+      "final_lives": 0,
+      "life_loss_count": 5,
+      "life_loss_events": [
+        {
+          "step": 53,
+          "lives_before": 5,
+          "lives_after": 4,
+          "first_fire_step": 54,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 172,
+          "lives_before": 4,
+          "lives_after": 3,
+          "first_fire_step": 173,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 225,
+          "lives_before": 3,
+          "lives_after": 2,
+          "first_fire_step": 226,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 361,
+          "lives_before": 2,
+          "lives_after": 1,
+          "first_fire_step": 362,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 435,
+          "lives_before": 1,
+          "lives_after": 0,
+          "first_fire_step": null,
+          "fire_latency_steps": null
+        }
+      ],
+      "first_fire_after_life_loss_steps": [
+        54,
+        173,
+        226,
+        362
+      ],
+      "life_loss_to_fire_latencies": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "life_loss_events_without_fire": 1,
+      "max_steps_since_last_reward": 64,
+      "max_steps_since_life_loss": 135,
+      "observation_changed_step_fraction": 0.9954022988505747,
+      "mean_observation_changed_fraction": 0.0052346417494200746,
+      "unchanged_observation_step_fraction": 0.004597701149425287,
+      "max_consecutive_unchanged_observation": 2,
+      "action_distribution": {
+        "NOOP": 53,
+        "FIRE": 28,
+        "RIGHT": 240,
+        "LEFT": 114
+      },
+      "dominant_action": "RIGHT",
+      "dominant_action_fraction": 0.5517241379310345,
+      "max_consecutive_action": 30,
+      "greedy_action_distribution": {
+        "NOOP": 55,
+        "FIRE": 24,
+        "RIGHT": 241,
+        "LEFT": 115
+      },
+      "dominant_greedy_action": "RIGHT",
+      "dominant_greedy_action_fraction": 0.5540229885057472,
+      "max_consecutive_greedy_action": 30,
+      "auto_fire_count": 5,
+      "auto_fire_steps": [
+        1,
+        54,
+        173,
+        226,
+        362
+      ]
+    },
+    {
+      "evaluation_seed": 303,
+      "episode_index": 5,
+      "episode_seed": 307,
+      "episode_return": 12.0,
+      "episode_length": 491,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "complete": true,
+      "stop_reason": "terminated",
+      "time_limit_agent_step_limit": 27000,
+      "lives_observation_reliable": true,
+      "initial_lives": 5,
+      "final_lives": 0,
+      "life_loss_count": 5,
+      "life_loss_events": [
+        {
+          "step": 53,
+          "lives_before": 5,
+          "lives_after": 4,
+          "first_fire_step": 54,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 221,
+          "lives_before": 4,
+          "lives_after": 3,
+          "first_fire_step": 222,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 295,
+          "lives_before": 3,
+          "lives_after": 2,
+          "first_fire_step": 296,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 372,
+          "lives_before": 2,
+          "lives_after": 1,
+          "first_fire_step": 373,
+          "fire_latency_steps": 1
+        },
+        {
+          "step": 491,
+          "lives_before": 1,
+          "lives_after": 0,
+          "first_fire_step": null,
+          "fire_latency_steps": null
+        }
+      ],
+      "first_fire_after_life_loss_steps": [
+        54,
+        222,
+        296,
+        373
+      ],
+      "life_loss_to_fire_latencies": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "life_loss_events_without_fire": 1,
+      "max_steps_since_last_reward": 74,
+      "max_steps_since_life_loss": 167,
+      "observation_changed_step_fraction": 0.9938900203665988,
+      "mean_observation_changed_fraction": 0.0038354785227057557,
+      "unchanged_observation_step_fraction": 0.006109979633401222,
+      "max_consecutive_unchanged_observation": 3,
+      "action_distribution": {
+        "NOOP": 56,
+        "FIRE": 67,
+        "RIGHT": 269,
+        "LEFT": 99
+      },
+      "dominant_action": "RIGHT",
+      "dominant_action_fraction": 0.5478615071283096,
+      "max_consecutive_action": 29,
+      "greedy_action_distribution": {
+        "NOOP": 56,
+        "FIRE": 66,
+        "RIGHT": 270,
+        "LEFT": 99
+      },
+      "dominant_greedy_action": "RIGHT",
+      "dominant_greedy_action_fraction": 0.5498981670061099,
+      "max_consecutive_greedy_action": 29,
+      "auto_fire_count": 5,
+      "auto_fire_steps": [
+        1,
+        54,
+        222,
+        296,
+        373
+      ]
+    }
+  ],
+  "summary": {
+    "count": 15,
+    "mean_return": 8.8,
+    "median_return": 8.0,
+    "std_return": 3.2083225108042575,
+    "min_return": 3.0,
+    "max_return": 18.0,
+    "mean_episode_length": 429.93333333333334,
+    "complete_episodes": 15,
+    "finished_episode_count": 15,
+    "terminated_count": 15,
+    "truncated_count": 0,
+    "time_limit_truncated_count": 0,
+    "truncation_rate": 0.0,
+    "mean_return_terminated": 8.8,
+    "mean_return_truncated": null,
+    "mean_length_terminated": 429.93333333333334,
+    "mean_length_truncated": null,
+    "dominant_action": "RIGHT",
+    "dominant_action_fraction": 0.5796247480229493,
+    "mean_dominant_action_fraction": 0.5817402364121421,
+    "action_distribution": {
+      "FIRE": 558,
+      "LEFT": 1498,
+      "NOOP": 655,
+      "RIGHT": 3738
+    },
+    "dominant_greedy_action": "RIGHT",
+    "dominant_greedy_action_fraction": 0.5838114436346721,
+    "mean_dominant_greedy_action_fraction": 0.5863930191147406,
+    "greedy_action_distribution": {
+      "FIRE": 512,
+      "LEFT": 1509,
+      "NOOP": 663,
+      "RIGHT": 3765
+    },
+    "max_consecutive_action": 66,
+    "max_consecutive_greedy_action": 73,
+    "max_consecutive_unchanged_observation": 3,
+    "mean_observation_changed_fraction": 0.004457469030433493,
+    "unchanged_observation_step_fraction": 0.007809494688028712,
+    "life_loss_event_count": 75,
+    "life_loss_events_without_fire": 15,
+    "mean_life_loss_fire_latency": 1.0,
+    "life_loss_fire_latency_observed": true,
+    "auto_fire_count": 75,
+    "auto_fire_steps": [
+      {
+        "episode_seed": 101,
+        "steps": [
+          1,
+          55,
+          160,
+          185,
+          210
+        ]
+      },
+      {
+        "episode_seed": 102,
+        "steps": [
+          1,
+          72,
+          204,
+          280,
+          353
+        ]
+      },
+      {
+        "episode_seed": 103,
+        "steps": [
+          1,
+          55,
+          159,
+          212,
+          284
+        ]
+      },
+      {
+        "episode_seed": 104,
+        "steps": [
+          1,
+          193,
+          368,
+          444,
+          497
+        ]
+      },
+      {
+        "episode_seed": 105,
+        "steps": [
+          1,
+          169,
+          242,
+          316,
+          369
+        ]
+      },
+      {
+        "episode_seed": 202,
+        "steps": [
+          1,
+          54,
+          128,
+          278,
+          331
+        ]
+      },
+      {
+        "episode_seed": 203,
+        "steps": [
+          1,
+          169,
+          242,
+          297,
+          421
+        ]
+      },
+      {
+        "episode_seed": 204,
+        "steps": [
+          1,
+          169,
+          242,
+          316,
+          392
+        ]
+      },
+      {
+        "episode_seed": 205,
+        "steps": [
+          1,
+          169,
+          242,
+          316,
+          392
+        ]
+      },
+      {
+        "episode_seed": 206,
+        "steps": [
+          1,
+          150,
+          318,
+          392,
+          417
+        ]
+      },
+      {
+        "episode_seed": 303,
+        "steps": [
+          1,
+          54,
+          155,
+          208,
+          260
+        ]
+      },
+      {
+        "episode_seed": 304,
+        "steps": [
+          1,
+          86,
+          158,
+          211,
+          332
+        ]
+      },
+      {
+        "episode_seed": 305,
+        "steps": [
+          1,
+          54,
+          156,
+          227,
+          282
+        ]
+      },
+      {
+        "episode_seed": 306,
+        "steps": [
+          1,
+          54,
+          173,
+          226,
+          362
+        ]
+      },
+      {
+        "episode_seed": 307,
+        "steps": [
+          1,
+          54,
+          222,
+          296,
+          373
+        ]
+      }
+    ]
+  },
+  "metadata": {
+    "evaluation_config_path": "configs/eval/breakout_eval.json",
+    "v1_results_path": "evaluations/day15-dqn-cuda/results.json",
+    "trace_selection": [
+      {
+        "evaluation_seed": 101,
+        "episode_index": 1,
+        "episode_seed": 101
+      },
+      {
+        "evaluation_seed": 101,
+        "episode_index": 2,
+        "episode_seed": 102
+      },
+      {
+        "evaluation_seed": 101,
+        "episode_index": 3,
+        "episode_seed": 103
+      }
+    ],
+    "source_day14_manifest": "experiments/day14-final-frozen-100k/manifest.json",
+    "source_day14_profiling_report": "experiments/day14-batch-size-profiling-final/batch-size-comparison.json"
+  },
+  "artifacts": {
+    "results_json": "results.json",
+    "episodes_csv": "episodes.csv",
+    "trace_jsonl": "trace.jsonl"
+  }
+}

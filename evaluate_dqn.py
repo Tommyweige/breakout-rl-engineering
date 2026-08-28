@@ -6,8 +6,9 @@ import argparse
 import json
 import sys
 from pathlib import Path
-from typing import Any, Literal, Mapping, Sequence
+from typing import Any, Callable, Literal, Mapping, Sequence
 
+from breakout_env import make_breakout_env
 from breakout_rl.evaluation import (
     EvaluationConfig,
     evaluate_policy,
@@ -16,6 +17,12 @@ from breakout_rl.evaluation import (
     load_evaluation_config,
     validate_checkpoint_provenance,
     write_evaluation_artifacts,
+)
+from breakout_rl.evaluation_contract import (
+    BreakoutEvaluationContractV2,
+    expand_concrete_episode_seeds,
+    load_evaluation_contract,
+    validate_breakout_runtime_contract,
 )
 
 
@@ -32,6 +39,14 @@ EVALUATION_IDS: dict[PolicyName, str] = {
 }
 FORMAL_DQN_EVALUATION_ID = EVALUATION_IDS["dqn"]
 DQN_REFERENCE_EVALUATION_ID = "day15-dqn-cpu-reference"
+CONTRACT_V2_OUTPUT_DIRS: dict[PolicyName, Path] = {
+    "random": Path("evaluations/day15-contract-v2-random"),
+    "dqn": Path("evaluations/day15-contract-v2-dqn"),
+}
+CONTRACT_V2_EVALUATION_IDS: dict[PolicyName, str] = {
+    "random": "day15-contract-v2-random",
+    "dqn": "day15-contract-v2-dqn",
+}
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -64,6 +79,14 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         default=None,
         help="override the profiling report referenced by the evaluation config",
+    )
+    parser.add_argument(
+        "--contract",
+        "--evaluation-contract",
+        dest="contract",
+        type=Path,
+        default=None,
+        help="load a machine-readable environment contract (v2 uses environment-side FIRE)",
     )
     return parser
 
@@ -109,8 +132,23 @@ def _is_cuda_request(device: str | None) -> bool:
 def _output_destination(
     policy_name: PolicyName,
     args: argparse.Namespace,
+    *,
+    contract_id: str | None = None,
 ) -> tuple[Path, str]:
     requested_output_dir = Path(args.output_dir) if args.output_dir is not None else None
+    if contract_id is not None:
+        output_dir = requested_output_dir or CONTRACT_V2_OUTPUT_DIRS[policy_name]
+        evaluation_id = args.evaluation_id or CONTRACT_V2_EVALUATION_IDS[policy_name]
+        legacy_paths = {path.resolve() for path in OUTPUT_DIRS.values()}
+        if output_dir.resolve() in legacy_paths:
+            raise ValueError(
+                "Contract v2 evaluation cannot overwrite Evaluation Contract v1 artifacts"
+            )
+        if evaluation_id in set(EVALUATION_IDS.values()):
+            raise ValueError(
+                "Contract v2 evaluation cannot reuse an Evaluation Contract v1 id"
+            )
+        return output_dir, evaluation_id
     if policy_name != "dqn" or _is_cuda_request(args.device):
         output_dir = requested_output_dir or OUTPUT_DIRS[policy_name]
         evaluation_id = args.evaluation_id or EVALUATION_IDS[policy_name]
@@ -128,6 +166,38 @@ def _output_destination(
             "CPU DQN reference evaluation cannot use the formal CUDA evaluation id"
         )
     return output_dir, evaluation_id
+
+
+def _validate_contract_for_config(
+    contract: BreakoutEvaluationContractV2,
+    evaluation_config: EvaluationConfig,
+) -> None:
+    validate_breakout_runtime_contract(contract)
+    if contract.environment_id != evaluation_config.environment_id:
+        raise ValueError(
+            "evaluation config and contract must use the same environment_id"
+        )
+    expected_seeds = expand_concrete_episode_seeds(
+        evaluation_config.seeds,
+        episodes_per_seed=evaluation_config.episodes_per_seed,
+    )
+    if contract.concrete_episode_seeds != expected_seeds:
+        raise ValueError(
+            "evaluation config concrete episode seeds do not match the contract"
+        )
+    if contract.evaluation_epsilon != evaluation_config.epsilon:
+        raise ValueError(
+            "evaluation config epsilon does not match the contract"
+        )
+
+
+def _contract_environment_factory(
+    contract: BreakoutEvaluationContractV2,
+) -> Callable[[], Any]:
+    return lambda: make_breakout_env(
+        stack_size=contract.frame_stack,
+        fire_reset=contract.fire_reset,
+    )
 
 
 def _portable_command(
@@ -157,7 +227,15 @@ def run_evaluation(args: argparse.Namespace) -> tuple[Path, Path, dict[str, Any]
         )
 
     evaluation_config = load_evaluation_config(args.config)
-    output_dir, evaluation_id = _output_destination(policy_name, args)
+    contract_path = getattr(args, "contract", None)
+    contract = load_evaluation_contract(contract_path) if contract_path is not None else None
+    if contract is not None:
+        _validate_contract_for_config(contract, evaluation_config)
+    output_dir, evaluation_id = _output_destination(
+        policy_name,
+        args,
+        contract_id=contract.contract_id if contract is not None else None,
+    )
     requested_device = args.device or "cpu"
     model = None
     model_id = "random-policy"
@@ -226,6 +304,22 @@ def run_evaluation(args: argparse.Namespace) -> tuple[Path, Path, dict[str, Any]
             "manifest_run_id": provenance.get("run_id"),
         }
 
+    metadata: dict[str, Any] = {
+        "evaluation_config_path": args.config.as_posix(),
+        "evaluation_config": evaluation_config.to_dict(),
+        "command": _portable_command(
+            args,
+            checkpoint_path=checkpoint_metadata.get("path"),
+        ),
+        "raw_reward": True,
+        "policy_protocol": "shared environment construction, seed handling, episode loop, and schema",
+    }
+    env_factory = None
+    if contract is not None:
+        metadata["evaluation_contract_path"] = Path(contract_path).as_posix()
+        metadata["evaluation_contract"] = contract.to_dict()
+        env_factory = _contract_environment_factory(contract)
+
     result = evaluate_policy(
         model,
         episodes=evaluation_config.episodes_per_seed,
@@ -236,16 +330,8 @@ def run_evaluation(args: argparse.Namespace) -> tuple[Path, Path, dict[str, Any]
         training_metadata=training_metadata,
         checkpoint_metadata=checkpoint_metadata,
         evaluation_id=evaluation_id,
-        metadata={
-            "evaluation_config_path": args.config.as_posix(),
-            "evaluation_config": evaluation_config.to_dict(),
-            "command": _portable_command(
-                args,
-                checkpoint_path=checkpoint_metadata.get("path"),
-            ),
-            "raw_reward": True,
-            "policy_protocol": "shared environment construction, seed handling, episode loop, and schema",
-        },
+        env_factory=env_factory or make_breakout_env,
+        metadata=metadata,
     )
     results_path, episodes_path = write_evaluation_artifacts(result, output_dir)
     return results_path, episodes_path, result.to_dict()

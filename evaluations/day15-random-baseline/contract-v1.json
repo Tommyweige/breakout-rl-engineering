@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "contract_id": "day15-evaluation-v1",
+  "policy_type": "random",
+  "policy_responsible_fire": true,
+  "fire_reset": false,
+  "terminal_on_life_loss": false,
+  "evaluation_epsilon": 0.0,
+  "raw_reward_rule": "sum environment rewards without clipping",
+  "results_artifact": "results.json",
+  "legacy_reason": "preserved before FIRE/TimeLimit root-cause audit"
+}

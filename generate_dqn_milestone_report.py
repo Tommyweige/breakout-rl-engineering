@@ -84,11 +84,160 @@ def _path(path: Path) -> str:
         return path.as_posix()
 
 
+def _load_diagnostic_bundle(manifest_path: str | Path) -> dict[str, Any]:
+    source = Path(manifest_path).resolve()
+    manifest = json.loads(source.read_text(encoding="utf-8"))
+    if not isinstance(manifest, Mapping):
+        raise ValueError(f"{source}: diagnostic manifest must be an object")
+    root = source.parent.parent.parent
+    source_v1 = manifest.get("source_v1_artifacts")
+    modes = manifest.get("modes")
+    if not isinstance(source_v1, Mapping) or not isinstance(modes, Mapping):
+        raise ValueError(f"{source}: diagnostic manifest is incomplete")
+
+    def _source(value: Any) -> Path:
+        if not isinstance(value, str):
+            raise ValueError(f"{source}: diagnostic artifact path is missing")
+        return (root / value).resolve()
+
+    v1_summary_paths = source_v1.get("time_limit_summaries")
+    if not isinstance(v1_summary_paths, list) or len(v1_summary_paths) != 2:
+        raise ValueError(f"{source}: v1 time-limit summaries are missing")
+    v1_summaries: dict[str, dict[str, Any]] = {}
+    for name, raw_path in zip(("random", "dqn"), v1_summary_paths):
+        summary_source = _source(raw_path)
+        payload = read_evaluation_results(summary_source)
+        rows = validate_episode_rows(payload, source=summary_source, require_complete=True)
+        computed = summary_from_episode_rows(rows)
+        validate_embedded_summary(
+            payload,
+            computed,
+            source=summary_source,
+            require_time_limit_fields=True,
+        )
+        v1_summaries[name] = dict(payload["summary"])
+
+    diagnostic_payloads: dict[str, dict[str, Any]] = {}
+    for name in ("root_cause", "fire_assist", "epsilon005"):
+        mode_paths = modes.get(name)
+        if not isinstance(mode_paths, list) or not mode_paths:
+            raise ValueError(f"{source}: diagnostic mode {name} is missing")
+        mode_source = _source(mode_paths[0])
+        payload = read_evaluation_results(mode_source)
+        seeds = payload.get("evaluation_seeds")
+        episodes_per_seed = payload.get("episodes_per_seed")
+        if not isinstance(seeds, list) or not isinstance(episodes_per_seed, int):
+            raise ValueError(f"{mode_source}: diagnostic protocol is incomplete")
+        exact = name != "root_cause"
+        rows = validate_episode_rows(
+            payload,
+            source=mode_source,
+            expected_seeds=seeds if exact else None,
+            expected_episodes_per_seed=episodes_per_seed if exact else None,
+            require_complete=True,
+        )
+        computed = summary_from_episode_rows(rows)
+        validate_embedded_summary(
+            payload,
+            computed,
+            source=mode_source,
+            require_time_limit_fields=True,
+        )
+        diagnostic_payloads[name] = payload
+
+    return {
+        "manifest": manifest,
+        "v1_summaries": v1_summaries,
+        "diagnostics": diagnostic_payloads,
+        "source": source,
+    }
+
+
+def _diagnostic_lines(manifest_path: str | Path) -> list[str]:
+    bundle = _load_diagnostic_bundle(manifest_path)
+    v1 = bundle["v1_summaries"]
+    diagnostics = bundle["diagnostics"]
+    fire = diagnostics["fire_assist"]
+    epsilon = diagnostics["epsilon005"]
+    root = diagnostics["root_cause"]
+    fire_summary = _mapping(fire["summary"])
+    epsilon_summary = _mapping(epsilon["summary"])
+    root_summary = _mapping(root["summary"])
+    fire_count = fire_summary.get("count", len(fire.get("per_episode", [])))
+    epsilon_count = epsilon_summary.get(
+        "count", len(epsilon.get("per_episode", []))
+    )
+    lines = [
+        "## FIRE / TimeLimit root-cause audit",
+        "",
+        "Evaluation Contract v1 的原始 `results.json` 保留不變；下面的 sidecar 與新 diagnostic artifacts 將 `truncated` 細分為可追蹤的 ALE TimeLimit，並比較兩種不改 checkpoint 的 diagnostic。",
+        "",
+        "| Mode | epsilon | FIRE assist | mean return | median | terminated | TimeLimit | truncation rate | mean length | term mean | trunc mean | dominant action fraction | life-loss → FIRE latency | auto-FIRE |",
+        "|---|---:|:---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
+        f"| v1 greedy/no assist | 0.00 | no | {_number(v1['dqn']['mean_return'])} | {_number(v1['dqn']['median_return'])} | {v1['dqn']['terminated_count']} | {v1['dqn']['time_limit_truncated_count']} | {_number(v1['dqn']['truncation_rate'])} | {_number(v1['dqn']['mean_episode_length'])} | {_number(v1['dqn']['mean_return_terminated'])} | {_number(v1['dqn']['mean_return_truncated'])} | — | — | 0 |",
+        f"| Diagnostic A | {fire.get('evaluation_epsilon', '—')} | yes | {_number(fire_summary.get('mean_return'))} | {_number(fire_summary.get('median_return'))} | {fire_summary.get('terminated_count', '—')} | {fire_summary.get('time_limit_truncated_count', '—')} | {_number(fire_summary.get('truncation_rate'))} | {_number(fire_summary.get('mean_episode_length'))} | {_number(fire_summary.get('mean_return_terminated'))} | {_number(fire_summary.get('mean_return_truncated'))} | {_number(fire_summary.get('dominant_action_fraction'))} | {_number(fire_summary.get('mean_life_loss_fire_latency'))} | {fire_summary.get('auto_fire_count', '—')} |",
+        f"| Diagnostic B | {epsilon.get('evaluation_epsilon', '—')} | no | {_number(epsilon_summary.get('mean_return'))} | {_number(epsilon_summary.get('median_return'))} | {epsilon_summary.get('terminated_count', '—')} | {epsilon_summary.get('time_limit_truncated_count', '—')} | {_number(epsilon_summary.get('truncation_rate'))} | {_number(epsilon_summary.get('mean_episode_length'))} | {_number(epsilon_summary.get('mean_return_terminated'))} | {_number(epsilon_summary.get('mean_return_truncated'))} | {_number(epsilon_summary.get('dominant_action_fraction'))} | {_number(epsilon_summary.get('mean_life_loss_fire_latency'))} | {epsilon_summary.get('auto_fire_count', '—')} |",
+        "",
+        "v1 root-cause trace 的 selected episodes 如下：",
+        "",
+    ]
+    for row in root.get("per_episode", []):
+        if not isinstance(row, Mapping):
+            continue
+        events = row.get("life_loss_events", [])
+        event_text = []
+        if isinstance(events, list):
+            for event in events:
+                if isinstance(event, Mapping):
+                    event_text.append(
+                        f"life loss step {event.get('step')} → FIRE step {event.get('first_fire_step')} "
+                        f"(latency {event.get('fire_latency_steps')})"
+                    )
+        lines.append(
+            f"- seed `{row.get('episode_seed')}`：`{row.get('stop_reason')}`, "
+            f"length `{row.get('episode_length')}`, dominant `{row.get('dominant_action')}` "
+            f"({_number(row.get('dominant_action_fraction'))}), "
+            f"unchanged observation fraction `{_number(row.get('unchanged_observation_step_fraction'))}`；"
+            + ("；".join(event_text) if event_text else "life-loss/FIRE event unavailable")
+        )
+    lines.extend(
+        [
+            "",
+            f"root trace summary：`{root_summary.get('time_limit_truncated_count', '—')}` 個 TimeLimit、"
+            f"最大連續不變 observation `{root_summary.get('max_consecutive_unchanged_observation', '—')}` steps，"
+            f"dominant action `{root_summary.get('dominant_action', '—')}` fraction "
+            f"`{_number(root_summary.get('dominant_action_fraction'))}`。"
+            "這支持 timeout 的主要近因是 life loss 後長時間沒有有效重發球，並伴隨 action/observation collapse；"
+            "它不支持把長 episode 直接解讀成模型能正常存活。",
+            "",
+            "Diagnostic A 在相同 checkpoint、concrete seeds、preprocessing 和 raw reward 下加入環境側 FIRE："
+            f"mean return {_number(fire_summary.get('mean_return'))}、"
+            f"{fire_summary.get('terminated_count', '—')}/{fire_count} terminated、"
+            f"auto-FIRE {fire_summary.get('auto_fire_count', '—')} 次，平均 life-loss → FIRE latency "
+            f"{_number(fire_summary.get('mean_life_loss_fire_latency'))} steps。",
+            "Diagnostic B 保持 policy-responsible FIRE，只把 epsilon 設為 0.05："
+            f"mean return {_number(epsilon_summary.get('mean_return'))}、"
+            f"{epsilon_summary.get('terminated_count', '—')}/{epsilon_count} terminated，"
+            f"但平均 latency {_number(epsilon_summary.get('mean_life_loss_fire_latency'))} steps，"
+            "它證明少量探索可以偶爾解鎖 serve，卻不是穩定且可重現的 environment contract。",
+            "",
+            "因此 Contract v2 選 Option B：`fire_reset=true`，由 environment 在 initial serve 和觀察到 life loss 後執行 FIRE；"
+            "仍保留 `terminal_on_life_loss=false`，TimeLimit 只由 ALE 的 `game_truncated` 標記。這是對 serve deadlock 的修正，"
+            "不是把 v1 與 v2 的分數當成同一環境規格直接比較。",
+            "Contract v2 machine-readable 定義保存於 `configs/eval/breakout_contract_v2.json`，Day 16 可直接載入。",
+            "比較圖由真實 v1 sidecar 與兩份 diagnostic JSON 重新產生，保存於 `assets/day15/fire-time-limit-diagnostics.png`。",
+            "",
+        ]
+    )
+    return lines
+
+
 def build_report(
     random_results_path: str | Path,
     dqn_results_path: str | Path,
     *,
     require_cuda: bool = True,
+    diagnostic_manifest_path: str | Path | None = None,
 ) -> str:
     random_source = Path(random_results_path)
     dqn_source = Path(dqn_results_path)
@@ -283,6 +432,9 @@ def build_report(
                 f"{_number(random_row['episode_return'])} | {_number(dqn_row['episode_return'])} |"
             )
 
+    if diagnostic_manifest_path is not None:
+        lines.extend(_diagnostic_lines(diagnostic_manifest_path))
+
     lines.extend(
         [
             "",
@@ -335,6 +487,12 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="allow a CPU DQN artifact for a portability/reference report",
     )
+    parser.add_argument(
+        "--diagnostic-manifest",
+        type=Path,
+        default=None,
+        help="include the FIRE/TimeLimit diagnostic audit",
+    )
     return parser
 
 
@@ -345,6 +503,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             args.random_results,
             args.dqn_results,
             require_cuda=not args.allow_non_cuda,
+            diagnostic_manifest_path=args.diagnostic_manifest,
         )
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(report, encoding="utf-8")
