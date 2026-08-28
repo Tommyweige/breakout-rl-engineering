@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at_utc": "2026-08-28T12:44:11.778447Z",
+  "generated_at_utc": "2026-08-28T12:51:45.415487Z",
   "backend_id": "day16-vectorized-dqn-n2",
   "source_day": 16,
   "environment_contract": {
@@ -66,7 +66,7 @@
     },
     "evaluation_summary": {
       "path": "assets/day16/evaluation-summary.json",
-      "sha256": "a617c1b6583815342975a508831d918bbbd77ce9122fc551642c5b3be2a41d77"
+      "sha256": "ac218ecd8155bfea526719c7a168926e78a061cec238886673b23be134fda34d"
     }
   }
 }

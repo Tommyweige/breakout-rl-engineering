@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "git_commit_sha": "4402474a0b105e232fcda21a38c365596c162d05",
+  "git_commit_sha": "42a5a8833ae4ae6004b93d4ab1b80dc733e2f7e3",
   "purpose": "Day 16 Contract v2 learning-regression guardrail",
   "protocol": {
     "evaluation_config": "configs/eval/breakout_eval.json",
@@ -498,7 +498,7 @@
   "diagnostics": {
     "fire_sticky": {
       "path": "assets/day16/fire-sticky-diagnostic.json",
-      "sha256": "639183648c5978a920925e2e28da3cdaf482b25a75477a8826f07fc9df5a2ea6"
+      "sha256": "50d31d5bfa53d1ec7e11c37eead9720907c670fa5d1e5e536726e6e4433b3a30"
     }
   }
 }
