@@ -86,7 +86,9 @@ sticky action 是 ALE 以固定機率忽略本次 requested action、延續前�
 
 這裡仍然要區分三層資訊：policy requested action、wrapper-resolved action（實際往下傳給 AtariPreprocessing/ALE 的 action），以及 ALE 內部不可直接取得的 sticky-action 隨機結果。診斷不會把第三層假裝成已觀察到的資料。
 
-真實 N=4 100K checkpoint 的 Contract v2 diagnostic 覆蓋全部 15 個固定 seeds，15/15 正常 terminated、0/15 truncated、0/15 TimeLimit。原本會重現 26,998-step TimeLimit 的 seed 101，現在在第 198 個 agent step 正常結束；它的 initial serve 第一次 FIRE 沒有 activity，第二次雖然看見 activity 但還不足以完成確認，第三次才完成連續兩次 activity 的確認。後面四次 life-loss serve 也各在第二次 FIRE 完成確認。這個 trace 也保存 lives、life-loss、raw reward、requested/resolved action、serve attempt 與 observation change signal。
+選出的 N=2 100K checkpoint 的 Contract v2 diagnostic 覆蓋全部 15 個固定 seeds，15/15 正常 terminated、0/15 truncated、0/15 TimeLimit。原本會重現 26,998-step TimeLimit 的 seed 101，現在在第 198 個 agent step 正常結束；它的 initial serve 第一次 FIRE 沒有 activity，第二次雖然看見 activity 但還不足以完成確認，第三次才完成連續兩次 activity 的確認。後面四次 life-loss serve 也各在第二次 FIRE 完成確認。這個 trace 也保存 lives、life-loss、raw reward、requested/resolved action、serve attempt 與 observation change signal。
+
+為了分辨 sticky action 是否真的參與了這個 retry，diagnostic 另外用相同 checkpoint 和五個固定 seeds 做兩個 control：兩組都只要求一次 activity confirmation，唯一改變的是 sticky probability。`0.25` control 出現 1 次沒有 observation activity 的 retry；`0.0` control 則是 0 次。這支持「sticky action 可能造成 FIRE 沒有被觀察到」的解釋，但 ALE API 不會公開那次隱藏抽樣，所以仍不能把它寫成直接的因果證明。
 
 ## 10K systems screening：batching 確實有用，但 N 越大不等於越好
 
@@ -99,7 +101,7 @@ sticky action 是 ALE 以固定機率忽略本次 requested action、延續前�
 | 4 | 2,500 | 456.63 | 2,500 | 2,500 | yes |
 | 8 | 1,250 | 483.30 | 1,250 | 2,500 | no |
 
-四組都完成 `2,251` 次 optimizer update 與 `21` 次 target sync。N=8 的吞吐最高，但它一次 batch 會跨過 update boundary；N=4 只使用一個不跨界的 vector batch，因此是這次的 strict-parity candidate。這個選擇是 correctness 與 systems 的折衷，不是宣告 N=4 的 checkpoint 品質最好。
+四組都完成 `2,251` 次 optimizer update 與 `21` 次 target sync。N=8 的吞吐最高，但它一次 batch 會跨過 update boundary；N=2 和 N=4 都符合 strict parity，其中 N=4 是短跑中最快的 strict-parity 設定。最後選哪一個，要留到 fresh 100K guardrail，而不是從 10K checkpoint 的分數推論。
 
 這張圖的左側是每秒完成的 accepted transitions，右側是在相同 10K budget 下的 wall-clock，也就是真實經過的秒數。它回答的是「完整 training pipeline 能處理多少資料」，不是「模型是否學得更好」。
 
@@ -131,18 +133,19 @@ sticky action 是 ALE 以固定機率忽略本次 requested action、延續前�
 
 這張圖的縱軸是固定間隔 sampler 量到的平均 CPU/GPU utilization，不是 GPU 理論峰值。它支持「零碎呼叫減少是主要改善來源」這個解釋，不能單獨證明某個 N 在所有硬體上都最好。
 
-## Fresh 100K validation：選出的 N=4 通過 contract gate，但品質不能只看速度
+## Fresh 100K validation：選出的 N=2 通過 contract gate，但品質不能只看速度
 
-10K 是 systems screening；它不足以決定長一點的訓練是否仍維持環境語意。因此再用相同 seed、訓練參數（hyperparameters）、CPU thread setting、GPU Replay 和 Contract v2，重新從隨機初始化開始（fresh start）跑 N=1 reference 與 strict N=4 candidate，各 100,000 transitions。完整 source 是 [`vectorized-training-100k.json`](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/40e8ba4f348016bc89f4b5dbce587e4228f8ef57/assets/day16/vectorized-training-100k.json)。
+10K 是 systems screening；它不足以決定長一點的訓練是否仍維持環境語意。因此再用相同 seed、訓練參數（hyperparameters）、CPU thread setting、GPU Replay 和 Contract v2，重新從隨機初始化開始（fresh start）跑 N=1 reference 與 strict N=2 candidate，各 100,000 transitions。N=4 的同規格長跑則保留作為 supplemental candidate。選出的 N=2 source 是 [`vectorized-training-100k-n2.json`](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/40e8ba4f348016bc89f4b5dbce587e4228f8ef57/assets/day16/vectorized-training-100k-n2.json)；N=4 source 是 [`vectorized-training-100k.json`](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/40e8ba4f348016bc89f4b5dbce587e4228f8ef57/assets/day16/vectorized-training-100k.json)。
 
 | N | accepted transitions/s | wall-clock | action calls | Replay insertion calls | optimizer updates | target syncs |
 |---:|---:|---:|---:|---:|---:|---:|
 | 1 | 238.67 | 419.00 s | 100,000 | 100,000 | 24,751 | 201 |
+| 2 | 380.74 | 262.65 s | 50,000 | 50,000 | 24,751 | 201 |
 | 4 | 368.06 | 271.70 s | 25,000 | 25,000 | 24,751 | 201 |
 
-N=4 在這台 RTX 4060 Laptop GPU 上完成相同 budget 約快 `1.54×`，同時保留相同的 update/sync 次數。這張 100K 圖只用來展示長跑的 systems scaling；真正的 decision 仍要搭配 fixed-seed evaluation。
+N=2 在這台 RTX 4060 Laptop GPU 上完成相同 budget 約快 `1.60×`，N=4 約快 `1.54×`，三者的 update/sync 次數相同。下圖是 N=1/N=4 supplemental scaling run；真正的 candidate decision 仍要搭配 fixed-seed evaluation。
 
-[![100K N=1 與 N=4 fresh validation 的吞吐與 wall-clock](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/40e8ba4f348016bc89f4b5dbce587e4228f8ef57/assets/day16/vectorized-100k-vectorized-throughput.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/40e8ba4f348016bc89f4b5dbce587e4228f8ef57/assets/day16/vectorized-100k-vectorized-throughput.png)
+[![100K N=1 與 N=4 supplemental validation 的吞吐與 wall-clock](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/40e8ba4f348016bc89f4b5dbce587e4228f8ef57/assets/day16/vectorized-100k-vectorized-throughput.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/40e8ba4f348016bc89f4b5dbce587e4228f8ef57/assets/day16/vectorized-100k-vectorized-throughput.png)
 
 ## Evaluation 必須同時記錄 requested 與 executed action
 
@@ -150,15 +153,16 @@ N=4 在這台 RTX 4060 Laptop GPU 上完成相同 budget 約快 `1.54×`，同�
 
 這次的 formal artifacts 同時保存 `requested_action_distribution`、`executed_action_distribution`、`auto_fire_count` 和 `auto_fire_reason_counts`；歷史欄位 `action_distribution` 仍保留，但明確定義成 executed/wrapper-resolved action。
 
-100K guardrail 的結果如下。Contract v2 Random baseline 平均 `1.73`；N=1 平均 `9.00`；N=4 平均 `2.33`。三者都是 15/15 terminated、0/15 truncated、0/15 TimeLimit。
+100K guardrail 的結果如下。Contract v2 Random baseline 平均 `1.73`；N=1 平均 `9.00`；N=2 平均 `6.07`；N=4 平均 `2.33`。四者都是 15/15 terminated、0/15 truncated、0/15 TimeLimit。
 
 | Run | 平均 raw return | 中位數 | 標準差 | 平均 episode length | terminated | truncated |
 |---|---:|---:|---:|---:|---:|---:|
 | Random Contract v2 | 1.73 | 2.00 | 1.12 | 197.40 | 15/15 | 0/15 |
 | N=1, 100K | 9.00 | 9.00 | 2.03 | 468.67 | 15/15 | 0/15 |
+| N=2, 100K | 6.07 | 6.00 | 2.54 | 352.33 | 15/15 | 0/15 |
 | N=4, 100K | 2.33 | 2.00 | 1.07 | 201.27 | 15/15 | 0/15 |
 
-這個結果回答了兩件事：第一，新的 FIRE confirmation 沒有在這組 fixed seeds 造成 serve deadlock 或 TimeLimit failure；第二，N=4 的 15 局分數低於 N=1，所以不能把 throughput speedup 寫成 quality equivalence。這是 systems candidate 的 contract guardrail，不是「N=4 學得比較好」的證明。完整結果與 checkpoint hashes 保存在 [`evaluation-summary.json`](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/40e8ba4f348016bc89f4b5dbce587e4228f8ef57/assets/day16/evaluation-summary.json)。
+這個結果回答了兩件事：第一，新的 FIRE confirmation 沒有在這組 fixed seeds 造成 serve deadlock 或 TimeLimit failure；第二，N=2 與 N=4 的 15 局分數都低於 N=1，所以不能把 throughput speedup 寫成 quality equivalence。N=2 仍高於 Random baseline，因此在這次固定 100K guardrail 中，比 N=4 更適合作為 systems candidate；N=1 仍是 model-quality reference。完整結果與 checkpoint hashes 保存在 [`evaluation-summary.json`](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/40e8ba4f348016bc89f4b5dbce587e4228f8ef57/assets/day16/evaluation-summary.json)。
 
 ## Day 16 的另一條線：`max` 也可能改變 value 的意義
 
@@ -166,7 +170,7 @@ N=4 在這台 RTX 4060 Laptop GPU 上完成相同 budget 約快 `1.54×`，同�
 
 ## 最後選擇與下一個問題
 
-Day 16 的 canonical candidate 是 strict-parity N=4：
+Day 16 的 selected systems backend 是 strict-parity N=2：
 
 ```text
 ALE/Breakout-v5 / Contract v2
@@ -179,6 +183,6 @@ training seed=42, CPU threads=2
 strict action-selection parity enabled
 ```
 
-這個選擇建立在三層證據上：10K screening 顯示 batching 的 systems 收益，crafted instrumentation 誠實標出 N=8 的 behavior-policy lag，fresh 100K 與 15-episode Contract v2 guardrail 則確認 N=4 沒有 serve deadlock 或 TimeLimit regression。它仍不是跨硬體、跨 seed 或跨演算法的普遍最優解。
+這個選擇建立在三層證據上：10K screening 顯示 batching 的 systems 收益，crafted instrumentation 誠實標出 N=8 的 behavior-policy lag，fresh 100K 與 15-episode Contract v2 guardrail 則確認 N=2 沒有 serve deadlock 或 TimeLimit regression，且固定 seed 的 return 高於 N=4。N=2 的 return 仍低於 N=1 reference（`6.07` 對 `9.00`），所以這份 evidence 不宣稱 policy-quality equivalence；N=1 保留為後續品質比較的 reference。這個選擇也不是跨硬體、跨 seed 或跨演算法的普遍最優解。
 
 現在可以帶著一個比較準確的問題進入下一步：當 training pipeline 已經能有效率地批次處理 transition，Vanilla DQN target 中的 `max` 是否仍會放大 Q-value 的樂觀誤差？這正是 Double DQN 要處理的演算法問題。

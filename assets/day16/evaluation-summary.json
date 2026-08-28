@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "git_commit_sha": "5e0931ca48af369909d359cf73d53fe4c0b9e696",
+  "git_commit_sha": "d6d03c91074b09557f0be20e64faacfeaa7ba6cc",
   "purpose": "Day 16 Contract v2 learning-regression guardrail",
   "protocol": {
     "evaluation_config": "configs/eval/breakout_eval.json",
@@ -109,48 +109,48 @@
         }
       },
       {
-        "environment_count": 4,
-        "results_path": "evaluations/day16-final-10k-envs4-contract-v2/results.json",
-        "results_sha256": "ba62272cb67e020093c0ad39c01ee7623884024154b5f595fdfdd43faf44eaa4",
-        "checkpoint_path": "runs/day16-finalization-10k-v2/envs-4/checkpoints/step-00010000.pt",
-        "checkpoint_sha256": "acbf4895dbc11934579194c937a6fd6a5a8099622e0056fe0720057c95a5746a",
-        "model_id": "envs-4@step-00010000",
+        "environment_count": 2,
+        "results_path": "evaluations/day16-final-10k-envs2-contract-v2/results.json",
+        "results_sha256": "18555555ac663ae28faa5c54fc76bb23021e88cfaace6572e606cbaaf4c9c11d",
+        "checkpoint_path": "runs/day16-finalization-10k-v2/envs-2/checkpoints/step-00010000.pt",
+        "checkpoint_sha256": "77c38d714a9503e1b8a42a8025be6bab16701cb99901da381ddd412bf132aec4",
+        "model_id": "envs-2@step-00010000",
         "summary": {
           "count": 15,
-          "mean_return": 2.8,
-          "median_return": 2.0,
-          "std_return": 2.737395355686375,
+          "mean_return": 0.7333333333333333,
+          "median_return": 0.0,
+          "std_return": 1.8427033281447005,
           "min_return": 0.0,
-          "max_return": 9.0,
-          "mean_episode_length": 239.2,
+          "max_return": 7.0,
+          "mean_episode_length": 141.0,
           "complete_episodes": 15,
           "finished_episode_count": 15,
           "terminated_count": 15,
           "truncated_count": 0,
           "time_limit_truncated_count": 0,
           "truncation_rate": 0.0,
-          "mean_return_terminated": 2.8,
+          "mean_return_terminated": 0.7333333333333333,
           "mean_return_truncated": null,
-          "mean_length_terminated": 239.2,
+          "mean_length_terminated": 141.0,
           "mean_length_truncated": null,
           "action_distribution_semantics": "executed/wrapper-resolved action",
           "action_distribution": {
-            "FIRE": 605,
-            "LEFT": 330,
-            "NOOP": 237,
-            "RIGHT": 2416
+            "FIRE": 151,
+            "LEFT": 1953,
+            "NOOP": 0,
+            "RIGHT": 11
           },
           "requested_action_distribution": {
-            "FIRE": 454,
-            "LEFT": 330,
-            "NOOP": 237,
-            "RIGHT": 2567
+            "FIRE": 0,
+            "LEFT": 2104,
+            "NOOP": 0,
+            "RIGHT": 11
           },
           "executed_action_distribution": {
-            "FIRE": 605,
-            "LEFT": 330,
-            "NOOP": 237,
-            "RIGHT": 2416
+            "FIRE": 151,
+            "LEFT": 1953,
+            "NOOP": 0,
+            "RIGHT": 11
           },
           "auto_fire_count": 151,
           "auto_fire_reason_counts": {
@@ -214,48 +214,48 @@
       }
     },
     {
-      "environment_count": 4,
-      "results_path": "evaluations/day16-final-10k-envs4-contract-v2/results.json",
-      "results_sha256": "ba62272cb67e020093c0ad39c01ee7623884024154b5f595fdfdd43faf44eaa4",
-      "checkpoint_path": "runs/day16-finalization-10k-v2/envs-4/checkpoints/step-00010000.pt",
-      "checkpoint_sha256": "acbf4895dbc11934579194c937a6fd6a5a8099622e0056fe0720057c95a5746a",
-      "model_id": "envs-4@step-00010000",
+      "environment_count": 2,
+      "results_path": "evaluations/day16-final-10k-envs2-contract-v2/results.json",
+      "results_sha256": "18555555ac663ae28faa5c54fc76bb23021e88cfaace6572e606cbaaf4c9c11d",
+      "checkpoint_path": "runs/day16-finalization-10k-v2/envs-2/checkpoints/step-00010000.pt",
+      "checkpoint_sha256": "77c38d714a9503e1b8a42a8025be6bab16701cb99901da381ddd412bf132aec4",
+      "model_id": "envs-2@step-00010000",
       "summary": {
         "count": 15,
-        "mean_return": 2.8,
-        "median_return": 2.0,
-        "std_return": 2.737395355686375,
+        "mean_return": 0.7333333333333333,
+        "median_return": 0.0,
+        "std_return": 1.8427033281447005,
         "min_return": 0.0,
-        "max_return": 9.0,
-        "mean_episode_length": 239.2,
+        "max_return": 7.0,
+        "mean_episode_length": 141.0,
         "complete_episodes": 15,
         "finished_episode_count": 15,
         "terminated_count": 15,
         "truncated_count": 0,
         "time_limit_truncated_count": 0,
         "truncation_rate": 0.0,
-        "mean_return_terminated": 2.8,
+        "mean_return_terminated": 0.7333333333333333,
         "mean_return_truncated": null,
-        "mean_length_terminated": 239.2,
+        "mean_length_terminated": 141.0,
         "mean_length_truncated": null,
         "action_distribution_semantics": "executed/wrapper-resolved action",
         "action_distribution": {
-          "FIRE": 605,
-          "LEFT": 330,
-          "NOOP": 237,
-          "RIGHT": 2416
+          "FIRE": 151,
+          "LEFT": 1953,
+          "NOOP": 0,
+          "RIGHT": 11
         },
         "requested_action_distribution": {
-          "FIRE": 454,
-          "LEFT": 330,
-          "NOOP": 237,
-          "RIGHT": 2567
+          "FIRE": 0,
+          "LEFT": 2104,
+          "NOOP": 0,
+          "RIGHT": 11
         },
         "executed_action_distribution": {
-          "FIRE": 605,
-          "LEFT": 330,
-          "NOOP": 237,
-          "RIGHT": 2416
+          "FIRE": 151,
+          "LEFT": 1953,
+          "NOOP": 0,
+          "RIGHT": 11
         },
         "auto_fire_count": 151,
         "auto_fire_reason_counts": {
@@ -266,7 +266,7 @@
     }
   ],
   "long_validation_100k": {
-    "training_report": "assets/day16/vectorized-training-100k.json",
+    "training_report": "assets/day16/vectorized-training-100k-n2.json",
     "total_transitions": 100000,
     "candidates": [
       {
@@ -321,48 +321,48 @@
         }
       },
       {
-        "environment_count": 4,
-        "results_path": "evaluations/day16-final-100k-envs4-contract-v2/results.json",
-        "results_sha256": "80b6707d5ef9b142965c671ba1cf2139dab1b9fd3d78c1ba9537b5060732804a",
-        "checkpoint_path": "runs/day16-finalization-100k-v2/envs-4/checkpoints/step-00100000.pt",
-        "checkpoint_sha256": "e0d550b46d4cf9af219a5513153cb643f67514fbbb103040b57a633495145823",
-        "model_id": "envs-4@step-00100000",
+        "environment_count": 2,
+        "results_path": "evaluations/day16-final-100k-envs2-contract-v2/results.json",
+        "results_sha256": "6eb4b4e93080a3bee93a8926eb6f4eb81850a1ace436627bd4b77654db067d9b",
+        "checkpoint_path": "runs/day16-finalization-100k-v2-n2/envs-2/checkpoints/step-00100000.pt",
+        "checkpoint_sha256": "69a60a90bd90ed4700581301ff089e42bacfb7f3d4246b68ee35a45ef230989d",
+        "model_id": "envs-2@step-00100000",
         "summary": {
           "count": 15,
-          "mean_return": 2.3333333333333335,
-          "median_return": 2.0,
-          "std_return": 1.0749676997731399,
-          "min_return": 1.0,
-          "max_return": 4.0,
-          "mean_episode_length": 201.26666666666668,
+          "mean_return": 6.066666666666666,
+          "median_return": 6.0,
+          "std_return": 2.5420901286583493,
+          "min_return": 3.0,
+          "max_return": 12.0,
+          "mean_episode_length": 352.3333333333333,
           "complete_episodes": 15,
           "finished_episode_count": 15,
           "terminated_count": 15,
           "truncated_count": 0,
           "time_limit_truncated_count": 0,
           "truncation_rate": 0.0,
-          "mean_return_terminated": 2.3333333333333335,
+          "mean_return_terminated": 6.066666666666666,
           "mean_return_truncated": null,
-          "mean_length_terminated": 201.26666666666668,
+          "mean_length_terminated": 352.3333333333333,
           "mean_length_truncated": null,
           "action_distribution_semantics": "executed/wrapper-resolved action",
           "action_distribution": {
-            "FIRE": 1614,
-            "LEFT": 682,
-            "NOOP": 323,
-            "RIGHT": 400
+            "FIRE": 1450,
+            "LEFT": 1787,
+            "NOOP": 136,
+            "RIGHT": 1912
           },
           "requested_action_distribution": {
-            "FIRE": 1530,
-            "LEFT": 744,
-            "NOOP": 339,
-            "RIGHT": 406
+            "FIRE": 1338,
+            "LEFT": 1844,
+            "NOOP": 141,
+            "RIGHT": 1962
           },
           "executed_action_distribution": {
-            "FIRE": 1614,
-            "LEFT": 682,
-            "NOOP": 323,
-            "RIGHT": 400
+            "FIRE": 1450,
+            "LEFT": 1787,
+            "NOOP": 136,
+            "RIGHT": 1912
           },
           "auto_fire_count": 151,
           "auto_fire_reason_counts": {
@@ -424,11 +424,11 @@
   "diagnostics": {
     "fire_sticky": {
       "path": "assets/day16/fire-sticky-diagnostic.json",
-      "sha256": "14a38d0774784a5152e80eced3e501ef909796c2b29ebe6bbd969fabe4fe8348"
+      "sha256": "4280a2689c4946f92b2e14cc63bdeff08d2213cfa9e07161a947b8d8cf457ad5"
     },
     "q_value": {
       "path": "assets/day16/q-value-diagnostics.json",
-      "sha256": "7a50a4c5136543989d174927d4ea7d9d941f2e2eb173f4c0975091e2751925d7"
+      "sha256": "d88dc6a0cbff0b1f1a172b56aa436b2031956795305f04cc48f7f47405c0fbf5"
     },
     "overestimation_simulation": {
       "path": "assets/day16/overestimation-bias.json",

@@ -170,6 +170,19 @@ class Day15ContractTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "fire_reset=true"):
             validate_breakout_runtime_contract(replace(contract, fire_reset=False))
 
+    def test_runtime_validator_rejects_noncanonical_evaluation_scoring(self) -> None:
+        contract = load_evaluation_contract(
+            Path("configs/eval/breakout_contract_v2.json")
+        )
+        with self.assertRaisesRegex(ValueError, "evaluation_epsilon=0"):
+            validate_breakout_runtime_contract(
+                replace(contract, evaluation_epsilon=0.1)
+            )
+        with self.assertRaisesRegex(ValueError, "raw_reward_rule"):
+            validate_breakout_runtime_contract(
+                replace(contract, raw_reward_rule="clip")
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

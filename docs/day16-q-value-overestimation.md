@@ -43,18 +43,18 @@ a* = argmax_a Q̂(s, a)
 
 ## 真實 Breakout 的 Q-values 要另外看
 
-toy simulation 只告訴我們一個可能的數值機制。為了不把概念實驗冒充成遊戲證據，我另外用 fresh N=4、100K Contract v2 checkpoint，在 NVIDIA CUDA（NVIDIA GPU 的計算執行環境）上對真實 Breakout observations 做了 80 個 probe states，也就是從固定遊戲畫面取出的測試 state，並執行 model forward（把 observation 送進網路取得輸出）。這個 diagnostics 使用 `torch.no_grad()`，並保存 checkpoint SHA-256、GPU 型號、PyTorch/CUDA 版本與 Contract v2 metadata。
+toy simulation 只告訴我們一個可能的數值機制。為了不把概念實驗冒充成遊戲證據，我另外用選出的 strict-parity N=2、100K Contract v2 checkpoint，在 NVIDIA CUDA（NVIDIA GPU 的計算執行環境）上對真實 Breakout observations 做了 80 個 probe states，也就是從固定遊戲畫面取出的測試 state，並執行 model forward（把 observation 送進網路取得輸出）。這個 diagnostics 使用 `torch.no_grad()`，並保存 checkpoint SHA-256、GPU 型號、PyTorch/CUDA 版本與 Contract v2 metadata。
 
 實測的每個 action 平均 Q-value 是：
 
 | Action | 平均 Q-value | 標準差 | 最小 | 最大 |
 |---|---:|---:|---:|---:|
-| `NOOP` | 2.0271 | 0.2137 | 1.7347 | 2.3854 |
-| `FIRE` | 2.0769 | 0.2033 | 1.7416 | 2.4222 |
-| `RIGHT` | 2.0394 | 0.2162 | 1.7451 | 2.4190 |
-| `LEFT` | 2.0160 | 0.1950 | 1.7577 | 2.3373 |
+| `NOOP` | 1.8153 | 0.2289 | 1.4552 | 2.1212 |
+| `FIRE` | 1.8599 | 0.2171 | 1.5056 | 2.1484 |
+| `RIGHT` | 1.8416 | 0.2325 | 1.4720 | 2.1445 |
+| `LEFT` | 1.8412 | 0.2119 | 1.4855 | 2.1180 |
 
-在每個 state 先取最大 action 後，`max Q` 的平均是 `2.0819`，top-two action gap 的平均是 `0.0387`。這些數字告訴我們模型目前在這批真實畫面上輸出了什麼；它們沒有告訴我們正確答案應該是多少。因此目前只能把這份 [CUDA Q-value diagnostics](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/40e8ba4f348016bc89f4b5dbce587e4228f8ef57/assets/day16/q-value-diagnostics.json) 稱為 exploratory evidence，不能把「Q-value 大於零」或「max 比 action mean 高」直接寫成 Breakout overestimation 已被證明。
+在每個 state 先取最大 action 後，`max Q` 的平均是 `1.8653`，top-two action gap 的平均是 `0.0162`。這些數字告訴我們模型目前在這批真實畫面上輸出了什麼；它們沒有告訴我們正確答案應該是多少。因此目前只能把這份 [CUDA Q-value diagnostics](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/40e8ba4f348016bc89f4b5dbce587e4228f8ef57/assets/day16/q-value-diagnostics.json) 稱為 exploratory evidence，不能把「Q-value 大於零」或「max 比 action mean 高」直接寫成 Breakout overestimation 已被證明。
 
 這個區分很重要：CPU toy simulation 證明的是選擇機制；CUDA probe 顯示的是目前 checkpoint 的真實輸出；要量出 Breakout 的實際 overestimation，還需要可靠的 value reference 或額外的受控比較。
 

@@ -240,6 +240,13 @@ def validate_breakout_runtime_contract(
         raise ValueError("Breakout runtime requires agent_step_limit=27000")
     if not time_limit["truncated_is_finished"]:
         raise ValueError("Breakout runtime treats truncated episodes as finished")
+    if contract.evaluation_epsilon != 0.0:
+        raise ValueError("Breakout evaluation requires evaluation_epsilon=0")
+    if contract.raw_reward_rule != "sum environment rewards without clipping":
+        raise ValueError(
+            "Breakout evaluation requires raw_reward_rule='sum environment "
+            "rewards without clipping'"
+        )
 
 
 __all__ = [

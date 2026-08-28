@@ -58,22 +58,29 @@ synchronizations on the recorded RTX 4060 Laptop GPU.
 | 8 | 1,250 | 483.30 | 1,250 | 2,500 | no |
 
 N=8 is faster in this short systems run, but it crosses the update boundary
-when `train_frequency=4`. N=4 is therefore the strict-parity candidate; the
-selection is a semantics decision, not a claim that its 10K checkpoint is the
-best model.
+when `train_frequency=4`. N=2 and N=4 satisfy strict parity; N=4 is the
+fastest strict-parity setting in this short screening. The final candidate
+selection is deferred to the fresh 100K guardrail rather than inferred from a
+10K checkpoint.
 
 ## Fresh 100K validation
 
-Source: `assets/day16/vectorized-training-100k.json`. N=1 and N=4 both start
-fresh under Contract v2 and strict action-selection parity.
+The selected comparison is sourced from
+`assets/day16/vectorized-training-100k-n2.json`; the N=4 run remains available
+in `assets/day16/vectorized-training-100k.json` as a strict-parity supplemental
+candidate. N=1, N=2, and N=4 all start fresh under Contract v2 and strict
+action-selection parity.
 
-| N | transitions/s | wall-clock s | action calls | replay insert calls | optimizer updates | target syncs |
+| N | transitions/s | wall-clock s | action calls | replay insert calls | optimizer updates | target syncs | role |
 |---:|---:|---:|---:|---:|---:|---:|
-| 1 | 238.67 | 419.00 | 100,000 | 100,000 | 24,751 | 201 |
-| 4 | 368.06 | 271.70 | 25,000 | 25,000 | 24,751 | 201 |
+| 1 | 238.67 | 419.00 | 100,000 | 100,000 | 24,751 | 201 | reference |
+| 2 | 380.74 | 262.65 | 50,000 | 50,000 | 24,751 | 201 | selected |
+| 4 | 368.06 | 271.70 | 25,000 | 25,000 | 24,751 | 201 | supplemental |
 
-The strict N=4 candidate completes the same transition budget about 1.38× as
-fast as N=1. The report also preserves stage timing, GPU power/utilization,
+The selected strict N=2 candidate completes the same transition budget about
+1.60× as fast as N=1. N=4 is about 1.54× as fast, but its fixed-seed
+evaluation is substantially weaker in this run, so it is not the selected
+candidate. The report also preserves stage timing, GPU power/utilization,
 VRAM, CPU utilization, action-inference, replay-insertion, optimizer-update,
 and training-sample rates. `SyncVectorEnv` still steps ALE environments in the
 same process; the result should be attributed to batched inference and replay
@@ -100,7 +107,7 @@ policy-quality or end-to-end training measurement.
 ## FIRE/sticky-action diagnostic
 
 Source: `assets/day16/fire-sticky-diagnostic.json` and its trace. The diagnostic
-uses the fresh N=4 100K checkpoint, all 15 Contract v2 concrete seeds, and
+uses the selected N=2 100K checkpoint, all 15 Contract v2 concrete seeds, and
 CUDA inference. Every episode terminated normally: 15/15 terminated, 0/15
 truncated, and 0/15 TimeLimit.
 
@@ -110,10 +117,17 @@ one attempt with no activity, a second with activity that is not yet a complete
 confirmation, and a third that completes the two-observation activity streak.
 Each of the later four life-loss serves confirms on its second attempt. Across
 all 15 seeds there are 151 environment-side FIRE attempts, 120 after life loss
-and 31 at initial serve; 77 attempts are retry transitions under the explicit
-two-observation confirmation rule. The trace records the action passed
-downward, but does not pretend to know whether ALE's hidden sticky draw
-accepted it.
+and 31 at initial serve; 76 attempts are retry transitions under the explicit
+two-observation confirmation rule, and one attempt has no observation activity.
+The trace records the action passed downward, but does not pretend to know
+whether ALE's hidden sticky draw accepted it.
+
+To test whether that no-activity retry is merely coincidental, the diagnostic
+also runs the same five fixed seeds with the same checkpoint and a one-step
+confirmation rule. The p=0.25 control has one retry and one no-activity FIRE;
+the p=0 control has zero retries and zero no-activity FIRE. This is evidence
+consistent with sticky-action involvement, not direct observation of ALE's
+hidden random draw or a proof of causality.
 
 ## Contract v2 evaluation guardrail
 
@@ -124,12 +138,15 @@ episodes, epsilon 0, raw reward, and requested/executed action provenance.
 |---|---:|---:|---:|---:|---:|---:|
 | Random Contract v2 | 1.73 | 2.00 | 1.12 | 197.40 | 15/15 | 0/15 |
 | N=1, 100K | 9.00 | 9.00 | 2.03 | 468.67 | 15/15 | 0/15 |
+| N=2, 100K | 6.07 | 6.00 | 2.54 | 352.33 | 15/15 | 0/15 |
 | N=4, 100K | 2.33 | 2.00 | 1.07 | 201.27 | 15/15 | 0/15 |
 
-The 100K guardrail finds no serve deadlock or TimeLimit regression. N=4's
-return is lower than N=1 in this single-seed, 15-episode sample, so the result
-does not establish quality equivalence; it only clears the contract-failure
-gate and keeps the quality difference visible.
+The 100K guardrail finds no serve deadlock or TimeLimit regression. The
+selected N=2 return is below N=1 in this single-seed, 15-episode sample, while
+remaining above the Contract v2 Random baseline; N=4 is lower still. The result
+therefore does not establish policy-quality equivalence. It supports N=2 as the
+best strict-parity systems candidate in this run while keeping N=1 as the
+quality reference.
 
 ## Q-value evidence boundary
 
@@ -141,15 +158,15 @@ demonstrates why selecting and evaluating with the same noisy estimate can
 create an optimistic maximum; it is not a measurement of Breakout bias.
 
 `assets/day16/q-value-diagnostics.json` is deliberately separate: it contains
-80 real Breakout probe states from the N=4 100K checkpoint, with model
+80 real Breakout probe states from the selected N=2 100K checkpoint, with model
 inference on NVIDIA CUDA under `torch.no_grad()`, checkpoint SHA-256, and
-runtime metadata. Its mean maximum Q-value is 2.0819 and mean top-action gap is
-0.0387. Without a ground-truth Q-star oracle, those values are exploratory
+runtime metadata. Its mean maximum Q-value is 1.8653 and mean top-action gap is
+0.0162. Without a ground-truth Q-star oracle, those values are exploratory
 model outputs, not proof that the checkpoint is overestimating.
 
 ## Final backend decision
 
-The Day 16 candidate backend is N=4 with:
+The Day 16 selected backend is strict-parity N=2 with:
 
 ```text
 ALE/Breakout-v5 / Contract v2
@@ -162,8 +179,10 @@ training seed=42, CPU threads=2
 strict action-selection parity enabled
 ```
 
-This is a systems choice supported by the 100K run's speed and absence of
-contract failure, not a claim that N=4 learns better than N=1. The next entry
-can study Double DQN with this backend while keeping action provenance,
-Contract v2, and the distinction between toy mechanism and real model
-diagnostics explicit.
+This is a systems choice supported by the 100K run's speed, strict parity, and
+the selected candidate's stronger fixed-seed return than N=4. N=2 still scores
+below the N=1 reference (6.07 versus 9.00), so this evidence does not establish
+policy-quality equivalence; N=1 remains the quality reference for later
+comparisons. The selected backend can be used for the next systems/algorithm
+experiment while keeping that limitation, action provenance, Contract v2, and
+the distinction between toy mechanism and real model diagnostics explicit.
