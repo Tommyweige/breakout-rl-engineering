@@ -93,6 +93,10 @@ Day 15 沒有另外加一個會改變正式分數的評估器步數上限（eval
 
 Diagnostic A 把 FIRE 放到 environment-side serve assist：initial serve 和每次觀察到 life loss 後都執行一次 FIRE。15 局全部正常 `terminated`，且 observation unchanged 的最長 streak 降到 3。Diagnostic B 不代替 FIRE，只加入 `epsilon = 0.05` 的隨機 action；它也讓 15 局全部結束，但平均 life-loss → FIRE latency 是 30.45 steps，代表少量探索偶爾能救回 serve，卻不是固定且可重現的語義。
 
+這張圖把三組真實 artifact 放在同一個視野：上方看每局 raw return 的分布，右上分開 terminated 與 TimeLimit，左下比較平均 episode length，右下只比較兩種重發球策略的延遲。它的重點不是替 A 或 B 頒發較高分，而是顯示「環境明確處理 serve」和「靠隨機探索偶爾碰到 FIRE」是兩種不同的機制。
+
+[![Day 15 FIRE、TimeLimit 與兩個 diagnostic 的真實結果比較](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/13a99f0/assets/day15/fire-time-limit-diagnostics.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/13a99f0/assets/day15/fire-time-limit-diagnostics.png)
+
 因此 Contract v2 選 Option B：`fire_reset = true`，由 environment 在 initial serve 和觀察到 life loss 後執行 FIRE；`terminal_on_life_loss = false` 保留完整遊戲 episode，TimeLimit 明確以 `ale.game_truncated` 標記。這不是把 v1 分數改名，而是根據 trace 和 A/B evidence 定義下一個公平的 environment contract。v1 仍是 legacy baseline，Contract v2 保存在 `configs/eval/breakout_contract_v2.json`，Day 16 應直接載入同一份語義。
 
 ## 這次的答案是「有訊號，但還不能過度宣稱」
