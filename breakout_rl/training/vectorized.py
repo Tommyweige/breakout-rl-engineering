@@ -1007,6 +1007,9 @@ class VectorizedDQNTrainer:
                 ATARI_ACTION_NAMES.get(index, f"ACTION_{index}"): count
                 for index, count in enumerate(self._action_counts)
             },
+            "action_distribution_semantics": (
+                "environment-executed actions; requested_action is preserved per row"
+            ),
             "random_decision_count": self._random_decision_count,
             "greedy_decision_count": self._greedy_decision_count,
             "random_decision_ratio": (

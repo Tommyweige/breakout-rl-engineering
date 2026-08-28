@@ -66,6 +66,7 @@ METRIC_FIELDS: tuple[str, ...] = (
     "requested_action_name",
     "action_overridden",
     "fire_reset_reason",
+    "fire_reset_auto_count",
 )
 
 

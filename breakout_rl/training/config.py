@@ -94,6 +94,12 @@ def _algorithm_request(value: str, *, name: str) -> str:
     return normalized
 
 
+def normalize_algorithm(value: str) -> str:
+    """Normalize one supported DQN-family algorithm name."""
+
+    return _algorithm_request(value, name="algorithm")
+
+
 @dataclass(frozen=True)
 class DQNConfig:
     """Development defaults for one reproducible DQN training run.
@@ -136,7 +142,7 @@ class DQNConfig:
         object.__setattr__(
             self,
             "algorithm",
-            _algorithm_request(self.algorithm, name="algorithm"),
+            normalize_algorithm(self.algorithm),
         )
 
         _probability(self.gamma, name="gamma")
@@ -273,6 +279,45 @@ class DQNConfig:
             checkpoint_interval=500,
         )
 
+    @classmethod
+    def day17_smoke(
+        cls,
+        *,
+        total_steps: int = 10_000,
+        device: str = "cuda",
+        algorithm: str = "double_dqn",
+    ) -> "DQNConfig":
+        """Return the Day 17 canonical N=2 CUDA/GPU-Replay smoke config."""
+
+        return cls(
+            total_steps=total_steps,
+            seed=42,
+            algorithm=algorithm,
+            gamma=0.99,
+            learning_rate=1e-4,
+            batch_size=32,
+            replay_capacity=10_000,
+            learning_starts=1_000,
+            train_frequency=4,
+            target_update_interval=500,
+            epsilon_start=0.9,
+            epsilon_end=0.05,
+            epsilon_decay_steps=10_000,
+            gradient_clip_norm=10.0,
+            reward_clip=True,
+            device=device,
+            precision="float32",
+            checkpoint_interval=max(1, total_steps),
+            diagnostics_interval=100,
+            metrics_flush_interval=500,
+            cpu_threads=2,
+            replay_transfer="direct",
+            replay_backend="gpu",
+            profile_stages=True,
+            num_envs=2,
+            strict_action_selection_parity=True,
+        )
+
     def to_dict(self) -> dict[str, Any]:
         """Return a JSON-compatible mapping of the configuration fields."""
 
@@ -299,4 +344,4 @@ class DQNConfig:
         return replace(self, **overrides)
 
 
-__all__ = ["DQNConfig", "SUPPORTED_ALGORITHMS"]
+__all__ = ["DQNConfig", "SUPPORTED_ALGORITHMS", "normalize_algorithm"]

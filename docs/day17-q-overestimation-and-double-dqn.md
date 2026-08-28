@@ -1,6 +1,6 @@
 # Q-value 為什麼會被 `max` 拉高？從估計誤差走到 Double DQN
 
-Day 16 已經把 Breakout 的環境規則和訓練資料流固定下來，也選出 N=2 的向量化 GPU Replay backend。現在問題換了：即使資料流沒有 bug，DQN 用來表示「現在做某個動作有多值得」的 Q-value，仍然只是模型的估計，不是真正可以直接查表的答案。
+Day 16 已經把 Breakout 的環境規則和訓練資料流固定下來，也選出 N=2 的向量化 GPU Replay backend（把 replay 資料放在 GPU 上供訓練抽樣）。現在問題換了：即使資料流沒有 bug，DQN 用來表示「現在做某個動作有多值得」的 Q-value，仍然只是模型的估計，不是真正可以直接查表的答案。
 
 這個差別在 target 計算裡會被放大。Vanilla DQN 會在下一個 state 的多個估計中取最大值；只要估計帶有一點誤差，這個選擇就可能偏愛「剛好被高估」的 action。這篇文章要回答的不是「Double DQN 一定比較強嗎」，而是更前面的問題：**為什麼 `max` 會製造這個偏差，以及 Double DQN 到底把哪兩個工作拆開？**
 
@@ -52,7 +52,7 @@ target = reward + gamma × (1 - terminated) × max_a Q_target(next_state, a)
 
 這裡的 `max` 就是前面 toy experiment 的選擇器。它同時負責兩件事：決定哪個 action 看起來最好，也使用同一個估計器讀出那個 action 的 value。當 Q estimates 有 noise 時，selection 和 evaluation 會共享同一個「幸運的高估」。
 
-`truncated` 在這裡仍然和 `terminated` 分開。Contract v2 把 `terminated=True` 作為不 bootstrap 的訊號；時間限制造成的 `truncated=True` 不會被自動改寫成 terminated。這個語意和 Day 16 相同，不能因為換 Double DQN 就重新合併成模糊的 `done`。
+把下一個 state 的估計接回目前 target，這個動作叫做 bootstrap；公式中的 `(1 - terminated)` 就是控制這個動作是否發生的 mask。`truncated` 在這裡仍然和 `terminated` 分開。Contract v2 把 `terminated=True` 作為不 bootstrap 的訊號；時間限制造成的 `truncated=True` 不會被自動改寫成 terminated。這個語意和 Day 16 相同，不能因為換 Double DQN 就重新合併成模糊的 `done`。
 
 ## Double DQN 改的是角色分工，不是輸出介面
 
@@ -88,7 +88,7 @@ target = rewards + gamma * (~terminated) * next_values
 
 ## 讓兩種 target 在同一個 next state 上分開現形
 
-為了避免「剛 hard-sync 的兩個 network 輸出一樣」而看不出差異，我使用一個刻意不同的 synthetic fixture（人工構造、只用來測試計算路徑的輸入）。online 輸出是：
+為了避免「剛把 online 權重完整複製給 target、兩個 network 輸出一樣」而看不出差異，我使用一個刻意不同的 synthetic fixture（人工構造、只用來測試計算路徑的輸入）。online 輸出是：
 
 ```text
 [1, 5, 2, 0]
@@ -108,21 +108,21 @@ target 輸出是：
 
 ## 回到 Breakout：先固定 probe，再看實際 Q-values
 
-toy experiment 裡的兩個 estimator 是獨立產生的，真實的 online/target network 卻來自同一條 training history，因此不能把 toy 的 bias 數字直接貼到 Breakout 上。要觀察真實模型，我先在 Contract v2 下固定一批 probe states：使用 15 個 concrete seeds，每個 seed 取 4 張 observation；狀態形狀是 `(4, 84, 84)`、資料型別是 `uint8`，由 seeded random requested actions 產生，環境仍保有 Contract v2 的 mandatory serve FIRE。
+toy experiment 裡的兩個 estimator 是獨立產生的，真實的 online/target network 卻來自同一條 training history，因此不能把 toy 的 bias 數字直接貼到 Breakout 上。要觀察真實模型，我先在 Contract v2 下固定一批 probe states，也就是之後會反覆餵給模型的 observations：使用 15 個 concrete seeds，每個 seed 取 4 張 observation；狀態形狀是 `(4, 84, 84)`，每個像素以 0–255 的整數資料型別 `uint8` 保存，由 seeded random requested actions 產生，環境仍保有 Contract v2 的 mandatory serve FIRE。
 
 這批 states 只做 diagnostics，不參與訓練，也不因為換 DQN family 而換一批。對 Day 17 smoke checkpoint 做 no-grad inference 後，60 個 probe 中有 59 個選到 `LEFT`、1 個選到 `FIRE`；Q-value 的整體平均是 `0.200107`，標準差是 `0.091936`，每個 probe 的最大 Q-value 平均是 `0.220254`。
 
 [![Day 17 smoke checkpoint 在固定 Contract v2 probes 上的 Q-value 分布與 greedy action](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/5b34e43/assets/day17/q-probe-summary.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/5b34e43/assets/day17/q-probe-summary.png)
 
-左圖的四組 boxplot 是 `NOOP`、`FIRE`、`RIGHT`、`LEFT` 在 60 個固定 states 上的實際輸出；右圖則統計每個 state 的 argmax action。它能告訴我們這個 checkpoint 在這批輸入上偏好什麼、Q-values 分布多寬，卻不能告訴我們最佳策略下的真實 Q-value 是多少，也不能只靠「大多數選 NOOP」就宣稱模型已經學會或完全沒學會 Breakout。這正是固定 probe 的用途：提供可重複的觀察面，而不是偽造 ground truth。
+左圖的四組 boxplot 是 `NOOP`、`FIRE`、`RIGHT`、`LEFT` 在 60 個固定 states 上的實際輸出；右圖則統計每個 state 的 argmax action。它能告訴我們這個 checkpoint 在這批輸入上偏好什麼、Q-values 分布多寬，卻不能告訴我們最佳策略下的真實 Q-value 是多少，也不能只靠「大多數選 LEFT」就宣稱模型已經學會或完全沒學會 Breakout。這正是固定 probe 的用途：提供可重複的觀察面，而不是偽造真實答案（ground truth）。
 
 ## 只改 target rule 的 smoke training
 
-最後把 `algorithm` 放進同一個 `DQNConfig`，讓單一 trainer 依照 config 選 Vanilla 或 Double target；沒有複製第二套 environment loop、Replay、evaluation 或 checkpoint infrastructure。Day 17 的 canonical config 沿用 Day 16 selected backend：Contract v2、N=2、GPU Replay、float32、batch size 32、learning starts 1,000、train frequency 4、target sync interval 500、CPU threads 2，唯一主要演算法變因是 `dqn` 或 `double_dqn`。
+最後把 `algorithm` 放進同一個 `DQNConfig`，讓單一 trainer 依照 config 選 Vanilla 或 Double target；沒有複製第二套 environment loop、Replay、evaluation 或 checkpoint infrastructure。Day 17 的 canonical config 沿用 Day 16 selected backend：Contract v2、N=2、GPU Replay、float32（32-bit 浮點數）、batch size 32、learning starts 1,000、train frequency 4、target sync interval 500、CPU threads 2，唯一主要演算法變因是 `dqn` 或 `double_dqn`。
 
 我在同一台 NVIDIA GeForce RTX 4060 Laptop GPU 上各跑 10,000 transitions，seed 都是 `42`。這是 systems smoke 與 performance regression，不是 Day 18 的 model-quality comparison；其中一次 optimizer update 指的是用一批 Replay 資料完成一次 backward 與參數更新：
 
-| target rule | optimizer updates | transitions/s | optimizer updates/s | target forward GPU seconds | peak VRAM |
+| target rule | optimizer updates | transitions/s（每秒 transition） | optimizer updates/s | target forward GPU seconds | peak VRAM（最高顯存） |
 |---|---:|---:|---:|---:|---:|
 | DQN | 2,251 | 248.31 | 55.89 | 2.48 | 639,140,864 bytes |
 | Double DQN | 2,251 | 237.54 | 53.47 | 4.27 | 639,140,864 bytes |

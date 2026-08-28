@@ -4,7 +4,11 @@ The trainer imports PyTorch. Keep it lazy so CSV-only diagnostics and plotting
 can run in a clean process without loading the training runtime first.
 """
 
-from breakout_rl.training.config import DQNConfig, SUPPORTED_ALGORITHMS
+from breakout_rl.training.config import (
+    DQNConfig,
+    SUPPORTED_ALGORITHMS,
+    normalize_algorithm,
+)
 from breakout_rl.training.backend_manifest import (
     load_day16_backend_manifest,
     validate_day16_backend_manifest,
@@ -14,6 +18,7 @@ from breakout_rl.training.metrics import METRIC_FIELDS, MetricsLogger
 __all__ = [
     "DQNConfig",
     "SUPPORTED_ALGORITHMS",
+    "normalize_algorithm",
     "load_day16_backend_manifest",
     "DQNTrainer",
     "DQNTrainingStepResult",

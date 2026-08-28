@@ -75,22 +75,32 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _load_config_payload(path: Path) -> Mapping[str, Any]:
+    if not path.is_file():
+        raise FileNotFoundError(path)
+    try:
+        loaded = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as error:
+        raise ValueError(f"{path}: invalid JSON") from error
+    if not isinstance(loaded, Mapping):
+        raise ValueError("training config must be a JSON object")
+    return loaded
+
+
 def _config_from_args(args: argparse.Namespace) -> DQNConfig:
-    config_payload: Mapping[str, Any] = {}
+    use_day17_smoke_preset = (
+        args.config is None
+        and args.preset == "smoke"
+        and args.algorithm == "double_dqn"
+    )
     if args.config is not None:
-        if not args.config.is_file():
-            raise FileNotFoundError(args.config)
-        try:
-            loaded = json.loads(args.config.read_text(encoding="utf-8"))
-        except json.JSONDecodeError as error:
-            raise ValueError(f"{args.config}: invalid JSON") from error
-        if not isinstance(loaded, Mapping):
-            raise ValueError("training config must be a JSON object")
-        config_payload = loaded
+        loaded = _load_config_payload(args.config)
         raw_config = loaded.get("training_config", loaded)
         if not isinstance(raw_config, Mapping):
             raise ValueError("training_config must be a JSON object")
         base = DQNConfig.from_dict(raw_config)
+    elif use_day17_smoke_preset:
+        base = DQNConfig.day17_smoke(device=args.device or "cuda")
     elif args.preset == "debug":
         base = DQNConfig.debug(
             device=args.device or "cuda",
@@ -111,7 +121,7 @@ def _config_from_args(args: argparse.Namespace) -> DQNConfig:
     overrides: dict[str, Any] = {}
     if args.num_envs is not None:
         overrides["num_envs"] = args.num_envs
-    elif args.config is None:
+    elif args.config is None and not use_day17_smoke_preset:
         overrides["num_envs"] = 4
     for name in (
         "total_steps",
@@ -144,17 +154,13 @@ def _config_contract_path(args: argparse.Namespace) -> Path:
     if args.contract is not None:
         return args.contract
     if args.config is not None:
-        try:
-            loaded = json.loads(args.config.read_text(encoding="utf-8"))
-        except json.JSONDecodeError as error:
-            raise ValueError(f"{args.config}: invalid JSON") from error
-        if isinstance(loaded, Mapping):
-            for key in ("contract", "environment_contract", "contract_path"):
-                value = loaded.get(key)
-                if isinstance(value, str) and value.strip():
-                    return Path(value)
-                if isinstance(value, Mapping) and isinstance(value.get("path"), str):
-                    return Path(value["path"])
+        loaded = _load_config_payload(args.config)
+        for key in ("contract", "environment_contract", "contract_path"):
+            value = loaded.get(key)
+            if isinstance(value, str) and value.strip():
+                return Path(value)
+            if isinstance(value, Mapping) and isinstance(value.get("path"), str):
+                return Path(value["path"])
     return Path("configs/eval/breakout_contract_v2.json")
 
 

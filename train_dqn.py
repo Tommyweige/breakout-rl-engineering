@@ -65,8 +65,8 @@ def build_parser() -> argparse.ArgumentParser:
         "--evaluation-contract",
         dest="contract",
         type=Path,
-        default=None,
-        help="load a machine-readable Breakout environment contract",
+        default=Path("configs/eval/breakout_contract_v2.json"),
+        help="load the machine-readable Breakout environment contract",
     )
     parser.add_argument(
         "--no-reward-clip",
@@ -152,8 +152,6 @@ def main(argv: list[str] | None = None) -> int:
         config = _config_from_args(args)
         run_path = _run_path(args, config)
         contract_path = args.contract
-        if contract_path is None and config.algorithm == "double_dqn":
-            contract_path = Path("configs/eval/breakout_contract_v2.json")
         contract: BreakoutEvaluationContractV2 | None = (
             load_evaluation_contract(contract_path)
             if contract_path is not None

@@ -54,9 +54,15 @@ def collect_probe_states(
             current = _observation(observation)
             rng = np.random.default_rng(int(concrete_seed))
             collected = 0
-            for step in range(max_steps + 1):
+            for step in range(max_steps):
+                requested_action = int(rng.integers(0, int(env.action_space.n)))
+                next_observation, reward, terminated, truncated, info = env.step(
+                    requested_action
+                )
                 if step % stride == 0 and collected < states_per_seed:
-                    states.append(current.copy())
+                    executed_action = int(
+                        info.get("fire_reset_executed_action", requested_action)
+                    )
                     records.append(
                         {
                             "concrete_seed": int(concrete_seed),
@@ -64,16 +70,18 @@ def collect_probe_states(
                             "step": int(step),
                             "observation_shape": list(current.shape),
                             "dtype": str(current.dtype),
+                            "requested_action": requested_action,
+                            "executed_action": executed_action,
+                            "action_overridden": executed_action != requested_action,
+                            "fire_reset_auto": bool(info.get("fire_reset_auto", False)),
+                            "fire_reset_reason": info.get("fire_reset_reason"),
+                            "raw_reward": float(reward),
+                            "terminated": bool(terminated),
+                            "truncated": bool(truncated),
                         }
                     )
+                    states.append(current.copy())
                     collected += 1
-                    if collected == states_per_seed:
-                        break
-
-                requested_action = int(rng.integers(0, int(env.action_space.n)))
-                next_observation, _reward, terminated, truncated, _info = env.step(
-                    requested_action
-                )
                 current = _observation(next_observation)
                 if terminated or truncated:
                     break

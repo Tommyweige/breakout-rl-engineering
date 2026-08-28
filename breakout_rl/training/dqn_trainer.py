@@ -32,7 +32,7 @@ from breakout_rl.targets import (
     should_update_target,
 )
 from breakout_rl.tensors import observation_to_tensor
-from breakout_rl.training.config import DQNConfig, SUPPORTED_ALGORITHMS
+from breakout_rl.training.config import DQNConfig, normalize_algorithm
 from breakout_rl.training.diagnostics import (
     ATARI_ACTION_NAMES,
     collect_runtime_metadata,
@@ -46,17 +46,6 @@ class NonFiniteTrainingError(RuntimeError):
 
 
 MODEL_ARCHITECTURE = "standard"
-
-
-def _validate_algorithm(algorithm: str) -> str:
-    if (
-        not isinstance(algorithm, str)
-        or algorithm.strip().lower() not in SUPPORTED_ALGORITHMS
-    ):
-        raise ValueError(
-            f"algorithm must be one of {', '.join(SUPPORTED_ALGORITHMS)}"
-        )
-    return algorithm.strip().lower()
 
 
 class _StageProfiler:
@@ -193,6 +182,9 @@ class TrainingStepSnapshot:
     optimizer_updated: bool
     optimizer_updates: int
     target_sync_count: int
+    requested_action: int | None = None
+    action_overridden: bool = False
+    fire_reset_reason: str | None = None
 
 
 TrainingStepCallback = Callable[
@@ -316,7 +308,7 @@ def dqn_training_step(
     enabled. This makes the metric useful for spotting exploding gradients.
     """
 
-    parsed_algorithm = _validate_algorithm(algorithm)
+    parsed_algorithm = normalize_algorithm(algorithm)
     if not isinstance(online_network, nn.Module):
         raise TypeError("online_network must be a torch.nn.Module")
     if not isinstance(target_network, nn.Module):
@@ -658,6 +650,8 @@ class DQNTrainer:
         self._action_counts = [0 for _ in range(self.action_count)]
         self._random_decision_count = 0
         self._greedy_decision_count = 0
+        self._action_overridden_count = 0
+        self._fire_reset_auto_count = 0
         self._started_at = time.perf_counter()
         environment_spec = getattr(env, "spec", None)
         self._environment_id = getattr(environment_spec, "id", None) or "unavailable"
@@ -787,8 +781,11 @@ class DQNTrainer:
     def _notify_step_callback(
         self,
         *,
+        requested_action: int,
         action: int,
         action_source: str,
+        action_overridden: bool,
+        fire_reset_reason: str | None,
         epsilon: float,
         raw_reward: float,
         terminated: bool,
@@ -814,15 +811,21 @@ class DQNTrainer:
             optimizer_updated=result is not None,
             optimizer_updates=self.optimizer_updates,
             target_sync_count=self.target_sync_count,
+            requested_action=requested_action,
+            action_overridden=action_overridden,
+            fire_reset_reason=fire_reset_reason,
         )
         self.on_step(snapshot, self._render_callback_frame())
 
     def _metric_row(
         self,
         *,
+        requested_action: int,
         action: int,
         epsilon: float,
         action_source: str,
+        action_overridden: bool,
+        fire_reset_reason: str | None,
         raw_reward: float,
         training_reward: float,
         completed_return: float | None,
@@ -862,9 +865,17 @@ class DQNTrainer:
             "last_target_sync_step": self.last_target_sync_step,
             "raw_reward": raw_reward,
             "training_reward": training_reward,
+            "requested_action": requested_action,
+            "requested_action_name": ATARI_ACTION_NAMES.get(
+                requested_action,
+                f"ACTION_{requested_action}",
+            ),
             "action": action,
             "action_name": ATARI_ACTION_NAMES.get(action, f"ACTION_{action}"),
             "action_source": action_source,
+            "action_overridden": action_overridden,
+            "fire_reset_reason": fire_reset_reason,
+            "fire_reset_auto_count": self._fire_reset_auto_count,
             "noop_count": self._action_counts[0]
             if len(self._action_counts) > 0
             else 0,
@@ -933,6 +944,8 @@ class DQNTrainer:
                 if self.config.replay_backend == "gpu"
                 else "cpu",
                 "replay_bytes": int(self.replay.allocated_bytes),
+                "action_overridden_count": self._action_overridden_count,
+                "fire_reset_auto_count": self._fire_reset_auto_count,
                 "replay_rewarm_steps_remaining": self._resume_rewarm_steps_remaining,
                 "stage_timings": self._stage_profiler.summary(),
             },
@@ -988,6 +1001,11 @@ class DQNTrainer:
                 ATARI_ACTION_NAMES.get(index, f"ACTION_{index}"): count
                 for index, count in enumerate(self._action_counts)
             },
+            "action_distribution_semantics": (
+                "environment-executed actions; requested_action is preserved per row"
+            ),
+            "action_overridden_count": self._action_overridden_count,
+            "fire_reset_auto_count": self._fire_reset_auto_count,
             "random_decision_count": self._random_decision_count,
             "greedy_decision_count": self._greedy_decision_count,
             "random_decision_ratio": (
@@ -1059,6 +1077,8 @@ class DQNTrainer:
             "target_sync_count": self.target_sync_count,
             "last_target_sync_step": self.last_target_sync_step,
             "action_counts": list(self._action_counts),
+            "action_overridden_count": self._action_overridden_count,
+            "fire_reset_auto_count": self._fire_reset_auto_count,
             "random_decision_count": self._random_decision_count,
             "greedy_decision_count": self._greedy_decision_count,
             "config": self.config.to_dict(),
@@ -1094,7 +1114,7 @@ class DQNTrainer:
             saved_algorithm = payload["config"].get("algorithm", "dqn")
         if (
             saved_algorithm is not None
-            and _validate_algorithm(str(saved_algorithm)) != self.config.algorithm
+            and normalize_algorithm(str(saved_algorithm)) != self.config.algorithm
         ):
             raise ValueError(
                 "checkpoint algorithm does not match trainer config: "
@@ -1112,6 +1132,8 @@ class DQNTrainer:
         saved_action_counts = payload.get("action_counts")
         if isinstance(saved_action_counts, list) and len(saved_action_counts) == self.action_count:
             self._action_counts = [int(count) for count in saved_action_counts]
+        self._action_overridden_count = int(payload.get("action_overridden_count", 0))
+        self._fire_reset_auto_count = int(payload.get("fire_reset_auto_count", 0))
         self._random_decision_count = int(payload.get("random_decision_count", 0))
         self._greedy_decision_count = int(payload.get("greedy_decision_count", 0))
         replay_saved = bool(payload.get("replay_saved", False))
@@ -1155,6 +1177,7 @@ class DQNTrainer:
                         epsilon,
                     ),
                 )
+                requested_action = action
                 self._action_counts[action] += 1
                 if action_source == "random":
                     self._random_decision_count += 1
@@ -1167,7 +1190,9 @@ class DQNTrainer:
                     )
                 )
                 executed_action = action
+                action_overridden = False
                 auto_fire = False
+                fire_reset_reason: str | None = None
                 if isinstance(step_info, Mapping):
                     raw_executed_action = step_info.get(
                         "fire_reset_executed_action",
@@ -1180,17 +1205,24 @@ class DQNTrainer:
                             "fire_reset_executed_action must be an integer"
                         ) from error
                     auto_fire = bool(step_info.get("fire_reset_auto", False))
+                    raw_fire_reset_reason = step_info.get("fire_reset_reason")
+                    if raw_fire_reset_reason is not None:
+                        fire_reset_reason = str(raw_fire_reset_reason)
                 if not 0 <= executed_action < self.action_count:
                     raise ValueError(
                         f"environment executed illegal action {executed_action}; "
                         f"expected 0 <= action < {self.action_count}"
                     )
-                if executed_action != action:
-                    self._action_counts[action] -= 1
+                action_overridden = executed_action != requested_action
+                if action_overridden:
+                    self._action_counts[requested_action] -= 1
                     self._action_counts[executed_action] += 1
                     action = executed_action
-                    if auto_fire:
-                        action_source = "fire_reset"
+                if auto_fire:
+                    self._fire_reset_auto_count += 1
+                    action_source = "fire_reset"
+                if action_overridden:
+                    self._action_overridden_count += 1
                 next_observation_array = _as_uint8_observation(
                     next_observation,
                     expected_shape=self.observation_shape,
@@ -1238,8 +1270,11 @@ class DQNTrainer:
                 self._sync_target_if_due()
 
                 self._notify_step_callback(
+                    requested_action=requested_action,
                     action=action,
                     action_source=action_source,
+                    action_overridden=action_overridden,
+                    fire_reset_reason=fire_reset_reason,
                     epsilon=epsilon,
                     raw_reward=raw_reward,
                     terminated=terminated,
@@ -1271,9 +1306,12 @@ class DQNTrainer:
                     "metrics_write",
                     lambda: self.metrics.write(
                         self._metric_row(
+                            requested_action=requested_action,
                             action=action,
                             epsilon=epsilon,
                             action_source=action_source,
+                            action_overridden=action_overridden,
+                            fire_reset_reason=fire_reset_reason,
                             raw_reward=raw_reward,
                             training_reward=training_reward,
                             completed_return=completed_return,
