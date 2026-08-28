@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "created_at_utc": "2026-08-28T10:46:26.063384Z",
+  "created_at_utc": "2026-08-28T10:58:54.042613Z",
   "purpose": "Contract v2 FIRE/sticky-action root-cause diagnostic",
-  "git_commit_sha": "d6d03c91074b09557f0be20e64faacfeaa7ba6cc",
+  "git_commit_sha": "70c9b3c7998f48d341c5767a326969a7d5a42285",
   "contract_path": "configs/eval/breakout_contract_v2.json",
   "contract": {
     "schema_version": 2,
@@ -145,7 +145,7 @@
     "cuda_available": true,
     "cuda_device_index": 0,
     "gpu_model": "NVIDIA GeForce RTX 4060 Laptop GPU",
-    "wall_clock_seconds": 14.912373800063506
+    "wall_clock_seconds": 15.511149100027978
   },
   "per_episode": [
     {
@@ -318,7 +318,7 @@
       "mean_observation_changed_fraction": 0.004413353883219955,
       "unchanged_observation_step_fraction": 0.011160714285714286,
       "max_consecutive_unchanged_observation": 2,
-      "diagnostic_wall_clock_seconds": 0.8206668000202626
+      "diagnostic_wall_clock_seconds": 0.9016711998265237
     },
     {
       "episode_seed": 102,
@@ -481,7 +481,7 @@
       "mean_observation_changed_fraction": 0.006852821838985797,
       "unchanged_observation_step_fraction": 0.004842615012106538,
       "max_consecutive_unchanged_observation": 2,
-      "diagnostic_wall_clock_seconds": 0.6115536000579596
+      "diagnostic_wall_clock_seconds": 0.7990675999317318
     },
     {
       "episode_seed": 103,
@@ -644,7 +644,7 @@
       "mean_observation_changed_fraction": 0.007147692410297453,
       "unchanged_observation_step_fraction": 0.002352941176470588,
       "max_consecutive_unchanged_observation": 1,
-      "diagnostic_wall_clock_seconds": 0.614700400037691
+      "diagnostic_wall_clock_seconds": 0.6444850000552833
     },
     {
       "episode_seed": 104,
@@ -804,7 +804,7 @@
       "mean_observation_changed_fraction": 0.006207746256397295,
       "unchanged_observation_step_fraction": 0.006191950464396285,
       "max_consecutive_unchanged_observation": 2,
-      "diagnostic_wall_clock_seconds": 0.47914729989133775
+      "diagnostic_wall_clock_seconds": 0.4798899998422712
     },
     {
       "episode_seed": 105,
@@ -964,7 +964,7 @@
       "mean_observation_changed_fraction": 0.005852295297681116,
       "unchanged_observation_step_fraction": 0.0,
       "max_consecutive_unchanged_observation": 0,
-      "diagnostic_wall_clock_seconds": 0.42649430013261735
+      "diagnostic_wall_clock_seconds": 0.4145259000360966
     },
     {
       "episode_seed": 202,
@@ -1127,7 +1127,7 @@
       "mean_observation_changed_fraction": 0.00610827664399093,
       "unchanged_observation_step_fraction": 0.0069767441860465115,
       "max_consecutive_unchanged_observation": 2,
-      "diagnostic_wall_clock_seconds": 0.6298978000413626
+      "diagnostic_wall_clock_seconds": 0.635840900009498
     },
     {
       "episode_seed": 203,
@@ -1290,7 +1290,7 @@
       "mean_observation_changed_fraction": 0.006175812161599334,
       "unchanged_observation_step_fraction": 0.0,
       "max_consecutive_unchanged_observation": 0,
-      "diagnostic_wall_clock_seconds": 0.38456319994293153
+      "diagnostic_wall_clock_seconds": 0.40637940005399287
     },
     {
       "episode_seed": 204,
@@ -1453,7 +1453,7 @@
       "mean_observation_changed_fraction": 0.006344690294079636,
       "unchanged_observation_step_fraction": 0.0,
       "max_consecutive_unchanged_observation": 0,
-      "diagnostic_wall_clock_seconds": 0.5571113000623882
+      "diagnostic_wall_clock_seconds": 0.5751903001219034
     },
     {
       "episode_seed": 205,
@@ -1616,7 +1616,7 @@
       "mean_observation_changed_fraction": 0.006068218103567958,
       "unchanged_observation_step_fraction": 0.0,
       "max_consecutive_unchanged_observation": 0,
-      "diagnostic_wall_clock_seconds": 0.3810092001222074
+      "diagnostic_wall_clock_seconds": 0.4014202000107616
     },
     {
       "episode_seed": 206,
@@ -1779,7 +1779,7 @@
       "mean_observation_changed_fraction": 0.005735800749577773,
       "unchanged_observation_step_fraction": 0.011869436201780416,
       "max_consecutive_unchanged_observation": 2,
-      "diagnostic_wall_clock_seconds": 0.5101944000925869
+      "diagnostic_wall_clock_seconds": 0.5089330999180675
     },
     {
       "episode_seed": 303,
@@ -1942,7 +1942,7 @@
       "mean_observation_changed_fraction": 0.006618286584040009,
       "unchanged_observation_step_fraction": 0.01643835616438356,
       "max_consecutive_unchanged_observation": 3,
-      "diagnostic_wall_clock_seconds": 0.5493483000900596
+      "diagnostic_wall_clock_seconds": 0.5807548000011593
     },
     {
       "episode_seed": 304,
@@ -2105,7 +2105,7 @@
       "mean_observation_changed_fraction": 0.006121236682045526,
       "unchanged_observation_step_fraction": 0.004073319755600814,
       "max_consecutive_unchanged_observation": 2,
-      "diagnostic_wall_clock_seconds": 0.7116288000252098
+      "diagnostic_wall_clock_seconds": 0.716786399949342
     },
     {
       "episode_seed": 305,
@@ -2265,7 +2265,7 @@
       "mean_observation_changed_fraction": 0.0061502751507106915,
       "unchanged_observation_step_fraction": 0.008130081300813009,
       "max_consecutive_unchanged_observation": 2,
-      "diagnostic_wall_clock_seconds": 0.39940230012871325
+      "diagnostic_wall_clock_seconds": 0.37747889989987016
     },
     {
       "episode_seed": 306,
@@ -2425,7 +2425,7 @@
       "mean_observation_changed_fraction": 0.006389419478793159,
       "unchanged_observation_step_fraction": 0.007389162561576354,
       "max_consecutive_unchanged_observation": 2,
-      "diagnostic_wall_clock_seconds": 0.5974000999704003
+      "diagnostic_wall_clock_seconds": 0.6044367998838425
     },
     {
       "episode_seed": 307,
@@ -2585,7 +2585,7 @@
       "mean_observation_changed_fraction": 0.006443472143173338,
       "unchanged_observation_step_fraction": 0.0,
       "max_consecutive_unchanged_observation": 0,
-      "diagnostic_wall_clock_seconds": 0.39351590001024306
+      "diagnostic_wall_clock_seconds": 0.3920863000676036
     }
   ],
   "summary": {
@@ -2759,7 +2759,7 @@
           "mean_observation_changed_fraction": 0.004290612130662509,
           "unchanged_observation_step_fraction": 0.017632241813602016,
           "max_consecutive_unchanged_observation": 3,
-          "diagnostic_wall_clock_seconds": 0.5826171000953764
+          "diagnostic_wall_clock_seconds": 0.5875957999378443
         },
         {
           "episode_seed": 102,
@@ -2874,7 +2874,7 @@
           "mean_observation_changed_fraction": 0.007039640489895592,
           "unchanged_observation_step_fraction": 0.0027472527472527475,
           "max_consecutive_unchanged_observation": 1,
-          "diagnostic_wall_clock_seconds": 0.527609100099653
+          "diagnostic_wall_clock_seconds": 0.55962900002487
         },
         {
           "episode_seed": 103,
@@ -2992,7 +2992,7 @@
           "mean_observation_changed_fraction": 0.006759088666330731,
           "unchanged_observation_step_fraction": 0.0030864197530864196,
           "max_consecutive_unchanged_observation": 1,
-          "diagnostic_wall_clock_seconds": 0.4811780001036823
+          "diagnostic_wall_clock_seconds": 0.49461350007914007
         },
         {
           "episode_seed": 104,
@@ -3107,7 +3107,7 @@
           "mean_observation_changed_fraction": 0.006178657903839501,
           "unchanged_observation_step_fraction": 0.010169491525423728,
           "max_consecutive_unchanged_observation": 3,
-          "diagnostic_wall_clock_seconds": 0.44108729995787144
+          "diagnostic_wall_clock_seconds": 0.44248889992013574
         },
         {
           "episode_seed": 105,
@@ -3225,7 +3225,7 @@
           "mean_observation_changed_fraction": 0.006437233064746935,
           "unchanged_observation_step_fraction": 0.0,
           "max_consecutive_unchanged_observation": 0,
-          "diagnostic_wall_clock_seconds": 0.5916120000183582
+          "diagnostic_wall_clock_seconds": 0.6146436000708491
         }
       ],
       "summary": {
@@ -3390,7 +3390,7 @@
           "mean_observation_changed_fraction": 0.005917982079563217,
           "unchanged_observation_step_fraction": 0.014563106796116505,
           "max_consecutive_unchanged_observation": 3,
-          "diagnostic_wall_clock_seconds": 0.5823910001199692
+          "diagnostic_wall_clock_seconds": 0.6093750998843461
         },
         {
           "episode_seed": 102,
@@ -3508,7 +3508,7 @@
           "mean_observation_changed_fraction": 0.005917982079563217,
           "unchanged_observation_step_fraction": 0.014563106796116505,
           "max_consecutive_unchanged_observation": 3,
-          "diagnostic_wall_clock_seconds": 0.5989783001132309
+          "diagnostic_wall_clock_seconds": 0.6907097999937832
         },
         {
           "episode_seed": 103,
@@ -3626,7 +3626,7 @@
           "mean_observation_changed_fraction": 0.005917982079563217,
           "unchanged_observation_step_fraction": 0.014563106796116505,
           "max_consecutive_unchanged_observation": 3,
-          "diagnostic_wall_clock_seconds": 0.5854193000122905
+          "diagnostic_wall_clock_seconds": 0.5988619001582265
         },
         {
           "episode_seed": 104,
@@ -3741,7 +3741,7 @@
           "mean_observation_changed_fraction": 0.005924472353043782,
           "unchanged_observation_step_fraction": 0.006153846153846154,
           "max_consecutive_unchanged_observation": 2,
-          "diagnostic_wall_clock_seconds": 0.4802304001059383
+          "diagnostic_wall_clock_seconds": 0.4942797999829054
         },
         {
           "episode_seed": 105,
@@ -3856,7 +3856,7 @@
           "mean_observation_changed_fraction": 0.005924472353043782,
           "unchanged_observation_step_fraction": 0.006153846153846154,
           "max_consecutive_unchanged_observation": 2,
-          "diagnostic_wall_clock_seconds": 0.48837030003778636
+          "diagnostic_wall_clock_seconds": 0.4888992002233863
         }
       ],
       "summary": {
@@ -3894,7 +3894,7 @@
         "max_consecutive_unchanged_observation": 3
       }
     },
-    "wall_clock_seconds": 5.982044399948791,
+    "wall_clock_seconds": 6.204696000088006,
     "interpretation": "Comparing same-sticky and no-sticky controls with the same confirmation rule isolates an association between sticky actions and observable serve retries. ALE's hidden random draw is still unavailable, so this is not direct causal proof."
   },
   "trace": {

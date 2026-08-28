@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "git_commit_sha": "d6d03c91074b09557f0be20e64faacfeaa7ba6cc",
+  "git_commit_sha": "70c9b3c7998f48d341c5767a326969a7d5a42285",
   "purpose": "Day 16 Contract v2 learning-regression guardrail",
   "protocol": {
     "evaluation_config": "configs/eval/breakout_eval.json",
@@ -424,11 +424,11 @@
   "diagnostics": {
     "fire_sticky": {
       "path": "assets/day16/fire-sticky-diagnostic.json",
-      "sha256": "4280a2689c4946f92b2e14cc63bdeff08d2213cfa9e07161a947b8d8cf457ad5"
+      "sha256": "9ab85bf77ce752da36ee8926fd6fab218b04d5e95376c3d3f0697a12d4095a87"
     },
     "q_value": {
       "path": "assets/day16/q-value-diagnostics.json",
-      "sha256": "d88dc6a0cbff0b1f1a172b56aa436b2031956795305f04cc48f7f47405c0fbf5"
+      "sha256": "9b614568ed868bd4685fc94f187e2d9ca4bd1d7fb3e262308aa71b92e89604fc"
     },
     "overestimation_simulation": {
       "path": "assets/day16/overestimation-bias.json",

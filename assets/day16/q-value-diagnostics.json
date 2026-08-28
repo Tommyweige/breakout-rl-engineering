@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "created_at_utc": "2026-08-28T10:46:37.285905Z",
+  "created_at_utc": "2026-08-28T10:59:06.212823Z",
   "purpose": "Exploratory real-checkpoint Q-value diagnostics for Day 16",
-  "git_commit_sha": "d6d03c91074b09557f0be20e64faacfeaa7ba6cc",
+  "git_commit_sha": "70c9b3c7998f48d341c5767a326969a7d5a42285",
   "interpretation_boundary": "These are model outputs on real Breakout observations. Without a ground-truth Q-star oracle they do not prove that a particular checkpoint is overestimating value. The CPU toy simulation isolates the max-selection mechanism separately.",
   "contract_path": "configs/eval/breakout_contract_v2.json",
   "contract": {
