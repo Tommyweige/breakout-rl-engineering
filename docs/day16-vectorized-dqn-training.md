@@ -74,16 +74,16 @@ GPU Replay 原本的 `add` 每次只處理一筆資料。Day 16 新增 `add_batc
 
 | 環境數 N | vector iterations | accepted transitions/s | batched action calls | `add_batch` calls | optimizer updates | target syncs |
 |---:|---:|---:|---:|---:|---:|---:|
-| 1 | 10,000 | 248.84 | 10,000 | 10,000 | 2,251 | 21 |
-| 2 | 5,000 | 316.93 | 5,000 | 5,000 | 2,251 | 21 |
-| 4 | 2,500 | 323.75 | 2,500 | 2,500 | 2,251 | 21 |
-| 8 | 1,250 | 411.07 | 1,250 | 1,250 | 2,251 | 21 |
+| 1 | 10,000 | 214.99 | 10,000 | 10,000 | 2,251 | 21 |
+| 2 | 5,000 | 232.98 | 5,000 | 5,000 | 2,251 | 21 |
+| 4 | 2,500 | 310.26 | 2,500 | 2,500 | 2,251 | 21 |
+| 8 | 1,250 | 318.57 | 1,250 | 2,500 | 2,251 | 21 |
 
 這張圖的左側是每個設定在相同 transition budget 下的 end-to-end throughput（整條資料流每秒完成的 transition 數），右側是完成同一個 budget 實際花費的 wall-clock（真實經過的秒數）。`accepted transitions/s` 是 `global_step` 的速度，不是把 vector iteration 誤當成 transition 的速度。
 
 [![1、2、4、8 個環境在相同 10K transition budget 下的吞吐與 wall-clock](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/codex/issue-18-day16/assets/day16/vectorized-throughput.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/codex/issue-18-day16/assets/day16/vectorized-throughput.png)
 
-在這次 RTX 4060 Laptop GPU 與 2 個 CPU threads 的測試上，N=8 比 N=1 約快 `1.65×`。這個結果支持 batching 確實減少了零碎呼叫，但不代表 N 越大永遠越好；當環境 step、CPU 記憶體或 GPU batch 已經飽和後，繼續增加 N 可能只會讓 reset 和主機端的管理工作變重。
+在這次 RTX 4060 Laptop GPU 與 2 個 CPU threads 的測試上，N=8 比 N=1 約快 `1.48×`。N=4 與 N=8 的差距只有約 2.7%，所以後續 guardrail 選用較簡單的 N=4 作為 candidate；這個結果支持 batching 確實減少了零碎呼叫，但不代表 N 越大永遠越好。當環境 step、CPU 記憶體或 GPU batch 已經飽和後，繼續增加 N 可能只會讓 reset 和主機端的管理工作變重。
 
 ## 推論和 Replay insertion 到底省在哪裡？
 
@@ -95,17 +95,17 @@ Replay insertion 另外做了 batch size 1、2、4、8、16 的獨立 microbench
 
 | insertion batch | transitions/s | 每次 `add_batch` |
 |---:|---:|---:|
-| 1 | 5,483.26 | 0.182 ms |
-| 2 | 8,949.64 | 0.223 ms |
-| 4 | 19,713.95 | 0.203 ms |
-| 8 | 30,769.89 | 0.260 ms |
-| 16 | 46,454.18 | 0.344 ms |
+| 1 | 4,167.76 | 0.240 ms |
+| 2 | 6,274.86 | 0.319 ms |
+| 4 | 12,930.43 | 0.309 ms |
+| 8 | 22,239.56 | 0.360 ms |
+| 16 | 34,123.40 | 0.469 ms |
 
-N=16 時，一次呼叫的成本只從 0.182 ms 增加到 0.344 ms，但同一段時間寫入的 transition 數大幅增加。這正是 batching 的工程價值：不是每一筆資料都變得免費，而是把固定的函式呼叫與小型 GPU copy overhead 攤到更多 transition 上。
+N=16 時，一次呼叫的成本只從 0.240 ms 增加到 0.469 ms，但同一段時間寫入的 transition 數大幅增加。這正是 batching 的工程價值：不是每一筆資料都變得免費，而是把固定的函式呼叫與小型 GPU copy overhead 攤到更多 transition 上。
 
 [![batch size 1、2、4、8、16 的真實 replay insertion microbenchmark](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/codex/issue-18-day16/assets/day16/replay-insertion.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/codex/issue-18-day16/assets/day16/replay-insertion.png)
 
-最後看 utilization。固定間隔 sampler 觀察到的 GPU 平均使用率從 N=1 的 `20.81%` 到 N=8 的 `22.64%`，process CPU 平均值則約從 `5.63%` 上升到 `11.11%`。這再次提醒我們：
+最後看 utilization。固定間隔 sampler 觀察到的 GPU 平均使用率從 N=1 的 `40.61%` 到 N=8 的 `45.19%`，process CPU 平均值則約從 `5.49%` 上升到 `11.30%`。這再次提醒我們：
 
 ```text
 GPU utilization 高 ≠ trainer 一定更快
@@ -118,14 +118,14 @@ trainer 更快 ≠ policy 一定學得更好
 
 ## 速度 candidate 還要經過固定 evaluation
 
-systems benchmark 只回答「資料流跑得多快」，不能回答「模型學得好不好」。因此我把 N=1 reference 和吞吐最高的 N=8 candidate 都送進 Day 15 的 Contract v2 evaluation；這個 evaluation 是用固定條件檢查模型行為的 guardrail（防止系統最佳化偷偷造成回歸）：相同的 15 個 episode、相同 seed 群、epsilon=0、raw reward、環境負責 FIRE。
+systems benchmark 只回答「資料流跑得多快」，不能回答「模型學得好不好」。因此我把 N=1 reference 和在接近最高吞吐下較簡單的 N=4 candidate 都送進 Day 15 的 Contract v2 evaluation；這個 evaluation 是用固定條件檢查模型行為的 guardrail（防止系統最佳化偷偷造成回歸）：相同的 15 個 episode、相同 seed 群、epsilon=0、raw reward、環境負責 FIRE。
 
 | candidate | mean raw return | median | std | mean episode length | terminated | TimeLimit truncated |
 |---|---:|---:|---:|---:|---:|---:|
-| N=1 | 2.80 | 2.00 | 2.74 | 2,030.67 | 14/15 | 1/15 |
-| N=8 | 2.67 | 2.00 | 2.44 | 2,033.33 | 14/15 | 1/15 |
+| N=1 | 1.53 | 0.00 | 2.36 | 186.53 | 15/15 | 0/15 |
+| N=4 | 2.80 | 2.00 | 2.74 | 2,030.67 | 14/15 | 1/15 |
 
-兩者的平均回報差距只有 `0.13`，episode termination pattern 也相同。這個小型 guardrail 沒有顯示 N=8 造成明顯的 policy regression；但兩組都各有一次 TimeLimit truncation，且只有 15 局，所以它不是宣布模型品質穩定的證明。完整結果與 checkpoint SHA-256 在 [`evaluation-summary.json`](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/codex/issue-18-day16/assets/day16/evaluation-summary.json)。
+N=4 的平均回報比 N=1 高 `1.27`，但它也多了一次 TimeLimit truncation；這個差異不能被解讀成向量化讓 policy 變強。這次 guardrail 沒有證明 candidate 的學習品質相同，只證明在這個小樣本下沒有一個可以直接宣布的速度換品質結論。完整結果與 checkpoint SHA-256 在 [`evaluation-summary.json`](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/codex/issue-18-day16/assets/day16/evaluation-summary.json)。
 
 這裡也要保留一個重要的實作邊界：trainer 會在跨過 boundary 的地方拆分 transition chunks，因此 update、target sync 和 checkpoint 的 transition boundary 是精確對齊的；但它仍不是 single-env 的 bit-for-bit（每一步 action、資料順序與更新都完全相同）replay/update trace，因為 N 個環境的 action 會先以同一批 Q-values 決定。若後續實驗需要逐 transition 完全重現，就必須再付出同步 action 與資料收集的成本，不能只看目前的 throughput 數字。
 
@@ -140,6 +140,6 @@ Day 14 找到的是：單純把 Replay 搬到 GPU，無法消除 single-environm
 - `add_batch` 保留 ring-buffer ordering 與兩個 episode flags；
 - update、target sync 與 epsilon 都依實際 transition count 前進。
 
-在本次硬體與 10K screening budget 上，N=8 是 throughput candidate；evaluation 則說明它目前沒有顯著偏離 N=1 reference。這足以讓後面的 DQN family experiments 使用更有效率的資料收集路徑，但還不足以回答 Double DQN 或 Dueling Network 哪個演算法更好。
+在本次硬體與 10K screening budget 上，N=4 是接近最高吞吐、且比 N=8 簡單的 systems candidate；evaluation 則提醒我們它的 episode outcome 尚未足以支持品質等價。這足以讓後面的 DQN family experiments 使用更有效率的資料收集路徑，但還不足以回答 Double DQN 或 Dueling Network 哪個演算法更好。
 
 下一篇會處理另一個問題：即使資料流和訓練系統正確，DQN 用同一個 network 選 action、又估計該 action 的 target 時，Q-value 為什麼可能被系統性高估？這會把焦點帶到 Double DQN，而不是再把 Day 16 的 systems optimization 混成新的演算法比較。

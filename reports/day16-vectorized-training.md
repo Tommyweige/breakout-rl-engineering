@@ -32,17 +32,20 @@ Source: `assets/day16/vectorized-training.json`.
 
 | N | vector iterations | transitions/s | action calls | replay insert calls | optimizer updates | target syncs |
 |---:|---:|---:|---:|---:|---:|---:|
-| 1 | 10,000 | 248.84 | 10,000 | 10,000 | 2,251 | 21 |
-| 2 | 5,000 | 316.93 | 5,000 | 5,000 | 2,251 | 21 |
-| 4 | 2,500 | 323.75 | 2,500 | 2,500 | 2,251 | 21 |
-| 8 | 1,250 | 411.07 | 1,250 | 1,250 | 2,251 | 21 |
+| 1 | 10,000 | 214.99 | 10,000 | 10,000 | 2,251 | 21 |
+| 2 | 5,000 | 232.98 | 5,000 | 5,000 | 2,251 | 21 |
+| 4 | 2,500 | 310.26 | 2,500 | 2,500 | 2,251 | 21 |
+| 8 | 1,250 | 318.57 | 1,250 | 2,500 | 2,251 | 21 |
 
-N=8 is approximately 1.65x the N=1 accepted-transition throughput under this
-single-seed, single-hardware screening. The result is a systems observation,
-not a claim that 8 is universally optimal.
+N=8 is approximately 1.48x the N=1 accepted-transition throughput under this
+single-seed, single-hardware screening. N=4 is only about 2.7% behind N=8, so
+the guardrail candidate is N=4 as the simpler near-top setting. The result is a
+systems observation, not a claim that either setting is universally optimal.
 
 The stage timings show why the result is plausible: the N=8 run has 1,250
-batched action calls and 1,250 replay insertion calls instead of 10,000 of each.
+batched action calls and 2,500 replay insertion calls instead of 10,000 action
+calls and 10,000 replay insertion calls. Replay insertion is split at exact
+transition boundaries when one vector step crosses an update boundary.
 The CPU `env_step` stage remains material, so this change does not make ALE
 itself GPU-parallel.
 
@@ -52,11 +55,11 @@ Source: `assets/day16/replay-insertion.json`.
 
 | batch size | transitions/s | latency/call |
 |---:|---:|---:|
-| 1 | 5,483.26 | 0.182 ms |
-| 2 | 8,949.64 | 0.223 ms |
-| 4 | 19,713.95 | 0.203 ms |
-| 8 | 30,769.89 | 0.260 ms |
-| 16 | 46,454.18 | 0.344 ms |
+| 1 | 4,167.76 | 0.240 ms |
+| 2 | 6,274.86 | 0.319 ms |
+| 4 | 12,930.43 | 0.309 ms |
+| 8 | 22,239.56 | 0.360 ms |
+| 16 | 34,123.40 | 0.469 ms |
 
 The source observation was produced by a real Breakout reset/step; repeated
 rows were used only to measure storage copy cost. This benchmark does not
@@ -68,13 +71,13 @@ Source: `assets/day16/evaluation-summary.json`.
 
 | Candidate | mean return | median | std | mean length | terminated | truncated |
 |---|---:|---:|---:|---:|---:|---:|
-| N=1 | 2.80 | 2.00 | 2.74 | 2,030.67 | 14/15 | 1/15 |
-| N=8 | 2.67 | 2.00 | 2.44 | 2,033.33 | 14/15 | 1/15 |
+| N=1 | 1.53 | 0.00 | 2.36 | 186.53 | 15/15 | 0/15 |
+| N=4 | 2.80 | 2.00 | 2.74 | 2,030.67 | 14/15 | 1/15 |
 
-The same termination profile and small mean-return difference do not show an
-obvious 10K learning regression. Both candidates still have one TimeLimit
-truncation in 15 episodes, so this is a guardrail, not a final model-quality
-claim.
+N=4 has one more TimeLimit truncation than N=1 in this 15-episode check, so the
+guardrail does not establish quality equivalence. It is retained as a warning
+against selecting a systems setting from throughput alone, not as a final
+model-quality claim.
 
 ## Schedule and reproducibility boundary
 
@@ -93,7 +96,7 @@ The report treats this as a declared batching boundary, not hidden equivalence.
 ## Limitations and next step
 
 This is a 10K single-seed screening, not the later multi-seed model comparison.
-It does not establish that N=8 is best on another GPU, CPU thread setting, or
+It does not establish that N=4 is best on another GPU, CPU thread setting, or
 longer training budget. The next experiment can reuse this backend to compare
 vanilla DQN and Double DQN while keeping the transition budget and evaluation
 contract visible.

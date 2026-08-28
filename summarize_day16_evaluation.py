@@ -50,6 +50,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--reference-checkpoint", type=Path, required=True)
     parser.add_argument("--candidate-results", type=Path, required=True)
     parser.add_argument("--candidate-checkpoint", type=Path, required=True)
+    parser.add_argument("--candidate-environment-count", type=int, default=4)
     parser.add_argument(
         "--output",
         type=Path,
@@ -69,7 +70,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             "episodes": 15,
             "epsilon": 0.0,
             "raw_reward": True,
-            "selection_rule": "envs=8 is a throughput candidate only; quality is not selected from this 10K screening",
+            "selection_rule": "the selected vector candidate is chosen from the near-top throughput settings; quality is not selected from this 10K screening",
         },
         "candidates": [
             _candidate(
@@ -78,7 +79,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 checkpoint_path=args.reference_checkpoint,
             ),
             _candidate(
-                environment_count=8,
+                environment_count=args.candidate_environment_count,
                 results_path=args.candidate_results,
                 checkpoint_path=args.candidate_checkpoint,
             ),

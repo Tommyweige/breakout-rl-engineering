@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "created_at_utc": "2026-08-28T06:47:21.338629Z",
-  "evaluation_id": "day16-final-envs1-contract-v2",
+  "created_at_utc": "2026-08-28T07:18:12.478373Z",
+  "evaluation_id": "day16-final-v2-envs1-contract-v2",
   "policy_type": "dqn",
   "model_id": "envs-1@step-00010000",
   "environment_id": "ALE/Breakout-v5",
@@ -49,9 +49,9 @@
     "requested_device": "cuda",
     "resolved_device": "cuda:0",
     "cuda_available": true,
-    "evaluation_steps": 30460,
-    "wall_clock_seconds": 52.606459099799395,
-    "steps_per_second": 579.0163512471828,
+    "evaluation_steps": 2798,
+    "wall_clock_seconds": 6.2785014000255615,
+    "steps_per_second": 445.6477464492735,
     "cuda_device_index": 0,
     "gpu_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
     "cuda_device_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
@@ -99,8 +99,8 @@
     "day16_vectorized_checkpoint": true
   },
   "checkpoint": {
-    "path": "C:/Users/tommy/.codex/worktrees/a23d/breakout-rl-engineering/runs/day16-benchmark-final/envs-1/checkpoints/step-00010000.pt",
-    "sha256": "23c458e9bb831146f35326347048abef177a2fbe11d7f112f0c0b2a0882fda28",
+    "path": "C:/Users/tommy/.codex/worktrees/a23d/breakout-rl-engineering/runs/day16-benchmark-final-v2/envs-1/checkpoints/step-00010000.pt",
+    "sha256": "be28794844758d719089f6998450f57d8450c9812ce0a4d413817ed2054069fd",
     "step": 10000,
     "source_day14_run_id": null,
     "source_day14_manifest": null,
@@ -127,17 +127,17 @@
       "episode_index": 1,
       "episode_return": 0.0,
       "return": 0.0,
-      "episode_length": 26998,
-      "terminated": false,
-      "truncated": true,
-      "time_limit": true,
-      "time_limit_source": "ale.game_truncated",
+      "episode_length": 129,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
       "complete": true,
-      "stop_reason": "time_limit",
+      "stop_reason": "terminated",
       "action_distribution": {
-        "NOOP": 3,
-        "FIRE": 34,
-        "RIGHT": 26961,
+        "NOOP": 4,
+        "FIRE": 52,
+        "RIGHT": 73,
         "LEFT": 0
       }
     },
@@ -149,7 +149,7 @@
       "episode_index": 2,
       "episode_return": 0.0,
       "return": 0.0,
-      "episode_length": 125,
+      "episode_length": 123,
       "terminated": true,
       "truncated": false,
       "time_limit": false,
@@ -157,9 +157,9 @@
       "complete": true,
       "stop_reason": "terminated",
       "action_distribution": {
-        "NOOP": 0,
-        "FIRE": 0,
-        "RIGHT": 125,
+        "NOOP": 4,
+        "FIRE": 80,
+        "RIGHT": 39,
         "LEFT": 0
       }
     },
@@ -179,9 +179,9 @@
       "complete": true,
       "stop_reason": "terminated",
       "action_distribution": {
-        "NOOP": 0,
-        "FIRE": 0,
-        "RIGHT": 125,
+        "NOOP": 4,
+        "FIRE": 51,
+        "RIGHT": 70,
         "LEFT": 0
       }
     },
@@ -201,10 +201,10 @@
       "complete": true,
       "stop_reason": "terminated",
       "action_distribution": {
-        "NOOP": 75,
-        "FIRE": 22,
-        "RIGHT": 246,
-        "LEFT": 5
+        "NOOP": 28,
+        "FIRE": 207,
+        "RIGHT": 103,
+        "LEFT": 10
       }
     },
     {
@@ -213,9 +213,9 @@
       "episode_seed": 105,
       "seed_index": 0,
       "episode_index": 5,
-      "episode_return": 5.0,
-      "return": 5.0,
-      "episode_length": 348,
+      "episode_return": 0.0,
+      "return": 0.0,
+      "episode_length": 122,
       "terminated": true,
       "truncated": false,
       "time_limit": false,
@@ -223,10 +223,10 @@
       "complete": true,
       "stop_reason": "terminated",
       "action_distribution": {
-        "NOOP": 67,
-        "FIRE": 22,
-        "RIGHT": 254,
-        "LEFT": 5
+        "NOOP": 2,
+        "FIRE": 97,
+        "RIGHT": 23,
+        "LEFT": 0
       }
     },
     {
@@ -235,9 +235,9 @@
       "episode_seed": 202,
       "seed_index": 1,
       "episode_index": 1,
-      "episode_return": 2.0,
-      "return": 2.0,
-      "episode_length": 200,
+      "episode_return": 0.0,
+      "return": 0.0,
+      "episode_length": 123,
       "terminated": true,
       "truncated": false,
       "time_limit": false,
@@ -245,9 +245,9 @@
       "complete": true,
       "stop_reason": "terminated",
       "action_distribution": {
-        "NOOP": 5,
-        "FIRE": 16,
-        "RIGHT": 179,
+        "NOOP": 2,
+        "FIRE": 82,
+        "RIGHT": 39,
         "LEFT": 0
       }
     },
@@ -257,9 +257,9 @@
       "episode_seed": 203,
       "seed_index": 1,
       "episode_index": 2,
-      "episode_return": 9.0,
-      "return": 9.0,
-      "episode_length": 400,
+      "episode_return": 7.0,
+      "return": 7.0,
+      "episode_length": 415,
       "terminated": true,
       "truncated": false,
       "time_limit": false,
@@ -267,9 +267,9 @@
       "complete": true,
       "stop_reason": "terminated",
       "action_distribution": {
-        "NOOP": 95,
-        "FIRE": 26,
-        "RIGHT": 274,
+        "NOOP": 44,
+        "FIRE": 279,
+        "RIGHT": 87,
         "LEFT": 5
       }
     },
@@ -279,9 +279,9 @@
       "episode_seed": 204,
       "seed_index": 1,
       "episode_index": 3,
-      "episode_return": 5.0,
-      "return": 5.0,
-      "episode_length": 348,
+      "episode_return": 0.0,
+      "return": 0.0,
+      "episode_length": 122,
       "terminated": true,
       "truncated": false,
       "time_limit": false,
@@ -289,10 +289,10 @@
       "complete": true,
       "stop_reason": "terminated",
       "action_distribution": {
-        "NOOP": 76,
-        "FIRE": 22,
-        "RIGHT": 245,
-        "LEFT": 5
+        "NOOP": 7,
+        "FIRE": 94,
+        "RIGHT": 21,
+        "LEFT": 0
       }
     },
     {
@@ -301,9 +301,9 @@
       "episode_seed": 205,
       "seed_index": 1,
       "episode_index": 4,
-      "episode_return": 5.0,
-      "return": 5.0,
-      "episode_length": 348,
+      "episode_return": 2.0,
+      "return": 2.0,
+      "episode_length": 197,
       "terminated": true,
       "truncated": false,
       "time_limit": false,
@@ -311,10 +311,10 @@
       "complete": true,
       "stop_reason": "terminated",
       "action_distribution": {
-        "NOOP": 69,
-        "FIRE": 22,
-        "RIGHT": 251,
-        "LEFT": 6
+        "NOOP": 8,
+        "FIRE": 152,
+        "RIGHT": 37,
+        "LEFT": 0
       }
     },
     {
@@ -323,9 +323,9 @@
       "episode_seed": 206,
       "seed_index": 1,
       "episode_index": 5,
-      "episode_return": 4.0,
-      "return": 4.0,
-      "episode_length": 297,
+      "episode_return": 2.0,
+      "return": 2.0,
+      "episode_length": 198,
       "terminated": true,
       "truncated": false,
       "time_limit": false,
@@ -333,10 +333,10 @@
       "complete": true,
       "stop_reason": "terminated",
       "action_distribution": {
-        "NOOP": 51,
-        "FIRE": 19,
-        "RIGHT": 224,
-        "LEFT": 3
+        "NOOP": 9,
+        "FIRE": 135,
+        "RIGHT": 54,
+        "LEFT": 0
       }
     },
     {
@@ -347,7 +347,7 @@
       "episode_index": 1,
       "episode_return": 0.0,
       "return": 0.0,
-      "episode_length": 125,
+      "episode_length": 123,
       "terminated": true,
       "truncated": false,
       "time_limit": false,
@@ -355,9 +355,9 @@
       "complete": true,
       "stop_reason": "terminated",
       "action_distribution": {
-        "NOOP": 0,
-        "FIRE": 0,
-        "RIGHT": 125,
+        "NOOP": 4,
+        "FIRE": 80,
+        "RIGHT": 39,
         "LEFT": 0
       }
     },
@@ -369,7 +369,7 @@
       "episode_index": 2,
       "episode_return": 0.0,
       "return": 0.0,
-      "episode_length": 125,
+      "episode_length": 124,
       "terminated": true,
       "truncated": false,
       "time_limit": false,
@@ -377,9 +377,9 @@
       "complete": true,
       "stop_reason": "terminated",
       "action_distribution": {
-        "NOOP": 0,
-        "FIRE": 0,
-        "RIGHT": 125,
+        "NOOP": 2,
+        "FIRE": 68,
+        "RIGHT": 54,
         "LEFT": 0
       }
     },
@@ -389,9 +389,9 @@
       "episode_seed": 305,
       "seed_index": 2,
       "episode_index": 3,
-      "episode_return": 2.0,
-      "return": 2.0,
-      "episode_length": 200,
+      "episode_return": 1.0,
+      "return": 1.0,
+      "episode_length": 154,
       "terminated": true,
       "truncated": false,
       "time_limit": false,
@@ -399,10 +399,10 @@
       "complete": true,
       "stop_reason": "terminated",
       "action_distribution": {
-        "NOOP": 1,
-        "FIRE": 15,
-        "RIGHT": 184,
-        "LEFT": 0
+        "NOOP": 89,
+        "FIRE": 54,
+        "RIGHT": 6,
+        "LEFT": 5
       }
     },
     {
@@ -413,7 +413,7 @@
       "episode_index": 4,
       "episode_return": 0.0,
       "return": 0.0,
-      "episode_length": 125,
+      "episode_length": 123,
       "terminated": true,
       "truncated": false,
       "time_limit": false,
@@ -421,10 +421,10 @@
       "complete": true,
       "stop_reason": "terminated",
       "action_distribution": {
-        "NOOP": 0,
-        "FIRE": 0,
-        "RIGHT": 125,
-        "LEFT": 0
+        "NOOP": 22,
+        "FIRE": 73,
+        "RIGHT": 25,
+        "LEFT": 3
       }
     },
     {
@@ -433,9 +433,9 @@
       "episode_seed": 307,
       "seed_index": 2,
       "episode_index": 5,
-      "episode_return": 5.0,
-      "return": 5.0,
-      "episode_length": 348,
+      "episode_return": 6.0,
+      "return": 6.0,
+      "episode_length": 372,
       "terminated": true,
       "truncated": false,
       "time_limit": false,
@@ -443,10 +443,10 @@
       "complete": true,
       "stop_reason": "terminated",
       "action_distribution": {
-        "NOOP": 66,
-        "FIRE": 23,
-        "RIGHT": 256,
-        "LEFT": 3
+        "NOOP": 38,
+        "FIRE": 251,
+        "RIGHT": 78,
+        "LEFT": 5
       }
     }
   ],
@@ -455,59 +455,59 @@
     0.0,
     0.0,
     5.0,
-    5.0,
-    2.0,
-    9.0,
-    5.0,
-    5.0,
-    4.0,
     0.0,
+    0.0,
+    7.0,
     0.0,
     2.0,
+    2.0,
     0.0,
-    5.0
+    0.0,
+    1.0,
+    0.0,
+    6.0
   ],
   "per_episode_lengths": [
-    26998,
-    125,
+    129,
+    123,
     125,
     348,
-    348,
-    200,
-    400,
-    348,
-    348,
-    297,
-    125,
-    125,
-    200,
-    125,
-    348
+    122,
+    123,
+    415,
+    122,
+    197,
+    198,
+    123,
+    124,
+    154,
+    123,
+    372
   ],
   "action_distribution": {
-    "NOOP": 508,
-    "FIRE": 221,
-    "RIGHT": 29699,
-    "LEFT": 32
+    "NOOP": 267,
+    "FIRE": 1755,
+    "RIGHT": 748,
+    "LEFT": 28
   },
   "summary": {
     "count": 15,
-    "mean_return": 2.8,
-    "median_return": 2.0,
-    "std_return": 2.737395355686375,
+    "mean_return": 1.5333333333333334,
+    "median_return": 0.0,
+    "std_return": 2.36267268622258,
     "min_return": 0.0,
-    "max_return": 9.0,
-    "mean_episode_length": 2030.6666666666667,
+    "max_return": 7.0,
+    "mean_episode_length": 186.53333333333333,
     "complete_episodes": 15,
     "finished_episode_count": 15,
-    "terminated_count": 14,
-    "truncated_count": 1,
-    "time_limit_truncated_count": 1,
-    "truncation_rate": 0.06666666666666667,
-    "mean_return_terminated": 3.0,
-    "mean_return_truncated": 0.0,
-    "mean_length_terminated": 247.28571428571428,
-    "mean_length_truncated": 26998.0
+    "terminated_count": 15,
+    "truncated_count": 0,
+    "time_limit_truncated_count": 0,
+    "truncation_rate": 0.0,
+    "mean_return_terminated": 1.5333333333333334,
+    "mean_return_truncated": null,
+    "mean_length_terminated": 186.53333333333333,
+    "mean_length_truncated": null
   },
   "metadata": {
     "evaluation_config_path": "configs/eval/breakout_eval.json",
