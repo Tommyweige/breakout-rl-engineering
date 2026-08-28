@@ -17,165 +17,175 @@ Day 14 留下了一個很反直覺的結果。
 → 再來一次
 ```
 
-observation 是 Agent 目前看到的遊戲畫面；Q-value 則是 DQN 對「現在選某個 action，未來可能有多值得」的估計。GPU 很擅長一次處理很多資料，但這條流程卻像拿一條八線道高速公路，每次只放一台車上去。
+GPU 很擅長一次處理很多資料，但這條流程卻像拿一條八線道高速公路，每次只放一台車上去。
 
-Day 16 要回答的問題因此很直接：
+所以 Day 16 的問題其實很單純：
 
-> **如果同時跑多個 Breakout，把多張 observation 合成一批再交給 GPU，完整訓練到底會不會真的變快？**
+> **如果同時跑多個 Breakout，把多張 observation 合成一個 batch，再一次交給 GPU，完整訓練到底會不會真的變快？**
 
 ## 從一局遊戲，變成一批遊戲
 
-這次加入的是向量化環境（vectorized environment）。它不是把程式複製四份，而是讓同一個介面同時管理多個彼此獨立的 Breakout。
+這次加入的是向量化環境（vectorized environment）。它不是把同一段程式複製好幾份，而是讓一個介面同時管理多個彼此獨立的 Breakout。
 
-假設同時跑 4 個環境：
+假設同時跑 4 個環境，原本四次分開做的 inference，可以改成一次：
 
 ```text
-Env 0 ─┐
-Env 1 ─┤
-Env 2 ─┤→ 4 個 observations
-Env 3 ─┘
-        ↓
-   一次送進 DQN
-        ↓
-   4 組 Q-values
-        ↓
-   4 個 actions
+4 個 observations
+→ 組成一個 batch
+→ DQN forward 一次
+→ 得到 4 組 Q-values
+→ 各自選出 4 個 actions
 ```
 
-每個 Breakout 的 observation 仍然是 4 張最近的 84×84 灰階畫面，所以單一輸入原本是 `(4, 84, 84)`。四個環境一起跑後，模型看到的是 `(4, 4, 84, 84)`：最前面的 `4` 才是這次同時處理的環境數量。
+對模型來說，輸入會從一份 `(4, 84, 84)` 的 observation，變成 `(N, 4, 84, 84)`。第一個 `N` 就是同時跑幾個環境。
 
-這就是批次推論（batched inference）。原本四個環境需要分別呼叫模型四次，現在可以一次完成。
+Replay Buffer 也用同一個思路：不再每產生一筆 transition 就做一次小型 GPU 寫入，而是一次放進多筆。
 
-Replay Buffer 也採用同樣的想法。transition 是 Agent 一次互動留下的紀錄，包含目前 state、action、reward、next state 和 episode 是否結束。以前每拿到一筆 transition 就做一次小型 GPU 寫入，現在可以把同一輪產生的多筆資料一起寫進 Replay。
+整個資料流可以簡化成下面這張圖：
 
-整條資料流變成：
+[![Day 16 向量化 DQN Trainer 資料流](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/bfa50d87e4d51c5cf450ec89e023144ebe46ab64/assets/day16/vectorized-pipeline-reader.svg?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/bfa50d87e4d51c5cf450ec89e023144ebe46ab64/assets/day16/vectorized-pipeline-reader.svg)
 
-[![單一環境與向量化 DQN trainer 的資料流](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/0e345d1d053297fd77865fdc5ef8a9f850fe5b98/assets/day16/vectorized-pipeline.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/0e345d1d053297fd77865fdc5ef8a9f850fe5b98/assets/day16/vectorized-pipeline.png)
+這張圖真正想表達的只有一件事：**多個環境一起產生資料，讓 GPU 一次吃一批，而不是一直處理 batch=1 的零碎工作。**
 
-Day 14 做的是「把資料放到 GPU」；Day 16 再往前一步，開始處理另一個更重要的問題：**怎麼讓 GPU 每次真的拿到足夠多的工作。**
+## 多開環境後，不能把「一步」算錯
 
-## 多開環境之後，訓練步數不能算錯
+向量化最容易讓人誤會的地方，是 `step` 的意義。
 
-Vectorization 最容易讓人誤會的一點，是「跑一次迴圈」不再等於「得到一筆資料」。
+單一環境時，呼叫一次 `env.step()`，通常得到一筆 transition；如果同時跑 4 個環境，一次 vector step 就會得到 4 筆 transition。
 
-如果同時跑 4 個環境，一次 environment step 會產生 4 筆 transition；同時跑 8 個，就會產生 8 筆。因此 Day 16 的 `global_step` 仍然代表真正收集了多少筆 environment transitions，而不是 Python 迴圈跑了幾次。
+所以訓練進度不能寫成：
 
-這件事很重要，因為 DQN 的 epsilon 探索率、何時開始學習、多久更新一次網路、多久同步一次 target network，全部都和 transition 數量有關。如果把 8 筆資料誤算成 1 步，表面上只是計數方式不同，實際上連演算法的訓練節奏都會一起改掉。
+```text
+vector loop 跑一次
+→ global_step + 1
+```
 
-多個環境也各自有自己的 episode。一局結束時，只能重設那一局；Replay 裡保存的 `next_state` 也必須是上一局真正最後看到的畫面，而不是 reset 之後新遊戲的第一張畫面。
+而要按照真正收到的資料量計算。
 
-這些細節不需要改變我們對 vectorization 的直覺：**可以把資料批次化，但不能因為追求速度，把原本 DQN 正在學的 transition 關係一起改掉。**
+這很重要，因為 epsilon decay、多久更新一次網路、target network 何時同步、checkpoint 的 100K 到底代表多少資料，都依賴 transition 數量。
 
-Day 15 固定下來的 Contract v2 也繼續沿用，所以 frame skip、frame stack、sticky action 和開局／掉命後的 FIRE 規則都沒有因為 Day 16 而換掉。
+另外，多個環境的 episode 也必須彼此獨立。假設四局裡只有 Env 0 game over，只能重設 Env 0，其他三局還要繼續玩；上一局最後一張畫面也不能被下一局 reset 後的畫面取代。
 
-## 先跑 10K：環境愈多，真的愈快嗎？
+這些 correctness 細節不是 Day 16 的主角，但它們是前提：**如果多環境讓資料本身變錯，再高的 SPS 都沒有意義。**
 
-接著才真正量速度。
+## 先跑 10K：環境越多，真的越快嗎？
 
-我固定 Vanilla DQN、GPU Replay、batch size 32、training seed 42 和同一套 Contract v2，只改同時跑幾個 Breakout，讓每組都收集 10,000 筆實際 transitions。
+把資料流改完後，我先不碰新的 RL 演算法，只用同一套 Vanilla DQN、GPU Replay、batch size 32、training seed 42 和 Contract v2，分別測 1、2、4、8 個環境。
 
-| 同時環境數 | transitions/s | 相對 N=1 |
-|---:|---:|---:|
-| 1 | 298.20 | 1.00× |
-| 2 | 387.89 | 1.30× |
-| 4 | 456.63 | 1.53× |
-| 8 | 483.30 | 1.62× |
+每一組都只跑 10,000 個實際 transitions。
+
+| 同時環境數 | 10K throughput |
+|---:|---:|
+| N=1 | 298.20 transitions/s |
+| N=2 | 387.89 transitions/s |
+| N=4 | 456.63 transitions/s |
+| N=8 | 483.30 transitions/s |
 
 [![1、2、4、8 個環境在相同 10K transition budget 下的吞吐與 wall-clock](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/0e345d1d053297fd77865fdc5ef8a9f850fe5b98/assets/day16/vectorized-throughput.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/0e345d1d053297fd77865fdc5ef8a9f850fe5b98/assets/day16/vectorized-throughput.png)
 
-第一眼看起來答案很簡單：N=8 最快，從 298.20 提高到 483.30 transitions/s，約是 **1.62 倍**。
+結果很明顯：從 N=1 增加到 N=4，完整 trainer 的 throughput 提升非常明顯；但從 N=4 再翻倍到 N=8，收益已經開始變小。
 
-但這裡有一個很重要的轉折。
+這代表 batching 確實有用，但它不是無限擴張的免費加速。
 
-目前 DQN 每收集 4 筆 transition 就會做一次更新。N=1、2、4 都能讓一批 action 在下一次網路更新之前完整走完；N=8 則會一次先替 8 個環境選好 action，中間第 4 筆資料完成後網路已經更新，但後面幾個 action 仍然來自更新前的模型。
+原因也很好理解。環境數增加之後，GPU inference 的零碎呼叫變少了，但 ALE 本身仍然主要在 CPU 上執行，DQN optimizer update 也沒有因為環境變多就突然變便宜。原本的瓶頸被削弱後，下一個瓶頸自然就會浮出來。
 
-它不是資料壞掉，也不代表 N=8 不能訓練；只是它已經不再是最乾淨的「只改 systems、其他節奏盡量不變」比較。因此 N=8 很適合告訴我們吞吐上限在哪裡，卻不適合只因為 SPS 最大就直接成為後續正式 backend。
+而且 N=8 還有另一個考量：目前 DQN 每 4 筆 transition 更新一次網路，N=8 一次先替 8 個環境選完 action，會跨過一次網路更新點。這不代表資料錯了，但它和單一環境逐步選 action 的節奏不完全相同。
 
-這也是 RL 工程和一般 inference benchmark 很不一樣的地方：**最快的設定，不一定是最適合拿來做演算法實驗的設定。**
+所以 Day 16 不能只看「483 最大」就宣布 N=8 勝出。
 
 ## 真正省下來的是大量小工作
 
-為什麼多環境會有效？最直接的證據就在 model forward 次數。
+這次加速最直接的來源，是 model forward 次數下降。
 
-同樣收集 10,000 筆 transition：
+同樣收集 10K transitions：
 
 ```text
 N=1 → 10,000 次 action inference
+N=2 →  5,000 次
 N=4 →  2,500 次
 N=8 →  1,250 次
 ```
 
-GPU 並沒有少算那些遊戲畫面，而是把原本大量「叫一次模型、只算一張」的零碎工作合併成較大的 batch。
+GPU 還是做同一個 DQN，但每次處理的 observation 更多，所以不必一直付出啟動一次小 inference 的固定成本。
 
-[![不同 environment count 的 batched inference throughput 與單次 forward 成本](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/0e345d1d053297fd77865fdc5ef8a9f850fe5b98/assets/day16/batched-inference.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/0e345d1d053297fd77865fdc5ef8a9f850fe5b98/assets/day16/batched-inference.png)
+Replay insertion 也有相同現象。獨立量測時，一次寫入越多 transition，每筆資料平均分攤到的固定成本越低。
 
-Replay 寫入也看到相同現象。單獨量一次寫入 1、2、4、8、16 筆 transition 時，吞吐從約 5,000 transitions/s 一路提高到接近 49,000 transitions/s。
+[![batch size 1、2、4、8、16 的 GPU Replay insertion microbenchmark](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/0e345d1d053297fd77865fdc5ef8a9f850fe5b98/assets/day16/replay-insertion.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/0e345d1d053297fd77865fdc5ef8a9f850fe5b98/assets/day16/replay-insertion.png)
 
-[![batch size 1、2、4、8、16 的 Replay insertion microbenchmark](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/0e345d1d053297fd77865fdc5ef8a9f850fe5b98/assets/day16/replay-insertion.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/0e345d1d053297fd77865fdc5ef8a9f850fe5b98/assets/day16/replay-insertion.png)
+這裡也再次驗證 Day 14 的教訓：**microbenchmark 很快，不代表完整 trainer 一定同比例變快。**
 
-不過這張圖不能解讀成「完整 trainer 也快十倍」。Day 14 已經示範過一次：某個局部元件的 microbenchmark 很漂亮，不代表整條 pipeline 會同比例提升。
+真正有意義的數字，還是整條 training pipeline 最後每秒能處理多少 transitions。
 
-Breakout 的 ALE environment 仍然主要在 CPU 上往前跑，optimizer update 也還有自己的成本。這次使用的 `SyncVectorEnv` 是把多個環境整理成同一個批次介面，並沒有把 ALE 本身變成真正的多進程平行模擬。
+## 10K 很快還不夠，所以再跑 100K
 
-所以 Day 16 真正優化的是：**減少大量 batch=1 的模型呼叫和零碎 GPU 資料搬移。**
+10K 很適合做 systems screening，但它太短，不能直接拿來決定後面幾十萬、幾百萬 transitions 要使用哪個 backend。
 
-## 10K 最快，到了 100K 不一定還是同一個答案
+因此最後又重新從隨機初始化開始，讓 N=1、N=2 和 N=4 都跑到 100,000 transitions。
 
-10K 很適合做 systems screening，但還太短，不適合只看這個結果就決定後面幾十萬、幾百萬 transitions 全部用哪個設定。
+| Backend | 100K throughput | 跑完約需時間 |
+|---:|---:|---:|
+| N=1 | 238.67 transitions/s | 419.00 s |
+| N=2 | **380.74 transitions/s** | **262.65 s** |
+| N=4 | 368.06 transitions/s | 271.70 s |
 
-因此接著重新從隨機初始化開始，讓 N=1、N=2 和 N=4 都跑到 100,000 transitions。
+N=2 相對 N=1 約快 **1.60 倍**，而且這次甚至比 N=4 稍快。
 
-| 環境數 | transitions/s | 跑完 100K | 相對 N=1 |
-|---:|---:|---:|---:|
-| 1 | 238.67 | 419.00 s | 1.00× |
-| 2 | **380.74** | **262.65 s** | **1.60×** |
-| 4 | 368.06 | 271.70 s | 1.54× |
+[![100K vectorized training throughput 與 wall-clock](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/0e345d1d053297fd77865fdc5ef8a9f850fe5b98/assets/day16/vectorized-100k-vectorized-throughput.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/0e345d1d053297fd77865fdc5ef8a9f850fe5b98/assets/day16/vectorized-100k-vectorized-throughput.png)
 
-結果出現一個比「N=8 10K 最快」更有價值的現象：**跑長一點後，N=2 反而超過 N=4。**
+這個結果很值得注意，因為它提醒我們：**10K 最快的設定，不一定就是 100K 最適合的設定。**
 
-也就是說，短時間 benchmark 看到的排序不一定會完整延續到比較長的訓練。當 workload 變長，episode reset、CPU stepping、GPU update 和其他固定成本所佔的比例都可能改變。
+短跑裡 N=8 最大、N=4 很接近；拉長之後，N=2 反而成為這台機器上最合理的折衷。
 
-這也是為什麼正式做 training systems selection 時，不能只抓一個最好看的 10K SPS 數字。
+## 速度變快，不代表模型一定學得一樣
 
-## 快之外，還要確認模型真的有在學
+Day 16 最後還做了一個很重要的檢查：把 100K checkpoint 放進同一套 Contract v2 evaluation，用固定的 15 個 seeds、`epsilon=0` 和 raw Atari reward 評估。
 
-速度只是 Day 16 的一半。
+結果是：
 
-100K checkpoint 接著使用同一套 Contract v2、固定的 15 個 evaluation seeds、`epsilon = 0` 和 raw Atari reward 評估。這裡不是要用 15 局決定哪個演算法比較強，而是確認 systems optimization 沒有讓訓練明顯失效。
+| Run | 平均 raw return | TimeLimit |
+|---|---:|---:|
+| Random baseline | 1.73 | 0/15 |
+| N=1 | **9.00** | 0/15 |
+| N=2 | 6.07 | 0/15 |
+| N=4 | 2.33 | 0/15 |
 
-| Run | 平均 raw return | 中位數 | TimeLimit |
-|---|---:|---:|---:|
-| Random baseline | 1.73 | 2 | 0/15 |
-| N=1 | **9.00** | 9 | 0/15 |
-| N=2 | **6.07** | 6 | 0/15 |
-| N=4 | 2.33 | 2 | 0/15 |
+這裡最重要的不是誰分數最高，而是我們不能把「trainer 變快」和「policy 品質完全等價」混成同一件事。
 
-這個結果不能解讀成「N=1 一定比 N=2 好」，因為這裡只有一個 training seed，目的也不是做 model-family ranking。
+N=2 的 100K throughput 最好，而且固定 evaluation 中沒有出現 environment deadlock 或 TimeLimit failure；但它的平均 return 仍低於 N=1。
 
-但它足以提醒我們另一件很重要的事：**training throughput 和 policy quality 是兩個不同指標。**
+所以 Day 16 的結論不是：
 
-N=4 在 10K systems screening 很漂亮，可是 100K 的固定評估只拿到 2.33；N=2 不只在 100K 更快，平均 return 也有 6.07，明顯高於 Random baseline 的 1.73。三個訓練版本的 15 局也都正常結束，沒有出現 TimeLimit。
+> N=2 訓練出來的模型一定比 N=1 好。
 
-因此 Day 16 最後沒有選 10K 最快的 N=8，也沒有選 10K strict 設定中最快的 N=4，而是選擇 **N=2** 作為後續的 vectorized training backend。
+而是：
 
-這不是在宣稱 N=2 是所有硬體、所有 seed、所有演算法下的最佳設定；它只是目前這台 RTX 4060 Laptop GPU、這套 DQN 訓練節奏與 Contract v2 下，速度、訓練語意和 100K guardrail 之間最合理的折衷。
+> **N=2 是目前選出的 systems backend；N=1 則保留成 model-quality reference。**
 
-N=1 仍然保留作為 model-quality reference。後面真正比較 DQN、Double DQN 或 Dueling 時，仍然需要用多個 training seeds 和更長的 transition budget 才能談模型優劣。
+後面如果比較 DQN、Double DQN、Dueling Double DQN，就要讓所有候選使用同一個 backend。這樣才能把變因留給演算法，而不是一邊換模型、一邊又換訓練系統。
 
-## Day 16 真正學到的不是「多開幾個遊戲」
+## Day 16 最後得到的是什麼？
 
-如果只看表面，Day 16 好像只是把一個 Breakout 改成同時跑兩個、四個、八個。
+Day 16 沒有換新的 RL 演算法，也沒有讓 RTX 4060 的使用率突然衝到 100%。
 
-但真正重要的是一個更通用的 GPU 工程觀念：
+真正改變的是餵資料的方式：
 
-> **程式碼裡出現 `cuda`，不代表 GPU 就會自動被有效利用。**
+```text
+以前：
+1 個 observation
+→ 1 次 inference
+→ 1 筆 Replay 寫入
 
-Day 14 已經把資料搬到 GPU，Day 16 則讓我們看到另一半問題：如果每次只做一點點工作，GPU 仍然會被大量小型呼叫拖住。
+現在：
+多個 observations
+→ 1 次 batched inference
+→ 一批 transitions
+→ batched Replay insertion
+```
 
-把多個 environment 的 observations 合成 batch 後，同樣數量的 transitions 可以用更少的 model calls 和更大的 Replay writes 完成。在這台機器上，最後選出的 N=2 在 100K 訓練中把 throughput 從 238.67 提高到 380.74 transitions/s，約 **1.60×**。
+在這台 RTX 4060 Laptop GPU 上，最後選出的 N=2 backend 在 100K 實驗中從 N=1 的 238.67 transitions/s 提升到 380.74 transitions/s，約 **1.60×**。
 
-而且這一天也留下另一個之後會反覆用到的原則：
+這一天最值得記住的其實不是 N=2 這個數字，而是另一件事：
 
-> **系統變快，不等於模型一定學得更好；局部 benchmark 變快，也不等於完整 trainer 會同比例變快。**
+> **程式碼裡出現 `cuda`，不代表 GPU 就會自動把整個系統加速。GPU 真正擅長的是一次處理足夠多的工作，而 batching 就是在重新整理資料流，讓硬體有機會發揮。**
 
-Day 16 到這裡把後續訓練需要的 systems backend 固定下來。下一步開始，我們可以暫時不再動資料收集方式，回到 DQN 本身的演算法問題：`max` 為什麼可能偏向被高估的 Q-value，以及 Double DQN 為什麼要把 action selection 和 value evaluation 拆開。
+現在 training backend 已經有了比較明確的選擇，下一步才開始回到演算法本身：Vanilla DQN 的 `max` 為什麼可能偏向被高估的 Q-value？Double DQN 又是怎麼修改 target 計算來處理這個問題？
