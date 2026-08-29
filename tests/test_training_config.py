@@ -5,8 +5,8 @@ from __future__ import annotations
 import unittest
 from unittest.mock import patch
 
-from train_dqn import _config_from_args, build_parser
-from train_vectorized_dqn import (
+from scripts.training.train_dqn import _config_from_args, build_parser
+from scripts.training.train_vectorized_dqn import (
     _config_from_args as _vectorized_config_from_args,
     build_parser as build_vectorized_parser,
 )
