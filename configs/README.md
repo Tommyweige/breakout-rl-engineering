@@ -1,23 +1,50 @@
-# Day 14 experiment configs
+# Configuration map
 
-`dqn_baseline.json` is the complete, CUDA-first **100K main comparison**
-configuration. The files under `experiments/` inherit it and change exactly one
-field. The files under `screening/` inherit it but override the budget to 10K;
-their labels and stage explicitly identify them as short health screening, not
-config-ranking evidence. The runner resolves each file to a full `DQNConfig`,
-records the resolved values in the manifest and in each run directory, and
-computes the changed-field diff against the baseline.
+`configs/` contains machine-readable task, training, and experiment definitions. Treat canonical config paths as interfaces: do not move them casually just to make the tree look nicer.
 
-The budget levels are explicit: smoke is 1K–10K steps, short screening is
-exactly 10K, the main Day 14 comparison is exactly 100K, and a longer pilot is
-250K–1M. A config whose declared level does not contain `total_steps` is
-rejected. The main batch is evidence for the workflow and a development signal,
-not a multi-seed claim about the best DQN setting.
+## Task / environment contract
 
-Run the controlled batch sequentially from the repository root:
+```text
+configs/eval/breakout_contract_v2.json
+```
+
+From Day 16 onward this is the source of truth for the Breakout task semantics: environment id, frame skip/stack, sticky actions, FIRE reset ownership/confirmation, life-loss handling, TimeLimit semantics, evaluation epsilon, raw reward, and fixed evaluation seeds.
+
+## Canonical training backend
+
+```text
+configs/training/day16-canonical-backend.json
+```
+
+This freezes the selected systems path for Day 17+: N=2 vectorized training, strict action-selection parity, CUDA/GPU Replay, float32, and the validated training-system settings/evidence lineage.
+
+## Algorithm baselines
+
+```text
+configs/dqn_baseline.json
+configs/double_dqn_baseline.json
+```
+
+These are algorithm-facing baseline configs. Formal comparisons must keep the task/backend fixed and change only the intended algorithm or architecture variable.
+
+## Experiment groups
+
+- `screening/` — short health/sanity runs; not model-selection evidence by themselves.
+- `experiments/` — controlled comparison variants.
+- `batch-size/` — batch-size profiling candidates.
+- `performance/` — throughput/profiling configurations.
+- `final/` — frozen handoff/final-stage configs from completed experiments.
+- `eval/` — evaluation protocol and environment contract.
+- `training/` — canonical training-system manifests.
+
+## Day 14 controlled batches
+
+The Day 14 runner resolves each experiment file to a full `DQNConfig`, records the resolved values, and computes the changed-field diff against the baseline.
+
+Run the 100K controlled batch from the repository root:
 
 ```powershell
-conda run --name breakout-rl-engineering python run_experiments.py --require-cuda `
+conda run --name breakout-rl-engineering python -m scripts.training.run_experiments --require-cuda `
   --experiment-id day14-cuda-lr-100k-main `
   --runs-root assets/day14/experiment-runs `
   configs/dqn_baseline.json `
@@ -25,27 +52,16 @@ conda run --name breakout-rl-engineering python run_experiments.py --require-cud
   configs/experiments/lr-high.json
 ```
 
-The same command on one line is:
+The 10K screening batch remains separate:
 
 ```powershell
-conda run --name breakout-rl-engineering python run_experiments.py --require-cuda --experiment-id day14-cuda-lr-100k-main --runs-root assets/day14/experiment-runs configs/dqn_baseline.json configs/experiments/lr-low.json configs/experiments/lr-high.json
+conda run --name breakout-rl-engineering python -m scripts.training.run_experiments --require-cuda --experiment-id day14-cuda-lr-10k-screening --runs-root assets/day14/experiment-runs configs/screening/dqn_baseline_10k.json configs/screening/lr-low-10k.json configs/screening/lr-high-10k.json
 ```
 
-The 10K screening batch is separate:
+The profiling-driven batch-size stage is a systems experiment, not a model-quality comparison:
 
 ```powershell
-conda run --name breakout-rl-engineering python run_experiments.py --require-cuda --experiment-id day14-cuda-lr-10k-screening --runs-root assets/day14/experiment-runs configs/screening/dqn_baseline_10k.json configs/screening/lr-low-10k.json configs/screening/lr-high-10k.json
+conda run --name breakout-rl-engineering python -m scripts.benchmarks.profile_batch_size_experiment --experiment-id day14-batch-size-profiling-final --experiments-root experiments --runs-root assets/day14/batch-size-runs --samples-root assets/day14/batch-size-profiling --sample-interval 1 --gpu-index 0 --require-cuda configs/batch-size/bs32-10k.json configs/batch-size/bs64-10k.json configs/batch-size/bs128-10k.json
 ```
 
-The profiling-driven batch-size stage fixes the selected learning rate at
-`2e-4`, keeps `train_frequency=4`, and changes only `batch_size` among 32, 64,
-and 128. It writes a fixed-interval GPU/process sampler CSV and a summary
-alongside the run artifacts:
-
-```powershell
-conda run --name breakout-rl-engineering python profile_batch_size_experiment.py --experiment-id day14-batch-size-profiling-final --experiments-root experiments --runs-root assets/day14/batch-size-runs --samples-root assets/day14/batch-size-profiling --sample-interval 1 --gpu-index 0 --require-cuda configs/batch-size/bs32-10k.json configs/batch-size/bs64-10k.json configs/batch-size/bs128-10k.json
-```
-
-The CPU thread selection is a separate 10K profile of 1, 2, and 4 threads;
-`summarize_thread_profiles.py` records the selected setting. The current
-frozen config is `final/day14-vanilla-dqn.json`.
+CPU-thread profiling is summarized by `scripts.analysis.summarize_thread_profiles`; the current Day 14 frozen config remains `configs/final/day14-vanilla-dqn.json`.
