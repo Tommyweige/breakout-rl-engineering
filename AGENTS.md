@@ -1,5 +1,43 @@
 # Repository instructions for coding agents
 
+## Repository layout and hygiene
+
+Keep responsibilities separated as the project grows:
+
+```text
+breakout_rl/   reusable library/runtime implementation
+scripts/       executable CLIs grouped by responsibility
+configs/       task, training-backend, and experiment definitions
+docs/          reader-facing Day articles
+assets/        reproducible evidence grouped by Day
+tests/         regression and correctness tests
+```
+
+Rules for new work:
+
+- reusable implementation imported by multiple tools belongs in `breakout_rl/`;
+- executable training CLIs belong in `scripts/training/`;
+- evaluation/baseline CLIs belong in `scripts/evaluation/`;
+- diagnostics, probes, inspectors, summaries, and report generators belong in `scripts/analysis/`;
+- throughput/profiling/system benchmarks belong in `scripts/benchmarks/`;
+- plotting, GIF/gameplay recording, and rendered-evidence generators belong in `scripts/visualization/`;
+- small educational or interactive demonstrations belong in `scripts/demos/`;
+- reader-facing articles belong in `docs/dayXX-*.md`;
+- new evidence belongs under `assets/dayXX/`;
+- canonical/task/experiment config belongs under the appropriate `configs/` category.
+
+Do not add a new root-level Python CLI unless there is a documented architectural reason. `breakout_env.py` is intentionally retained as the environment module during the Phase 1 cleanup; that exception is not a pattern for new scripts.
+
+Run categorized tools from the repository root with module syntax, for example:
+
+```powershell
+python -m scripts.training.train_vectorized_dqn --help
+python -m scripts.evaluation.evaluate_dqn --help
+python -m scripts.analysis.analyze_q_values --help
+```
+
+Do not repair moved-script imports with hard-coded local paths or `sys.path.append(...)`. Use package/module imports. Historical JSON/manifests may preserve the command/path that originally produced them; do not rewrite historical provenance merely to match the current layout.
+
 ## Technical article writing
 
 Files under `docs/day*.md` are reader-facing technical articles, not README-style implementation reports, PR descriptions, lab notes, or acceptance-checklist prose.
