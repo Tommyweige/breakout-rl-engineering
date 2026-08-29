@@ -21,7 +21,7 @@ from breakout_rl.evaluation_contract import (
     load_evaluation_contract,
     validate_breakout_runtime_contract,
 )
-from evaluate_dqn import _validate_contract_for_config
+from scripts.evaluation.evaluate_dqn import _validate_contract_for_config
 
 
 def build_parser() -> argparse.ArgumentParser:
