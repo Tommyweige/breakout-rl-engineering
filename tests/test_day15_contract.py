@@ -18,7 +18,7 @@ from breakout_rl.evaluation_contract import (
     validate_breakout_runtime_contract,
 )
 from breakout_rl.evaluation_artifacts import summary_from_episode_rows
-from evaluate_dqn import (
+from scripts.evaluation.evaluate_dqn import (
     CONTRACT_V2_OUTPUT_DIRS,
     FORMAL_DQN_OUTPUT_DIR,
     _validate_contract_for_config,
