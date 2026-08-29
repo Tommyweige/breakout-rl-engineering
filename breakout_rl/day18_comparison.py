@@ -1699,6 +1699,17 @@ def build_day18_report(
         for entry in training
         if entry.get("stage") == formal_stage
     ]
+    report_provenance = {
+        **historical_run_provenance(training),
+        "source_hashes": day18_source_hashes(source.parent.parent.parent),
+    }
+    manifest_provenance = manifest.get("provenance")
+    if isinstance(manifest_provenance, Mapping) and manifest_provenance.get(
+        "final_evidence_commit"
+    ):
+        report_provenance["final_evidence_commit"] = manifest_provenance[
+            "final_evidence_commit"
+        ]
     report = {
         "schema_version": DAY18_SCHEMA_VERSION,
         "generated_at_utc": utc_timestamp(),
@@ -1708,10 +1719,7 @@ def build_day18_report(
         "manifest_status": manifest.get("status"),
         "protocol": manifest.get("protocol"),
         "source_of_truth": manifest.get("source_of_truth"),
-        "provenance": {
-            **historical_run_provenance(training),
-            "source_hashes": day18_source_hashes(source.parent.parent.parent),
-        },
+        "provenance": report_provenance,
         "training": {
             "entries": training,
             "completed_entry_count": sum(bool(entry.get("eligible")) for entry in training),

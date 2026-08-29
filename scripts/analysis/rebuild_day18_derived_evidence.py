@@ -59,6 +59,10 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="require all completed formal 500K evidence before rebuilding",
     )
+    parser.add_argument(
+        "--final-evidence-commit",
+        help="record the stable commit containing corrected Day 18 evidence",
+    )
     return parser
 
 
@@ -69,6 +73,7 @@ def rebuild_derived_evidence(
     report_path: str | Path,
     output_dir: str | Path,
     require_formal: bool = False,
+    final_evidence_commit: str | None = None,
 ) -> dict[str, Any]:
     source = Path(manifest_path).resolve()
     manifest = read_day18_manifest(source)
@@ -106,7 +111,14 @@ def rebuild_derived_evidence(
             entry["summary"] = compact_training_summary(normalized["summary"])
 
     repository_root = source.parent.parent.parent
-    manifest["provenance"] = {
+    previous_provenance = manifest.get("provenance")
+    previous_final_commit = (
+        previous_provenance.get("final_evidence_commit")
+        if isinstance(previous_provenance, dict)
+        else None
+    )
+    resolved_final_commit = final_evidence_commit or previous_final_commit
+    provenance = {
         "source_hashes": day18_source_hashes(repository_root),
         "historical_run_worktree_provenance": historical_run_provenance(training),
         "derived_artifact_rebuild": {
@@ -116,6 +128,9 @@ def rebuild_derived_evidence(
             "q_probe_artifacts_rewritten": False,
         },
     }
+    if resolved_final_commit:
+        provenance["final_evidence_commit"] = str(resolved_final_commit)
+    manifest["provenance"] = provenance
     manifest["updated_at_utc"] = utc_timestamp()
     write_json(source, manifest)
 
@@ -147,6 +162,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             report_path=args.report,
             output_dir=args.output_dir,
             require_formal=args.require_formal,
+            final_evidence_commit=args.final_evidence_commit,
         )
     except (FileNotFoundError, TypeError, ValueError, OSError, RuntimeError) as error:
         print(f"Unable to rebuild Day 18 derived evidence: {error}", file=sys.stderr)

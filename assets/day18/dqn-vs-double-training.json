@@ -1,13 +1,15 @@
 {
   "schema_version": 1,
-  "generated_at_utc": "2026-08-29T16:19:53.556394Z",
+  "generated_at_utc": "2026-08-29T16:24:10.196485Z",
   "command": [
     "C:\\Users\\tommy\\.codex\\worktrees\\ab66\\breakout-rl-engineering\\scripts\\analysis\\rebuild_day18_derived_evidence.py",
-    "--require-formal"
+    "--require-formal",
+    "--final-evidence-commit",
+    "0bae0fc0e0839d4c9b2e9b430554738e8f89d76a"
   ],
   "question": "在 actual environment transitions 軸上，DQN 與 Double DQN 的 episode return 是否呈現可跨 training seed 重複的趨勢？",
   "source_manifest": "experiments/day18-dqn-vs-double/manifest.json",
-  "source_manifest_sha256": "c6bda76a260398685886f469730d276935264c5a2bdd83fcee36597393d33388",
+  "source_manifest_sha256": "bfd03254971eb73f7523f81b13a571c01667872e644b2bd908a208ddb544412f",
   "source_entries": [
     {
       "run_id": "day18-dqn-vs-double-dqn-seed11-screening",

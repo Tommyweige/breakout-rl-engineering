@@ -2,7 +2,7 @@
   "schema_version": 1,
   "experiment_id": "day18-dqn-vs-double",
   "created_at_utc": "2026-08-29T03:54:18.704148Z",
-  "updated_at_utc": "2026-08-29T16:19:06.504770Z",
+  "updated_at_utc": "2026-08-29T16:23:24.067500Z",
   "status": "completed",
   "sequential": true,
   "source_of_truth": {
@@ -8389,7 +8389,7 @@
       "configs/training/day16-canonical-backend.json": "519d0a9c0fae2bf1206abe6d10f330dbf4fce4433868e46dcb09f6f27736c5c6",
       "configs/experiments/day18-dqn-vs-double.json": "e8a422bdc0fc37f5ab7892175665de633fd0a6d1bcac138cadc61e99fe47f08c",
       "breakout_rl/training/vectorized.py": "dacd8bc55e89a4aebd8dd00c2c2ade59e585901a804a7b62b404c6f0d1ee0db3",
-      "breakout_rl/day18_comparison.py": "91ea7a2fde8f81019c42a0fd537ab77040ebb7387c4e525637c98085627698d0",
+      "breakout_rl/day18_comparison.py": "e5f3359b4d707a94246c8488cc94fba7d85b048eeadc305bfaca494ec610e20b",
       "breakout_rl/evaluation.py": "f3fb00c47188d562a2530a5f97dd23eed4551c7716fd8354ad5e22b5ef010fab",
       "scripts/training/train_vectorized_dqn.py": "b6a2e71eafe4acefda4b81640eaf7d9f55b1fd1a8fccf4948f3fb21bc6720520",
       "scripts/training/run_day18_comparison.py": "053107257dd8a3e5e76983b5ca1fcd25ffee27a7d59333a3fd4a3998cbe2a532",
@@ -8397,7 +8397,7 @@
       "scripts/analysis/export_day18_evidence.py": "b4618fcbda995970282b5cee0276cf2dc2012f0558085e15a0d3c41b5b49b6aa",
       "scripts/analysis/generate_day18_comparison_report.py": "636b2f2917c52b0dc6ab8e965f79ea2651ae1acbe4cb0206d7e6cfade0811fab",
       "scripts/visualization/visualize_day18_comparison.py": "d00c9647ec996ed5410b13625cb322807cc3eeb8b699b1dfed1b1cff682242c7",
-      "scripts/analysis/rebuild_day18_derived_evidence.py": "92e138e393205ad414d8fc6d013dd2726a00ba104cdba60e07ad5f56302dbcc9"
+      "scripts/analysis/rebuild_day18_derived_evidence.py": "687aea5bcba11a6e3c548e3a3bdb0fc526e9049b03a3d5e2ec7b4ee698670f44"
     },
     "historical_run_worktree_provenance": {
       "run_base_git_commit": "1e586a43d88f1aeae936cae4135b62cd9439e10f",
@@ -8413,6 +8413,7 @@
       "training_performed": false,
       "evaluation_artifacts_rewritten": false,
       "q_probe_artifacts_rewritten": false
-    }
+    },
+    "final_evidence_commit": "0bae0fc0e0839d4c9b2e9b430554738e8f89d76a"
   }
 }
