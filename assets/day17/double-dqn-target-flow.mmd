@@ -1,21 +1,29 @@
-flowchart LR
-    S["next_state"]
-    R["reward"]
-    T["terminated"] --> M["bootstrap mask"]
+flowchart TB
+    S["同一個 next_state  s'"]
 
-    S --> VM["target network max"]
-    VM --> VV["Vanilla next value"]
-    VV --> VY["Vanilla Bellman target"]
+    S --> V0
+    S --> D0
 
-    S --> O["online network"]
-    O --> A["argmax action a*"]
-    S --> N["target network"]
-    A --> G["gather Q_target(a*)"]
-    N --> G
-    G --> DV["Double next value"]
-    DV --> DY["Double Bellman target"]
+    subgraph V["Vanilla DQN：同一個網路同時『選』和『評分』"]
+        direction TB
+        V0["Target network 算出 4 個 Q-values"]
+        V1["直接取最大值 max"]
+        V2["next value = max Q_target(s', a)"]
+        V0 --> V1 --> V2
+    end
 
-    R --> VY
-    R --> DY
-    M --> VY
-    M --> DY
+    subgraph D["Double DQN：把『選 action』和『評分』拆開"]
+        direction TB
+        D0["Online network 算出 4 個 Q-values"]
+        D1["只選 action：a* = argmax Q_online(s', a)"]
+        D2["Target network 算出 4 個 Q-values"]
+        D3["只評分剛才選到的 action：Q_target(s', a*)"]
+        D0 --> D1 --> D3
+        D2 --> D3
+    end
+
+    S --> D2
+
+    V2 --> C["兩者後面完全一樣"]
+    D3 --> C
+    C --> Y["target = reward + gamma × (1 - terminated) × next value"]
