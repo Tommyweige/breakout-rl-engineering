@@ -9,7 +9,7 @@ import unittest
 from pathlib import Path
 
 from breakout_rl.experiments import compare_manifest, compare_run_dirs, load_run_report
-from visualize_experiment_comparison import render_comparison
+from scripts.visualization.visualize_experiment_comparison import render_comparison
 
 
 class CompareRunsTests(unittest.TestCase):
@@ -171,8 +171,8 @@ class CompareRunsTests(unittest.TestCase):
     def test_manifest_compare_reports_config_diff_and_cuda_condition(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = Path(temporary_directory)
-            baseline = self._write_run(root / "runs", "baseline", learning_rate=0.1)
-            variant = self._write_run(root / "runs", "lr-low", learning_rate=0.05)
+            self._write_run(root / "runs", "baseline", learning_rate=0.1)
+            self._write_run(root / "runs", "lr-low", learning_rate=0.05)
             manifest_path = root / "experiments" / "demo" / "manifest.json"
             manifest_path.parent.mkdir(parents=True)
             manifest_path.write_text(
@@ -334,7 +334,7 @@ class CompareRunsTests(unittest.TestCase):
     def test_interrupted_manifest_keeps_not_started_variants_visible(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = Path(temporary_directory)
-            baseline = self._write_run(root / "runs", "baseline", learning_rate=0.1)
+            self._write_run(root / "runs", "baseline", learning_rate=0.1)
             manifest_path = root / "experiments" / "demo" / "manifest.json"
             manifest_path.parent.mkdir(parents=True)
             manifest_path.write_text(
