@@ -1,0 +1,1303 @@
+{
+  "schema_version": 2,
+  "created_at_utc": "2026-08-29T05:58:08.295505Z",
+  "evaluation_id": "day18-dqn-vs-double-dqn-seed22-step500000",
+  "policy_type": "dqn",
+  "model_id": "stage-500k@step-00500000",
+  "environment_id": "ALE/Breakout-v5",
+  "environment": {
+    "id": "ALE/Breakout-v5",
+    "observation_shape": [
+      4,
+      84,
+      84
+    ],
+    "action_count": 4,
+    "action_names": [
+      "NOOP",
+      "FIRE",
+      "RIGHT",
+      "LEFT"
+    ]
+  },
+  "observation_shape": [
+    4,
+    84,
+    84
+  ],
+  "action_count": 4,
+  "action_names": [
+    "NOOP",
+    "FIRE",
+    "RIGHT",
+    "LEFT"
+  ],
+  "evaluation_seeds": [
+    101,
+    202,
+    303
+  ],
+  "episodes_per_seed": 5,
+  "total_episodes": 15,
+  "evaluation_epsilon": 0.0,
+  "requested_device": "cuda",
+  "resolved_device": "cuda:0",
+  "runtime": {
+    "python_version": "3.12.13",
+    "pytorch_version": "2.13.0+cu130",
+    "torch_cuda_version": "13.0",
+    "requested_device": "cuda",
+    "resolved_device": "cuda:0",
+    "cuda_available": true,
+    "evaluation_steps": 8407,
+    "wall_clock_seconds": 13.240495699923486,
+    "steps_per_second": 634.9460164130096,
+    "cuda_device_index": 0,
+    "gpu_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "cuda_device_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "gpu_model": "NVIDIA GeForce RTX 4060 Laptop GPU"
+  },
+  "training": {
+    "source_day14_run_id": "stage-500k",
+    "algorithm": "dqn",
+    "architecture": "standard",
+    "num_envs": 2,
+    "training_seed": 22,
+    "training_budget": 500000,
+    "learning_rate": 0.0001,
+    "batch_size": 32,
+    "train_frequency": 4,
+    "replay_backend": "gpu",
+    "training_device": "cuda",
+    "training_precision": "float32",
+    "training_config": {
+      "total_steps": 500000,
+      "seed": 22,
+      "algorithm": "dqn",
+      "gamma": 0.99,
+      "learning_rate": 0.0001,
+      "batch_size": 32,
+      "replay_capacity": 10000,
+      "learning_starts": 1000,
+      "train_frequency": 4,
+      "target_update_interval": 500,
+      "epsilon_start": 0.9,
+      "epsilon_end": 0.05,
+      "epsilon_decay_steps": 10000,
+      "gradient_clip_norm": 10.0,
+      "reward_clip": true,
+      "device": "cuda",
+      "precision": "float32",
+      "checkpoint_interval": 500000,
+      "diagnostics_interval": 100,
+      "metrics_flush_interval": 500,
+      "cpu_threads": 2,
+      "replay_transfer": "direct",
+      "replay_backend": "gpu",
+      "profile_stages": true,
+      "num_envs": 2,
+      "strict_action_selection_parity": true
+    },
+    "config_reference": null,
+    "source_day14_manifest": null,
+    "environment_contract": {
+      "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+      "contract_path": "configs/eval/breakout_contract_v2.json",
+      "contract_sha256": "e9947fc3a1235100aa92f75a79cf33668b36b4f325f22a0bc8b9546a356b85ba",
+      "semantics": {
+        "schema_version": 2,
+        "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+        "environment_id": "ALE/Breakout-v5",
+        "frame_skip": 4,
+        "frame_stack": 4,
+        "sticky_action_probability": 0.25,
+        "fire_reset": true,
+        "fire_reset_confirmation": {
+          "max_fire_attempts": 8,
+          "confirmation_steps": 2,
+          "min_observation_change_fraction": 0.0001,
+          "confirmation_operator": "any",
+          "confirmation_signals": [
+            "raw_reward",
+            "observation_activity_streak"
+          ]
+        },
+        "terminal_on_life_loss": false,
+        "time_limit_semantics": {
+          "source": "ale.game_truncated",
+          "max_num_frames_per_episode": 108000,
+          "agent_step_limit": 27000,
+          "truncated_is_finished": true,
+          "external_time_limit_wrapper": false
+        },
+        "concrete_episode_seeds": [
+          101,
+          102,
+          103,
+          104,
+          105,
+          202,
+          203,
+          204,
+          205,
+          206,
+          303,
+          304,
+          305,
+          306,
+          307
+        ],
+        "evaluation_epsilon": 0.0,
+        "raw_reward_rule": "sum environment rewards without clipping"
+      }
+    },
+    "source_day18_experiment_id": "day18-dqn-vs-double",
+    "source_day18_run_id": "day18-dqn-vs-double-dqn-seed22-main",
+    "training_stage": "main",
+    "trainer_runtime": {
+      "python_version": "3.12.13",
+      "pytorch_version": "2.13.0+cu130",
+      "torch_cuda_version": "13.0",
+      "gymnasium_version": "1.3.0",
+      "ale_version": "0.12.0",
+      "numpy_version": "2.5.1",
+      "cpu_logical_count": 16,
+      "cpu_thread_count": 2,
+      "cpu_interop_thread_count": 12,
+      "device": "cuda:0",
+      "requested_device": "cuda",
+      "resolved_device": "cuda:0",
+      "precision": "float32",
+      "cuda_device_index": 0,
+      "cuda_available": true,
+      "cuda_device_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+      "gpu_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+      "gpu_model": "NVIDIA GeForce RTX 4060 Laptop GPU",
+      "cuda_allocated_bytes": 626837504,
+      "cuda_peak_allocated_bytes": 638179328,
+      "cuda_reserved_bytes": 679477248,
+      "cuda_peak_reserved_bytes": 679477248,
+      "gpu_utilization_percent": 0.0,
+      "gpu_memory_total_bytes": 8585740288,
+      "gpu_utilization_source": "nvidia-smi",
+      "wall_clock_seconds": 694.845835900167,
+      "steps_per_second": 359.79203887165426,
+      "seed": 22,
+      "git_commit_sha": "1e586a43d88f1aeae936cae4135b62cd9439e10f",
+      "environment_id": "ALE/Breakout-v5",
+      "algorithm": "dqn",
+      "architecture": "standard",
+      "training_steps": 500000,
+      "vectorized": true,
+      "num_envs": 2,
+      "observation_shape": [
+        4,
+        84,
+        84
+      ],
+      "action_count": 4,
+      "environment_transitions_per_second": 359.79203887165426,
+      "stage_start_step": 250000,
+      "stage_training_steps": 250000,
+      "physical_environment_steps": 500000,
+      "stage_physical_environment_steps": 250000,
+      "physical_environment_steps_per_second": 359.79203887165426,
+      "vector_iterations": 250000,
+      "vector_iterations_per_second": 359.79203887165426,
+      "action_inference_batches": 250000,
+      "action_inference_transitions": 500000,
+      "action_inference_transitions_per_second": 719.5840777433085,
+      "action_inference_batches_per_second": 359.79203887165426,
+      "replay_insertion_calls": 250000,
+      "replay_insertion_transitions": 500000,
+      "replay_insertion_transitions_per_second": 719.5840777433085,
+      "replay_insertion_calls_per_second": 359.79203887165426,
+      "optimizer_updates_per_second": 178.81808248736766,
+      "training_samples_per_second": 5722.178639595765,
+      "diagnostics_interval": 100,
+      "metrics_flush_interval": 500,
+      "metrics_row_cadence": 1,
+      "global_step_definition": "accepted environment transitions",
+      "schedule_semantics": "optimizer, target, and checkpoint events execute at exact transition boundaries; replay insertion is chunked when crossed",
+      "action_selection_batch_semantics": "one batched forward selects all N actions before env.step; if the vector step crosses an optimizer boundary, later transitions use the pre-update online-network snapshot",
+      "strict_action_selection_parity_rule": "strict parity requires num_envs <= train_frequency and train_frequency % num_envs == 0",
+      "strict_action_selection_parity_requested": true,
+      "strict_action_selection_parity_satisfied": true,
+      "behavior_policy_lag_warning": null,
+      "configured_cpu_threads": 2,
+      "replay_transfer": "direct",
+      "replay_backend": "gpu",
+      "replay_storage_device": "cuda:0",
+      "replay_bytes": 564620000,
+      "replay_rewarm_steps_remaining": 0,
+      "resume_provenance": {
+        "source_checkpoint": "C:\\Users\\tommy\\.codex\\worktrees\\ab66\\breakout-rl-engineering\\runs\\day18-dqn-vs-double\\dqn-seed22\\stage-250k\\checkpoints\\step-00250000.pt",
+        "source_checkpoint_sha256": "20d26fc2b2493b9b85397e562664740a1c5b507aeb5ba4455e6ceb33c677d5a3",
+        "source_step": 250000,
+        "replay_saved": false,
+        "replay_resume_semantics": "fresh_replay_with_learning_starts_rewarm",
+        "source_resume_provenance": {
+          "source_checkpoint": "C:\\Users\\tommy\\.codex\\worktrees\\ab66\\breakout-rl-engineering\\runs\\day18-dqn-vs-double\\dqn-seed22\\stage-100k-retry-02\\checkpoints\\step-00100000.pt",
+          "source_checkpoint_sha256": "04c8b8d249c84076ccf9f034735e2c8f4cdbcdf37758581ddad3625cf7394658",
+          "source_step": 100000,
+          "replay_saved": false,
+          "replay_resume_semantics": "fresh_replay_with_learning_starts_rewarm",
+          "source_resume_provenance": null
+        }
+      },
+      "stage_timings": {
+        "batched_action_inference": {
+          "calls": 125000,
+          "wall_seconds": 146.45303280698135,
+          "cpu_seconds": 259.359375,
+          "gpu_seconds": 143.35785363066196
+        },
+        "env_step": {
+          "calls": 125000,
+          "wall_seconds": 169.43844411103055,
+          "cpu_seconds": 281.984375
+        },
+        "batched_replay_insert": {
+          "calls": 125000,
+          "wall_seconds": 44.69497840269469,
+          "cpu_seconds": 154.203125,
+          "gpu_seconds": 40.140773025885224
+        },
+        "metrics_write": {
+          "calls": 250000,
+          "wall_seconds": 6.738669808488339,
+          "cpu_seconds": 7.609375
+        },
+        "gpu_replay_gather_cast": {
+          "calls": 62250,
+          "wall_seconds": 27.89732201350853,
+          "cpu_seconds": 39.734375,
+          "gpu_seconds": 26.90182783846557
+        },
+        "forward": {
+          "calls": 62250,
+          "wall_seconds": 36.20086459792219,
+          "cpu_seconds": 69.46875,
+          "gpu_seconds": 35.19993519625068
+        },
+        "target_forward": {
+          "calls": 62250,
+          "wall_seconds": 37.81154830707237,
+          "cpu_seconds": 69.75,
+          "gpu_seconds": 36.750544743791224
+        },
+        "loss": {
+          "calls": 62250,
+          "wall_seconds": 7.370061408961192,
+          "cpu_seconds": 15.421875,
+          "gpu_seconds": 6.390725353825371
+        },
+        "backward": {
+          "calls": 62250,
+          "wall_seconds": 72.59686549962498,
+          "cpu_seconds": 169.140625,
+          "gpu_seconds": 71.74533990013599
+        },
+        "optimizer_step": {
+          "calls": 62250,
+          "wall_seconds": 81.34557716408744,
+          "cpu_seconds": 97.515625,
+          "gpu_seconds": 80.69434228259325
+        },
+        "dqn_update": {
+          "calls": 62250,
+          "wall_seconds": 257.5848699538037,
+          "cpu_seconds": 455.34375,
+          "gpu_seconds": 256.7095949087143
+        },
+        "gradient_diagnostics": {
+          "calls": 623,
+          "wall_seconds": 1.1553603024221957,
+          "cpu_seconds": 1.40625,
+          "gpu_seconds": 1.1427852810621262
+        },
+        "diagnostics": {
+          "calls": 623,
+          "wall_seconds": 1.0045298980548978,
+          "cpu_seconds": 1.71875,
+          "gpu_seconds": 0.994589632153511
+        },
+        "checkpoint": {
+          "calls": 1,
+          "wall_seconds": 0.9659862001426518,
+          "cpu_seconds": 1.078125
+        }
+      },
+      "day18_comparison": {
+        "experiment_id": "day18-dqn-vs-double",
+        "run_id": "day18-dqn-vs-double-dqn-seed22-main",
+        "pair_id": "training-seed-22",
+        "algorithm": "dqn",
+        "training_seed": 22,
+        "stage": "main",
+        "target_transitions": 500000,
+        "resume_from": {
+          "path": "../../runs/day18-dqn-vs-double/dqn-seed22/stage-250k/checkpoints/step-00250000.pt",
+          "sha256": "20d26fc2b2493b9b85397e562664740a1c5b507aeb5ba4455e6ceb33c677d5a3",
+          "step": 250000
+        }
+      },
+      "environment_contract": {
+        "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+        "contract_path": "configs/eval/breakout_contract_v2.json",
+        "contract_sha256": "e9947fc3a1235100aa92f75a79cf33668b36b4f325f22a0bc8b9546a356b85ba",
+        "semantics": {
+          "schema_version": 2,
+          "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+          "environment_id": "ALE/Breakout-v5",
+          "frame_skip": 4,
+          "frame_stack": 4,
+          "sticky_action_probability": 0.25,
+          "fire_reset": true,
+          "fire_reset_confirmation": {
+            "max_fire_attempts": 8,
+            "confirmation_steps": 2,
+            "min_observation_change_fraction": 0.0001,
+            "confirmation_operator": "any",
+            "confirmation_signals": [
+              "raw_reward",
+              "observation_activity_streak"
+            ]
+          },
+          "terminal_on_life_loss": false,
+          "time_limit_semantics": {
+            "source": "ale.game_truncated",
+            "max_num_frames_per_episode": 108000,
+            "agent_step_limit": 27000,
+            "truncated_is_finished": true,
+            "external_time_limit_wrapper": false
+          },
+          "concrete_episode_seeds": [
+            101,
+            102,
+            103,
+            104,
+            105,
+            202,
+            203,
+            204,
+            205,
+            206,
+            303,
+            304,
+            305,
+            306,
+            307
+          ],
+          "evaluation_epsilon": 0.0,
+          "raw_reward_rule": "sum environment rewards without clipping"
+        }
+      }
+    },
+    "resume_provenance": {
+      "source_checkpoint": "C:\\Users\\tommy\\.codex\\worktrees\\ab66\\breakout-rl-engineering\\runs\\day18-dqn-vs-double\\dqn-seed22\\stage-250k\\checkpoints\\step-00250000.pt",
+      "source_checkpoint_sha256": "20d26fc2b2493b9b85397e562664740a1c5b507aeb5ba4455e6ceb33c677d5a3",
+      "source_step": 250000,
+      "replay_saved": false,
+      "replay_resume_semantics": "fresh_replay_with_learning_starts_rewarm",
+      "source_resume_provenance": {
+        "source_checkpoint": "C:\\Users\\tommy\\.codex\\worktrees\\ab66\\breakout-rl-engineering\\runs\\day18-dqn-vs-double\\dqn-seed22\\stage-100k-retry-02\\checkpoints\\step-00100000.pt",
+        "source_checkpoint_sha256": "04c8b8d249c84076ccf9f034735e2c8f4cdbcdf37758581ddad3625cf7394658",
+        "source_step": 100000,
+        "replay_saved": false,
+        "replay_resume_semantics": "fresh_replay_with_learning_starts_rewarm",
+        "source_resume_provenance": null
+      }
+    },
+    "manifest": "experiments/day18-dqn-vs-double/manifest.json"
+  },
+  "checkpoint": {
+    "path": "C:/Users/tommy/.codex/worktrees/ab66/breakout-rl-engineering/runs/day18-dqn-vs-double/dqn-seed22/stage-500k/checkpoints/step-00500000.pt",
+    "sha256": "6aa0dbd246eda79ce4c9d4d3fbe4eba6f3ac71e6b7448e9dee4ff008c21f33ff",
+    "step": 500000,
+    "source_day14_run_id": "stage-500k",
+    "source_day14_manifest": null,
+    "format_version": 1,
+    "algorithm": "dqn",
+    "architecture": "standard",
+    "num_envs": 2,
+    "replay_backend": "gpu",
+    "training_steps": 500000,
+    "model_config": {
+      "num_actions": 4,
+      "input_shape": [
+        4,
+        84,
+        84
+      ],
+      "hidden_dim": 512
+    },
+    "requested_device": "cuda",
+    "resolved_device": "cuda:0",
+    "environment_contract": {
+      "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+      "contract_path": "configs/eval/breakout_contract_v2.json",
+      "contract_sha256": "e9947fc3a1235100aa92f75a79cf33668b36b4f325f22a0bc8b9546a356b85ba",
+      "semantics": {
+        "schema_version": 2,
+        "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+        "environment_id": "ALE/Breakout-v5",
+        "frame_skip": 4,
+        "frame_stack": 4,
+        "sticky_action_probability": 0.25,
+        "fire_reset": true,
+        "fire_reset_confirmation": {
+          "max_fire_attempts": 8,
+          "confirmation_steps": 2,
+          "min_observation_change_fraction": 0.0001,
+          "confirmation_operator": "any",
+          "confirmation_signals": [
+            "raw_reward",
+            "observation_activity_streak"
+          ]
+        },
+        "terminal_on_life_loss": false,
+        "time_limit_semantics": {
+          "source": "ale.game_truncated",
+          "max_num_frames_per_episode": 108000,
+          "agent_step_limit": 27000,
+          "truncated_is_finished": true,
+          "external_time_limit_wrapper": false
+        },
+        "concrete_episode_seeds": [
+          101,
+          102,
+          103,
+          104,
+          105,
+          202,
+          203,
+          204,
+          205,
+          206,
+          303,
+          304,
+          305,
+          306,
+          307
+        ],
+        "evaluation_epsilon": 0.0,
+        "raw_reward_rule": "sum environment rewards without clipping"
+      }
+    },
+    "source_day18_experiment_id": "day18-dqn-vs-double",
+    "source_day18_run_id": "day18-dqn-vs-double-dqn-seed22-main",
+    "training_stage": "main"
+  },
+  "per_episode": [
+    {
+      "evaluation_seed": 101,
+      "seed": 101,
+      "episode_seed": 101,
+      "seed_index": 0,
+      "episode_index": 1,
+      "episode_return": 9.0,
+      "return": 9.0,
+      "episode_length": 448,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "complete": true,
+      "stop_reason": "terminated",
+      "action_distribution": {
+        "NOOP": 103,
+        "FIRE": 241,
+        "RIGHT": 52,
+        "LEFT": 52
+      },
+      "action_distribution_semantics": "executed/wrapper-resolved action",
+      "requested_action_distribution": {
+        "NOOP": 103,
+        "FIRE": 238,
+        "RIGHT": 53,
+        "LEFT": 54
+      },
+      "executed_action_distribution": {
+        "NOOP": 103,
+        "FIRE": 241,
+        "RIGHT": 52,
+        "LEFT": 52
+      },
+      "auto_fire_count": 11,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 8,
+        "initial_serve": 3
+      }
+    },
+    {
+      "evaluation_seed": 101,
+      "seed": 102,
+      "episode_seed": 102,
+      "seed_index": 0,
+      "episode_index": 2,
+      "episode_return": 7.0,
+      "return": 7.0,
+      "episode_length": 370,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "complete": true,
+      "stop_reason": "terminated",
+      "action_distribution": {
+        "NOOP": 58,
+        "FIRE": 208,
+        "RIGHT": 52,
+        "LEFT": 52
+      },
+      "action_distribution_semantics": "executed/wrapper-resolved action",
+      "requested_action_distribution": {
+        "NOOP": 58,
+        "FIRE": 205,
+        "RIGHT": 54,
+        "LEFT": 53
+      },
+      "executed_action_distribution": {
+        "NOOP": 58,
+        "FIRE": 208,
+        "RIGHT": 52,
+        "LEFT": 52
+      },
+      "auto_fire_count": 10,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 8,
+        "initial_serve": 2
+      }
+    },
+    {
+      "evaluation_seed": 101,
+      "seed": 103,
+      "episode_seed": 103,
+      "seed_index": 0,
+      "episode_index": 3,
+      "episode_return": 6.0,
+      "return": 6.0,
+      "episode_length": 359,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "complete": true,
+      "stop_reason": "terminated",
+      "action_distribution": {
+        "NOOP": 85,
+        "FIRE": 188,
+        "RIGHT": 43,
+        "LEFT": 43
+      },
+      "action_distribution_semantics": "executed/wrapper-resolved action",
+      "requested_action_distribution": {
+        "NOOP": 88,
+        "FIRE": 184,
+        "RIGHT": 44,
+        "LEFT": 43
+      },
+      "executed_action_distribution": {
+        "NOOP": 85,
+        "FIRE": 188,
+        "RIGHT": 43,
+        "LEFT": 43
+      },
+      "auto_fire_count": 10,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 8,
+        "initial_serve": 2
+      }
+    },
+    {
+      "evaluation_seed": 101,
+      "seed": 104,
+      "episode_seed": 104,
+      "seed_index": 0,
+      "episode_index": 4,
+      "episode_return": 19.0,
+      "return": 19.0,
+      "episode_length": 698,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "complete": true,
+      "stop_reason": "terminated",
+      "action_distribution": {
+        "NOOP": 236,
+        "FIRE": 307,
+        "RIGHT": 77,
+        "LEFT": 78
+      },
+      "action_distribution_semantics": "executed/wrapper-resolved action",
+      "requested_action_distribution": {
+        "NOOP": 239,
+        "FIRE": 302,
+        "RIGHT": 79,
+        "LEFT": 78
+      },
+      "executed_action_distribution": {
+        "NOOP": 236,
+        "FIRE": 307,
+        "RIGHT": 77,
+        "LEFT": 78
+      },
+      "auto_fire_count": 10,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 8,
+        "initial_serve": 2
+      }
+    },
+    {
+      "evaluation_seed": 101,
+      "seed": 105,
+      "episode_seed": 105,
+      "seed_index": 0,
+      "episode_index": 5,
+      "episode_return": 15.0,
+      "return": 15.0,
+      "episode_length": 651,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "complete": true,
+      "stop_reason": "terminated",
+      "action_distribution": {
+        "NOOP": 258,
+        "FIRE": 265,
+        "RIGHT": 62,
+        "LEFT": 66
+      },
+      "action_distribution_semantics": "executed/wrapper-resolved action",
+      "requested_action_distribution": {
+        "NOOP": 260,
+        "FIRE": 262,
+        "RIGHT": 62,
+        "LEFT": 67
+      },
+      "executed_action_distribution": {
+        "NOOP": 258,
+        "FIRE": 265,
+        "RIGHT": 62,
+        "LEFT": 66
+      },
+      "auto_fire_count": 10,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 8,
+        "initial_serve": 2
+      }
+    },
+    {
+      "evaluation_seed": 202,
+      "seed": 202,
+      "episode_seed": 202,
+      "seed_index": 1,
+      "episode_index": 1,
+      "episode_return": 10.0,
+      "return": 10.0,
+      "episode_length": 533,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "complete": true,
+      "stop_reason": "terminated",
+      "action_distribution": {
+        "NOOP": 146,
+        "FIRE": 264,
+        "RIGHT": 60,
+        "LEFT": 63
+      },
+      "action_distribution_semantics": "executed/wrapper-resolved action",
+      "requested_action_distribution": {
+        "NOOP": 148,
+        "FIRE": 260,
+        "RIGHT": 62,
+        "LEFT": 63
+      },
+      "executed_action_distribution": {
+        "NOOP": 146,
+        "FIRE": 264,
+        "RIGHT": 60,
+        "LEFT": 63
+      },
+      "auto_fire_count": 10,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 8,
+        "initial_serve": 2
+      }
+    },
+    {
+      "evaluation_seed": 202,
+      "seed": 203,
+      "episode_seed": 203,
+      "seed_index": 1,
+      "episode_index": 2,
+      "episode_return": 8.0,
+      "return": 8.0,
+      "episode_length": 416,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "complete": true,
+      "stop_reason": "terminated",
+      "action_distribution": {
+        "NOOP": 82,
+        "FIRE": 243,
+        "RIGHT": 45,
+        "LEFT": 46
+      },
+      "action_distribution_semantics": "executed/wrapper-resolved action",
+      "requested_action_distribution": {
+        "NOOP": 83,
+        "FIRE": 241,
+        "RIGHT": 45,
+        "LEFT": 47
+      },
+      "executed_action_distribution": {
+        "NOOP": 82,
+        "FIRE": 243,
+        "RIGHT": 45,
+        "LEFT": 46
+      },
+      "auto_fire_count": 10,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 8,
+        "initial_serve": 2
+      }
+    },
+    {
+      "evaluation_seed": 202,
+      "seed": 204,
+      "episode_seed": 204,
+      "seed_index": 1,
+      "episode_index": 3,
+      "episode_return": 10.0,
+      "return": 10.0,
+      "episode_length": 438,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "complete": true,
+      "stop_reason": "terminated",
+      "action_distribution": {
+        "NOOP": 89,
+        "FIRE": 234,
+        "RIGHT": 54,
+        "LEFT": 61
+      },
+      "action_distribution_semantics": "executed/wrapper-resolved action",
+      "requested_action_distribution": {
+        "NOOP": 90,
+        "FIRE": 230,
+        "RIGHT": 54,
+        "LEFT": 64
+      },
+      "executed_action_distribution": {
+        "NOOP": 89,
+        "FIRE": 234,
+        "RIGHT": 54,
+        "LEFT": 61
+      },
+      "auto_fire_count": 10,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 8,
+        "initial_serve": 2
+      }
+    },
+    {
+      "evaluation_seed": 202,
+      "seed": 205,
+      "episode_seed": 205,
+      "seed_index": 1,
+      "episode_index": 4,
+      "episode_return": 14.0,
+      "return": 14.0,
+      "episode_length": 647,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "complete": true,
+      "stop_reason": "terminated",
+      "action_distribution": {
+        "NOOP": 221,
+        "FIRE": 262,
+        "RIGHT": 81,
+        "LEFT": 83
+      },
+      "action_distribution_semantics": "executed/wrapper-resolved action",
+      "requested_action_distribution": {
+        "NOOP": 224,
+        "FIRE": 258,
+        "RIGHT": 82,
+        "LEFT": 83
+      },
+      "executed_action_distribution": {
+        "NOOP": 221,
+        "FIRE": 262,
+        "RIGHT": 81,
+        "LEFT": 83
+      },
+      "auto_fire_count": 10,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 8,
+        "initial_serve": 2
+      }
+    },
+    {
+      "evaluation_seed": 202,
+      "seed": 206,
+      "episode_seed": 206,
+      "seed_index": 1,
+      "episode_index": 5,
+      "episode_return": 16.0,
+      "return": 16.0,
+      "episode_length": 649,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "complete": true,
+      "stop_reason": "terminated",
+      "action_distribution": {
+        "NOOP": 314,
+        "FIRE": 209,
+        "RIGHT": 61,
+        "LEFT": 65
+      },
+      "action_distribution_semantics": "executed/wrapper-resolved action",
+      "requested_action_distribution": {
+        "NOOP": 317,
+        "FIRE": 204,
+        "RIGHT": 61,
+        "LEFT": 67
+      },
+      "executed_action_distribution": {
+        "NOOP": 314,
+        "FIRE": 209,
+        "RIGHT": 61,
+        "LEFT": 65
+      },
+      "auto_fire_count": 10,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 8,
+        "initial_serve": 2
+      }
+    },
+    {
+      "evaluation_seed": 303,
+      "seed": 303,
+      "episode_seed": 303,
+      "seed_index": 2,
+      "episode_index": 1,
+      "episode_return": 12.0,
+      "return": 12.0,
+      "episode_length": 538,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "complete": true,
+      "stop_reason": "terminated",
+      "action_distribution": {
+        "NOOP": 241,
+        "FIRE": 176,
+        "RIGHT": 59,
+        "LEFT": 62
+      },
+      "action_distribution_semantics": "executed/wrapper-resolved action",
+      "requested_action_distribution": {
+        "NOOP": 244,
+        "FIRE": 170,
+        "RIGHT": 61,
+        "LEFT": 63
+      },
+      "executed_action_distribution": {
+        "NOOP": 241,
+        "FIRE": 176,
+        "RIGHT": 59,
+        "LEFT": 62
+      },
+      "auto_fire_count": 10,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 8,
+        "initial_serve": 2
+      }
+    },
+    {
+      "evaluation_seed": 303,
+      "seed": 304,
+      "episode_seed": 304,
+      "seed_index": 2,
+      "episode_index": 2,
+      "episode_return": 21.0,
+      "return": 21.0,
+      "episode_length": 742,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "complete": true,
+      "stop_reason": "terminated",
+      "action_distribution": {
+        "NOOP": 266,
+        "FIRE": 289,
+        "RIGHT": 91,
+        "LEFT": 96
+      },
+      "action_distribution_semantics": "executed/wrapper-resolved action",
+      "requested_action_distribution": {
+        "NOOP": 267,
+        "FIRE": 286,
+        "RIGHT": 92,
+        "LEFT": 97
+      },
+      "executed_action_distribution": {
+        "NOOP": 266,
+        "FIRE": 289,
+        "RIGHT": 91,
+        "LEFT": 96
+      },
+      "auto_fire_count": 10,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 8,
+        "initial_serve": 2
+      }
+    },
+    {
+      "evaluation_seed": 303,
+      "seed": 305,
+      "episode_seed": 305,
+      "seed_index": 2,
+      "episode_index": 3,
+      "episode_return": 21.0,
+      "return": 21.0,
+      "episode_length": 779,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "complete": true,
+      "stop_reason": "terminated",
+      "action_distribution": {
+        "NOOP": 430,
+        "FIRE": 218,
+        "RIGHT": 62,
+        "LEFT": 69
+      },
+      "action_distribution_semantics": "executed/wrapper-resolved action",
+      "requested_action_distribution": {
+        "NOOP": 433,
+        "FIRE": 214,
+        "RIGHT": 62,
+        "LEFT": 70
+      },
+      "executed_action_distribution": {
+        "NOOP": 430,
+        "FIRE": 218,
+        "RIGHT": 62,
+        "LEFT": 69
+      },
+      "auto_fire_count": 10,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 8,
+        "initial_serve": 2
+      }
+    },
+    {
+      "evaluation_seed": 303,
+      "seed": 306,
+      "episode_seed": 306,
+      "seed_index": 2,
+      "episode_index": 4,
+      "episode_return": 14.0,
+      "return": 14.0,
+      "episode_length": 534,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "complete": true,
+      "stop_reason": "terminated",
+      "action_distribution": {
+        "NOOP": 189,
+        "FIRE": 200,
+        "RIGHT": 67,
+        "LEFT": 78
+      },
+      "action_distribution_semantics": "executed/wrapper-resolved action",
+      "requested_action_distribution": {
+        "NOOP": 189,
+        "FIRE": 199,
+        "RIGHT": 67,
+        "LEFT": 79
+      },
+      "executed_action_distribution": {
+        "NOOP": 189,
+        "FIRE": 200,
+        "RIGHT": 67,
+        "LEFT": 78
+      },
+      "auto_fire_count": 10,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 8,
+        "initial_serve": 2
+      }
+    },
+    {
+      "evaluation_seed": 303,
+      "seed": 307,
+      "episode_seed": 307,
+      "seed_index": 2,
+      "episode_index": 5,
+      "episode_return": 13.0,
+      "return": 13.0,
+      "episode_length": 605,
+      "terminated": true,
+      "truncated": false,
+      "time_limit": false,
+      "time_limit_source": null,
+      "complete": true,
+      "stop_reason": "terminated",
+      "action_distribution": {
+        "NOOP": 216,
+        "FIRE": 259,
+        "RIGHT": 61,
+        "LEFT": 69
+      },
+      "action_distribution_semantics": "executed/wrapper-resolved action",
+      "requested_action_distribution": {
+        "NOOP": 217,
+        "FIRE": 252,
+        "RIGHT": 63,
+        "LEFT": 73
+      },
+      "executed_action_distribution": {
+        "NOOP": 216,
+        "FIRE": 259,
+        "RIGHT": 61,
+        "LEFT": 69
+      },
+      "auto_fire_count": 10,
+      "auto_fire_reason_counts": {
+        "after_life_loss": 8,
+        "initial_serve": 2
+      }
+    }
+  ],
+  "per_episode_returns": [
+    9.0,
+    7.0,
+    6.0,
+    19.0,
+    15.0,
+    10.0,
+    8.0,
+    10.0,
+    14.0,
+    16.0,
+    12.0,
+    21.0,
+    21.0,
+    14.0,
+    13.0
+  ],
+  "per_episode_lengths": [
+    448,
+    370,
+    359,
+    698,
+    651,
+    533,
+    416,
+    438,
+    647,
+    649,
+    538,
+    742,
+    779,
+    534,
+    605
+  ],
+  "action_distribution": {
+    "NOOP": 2934,
+    "FIRE": 3563,
+    "RIGHT": 927,
+    "LEFT": 983
+  },
+  "action_distribution_semantics": "executed/wrapper-resolved action",
+  "requested_action_distribution": {
+    "NOOP": 2960,
+    "FIRE": 3505,
+    "RIGHT": 941,
+    "LEFT": 1001
+  },
+  "executed_action_distribution": {
+    "NOOP": 2934,
+    "FIRE": 3563,
+    "RIGHT": 927,
+    "LEFT": 983
+  },
+  "auto_fire_count": 151,
+  "auto_fire_reason_counts": {
+    "after_life_loss": 120,
+    "initial_serve": 31
+  },
+  "summary": {
+    "count": 15,
+    "mean_return": 13.0,
+    "median_return": 13.0,
+    "std_return": 4.6475800154489,
+    "min_return": 6.0,
+    "max_return": 21.0,
+    "mean_episode_length": 560.4666666666667,
+    "complete_episodes": 15,
+    "finished_episode_count": 15,
+    "terminated_count": 15,
+    "truncated_count": 0,
+    "time_limit_truncated_count": 0,
+    "truncation_rate": 0.0,
+    "mean_return_terminated": 13.0,
+    "mean_return_truncated": null,
+    "mean_length_terminated": 560.4666666666667,
+    "mean_length_truncated": null,
+    "action_distribution_semantics": "executed/wrapper-resolved action",
+    "action_distribution": {
+      "FIRE": 3563,
+      "LEFT": 983,
+      "NOOP": 2934,
+      "RIGHT": 927
+    },
+    "requested_action_distribution": {
+      "FIRE": 3505,
+      "LEFT": 1001,
+      "NOOP": 2960,
+      "RIGHT": 941
+    },
+    "executed_action_distribution": {
+      "FIRE": 3563,
+      "LEFT": 983,
+      "NOOP": 2934,
+      "RIGHT": 927
+    },
+    "auto_fire_count": 151,
+    "auto_fire_reason_counts": {
+      "after_life_loss": 120,
+      "initial_serve": 31
+    }
+  },
+  "metadata": {
+    "evaluation_config_path": "configs/eval/breakout_eval.json",
+    "evaluation_contract_path": "configs/eval/breakout_contract_v2.json",
+    "evaluation_contract": {
+      "schema_version": 2,
+      "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+      "environment_id": "ALE/Breakout-v5",
+      "frame_skip": 4,
+      "frame_stack": 4,
+      "sticky_action_probability": 0.25,
+      "fire_reset": true,
+      "fire_reset_confirmation": {
+        "max_fire_attempts": 8,
+        "confirmation_steps": 2,
+        "min_observation_change_fraction": 0.0001,
+        "confirmation_operator": "any",
+        "confirmation_signals": [
+          "raw_reward",
+          "observation_activity_streak"
+        ]
+      },
+      "terminal_on_life_loss": false,
+      "time_limit_semantics": {
+        "source": "ale.game_truncated",
+        "max_num_frames_per_episode": 108000,
+        "agent_step_limit": 27000,
+        "truncated_is_finished": true,
+        "external_time_limit_wrapper": false
+      },
+      "concrete_episode_seeds": [
+        101,
+        102,
+        103,
+        104,
+        105,
+        202,
+        203,
+        204,
+        205,
+        206,
+        303,
+        304,
+        305,
+        306,
+        307
+      ],
+      "evaluation_epsilon": 0.0,
+      "raw_reward_rule": "sum environment rewards without clipping"
+    },
+    "evaluation_contract_provenance": {
+      "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+      "contract_path": "configs/eval/breakout_contract_v2.json",
+      "contract_sha256": "e9947fc3a1235100aa92f75a79cf33668b36b4f325f22a0bc8b9546a356b85ba",
+      "semantics": {
+        "schema_version": 2,
+        "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+        "environment_id": "ALE/Breakout-v5",
+        "frame_skip": 4,
+        "frame_stack": 4,
+        "sticky_action_probability": 0.25,
+        "fire_reset": true,
+        "fire_reset_confirmation": {
+          "max_fire_attempts": 8,
+          "confirmation_steps": 2,
+          "min_observation_change_fraction": 0.0001,
+          "confirmation_operator": "any",
+          "confirmation_signals": [
+            "raw_reward",
+            "observation_activity_streak"
+          ]
+        },
+        "terminal_on_life_loss": false,
+        "time_limit_semantics": {
+          "source": "ale.game_truncated",
+          "max_num_frames_per_episode": 108000,
+          "agent_step_limit": 27000,
+          "truncated_is_finished": true,
+          "external_time_limit_wrapper": false
+        },
+        "concrete_episode_seeds": [
+          101,
+          102,
+          103,
+          104,
+          105,
+          202,
+          203,
+          204,
+          205,
+          206,
+          303,
+          304,
+          305,
+          306,
+          307
+        ],
+        "evaluation_epsilon": 0.0,
+        "raw_reward_rule": "sum environment rewards without clipping"
+      }
+    },
+    "source_day18_manifest": "experiments/day18-dqn-vs-double/manifest.json",
+    "purpose": "Day 18 Contract v2 paired evaluation",
+    "raw_reward": true
+  },
+  "artifacts": {
+    "results_json": "results.json",
+    "episodes_csv": "episodes.csv"
+  }
+}

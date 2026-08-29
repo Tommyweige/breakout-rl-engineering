@@ -955,6 +955,14 @@ def load_dqn_checkpoint(
     saved_config = payload.get("config", {})
     if not isinstance(saved_config, dict):
         raise ValueError("checkpoint config must be a mapping")
+    saved_environment_contract = payload.get("environment_contract")
+    if saved_environment_contract is None and isinstance(payload.get("metadata"), Mapping):
+        saved_environment_contract = payload["metadata"].get("environment_contract")
+    if saved_environment_contract is not None and not isinstance(
+        saved_environment_contract,
+        Mapping,
+    ):
+        raise ValueError("checkpoint environment_contract must be a mapping")
 
     env = env_factory()
     try:
@@ -1011,6 +1019,11 @@ def load_dqn_checkpoint(
         "training_config": dict(saved_config),
         "config_reference": None,
         "source_day14_manifest": manifest_value,
+        "environment_contract": (
+            dict(saved_environment_contract)
+            if isinstance(saved_environment_contract, Mapping)
+            else None
+        ),
     }
     checkpoint_metadata: dict[str, Any] = {
         "path": _repository_path(checkpoint_path),
@@ -1037,6 +1050,11 @@ def load_dqn_checkpoint(
         },
         "requested_device": requested_device,
         "resolved_device": str(resolved_device),
+        "environment_contract": (
+            dict(saved_environment_contract)
+            if isinstance(saved_environment_contract, Mapping)
+            else None
+        ),
     }
     return LoadedDQNCheckpoint(
         model=model,

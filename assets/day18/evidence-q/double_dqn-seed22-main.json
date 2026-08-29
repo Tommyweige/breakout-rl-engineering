@@ -1,0 +1,1757 @@
+{
+  "schema_version": 1,
+  "checkpoint": {
+    "path": "C:/Users/tommy/.codex/worktrees/ab66/breakout-rl-engineering/runs/day18-dqn-vs-double/double_dqn-seed22/stage-500k/checkpoints/step-00500000.pt",
+    "sha256": "6b777cbcbb7c78b355bfce70e466f88c52778ba9c025c98c772bdc0dd1269b4b",
+    "algorithm": "double_dqn",
+    "architecture": "standard",
+    "num_envs": 2,
+    "replay_backend": "gpu",
+    "training_steps": 500000,
+    "model_config": {
+      "num_actions": 4,
+      "input_shape": [
+        4,
+        84,
+        84
+      ],
+      "hidden_dim": 512
+    },
+    "environment_contract": {
+      "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+      "contract_path": "configs/eval/breakout_contract_v2.json",
+      "contract_sha256": "e9947fc3a1235100aa92f75a79cf33668b36b4f325f22a0bc8b9546a356b85ba",
+      "semantics": {
+        "schema_version": 2,
+        "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+        "environment_id": "ALE/Breakout-v5",
+        "frame_skip": 4,
+        "frame_stack": 4,
+        "sticky_action_probability": 0.25,
+        "fire_reset": true,
+        "fire_reset_confirmation": {
+          "max_fire_attempts": 8,
+          "confirmation_steps": 2,
+          "min_observation_change_fraction": 0.0001,
+          "confirmation_operator": "any",
+          "confirmation_signals": [
+            "raw_reward",
+            "observation_activity_streak"
+          ]
+        },
+        "terminal_on_life_loss": false,
+        "time_limit_semantics": {
+          "source": "ale.game_truncated",
+          "max_num_frames_per_episode": 108000,
+          "agent_step_limit": 27000,
+          "truncated_is_finished": true,
+          "external_time_limit_wrapper": false
+        },
+        "concrete_episode_seeds": [
+          101,
+          102,
+          103,
+          104,
+          105,
+          202,
+          203,
+          204,
+          205,
+          206,
+          303,
+          304,
+          305,
+          306,
+          307
+        ],
+        "evaluation_epsilon": 0.0,
+        "raw_reward_rule": "sum environment rewards without clipping"
+      }
+    }
+  },
+  "probe_states": {
+    "path": "C:/Users/tommy/.codex/worktrees/ab66/breakout-rl-engineering/assets/day17/probe_states.npz",
+    "sha256": "c14c780c89a3b7d71584fcf1283e9e180a4d85e357fbdd8a50ff6bc8bf965a9f",
+    "metadata": {
+      "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+      "contract_path": "configs/eval/breakout_contract_v2.json",
+      "contract_sha256": "e9947fc3a1235100aa92f75a79cf33668b36b4f325f22a0bc8b9546a356b85ba",
+      "environment_fire_reset": true,
+      "environment_id": "ALE/Breakout-v5",
+      "observation_dtype": "uint8",
+      "observation_shape": [
+        4,
+        84,
+        84
+      ],
+      "records": [
+        {
+          "action_overridden": false,
+          "concrete_seed": 101,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": true,
+          "fire_reset_reason": "initial_serve",
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 1,
+          "step": 0,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": false,
+          "concrete_seed": 101,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 3,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 3,
+          "step": 32,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": false,
+          "concrete_seed": 101,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 2,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 2,
+          "step": 64,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": false,
+          "concrete_seed": 101,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 0,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 0,
+          "step": 96,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": false,
+          "concrete_seed": 102,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": true,
+          "fire_reset_reason": "initial_serve",
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 1,
+          "step": 0,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": false,
+          "concrete_seed": 102,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 2,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 2,
+          "step": 32,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": false,
+          "concrete_seed": 102,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 1,
+          "step": 64,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": false,
+          "concrete_seed": 102,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 2,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 2,
+          "step": 96,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": true,
+          "concrete_seed": 103,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": true,
+          "fire_reset_reason": "initial_serve",
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 2,
+          "step": 0,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": false,
+          "concrete_seed": 103,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 3,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 3,
+          "step": 32,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": false,
+          "concrete_seed": 103,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 1,
+          "step": 64,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": false,
+          "concrete_seed": 103,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 1,
+          "step": 96,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": true,
+          "concrete_seed": 104,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": true,
+          "fire_reset_reason": "initial_serve",
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 2,
+          "step": 0,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": false,
+          "concrete_seed": 104,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 0,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 0,
+          "step": 32,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": false,
+          "concrete_seed": 104,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 3,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 3,
+          "step": 64,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": false,
+          "concrete_seed": 104,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 1,
+          "step": 96,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": false,
+          "concrete_seed": 105,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": true,
+          "fire_reset_reason": "initial_serve",
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 1,
+          "step": 0,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": false,
+          "concrete_seed": 105,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 3,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 3,
+          "step": 32,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": false,
+          "concrete_seed": 105,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 1,
+          "step": 64,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": false,
+          "concrete_seed": 105,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 3,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 3,
+          "step": 96,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": true,
+          "concrete_seed": 202,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": true,
+          "fire_reset_reason": "initial_serve",
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 0,
+          "step": 0,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": false,
+          "concrete_seed": 202,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 2,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 2,
+          "step": 32,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": false,
+          "concrete_seed": 202,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 0,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 0,
+          "step": 64,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": false,
+          "concrete_seed": 202,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 0,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 0,
+          "step": 96,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": false,
+          "concrete_seed": 203,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": true,
+          "fire_reset_reason": "initial_serve",
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 1,
+          "step": 0,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": false,
+          "concrete_seed": 203,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 1,
+          "step": 32,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": false,
+          "concrete_seed": 203,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 3,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 3,
+          "step": 64,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": false,
+          "concrete_seed": 203,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 3,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 3,
+          "step": 96,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": true,
+          "concrete_seed": 204,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": true,
+          "fire_reset_reason": "initial_serve",
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 2,
+          "step": 0,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": false,
+          "concrete_seed": 204,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 2,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 2,
+          "step": 32,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": false,
+          "concrete_seed": 204,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 3,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 3,
+          "step": 64,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": false,
+          "concrete_seed": 204,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 3,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 3,
+          "step": 96,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": true,
+          "concrete_seed": 205,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": true,
+          "fire_reset_reason": "initial_serve",
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 2,
+          "step": 0,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": false,
+          "concrete_seed": 205,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 3,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 3,
+          "step": 32,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": false,
+          "concrete_seed": 205,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 0,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 0,
+          "step": 64,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": false,
+          "concrete_seed": 205,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 1,
+          "step": 96,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": true,
+          "concrete_seed": 206,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": true,
+          "fire_reset_reason": "initial_serve",
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 2,
+          "step": 0,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": false,
+          "concrete_seed": 206,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 1,
+          "step": 32,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": false,
+          "concrete_seed": 206,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 1,
+          "step": 64,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": false,
+          "concrete_seed": 206,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 2,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 2,
+          "step": 96,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": false,
+          "concrete_seed": 303,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": true,
+          "fire_reset_reason": "initial_serve",
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 1,
+          "step": 0,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": false,
+          "concrete_seed": 303,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 3,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 3,
+          "step": 32,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": false,
+          "concrete_seed": 303,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 3,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 3,
+          "step": 64,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": false,
+          "concrete_seed": 303,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 0,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 0,
+          "step": 96,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": true,
+          "concrete_seed": 304,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": true,
+          "fire_reset_reason": "initial_serve",
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 3,
+          "step": 0,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": false,
+          "concrete_seed": 304,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 3,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 3,
+          "step": 32,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": false,
+          "concrete_seed": 304,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 1,
+          "step": 64,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": false,
+          "concrete_seed": 304,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 1,
+          "step": 96,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": false,
+          "concrete_seed": 305,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": true,
+          "fire_reset_reason": "initial_serve",
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 1,
+          "step": 0,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": false,
+          "concrete_seed": 305,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 1,
+          "step": 32,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": false,
+          "concrete_seed": 305,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 0,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 0,
+          "step": 64,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": false,
+          "concrete_seed": 305,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 3,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 3,
+          "step": 96,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": true,
+          "concrete_seed": 306,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": true,
+          "fire_reset_reason": "initial_serve",
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 3,
+          "step": 0,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": false,
+          "concrete_seed": 306,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 1,
+          "step": 32,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": false,
+          "concrete_seed": 306,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 1,
+          "step": 64,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": false,
+          "concrete_seed": 306,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 2,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 2,
+          "step": 96,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": true,
+          "concrete_seed": 307,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 1,
+          "fire_reset_auto": true,
+          "fire_reset_reason": "initial_serve",
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 3,
+          "step": 0,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": false,
+          "concrete_seed": 307,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 2,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 2,
+          "step": 32,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": false,
+          "concrete_seed": 307,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 0,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 0,
+          "step": 64,
+          "terminated": false,
+          "truncated": false
+        },
+        {
+          "action_overridden": false,
+          "concrete_seed": 307,
+          "dtype": "uint8",
+          "episode": 1,
+          "executed_action": 0,
+          "fire_reset_auto": false,
+          "fire_reset_reason": null,
+          "observation_shape": [
+            4,
+            84,
+            84
+          ],
+          "raw_reward": 0.0,
+          "requested_action": 0,
+          "step": 96,
+          "terminated": false,
+          "truncated": false
+        }
+      ],
+      "schema_version": 1,
+      "seeds": [
+        101,
+        102,
+        103,
+        104,
+        105,
+        202,
+        203,
+        204,
+        205,
+        206,
+        303,
+        304,
+        305,
+        306,
+        307
+      ],
+      "source_behavior": "seeded_uniform_random_requested_actions",
+      "state_count": 60,
+      "states_per_seed": 4,
+      "stride": 32
+    }
+  },
+  "analysis": {
+    "probe_count": 60,
+    "action_count": 4,
+    "q_mean": 2.4937102675437925,
+    "q_std": 0.19486897947568543,
+    "q_min": 2.066899299621582,
+    "q_max": 3.2386560440063477,
+    "max_q_mean": 2.5238122860590617,
+    "max_q_std": 0.19202805193998917,
+    "selected_action_distribution": {
+      "FIRE": 3,
+      "RIGHT": 32,
+      "LEFT": 25
+    },
+    "selected_action_indices": [
+      2,
+      2,
+      3,
+      1,
+      2,
+      3,
+      3,
+      2,
+      2,
+      3,
+      3,
+      3,
+      2,
+      3,
+      2,
+      3,
+      2,
+      1,
+      3,
+      3,
+      2,
+      2,
+      3,
+      2,
+      2,
+      2,
+      3,
+      1,
+      2,
+      3,
+      3,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      3,
+      3,
+      2,
+      2,
+      3,
+      2,
+      2,
+      2,
+      3,
+      2,
+      3,
+      2,
+      3,
+      3,
+      2,
+      2,
+      2,
+      3,
+      2,
+      2,
+      3,
+      3,
+      3
+    ],
+    "observation_shape": [
+      4,
+      84,
+      84
+    ],
+    "observation_dtype": "uint8",
+    "q_values": [
+      [
+        2.451172113418579,
+        2.4938888549804688,
+        2.5028791427612305,
+        2.448120594024658
+      ],
+      [
+        2.503739833831787,
+        2.500257730484009,
+        2.5191714763641357,
+        2.5175983905792236
+      ],
+      [
+        3.1968934535980225,
+        3.22281551361084,
+        3.1934139728546143,
+        3.2386560440063477
+      ],
+      [
+        2.2974319458007812,
+        2.345109462738037,
+        2.335526466369629,
+        2.3225157260894775
+      ],
+      [
+        2.451172113418579,
+        2.4938888549804688,
+        2.5028791427612305,
+        2.448120594024658
+      ],
+      [
+        2.443523645401001,
+        2.4364452362060547,
+        2.454413652420044,
+        2.478050947189331
+      ],
+      [
+        2.3425354957580566,
+        2.358975887298584,
+        2.2816431522369385,
+        2.4417457580566406
+      ],
+      [
+        2.65138578414917,
+        2.617198944091797,
+        2.6812257766723633,
+        2.639976739883423
+      ],
+      [
+        2.451172113418579,
+        2.4938888549804688,
+        2.5028791427612305,
+        2.448120594024658
+      ],
+      [
+        2.443523645401001,
+        2.4364452362060547,
+        2.454413652420044,
+        2.478050947189331
+      ],
+      [
+        2.3528668880462646,
+        2.3648900985717773,
+        2.351355791091919,
+        2.4131524562835693
+      ],
+      [
+        2.6304945945739746,
+        2.6083552837371826,
+        2.6168553829193115,
+        2.667367458343506
+      ],
+      [
+        2.451172113418579,
+        2.4938888549804688,
+        2.5028791427612305,
+        2.448120594024658
+      ],
+      [
+        3.1520533561706543,
+        3.149932384490967,
+        3.1514599323272705,
+        3.167603015899658
+      ],
+      [
+        2.5797600746154785,
+        2.62845778465271,
+        2.640326499938965,
+        2.552701473236084
+      ],
+      [
+        2.977499008178711,
+        3.00862193107605,
+        3.013078212738037,
+        3.021850109100342
+      ],
+      [
+        2.451172113418579,
+        2.4938888549804688,
+        2.5028791427612305,
+        2.448120594024658
+      ],
+      [
+        2.2306387424468994,
+        2.2855639457702637,
+        2.233600378036499,
+        2.2749369144439697
+      ],
+      [
+        2.5687170028686523,
+        2.5861706733703613,
+        2.5725111961364746,
+        2.5867457389831543
+      ],
+      [
+        2.346160888671875,
+        2.3597981929779053,
+        2.3376975059509277,
+        2.372908115386963
+      ],
+      [
+        2.451172113418579,
+        2.4938888549804688,
+        2.5028791427612305,
+        2.448120594024658
+      ],
+      [
+        2.4889206886291504,
+        2.4709715843200684,
+        2.498140335083008,
+        2.4977283477783203
+      ],
+      [
+        2.666194200515747,
+        2.6597626209259033,
+        2.6351678371429443,
+        2.699267864227295
+      ],
+      [
+        2.066899299621582,
+        2.079768180847168,
+        2.1208667755126953,
+        2.108706474304199
+      ],
+      [
+        2.451172113418579,
+        2.4938888549804688,
+        2.5028791427612305,
+        2.448120594024658
+      ],
+      [
+        2.4731287956237793,
+        2.4731123447418213,
+        2.512295961380005,
+        2.493804931640625
+      ],
+      [
+        2.385221242904663,
+        2.3770840167999268,
+        2.400803804397583,
+        2.4212024211883545
+      ],
+      [
+        2.1933090686798096,
+        2.233116626739502,
+        2.232173442840576,
+        2.21598744392395
+      ],
+      [
+        2.451172113418579,
+        2.4938888549804688,
+        2.5028791427612305,
+        2.448120594024658
+      ],
+      [
+        2.395632266998291,
+        2.384296178817749,
+        2.4143576622009277,
+        2.420825242996216
+      ],
+      [
+        2.440430164337158,
+        2.4407217502593994,
+        2.398214101791382,
+        2.5206589698791504
+      ],
+      [
+        2.6470673084259033,
+        2.6349287033081055,
+        2.664156675338745,
+        2.6595616340637207
+      ],
+      [
+        2.451172113418579,
+        2.4938888549804688,
+        2.5028791427612305,
+        2.448120594024658
+      ],
+      [
+        2.4569132328033447,
+        2.427736520767212,
+        2.4715077877044678,
+        2.4397330284118652
+      ],
+      [
+        2.2283334732055664,
+        2.215756416320801,
+        2.30777645111084,
+        2.25372576713562
+      ],
+      [
+        2.1262052059173584,
+        2.120011329650879,
+        2.1813247203826904,
+        2.1631720066070557
+      ],
+      [
+        2.451172113418579,
+        2.4938888549804688,
+        2.5028791427612305,
+        2.448120594024658
+      ],
+      [
+        2.559997320175171,
+        2.5561740398406982,
+        2.567655324935913,
+        2.5778675079345703
+      ],
+      [
+        2.2256901264190674,
+        2.2494332790374756,
+        2.2312047481536865,
+        2.3055808544158936
+      ],
+      [
+        2.6904523372650146,
+        2.7152090072631836,
+        2.7261033058166504,
+        2.718503475189209
+      ],
+      [
+        2.451172113418579,
+        2.4938888549804688,
+        2.5028791427612305,
+        2.448120594024658
+      ],
+      [
+        2.5068888664245605,
+        2.493502140045166,
+        2.511457920074463,
+        2.515484571456909
+      ],
+      [
+        2.700011730194092,
+        2.6646318435668945,
+        2.7539703845977783,
+        2.613917112350464
+      ],
+      [
+        2.472501516342163,
+        2.466540575027466,
+        2.61297869682312,
+        2.4109010696411133
+      ],
+      [
+        2.451172113418579,
+        2.4938888549804688,
+        2.5028791427612305,
+        2.448120594024658
+      ],
+      [
+        2.4340198040008545,
+        2.4275290966033936,
+        2.4377806186676025,
+        2.478264808654785
+      ],
+      [
+        2.714510202407837,
+        2.6790194511413574,
+        2.7619831562042236,
+        2.63811993598938
+      ],
+      [
+        2.2933456897735596,
+        2.289172410964966,
+        2.3064162731170654,
+        2.3098654747009277
+      ],
+      [
+        2.451172113418579,
+        2.4938888549804688,
+        2.5028791427612305,
+        2.448120594024658
+      ],
+      [
+        2.4479334354400635,
+        2.4420063495635986,
+        2.461754083633423,
+        2.484761953353882
+      ],
+      [
+        2.341219902038574,
+        2.33817195892334,
+        2.3100619316101074,
+        2.3960795402526855
+      ],
+      [
+        2.61765718460083,
+        2.6081645488739014,
+        2.638617753982544,
+        2.6283652782440186
+      ],
+      [
+        2.451172113418579,
+        2.4938888549804688,
+        2.5028791427612305,
+        2.448120594024658
+      ],
+      [
+        2.5283150672912598,
+        2.521965980529785,
+        2.5541765689849854,
+        2.5337297916412354
+      ],
+      [
+        2.4705593585968018,
+        2.4303290843963623,
+        2.458542823791504,
+        2.5065665245056152
+      ],
+      [
+        2.2945868968963623,
+        2.3061907291412354,
+        2.321234703063965,
+        2.3112308979034424
+      ],
+      [
+        2.451172113418579,
+        2.4938888549804688,
+        2.5028791427612305,
+        2.448120594024658
+      ],
+      [
+        2.463313579559326,
+        2.4463083744049072,
+        2.4691672325134277,
+        2.47818660736084
+      ],
+      [
+        2.6129653453826904,
+        2.6072466373443604,
+        2.6027276515960693,
+        2.62717866897583
+      ],
+      [
+        2.4266538619995117,
+        2.4125900268554688,
+        2.432830810546875,
+        2.447981357574463
+      ]
+    ]
+  },
+  "comparison": {
+    "experiment_id": "day18-dqn-vs-double",
+    "run_id": "day18-dqn-vs-double-double_dqn-seed22-main",
+    "algorithm": "double_dqn",
+    "training_seed": 22,
+    "stage": "main",
+    "target_transitions": 500000,
+    "environment_contract": {
+      "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+      "contract_path": "configs/eval/breakout_contract_v2.json",
+      "contract_sha256": "e9947fc3a1235100aa92f75a79cf33668b36b4f325f22a0bc8b9546a356b85ba",
+      "semantics": {
+        "schema_version": 2,
+        "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+        "environment_id": "ALE/Breakout-v5",
+        "frame_skip": 4,
+        "frame_stack": 4,
+        "sticky_action_probability": 0.25,
+        "fire_reset": true,
+        "fire_reset_confirmation": {
+          "max_fire_attempts": 8,
+          "confirmation_steps": 2,
+          "min_observation_change_fraction": 0.0001,
+          "confirmation_operator": "any",
+          "confirmation_signals": [
+            "raw_reward",
+            "observation_activity_streak"
+          ]
+        },
+        "terminal_on_life_loss": false,
+        "time_limit_semantics": {
+          "source": "ale.game_truncated",
+          "max_num_frames_per_episode": 108000,
+          "agent_step_limit": 27000,
+          "truncated_is_finished": true,
+          "external_time_limit_wrapper": false
+        },
+        "concrete_episode_seeds": [
+          101,
+          102,
+          103,
+          104,
+          105,
+          202,
+          203,
+          204,
+          205,
+          206,
+          303,
+          304,
+          305,
+          306,
+          307
+        ],
+        "evaluation_epsilon": 0.0,
+        "raw_reward_rule": "sum environment rewards without clipping"
+      }
+    }
+  }
+}

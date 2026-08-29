@@ -20,6 +20,7 @@
 - Day 15 — [DQN milestone and evaluation](day15-dqn-milestone-and-evaluation.md)
 - Day 16 — [Vectorized DQN training](day16-vectorized-dqn-training.md)
 - Day 17 — [Q-value overestimation and Double DQN](day17-q-overestimation-and-double-dqn.md)
+- Day 18 — [DQN vs. Double DQN：從 100K 到 500K 的中程公平比較](day18-dqn-vs-double-dqn.md)
 
 Day 18 onward should continue the same naming and article rules defined in `AGENTS.md`.
 

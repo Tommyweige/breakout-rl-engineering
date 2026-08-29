@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "generated_at_utc": "2026-08-29T06:44:21.635391Z",
+  "command": [
+    "C:\\Users\\tommy\\.codex\\worktrees\\ab66\\breakout-rl-engineering\\scripts\\visualization\\visualize_day18_comparison.py",
+    "--manifest",
+    "assets/day18/evidence-manifest.json",
+    "--output-dir",
+    "assets/day18"
+  ],
+  "question": "在相同 NVIDIA CUDA、precision 與 actual transition budget 下，兩個 algorithm 的 SPS、wall-clock 與 peak VRAM 工程成本是多少？",
+  "source_manifest": "assets/day18/evidence-manifest.json",
+  "source_manifest_sha256": "5cb36418f736d5b6734416c8065574379e1fcfb60a9fe71c4896194abbf6e586",
+  "source_entries": [
+    {
+      "run_id": "day18-dqn-vs-double-dqn-seed11-main",
+      "algorithm": "dqn",
+      "training_seed": 11,
+      "stage": "main",
+      "target_transitions": 500000,
+      "run_dir": "evidence-runs/dqn-seed11-main",
+      "checkpoint": {
+        "path": "../../runs/day18-dqn-vs-double/dqn-seed11/stage-500k/checkpoints/step-00500000.pt",
+        "sha256": "1cd79e6d5236217213c917d6f6ba9455ef5c81739e4a869723d0e6d60b274f97"
+      },
+      "evaluation": null,
+      "q_probe": null
+    },
+    {
+      "run_id": "day18-dqn-vs-double-double_dqn-seed11-main",
+      "algorithm": "double_dqn",
+      "training_seed": 11,
+      "stage": "main",
+      "target_transitions": 500000,
+      "run_dir": "evidence-runs/double_dqn-seed11-main",
+      "checkpoint": {
+        "path": "../../runs/day18-dqn-vs-double/double_dqn-seed11/stage-500k/checkpoints/step-00500000.pt",
+        "sha256": "5bf7bbbb8e038fab540f46f53fd3a39304c5517fa01e51da66f129aee3ed9011"
+      },
+      "evaluation": null,
+      "q_probe": null
+    },
+    {
+      "run_id": "day18-dqn-vs-double-dqn-seed22-main",
+      "algorithm": "dqn",
+      "training_seed": 22,
+      "stage": "main",
+      "target_transitions": 500000,
+      "run_dir": "evidence-runs/dqn-seed22-main",
+      "checkpoint": {
+        "path": "../../runs/day18-dqn-vs-double/dqn-seed22/stage-500k/checkpoints/step-00500000.pt",
+        "sha256": "6aa0dbd246eda79ce4c9d4d3fbe4eba6f3ac71e6b7448e9dee4ff008c21f33ff"
+      },
+      "evaluation": null,
+      "q_probe": null
+    },
+    {
+      "run_id": "day18-dqn-vs-double-double_dqn-seed22-main",
+      "algorithm": "double_dqn",
+      "training_seed": 22,
+      "stage": "main",
+      "target_transitions": 500000,
+      "run_dir": "evidence-runs/double_dqn-seed22-main",
+      "checkpoint": {
+        "path": "../../runs/day18-dqn-vs-double/double_dqn-seed22/stage-500k/checkpoints/step-00500000.pt",
+        "sha256": "6b777cbcbb7c78b355bfce70e466f88c52778ba9c025c98c772bdc0dd1269b4b"
+      },
+      "evaluation": null,
+      "q_probe": null
+    },
+    {
+      "run_id": "day18-dqn-vs-double-dqn-seed33-main",
+      "algorithm": "dqn",
+      "training_seed": 33,
+      "stage": "main",
+      "target_transitions": 500000,
+      "run_dir": "evidence-runs/dqn-seed33-main",
+      "checkpoint": {
+        "path": "../../runs/day18-dqn-vs-double/dqn-seed33/stage-500k/checkpoints/step-00500000.pt",
+        "sha256": "b20349b96cd0842671a6eb4f5d499e40520941dddcebf3977e067294e394ea53"
+      },
+      "evaluation": null,
+      "q_probe": null
+    },
+    {
+      "run_id": "day18-dqn-vs-double-double_dqn-seed33-main",
+      "algorithm": "double_dqn",
+      "training_seed": 33,
+      "stage": "main",
+      "target_transitions": 500000,
+      "run_dir": "evidence-runs/double_dqn-seed33-main",
+      "checkpoint": {
+        "path": "../../runs/day18-dqn-vs-double/double_dqn-seed33/stage-500k/checkpoints/step-00500000.pt",
+        "sha256": "1fa87e7264fa25cc6ba9b2b2b35a0bd280c27f89758750767ef59781e2239535"
+      },
+      "evaluation": null,
+      "q_probe": null
+    }
+  ],
+  "outputs": [
+    "assets/day18/runtime-comparison.png"
+  ]
+}

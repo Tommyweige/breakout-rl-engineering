@@ -1,0 +1,272 @@
+{
+  "schema_version": 1,
+  "generated_at_utc": "2026-08-29T06:44:20.838617Z",
+  "command": [
+    "C:\\Users\\tommy\\.codex\\worktrees\\ab66\\breakout-rl-engineering\\scripts\\visualization\\visualize_day18_comparison.py",
+    "--manifest",
+    "assets/day18/evidence-manifest.json",
+    "--output-dir",
+    "assets/day18"
+  ],
+  "question": "在 actual environment transitions 軸上，DQN 與 Double DQN 的 episode return 是否呈現可跨 training seed 重複的趨勢？",
+  "source_manifest": "assets/day18/evidence-manifest.json",
+  "source_manifest_sha256": "5cb36418f736d5b6734416c8065574379e1fcfb60a9fe71c4896194abbf6e586",
+  "source_entries": [
+    {
+      "run_id": "day18-dqn-vs-double-dqn-seed11-screening",
+      "algorithm": "dqn",
+      "training_seed": 11,
+      "stage": "screening",
+      "target_transitions": 100000,
+      "run_dir": "evidence-runs/dqn-seed11-screening",
+      "checkpoint": {
+        "path": "../../runs/day18-dqn-vs-double/dqn-seed11/stage-100k/checkpoints/step-00100000.pt",
+        "sha256": "047eaf95a9d0f7cb8e813d009f72a11b4f7d21b9fdf539ddadb68c83eb8e0478"
+      },
+      "evaluation": null,
+      "q_probe": null
+    },
+    {
+      "run_id": "day18-dqn-vs-double-double_dqn-seed11-screening",
+      "algorithm": "double_dqn",
+      "training_seed": 11,
+      "stage": "screening",
+      "target_transitions": 100000,
+      "run_dir": "evidence-runs/double_dqn-seed11-screening",
+      "checkpoint": {
+        "path": "../../runs/day18-dqn-vs-double/double_dqn-seed11/stage-100k/checkpoints/step-00100000.pt",
+        "sha256": "85efd4e8a6150e6d45488658638239641e3947b50bf8a9a6fb3037bd3eccd0ed"
+      },
+      "evaluation": null,
+      "q_probe": null
+    },
+    {
+      "run_id": "day18-dqn-vs-double-dqn-seed22-screening",
+      "algorithm": "dqn",
+      "training_seed": 22,
+      "stage": "screening",
+      "target_transitions": 100000,
+      "run_dir": "evidence-runs/dqn-seed22-screening",
+      "checkpoint": {
+        "path": "../../runs/day18-dqn-vs-double/dqn-seed22/stage-100k-retry-02/checkpoints/step-00100000.pt",
+        "sha256": "04c8b8d249c84076ccf9f034735e2c8f4cdbcdf37758581ddad3625cf7394658"
+      },
+      "evaluation": null,
+      "q_probe": null
+    },
+    {
+      "run_id": "day18-dqn-vs-double-double_dqn-seed22-screening",
+      "algorithm": "double_dqn",
+      "training_seed": 22,
+      "stage": "screening",
+      "target_transitions": 100000,
+      "run_dir": "evidence-runs/double_dqn-seed22-screening",
+      "checkpoint": {
+        "path": "../../runs/day18-dqn-vs-double/double_dqn-seed22/stage-100k/checkpoints/step-00100000.pt",
+        "sha256": "1b2a921a8070ac42e510efbadfb3b2fd06c3bc7512df8c106b97fb63473aefca"
+      },
+      "evaluation": null,
+      "q_probe": null
+    },
+    {
+      "run_id": "day18-dqn-vs-double-dqn-seed33-screening",
+      "algorithm": "dqn",
+      "training_seed": 33,
+      "stage": "screening",
+      "target_transitions": 100000,
+      "run_dir": "evidence-runs/dqn-seed33-screening",
+      "checkpoint": {
+        "path": "../../runs/day18-dqn-vs-double/dqn-seed33/stage-100k/checkpoints/step-00100000.pt",
+        "sha256": "8bfeccf8d90c33ba4dcd4a1dcf83fce8cac3902a87cb76535a2a13d24979cdf2"
+      },
+      "evaluation": null,
+      "q_probe": null
+    },
+    {
+      "run_id": "day18-dqn-vs-double-double_dqn-seed33-screening",
+      "algorithm": "double_dqn",
+      "training_seed": 33,
+      "stage": "screening",
+      "target_transitions": 100000,
+      "run_dir": "evidence-runs/double_dqn-seed33-screening",
+      "checkpoint": {
+        "path": "../../runs/day18-dqn-vs-double/double_dqn-seed33/stage-100k/checkpoints/step-00100000.pt",
+        "sha256": "31160e0949639282a4d4afb339a58a67898e0e16c9eff39321b9aea1b57df5ae"
+      },
+      "evaluation": null,
+      "q_probe": null
+    },
+    {
+      "run_id": "day18-dqn-vs-double-dqn-seed11-pilot",
+      "algorithm": "dqn",
+      "training_seed": 11,
+      "stage": "pilot",
+      "target_transitions": 250000,
+      "run_dir": "evidence-runs/dqn-seed11-pilot",
+      "checkpoint": {
+        "path": "../../runs/day18-dqn-vs-double/dqn-seed11/stage-250k/checkpoints/step-00250000.pt",
+        "sha256": "35117659098069b505ba17477f772ef94ec6a6721aa8202b3ede937b3c25726e"
+      },
+      "evaluation": null,
+      "q_probe": null
+    },
+    {
+      "run_id": "day18-dqn-vs-double-double_dqn-seed11-pilot",
+      "algorithm": "double_dqn",
+      "training_seed": 11,
+      "stage": "pilot",
+      "target_transitions": 250000,
+      "run_dir": "evidence-runs/double_dqn-seed11-pilot",
+      "checkpoint": {
+        "path": "../../runs/day18-dqn-vs-double/double_dqn-seed11/stage-250k/checkpoints/step-00250000.pt",
+        "sha256": "c0ea63c601b69dd6e3e376f96b3beb4883a1a4658efc8cfdddab05ff19da160e"
+      },
+      "evaluation": null,
+      "q_probe": null
+    },
+    {
+      "run_id": "day18-dqn-vs-double-dqn-seed22-pilot",
+      "algorithm": "dqn",
+      "training_seed": 22,
+      "stage": "pilot",
+      "target_transitions": 250000,
+      "run_dir": "evidence-runs/dqn-seed22-pilot",
+      "checkpoint": {
+        "path": "../../runs/day18-dqn-vs-double/dqn-seed22/stage-250k/checkpoints/step-00250000.pt",
+        "sha256": "20d26fc2b2493b9b85397e562664740a1c5b507aeb5ba4455e6ceb33c677d5a3"
+      },
+      "evaluation": null,
+      "q_probe": null
+    },
+    {
+      "run_id": "day18-dqn-vs-double-double_dqn-seed22-pilot",
+      "algorithm": "double_dqn",
+      "training_seed": 22,
+      "stage": "pilot",
+      "target_transitions": 250000,
+      "run_dir": "evidence-runs/double_dqn-seed22-pilot",
+      "checkpoint": {
+        "path": "../../runs/day18-dqn-vs-double/double_dqn-seed22/stage-250k/checkpoints/step-00250000.pt",
+        "sha256": "e6e28edd97c558a886b821295be60c91a8e1cc7bb45e0af9b5ec00eafb635fc7"
+      },
+      "evaluation": null,
+      "q_probe": null
+    },
+    {
+      "run_id": "day18-dqn-vs-double-dqn-seed33-pilot",
+      "algorithm": "dqn",
+      "training_seed": 33,
+      "stage": "pilot",
+      "target_transitions": 250000,
+      "run_dir": "evidence-runs/dqn-seed33-pilot",
+      "checkpoint": {
+        "path": "../../runs/day18-dqn-vs-double/dqn-seed33/stage-250k/checkpoints/step-00250000.pt",
+        "sha256": "dd21d8299cb95355adf0ef0d109e2ff49079c25a5a0c27d9b16b004112079f3b"
+      },
+      "evaluation": null,
+      "q_probe": null
+    },
+    {
+      "run_id": "day18-dqn-vs-double-double_dqn-seed33-pilot",
+      "algorithm": "double_dqn",
+      "training_seed": 33,
+      "stage": "pilot",
+      "target_transitions": 250000,
+      "run_dir": "evidence-runs/double_dqn-seed33-pilot",
+      "checkpoint": {
+        "path": "../../runs/day18-dqn-vs-double/double_dqn-seed33/stage-250k/checkpoints/step-00250000.pt",
+        "sha256": "90692ab44adc61b3d02b876effc2f1c3c1441cd029badb10902cef1dddb47494"
+      },
+      "evaluation": null,
+      "q_probe": null
+    },
+    {
+      "run_id": "day18-dqn-vs-double-dqn-seed11-main",
+      "algorithm": "dqn",
+      "training_seed": 11,
+      "stage": "main",
+      "target_transitions": 500000,
+      "run_dir": "evidence-runs/dqn-seed11-main",
+      "checkpoint": {
+        "path": "../../runs/day18-dqn-vs-double/dqn-seed11/stage-500k/checkpoints/step-00500000.pt",
+        "sha256": "1cd79e6d5236217213c917d6f6ba9455ef5c81739e4a869723d0e6d60b274f97"
+      },
+      "evaluation": null,
+      "q_probe": null
+    },
+    {
+      "run_id": "day18-dqn-vs-double-double_dqn-seed11-main",
+      "algorithm": "double_dqn",
+      "training_seed": 11,
+      "stage": "main",
+      "target_transitions": 500000,
+      "run_dir": "evidence-runs/double_dqn-seed11-main",
+      "checkpoint": {
+        "path": "../../runs/day18-dqn-vs-double/double_dqn-seed11/stage-500k/checkpoints/step-00500000.pt",
+        "sha256": "5bf7bbbb8e038fab540f46f53fd3a39304c5517fa01e51da66f129aee3ed9011"
+      },
+      "evaluation": null,
+      "q_probe": null
+    },
+    {
+      "run_id": "day18-dqn-vs-double-dqn-seed22-main",
+      "algorithm": "dqn",
+      "training_seed": 22,
+      "stage": "main",
+      "target_transitions": 500000,
+      "run_dir": "evidence-runs/dqn-seed22-main",
+      "checkpoint": {
+        "path": "../../runs/day18-dqn-vs-double/dqn-seed22/stage-500k/checkpoints/step-00500000.pt",
+        "sha256": "6aa0dbd246eda79ce4c9d4d3fbe4eba6f3ac71e6b7448e9dee4ff008c21f33ff"
+      },
+      "evaluation": null,
+      "q_probe": null
+    },
+    {
+      "run_id": "day18-dqn-vs-double-double_dqn-seed22-main",
+      "algorithm": "double_dqn",
+      "training_seed": 22,
+      "stage": "main",
+      "target_transitions": 500000,
+      "run_dir": "evidence-runs/double_dqn-seed22-main",
+      "checkpoint": {
+        "path": "../../runs/day18-dqn-vs-double/double_dqn-seed22/stage-500k/checkpoints/step-00500000.pt",
+        "sha256": "6b777cbcbb7c78b355bfce70e466f88c52778ba9c025c98c772bdc0dd1269b4b"
+      },
+      "evaluation": null,
+      "q_probe": null
+    },
+    {
+      "run_id": "day18-dqn-vs-double-dqn-seed33-main",
+      "algorithm": "dqn",
+      "training_seed": 33,
+      "stage": "main",
+      "target_transitions": 500000,
+      "run_dir": "evidence-runs/dqn-seed33-main",
+      "checkpoint": {
+        "path": "../../runs/day18-dqn-vs-double/dqn-seed33/stage-500k/checkpoints/step-00500000.pt",
+        "sha256": "b20349b96cd0842671a6eb4f5d499e40520941dddcebf3977e067294e394ea53"
+      },
+      "evaluation": null,
+      "q_probe": null
+    },
+    {
+      "run_id": "day18-dqn-vs-double-double_dqn-seed33-main",
+      "algorithm": "double_dqn",
+      "training_seed": 33,
+      "stage": "main",
+      "target_transitions": 500000,
+      "run_dir": "evidence-runs/double_dqn-seed33-main",
+      "checkpoint": {
+        "path": "../../runs/day18-dqn-vs-double/double_dqn-seed33/stage-500k/checkpoints/step-00500000.pt",
+        "sha256": "1fa87e7264fa25cc6ba9b2b2b35a0bd280c27f89758750767ef59781e2239535"
+      },
+      "evaluation": null,
+      "q_probe": null
+    }
+  ],
+  "outputs": [
+    "assets/day18/dqn-vs-double-training.png",
+    "assets/day18/training-return-100k-500k.png"
+  ]
+}

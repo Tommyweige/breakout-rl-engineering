@@ -164,6 +164,32 @@ class SwitchingTrainer(VectorizedDQNTrainer):
 
 
 class VectorizedTrainingTests(unittest.TestCase):
+    @unittest.skipUnless(torch.cuda.is_available(), "CUDA is unavailable")
+    def test_cuda_loaded_rng_states_are_normalized_before_restore(self) -> None:
+        config = DQNConfig(
+            total_steps=3,
+            num_envs=3,
+            batch_size=3,
+            replay_capacity=3,
+            learning_starts=3,
+            device="cpu",
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            trainer = VectorizedDQNTrainer(
+                DeterministicVectorEnv(),
+                config,
+                run_dir=Path(directory) / "rng-restore",
+                online_network=CountingQNetwork(),
+            )
+            trainer._restore_rng_state(  # type: ignore[attr-defined]
+                {
+                    "torch_cpu": torch.get_rng_state().to("cuda"),
+                    "torch_cuda": [torch.cuda.get_rng_state()],
+                    "action_rng": trainer.rng.bit_generator.state,
+                }
+            )
+            trainer.metrics.close()
+
     def test_total_transition_budget_must_be_a_full_vector_step_count(self) -> None:
         config = DQNConfig(
             total_steps=4,
@@ -181,6 +207,42 @@ class VectorizedTrainingTests(unittest.TestCase):
                     run_dir=Path(directory) / "partial-vector-step",
                     online_network=CountingQNetwork(),
                 )
+
+    def test_contract_provenance_is_written_to_run_and_checkpoint_metadata(self) -> None:
+        config = DQNConfig(
+            total_steps=3,
+            num_envs=3,
+            batch_size=3,
+            replay_capacity=3,
+            learning_starts=3,
+            checkpoint_interval=3,
+            device="cpu",
+        )
+        contract = {
+            "contract_id": "test-contract-v2",
+            "contract_path": "configs/eval/breakout_contract_v2.json",
+            "contract_sha256": "a" * 64,
+            "semantics": {"environment_id": "ALE/Breakout-v5"},
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            run_dir = Path(directory) / "contract-provenance"
+            trainer = VectorizedDQNTrainer(
+                DeterministicVectorEnv(),
+                config,
+                run_dir=run_dir,
+                online_network=CountingQNetwork(),
+                environment_contract=contract,
+            )
+            summary = trainer.train()
+            payload = torch.load(
+                run_dir / "checkpoints/step-00000003.pt",
+                map_location="cpu",
+                weights_only=False,
+            )
+
+        self.assertEqual(summary["environment_contract"], contract)
+        self.assertEqual(summary["runtime"]["environment_contract"], contract)
+        self.assertEqual(payload["environment_contract"], contract)
 
     def test_checkpoint_boundaries_are_captured_inside_a_vector_step(self) -> None:
         config = DQNConfig(

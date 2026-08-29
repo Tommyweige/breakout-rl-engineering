@@ -1,0 +1,188 @@
+{
+  "schema_version": 1,
+  "generated_at_utc": "2026-08-29T06:44:21.087113Z",
+  "command": [
+    "C:\\Users\\tommy\\.codex\\worktrees\\ab66\\breakout-rl-engineering\\scripts\\visualization\\visualize_day18_comparison.py",
+    "--manifest",
+    "assets/day18/evidence-manifest.json",
+    "--output-dir",
+    "assets/day18"
+  ],
+  "question": "在固定 Contract v2 evaluation seeds、epsilon=0 與 raw reward 下，250K/500K 的 per-training-seed evaluation spread 是否分開？",
+  "source_manifest": "assets/day18/evidence-manifest.json",
+  "source_manifest_sha256": "5cb36418f736d5b6734416c8065574379e1fcfb60a9fe71c4896194abbf6e586",
+  "source_entries": [
+    {
+      "run_id": "day18-dqn-vs-double-dqn-seed11-pilot",
+      "algorithm": "dqn",
+      "training_seed": 11,
+      "stage": "pilot",
+      "target_transitions": 250000,
+      "run_dir": null,
+      "checkpoint": null,
+      "evaluation": {
+        "path": "../../evaluations/day18-dqn-vs-double/dqn-seed11/step-00250000/results.json",
+        "sha256": "d4b64508cdbf47da20d4e7eba18bc75985bb8f7ee8b456d94703a987f64ce883"
+      },
+      "q_probe": null
+    },
+    {
+      "run_id": "day18-dqn-vs-double-double_dqn-seed11-pilot",
+      "algorithm": "double_dqn",
+      "training_seed": 11,
+      "stage": "pilot",
+      "target_transitions": 250000,
+      "run_dir": null,
+      "checkpoint": null,
+      "evaluation": {
+        "path": "../../evaluations/day18-dqn-vs-double/double_dqn-seed11/step-00250000/results.json",
+        "sha256": "4c1adf6c4c77edf02292a9c8e978fe603763c7c12f10ac09a4252ebcbafb34c6"
+      },
+      "q_probe": null
+    },
+    {
+      "run_id": "day18-dqn-vs-double-dqn-seed22-pilot",
+      "algorithm": "dqn",
+      "training_seed": 22,
+      "stage": "pilot",
+      "target_transitions": 250000,
+      "run_dir": null,
+      "checkpoint": null,
+      "evaluation": {
+        "path": "../../evaluations/day18-dqn-vs-double/dqn-seed22/step-00250000/results.json",
+        "sha256": "ee03a82d2ad5763163a191585b28bfc8351b0c22eaf3f8c089403dd697ba7ce2"
+      },
+      "q_probe": null
+    },
+    {
+      "run_id": "day18-dqn-vs-double-double_dqn-seed22-pilot",
+      "algorithm": "double_dqn",
+      "training_seed": 22,
+      "stage": "pilot",
+      "target_transitions": 250000,
+      "run_dir": null,
+      "checkpoint": null,
+      "evaluation": {
+        "path": "../../evaluations/day18-dqn-vs-double/double_dqn-seed22/step-00250000/results.json",
+        "sha256": "cbd11710970787c0acbffaa85dc1b9c682369717ddc58eca042053c1bcf2e91b"
+      },
+      "q_probe": null
+    },
+    {
+      "run_id": "day18-dqn-vs-double-dqn-seed33-pilot",
+      "algorithm": "dqn",
+      "training_seed": 33,
+      "stage": "pilot",
+      "target_transitions": 250000,
+      "run_dir": null,
+      "checkpoint": null,
+      "evaluation": {
+        "path": "../../evaluations/day18-dqn-vs-double/dqn-seed33/step-00250000/results.json",
+        "sha256": "4f9e930e117ab29999c80866daabc610231e22fac65b67d036271e81c55ea815"
+      },
+      "q_probe": null
+    },
+    {
+      "run_id": "day18-dqn-vs-double-double_dqn-seed33-pilot",
+      "algorithm": "double_dqn",
+      "training_seed": 33,
+      "stage": "pilot",
+      "target_transitions": 250000,
+      "run_dir": null,
+      "checkpoint": null,
+      "evaluation": {
+        "path": "../../evaluations/day18-dqn-vs-double/double_dqn-seed33/step-00250000/results.json",
+        "sha256": "5a6c054e68205156b4e850ef08e3275fdc425de6ed808a661f4ae1f86e112055"
+      },
+      "q_probe": null
+    },
+    {
+      "run_id": "day18-dqn-vs-double-dqn-seed11-main",
+      "algorithm": "dqn",
+      "training_seed": 11,
+      "stage": "main",
+      "target_transitions": 500000,
+      "run_dir": null,
+      "checkpoint": null,
+      "evaluation": {
+        "path": "../../evaluations/day18-dqn-vs-double/dqn-seed11/step-00500000/results.json",
+        "sha256": "248d65bd30d12c860414942c54a3e8de322d8d5d43654ad64681942d7006e034"
+      },
+      "q_probe": null
+    },
+    {
+      "run_id": "day18-dqn-vs-double-double_dqn-seed11-main",
+      "algorithm": "double_dqn",
+      "training_seed": 11,
+      "stage": "main",
+      "target_transitions": 500000,
+      "run_dir": null,
+      "checkpoint": null,
+      "evaluation": {
+        "path": "../../evaluations/day18-dqn-vs-double/double_dqn-seed11/step-00500000/results.json",
+        "sha256": "4aee97a04a18491b1599bc847df2d7f1b2b31b2ea981f7986245e0ec74dbff47"
+      },
+      "q_probe": null
+    },
+    {
+      "run_id": "day18-dqn-vs-double-dqn-seed22-main",
+      "algorithm": "dqn",
+      "training_seed": 22,
+      "stage": "main",
+      "target_transitions": 500000,
+      "run_dir": null,
+      "checkpoint": null,
+      "evaluation": {
+        "path": "../../evaluations/day18-dqn-vs-double/dqn-seed22/step-00500000/results.json",
+        "sha256": "a7ea47d852fc2cdf7b1f7925da71f5a7ec036af3afeaf47927e0891c8d38a4c1"
+      },
+      "q_probe": null
+    },
+    {
+      "run_id": "day18-dqn-vs-double-double_dqn-seed22-main",
+      "algorithm": "double_dqn",
+      "training_seed": 22,
+      "stage": "main",
+      "target_transitions": 500000,
+      "run_dir": null,
+      "checkpoint": null,
+      "evaluation": {
+        "path": "../../evaluations/day18-dqn-vs-double/double_dqn-seed22/step-00500000/results.json",
+        "sha256": "c2b9b733bfbb73eb8648bb09677216e38e609463c85ec0a4cedf51f0402d0965"
+      },
+      "q_probe": null
+    },
+    {
+      "run_id": "day18-dqn-vs-double-dqn-seed33-main",
+      "algorithm": "dqn",
+      "training_seed": 33,
+      "stage": "main",
+      "target_transitions": 500000,
+      "run_dir": null,
+      "checkpoint": null,
+      "evaluation": {
+        "path": "../../evaluations/day18-dqn-vs-double/dqn-seed33/step-00500000/results.json",
+        "sha256": "3db541ac660ab0bd80fa3b1c88f814fd2e7144d9da294c465e5dd45fe602eabf"
+      },
+      "q_probe": null
+    },
+    {
+      "run_id": "day18-dqn-vs-double-double_dqn-seed33-main",
+      "algorithm": "double_dqn",
+      "training_seed": 33,
+      "stage": "main",
+      "target_transitions": 500000,
+      "run_dir": null,
+      "checkpoint": null,
+      "evaluation": {
+        "path": "../../evaluations/day18-dqn-vs-double/double_dqn-seed33/step-00500000/results.json",
+        "sha256": "6809d15f048b8a2ee97122d7624bb2292f79979caf35984bddcecf8a452527d3"
+      },
+      "q_probe": null
+    }
+  ],
+  "outputs": [
+    "assets/day18/dqn-vs-double-eval.png",
+    "assets/day18/evaluation-250k-500k.png"
+  ]
+}

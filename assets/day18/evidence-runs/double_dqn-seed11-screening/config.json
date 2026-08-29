@@ -1,0 +1,251 @@
+{
+  "run_id": "stage-100k",
+  "total_steps": 100000,
+  "seed": 11,
+  "algorithm": "double_dqn",
+  "gamma": 0.99,
+  "learning_rate": 0.0001,
+  "batch_size": 32,
+  "replay_capacity": 10000,
+  "learning_starts": 1000,
+  "train_frequency": 4,
+  "target_update_interval": 500,
+  "epsilon_start": 0.9,
+  "epsilon_end": 0.05,
+  "epsilon_decay_steps": 10000,
+  "gradient_clip_norm": 10.0,
+  "reward_clip": true,
+  "device": "cuda",
+  "precision": "float32",
+  "checkpoint_interval": 100000,
+  "diagnostics_interval": 100,
+  "metrics_flush_interval": 500,
+  "cpu_threads": 2,
+  "replay_transfer": "direct",
+  "replay_backend": "gpu",
+  "profile_stages": true,
+  "num_envs": 2,
+  "strict_action_selection_parity": true,
+  "runtime": {
+    "python_version": "3.12.13",
+    "pytorch_version": "2.13.0+cu130",
+    "torch_cuda_version": "13.0",
+    "gymnasium_version": "1.3.0",
+    "ale_version": "0.12.0",
+    "numpy_version": "2.5.1",
+    "cpu_logical_count": 16,
+    "cpu_thread_count": 2,
+    "cpu_interop_thread_count": 12,
+    "device": "cuda:0",
+    "requested_device": "cuda",
+    "resolved_device": "cuda:0",
+    "precision": "float32",
+    "cuda_device_index": 0,
+    "cuda_available": true,
+    "cuda_device_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "gpu_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "gpu_model": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "cuda_allocated_bytes": 627733504,
+    "cuda_peak_allocated_bytes": 639140864,
+    "cuda_reserved_bytes": 679477248,
+    "cuda_peak_reserved_bytes": 679477248,
+    "gpu_utilization_percent": 5.0,
+    "gpu_memory_total_bytes": 8585740288,
+    "gpu_utilization_source": "nvidia-smi",
+    "wall_clock_seconds": 312.23802339984104,
+    "steps_per_second": 320.26848911973644,
+    "seed": 11,
+    "git_commit_sha": "1e586a43d88f1aeae936cae4135b62cd9439e10f",
+    "environment_id": "ALE/Breakout-v5",
+    "algorithm": "double_dqn",
+    "architecture": "standard",
+    "vectorized": true,
+    "num_envs": 2,
+    "observation_shape": [
+      4,
+      84,
+      84
+    ],
+    "action_count": 4,
+    "diagnostics_interval": 100,
+    "metrics_flush_interval": 500,
+    "metrics_row_cadence": 1,
+    "global_step_definition": "accepted environment transitions",
+    "schedule_semantics": "optimizer, target, and checkpoint events execute at exact transition boundaries; replay insertion is chunked when crossed",
+    "action_selection_batch_semantics": "one batched forward selects all N actions before env.step; if the vector step crosses an optimizer boundary, later transitions use the pre-update online-network snapshot",
+    "strict_action_selection_parity_rule": "strict parity requires num_envs <= train_frequency and train_frequency % num_envs == 0",
+    "strict_action_selection_parity_requested": true,
+    "strict_action_selection_parity_satisfied": true,
+    "behavior_policy_lag_warning": null,
+    "replay_transfer": "direct",
+    "replay_backend": "gpu",
+    "replay_storage_device": "cuda:0",
+    "replay_bytes": 564620000,
+    "day18_comparison": {
+      "experiment_id": "day18-dqn-vs-double",
+      "run_id": "day18-dqn-vs-double-double_dqn-seed11-screening",
+      "pair_id": "training-seed-11",
+      "algorithm": "double_dqn",
+      "training_seed": 11,
+      "stage": "screening",
+      "target_transitions": 100000,
+      "resume_from": null
+    },
+    "environment_contract": {
+      "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+      "contract_path": "configs/eval/breakout_contract_v2.json",
+      "contract_sha256": "e9947fc3a1235100aa92f75a79cf33668b36b4f325f22a0bc8b9546a356b85ba",
+      "semantics": {
+        "schema_version": 2,
+        "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+        "environment_id": "ALE/Breakout-v5",
+        "frame_skip": 4,
+        "frame_stack": 4,
+        "sticky_action_probability": 0.25,
+        "fire_reset": true,
+        "fire_reset_confirmation": {
+          "max_fire_attempts": 8,
+          "confirmation_steps": 2,
+          "min_observation_change_fraction": 0.0001,
+          "confirmation_operator": "any",
+          "confirmation_signals": [
+            "raw_reward",
+            "observation_activity_streak"
+          ]
+        },
+        "terminal_on_life_loss": false,
+        "time_limit_semantics": {
+          "source": "ale.game_truncated",
+          "max_num_frames_per_episode": 108000,
+          "agent_step_limit": 27000,
+          "truncated_is_finished": true,
+          "external_time_limit_wrapper": false
+        },
+        "concrete_episode_seeds": [
+          101,
+          102,
+          103,
+          104,
+          105,
+          202,
+          203,
+          204,
+          205,
+          206,
+          303,
+          304,
+          305,
+          306,
+          307
+        ],
+        "evaluation_epsilon": 0.0,
+        "raw_reward_rule": "sum environment rewards without clipping"
+      }
+    },
+    "training_steps": 100000,
+    "environment_transitions_per_second": 320.26848911973644,
+    "stage_start_step": 0,
+    "stage_training_steps": 100000,
+    "physical_environment_steps": 100000,
+    "stage_physical_environment_steps": 100000,
+    "physical_environment_steps_per_second": 320.26848911973644,
+    "vector_iterations": 50000,
+    "vector_iterations_per_second": 160.13424455986822,
+    "action_inference_batches": 50000,
+    "action_inference_transitions": 100000,
+    "action_inference_transitions_per_second": 320.26848911973644,
+    "action_inference_batches_per_second": 160.13424455986822,
+    "replay_insertion_calls": 50000,
+    "replay_insertion_transitions": 100000,
+    "replay_insertion_transitions_per_second": 320.26848911973644,
+    "replay_insertion_calls_per_second": 160.13424455986822,
+    "optimizer_updates_per_second": 79.26965374202597,
+    "training_samples_per_second": 2536.628919744831,
+    "configured_cpu_threads": 2,
+    "replay_rewarm_steps_remaining": 0,
+    "resume_provenance": null,
+    "stage_timings": {
+      "batched_action_inference": {
+        "calls": 50000,
+        "wall_seconds": 70.19874059222639,
+        "cpu_seconds": 130.375,
+        "gpu_seconds": 68.6263042692542
+      },
+      "env_step": {
+        "calls": 50000,
+        "wall_seconds": 66.79158428986557,
+        "cpu_seconds": 105.28125
+      },
+      "batched_replay_insert": {
+        "calls": 50000,
+        "wall_seconds": 21.805275222752243,
+        "cpu_seconds": 60.953125,
+        "gpu_seconds": 19.907681761413812
+      },
+      "metrics_write": {
+        "calls": 100000,
+        "wall_seconds": 2.809605866903439,
+        "cpu_seconds": 3.515625
+      },
+      "gpu_replay_gather_cast": {
+        "calls": 24751,
+        "wall_seconds": 12.905258328653872,
+        "cpu_seconds": 23.265625,
+        "gpu_seconds": 12.751442525997758
+      },
+      "forward": {
+        "calls": 24751,
+        "wall_seconds": 17.69797438615933,
+        "cpu_seconds": 33.9375,
+        "gpu_seconds": 17.292956896021963
+      },
+      "target_forward": {
+        "calls": 24751,
+        "wall_seconds": 28.90709087299183,
+        "cpu_seconds": 48.9375,
+        "gpu_seconds": 28.467835356891154
+      },
+      "loss": {
+        "calls": 24751,
+        "wall_seconds": 3.1125057933386415,
+        "cpu_seconds": 6.359375,
+        "gpu_seconds": 2.696792756484356
+      },
+      "backward": {
+        "calls": 24751,
+        "wall_seconds": 32.985693296417594,
+        "cpu_seconds": 75.171875,
+        "gpu_seconds": 32.8477672612071
+      },
+      "optimizer_step": {
+        "calls": 24751,
+        "wall_seconds": 25.444504922721535,
+        "cpu_seconds": 30.171875,
+        "gpu_seconds": 25.486000357747077
+      },
+      "dqn_update": {
+        "calls": 24751,
+        "wall_seconds": 118.3195986947976,
+        "cpu_seconds": 211.5,
+        "gpu_seconds": 118.07170233559609
+      },
+      "gradient_diagnostics": {
+        "calls": 248,
+        "wall_seconds": 0.5966526013799012,
+        "cpu_seconds": 0.875,
+        "gpu_seconds": 0.589068928360939
+      },
+      "diagnostics": {
+        "calls": 248,
+        "wall_seconds": 0.45142000168561935,
+        "cpu_seconds": 0.6875,
+        "gpu_seconds": 0.4434977602958679
+      },
+      "checkpoint": {
+        "calls": 1,
+        "wall_seconds": 0.4512012000195682,
+        "cpu_seconds": 0.5625
+      }
+    }
+  }
+}

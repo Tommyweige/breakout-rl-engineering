@@ -1,0 +1,16 @@
+flowchart LR
+    A[Contract v2<br/>+ Day 16 backend] --> B[paired manifest]
+    B --> C[100K screening<br/>DQN + Double DQN]
+    C --> D[250K pilot<br/>seed 11 pair]
+    D --> E{pilot gate<br/>correctness / stability / performance}
+    E -- fail --> X[保留 incomplete<br/>禁止 ranking]
+    E -- pass --> F[500K main<br/>seeds 11 / 22 / 33<br/>sequential]
+    F --> G[training metrics<br/>+ CUDA runtime metadata]
+    F --> H[Contract v2 evaluation<br/>epsilon 0 + raw reward]
+    F --> I[fixed probe states<br/>Q / max-Q diagnostics]
+    G --> J[只聚合 completed runs<br/>actual transitions = target]
+    H --> J
+    I --> J
+    J --> K{paired seed<br/>方向一致?}
+    K -- yes --> L[A / B<br/>evidence-supported direction]
+    K -- no --> M[C / D<br/>variance 或 500K 仍不足]

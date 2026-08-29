@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "day": 18,
+  "experiment_id": "day18-dqn-vs-double",
+  "description": "Staged, paired DQN versus Double DQN comparison on the Day 16 backend.",
+  "backend_manifest": "configs/training/day16-canonical-backend.json",
+  "contract": "configs/eval/breakout_contract_v2.json",
+  "evaluation_config": "configs/eval/breakout_eval.json",
+  "probe_states": "assets/day17/probe_states.npz",
+  "algorithms": [
+    "dqn",
+    "double_dqn"
+  ],
+  "training_seeds": [
+    11,
+    22,
+    33
+  ],
+  "milestones": {
+    "screening": 100000,
+    "pilot": 250000,
+    "main": 500000
+  },
+  "formal_quality_horizon": "main",
+  "execution": {
+    "sequential": true,
+    "require_cuda": true,
+    "cuda_headroom_bytes": 1073741824,
+    "resume_policy": "fresh replay with learning-start rewarm; model, target, optimizer, counters, RNG, and provenance resume from checkpoint"
+  },
+  "screening_policy": "100K is a correctness and early-learning screen, never final model selection.",
+  "comparison_policy": "The primary quality budget is actual accepted environment transitions; wall-clock, SPS, and VRAM are reported separately as engineering cost."
+}

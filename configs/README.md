@@ -37,6 +37,13 @@ These are algorithm-facing baseline configs. Formal comparisons must keep the ta
 - `eval/` — evaluation protocol and environment contract.
 - `training/` — canonical training-system manifests.
 
+## Day 18 paired comparison
+
+`experiments/day18-dqn-vs-double.json` freezes the Day 18 staged protocol:
+100K screening, a seed-11 250K pilot, and a three-seed 500K main comparison.
+The runner derives every stage config from the Day 16 backend manifest, so the
+algorithm is the only within-pair DQN config variable.
+
 ## Day 14 controlled batches
 
 The Day 14 runner resolves each experiment file to a full `DQNConfig`, records the resolved values, and computes the changed-field diff against the baseline.

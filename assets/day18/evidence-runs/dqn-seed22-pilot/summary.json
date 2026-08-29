@@ -1,0 +1,433 @@
+{
+  "status": "completed",
+  "trainer": "vectorized_dqn",
+  "run_id": "stage-250k",
+  "run_dir": "C:\\Users\\tommy\\.codex\\worktrees\\ab66\\breakout-rl-engineering\\runs\\day18-dqn-vs-double\\dqn-seed22\\stage-250k",
+  "seed": 22,
+  "algorithm": "dqn",
+  "architecture": "standard",
+  "num_envs": 2,
+  "total_steps": 250000,
+  "total_transitions": 250000,
+  "training_steps": 250000,
+  "physical_environment_steps": 250000,
+  "vector_iterations": 125000,
+  "episodes": 756,
+  "per_environment_episode_counts": [
+    376,
+    380
+  ],
+  "optimizer_updates": 62001,
+  "target_sync_count": 501,
+  "last_target_sync_step": 250000,
+  "replay_backend": "gpu",
+  "replay_transfer": "direct",
+  "replay_bytes": 564620000,
+  "replay_rewarm_steps_remaining": 0,
+  "replay_size": 10000,
+  "replay_occupancy": {
+    "size": 10000,
+    "capacity": 10000,
+    "ratio": 1.0
+  },
+  "steps_per_second": 377.48722938064503,
+  "environment_transitions_per_second": 377.48722938064503,
+  "physical_environment_steps_per_second": 377.48722938064503,
+  "stage_start_step": 100000,
+  "stage_training_steps": 150000,
+  "stage_physical_environment_steps": 150000,
+  "vector_iterations_per_second": 314.5726911505375,
+  "action_inference_batches": 125000,
+  "action_inference_transitions": 250000,
+  "action_inference_transitions_per_second": 629.145382301075,
+  "action_inference_batches_per_second": 314.5726911505375,
+  "replay_insertion_calls": 125000,
+  "replay_insertion_transitions": 250000,
+  "replay_insertion_transitions_per_second": 629.145382301075,
+  "replay_insertion_calls_per_second": 314.5726911505375,
+  "optimizer_updates_per_second": 156.0305713921958,
+  "training_samples_per_second": 4992.978284550266,
+  "runtime": {
+    "python_version": "3.12.13",
+    "pytorch_version": "2.13.0+cu130",
+    "torch_cuda_version": "13.0",
+    "gymnasium_version": "1.3.0",
+    "ale_version": "0.12.0",
+    "numpy_version": "2.5.1",
+    "cpu_logical_count": 16,
+    "cpu_thread_count": 2,
+    "cpu_interop_thread_count": 12,
+    "device": "cuda:0",
+    "requested_device": "cuda",
+    "resolved_device": "cuda:0",
+    "precision": "float32",
+    "cuda_device_index": 0,
+    "cuda_available": true,
+    "cuda_device_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "gpu_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "gpu_model": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "cuda_allocated_bytes": 626837504,
+    "cuda_peak_allocated_bytes": 638180352,
+    "cuda_reserved_bytes": 679477248,
+    "cuda_peak_reserved_bytes": 679477248,
+    "gpu_utilization_percent": 0.0,
+    "gpu_memory_total_bytes": 8585740288,
+    "gpu_utilization_source": "nvidia-smi",
+    "wall_clock_seconds": 397.36443599988706,
+    "steps_per_second": 377.48722938064503,
+    "seed": 22,
+    "git_commit_sha": "1e586a43d88f1aeae936cae4135b62cd9439e10f",
+    "environment_id": "ALE/Breakout-v5",
+    "algorithm": "dqn",
+    "architecture": "standard",
+    "training_steps": 250000,
+    "vectorized": true,
+    "num_envs": 2,
+    "observation_shape": [
+      4,
+      84,
+      84
+    ],
+    "action_count": 4,
+    "environment_transitions_per_second": 377.48722938064503,
+    "stage_start_step": 100000,
+    "stage_training_steps": 150000,
+    "physical_environment_steps": 250000,
+    "stage_physical_environment_steps": 150000,
+    "physical_environment_steps_per_second": 377.48722938064503,
+    "vector_iterations": 125000,
+    "vector_iterations_per_second": 314.5726911505375,
+    "action_inference_batches": 125000,
+    "action_inference_transitions": 250000,
+    "action_inference_transitions_per_second": 629.145382301075,
+    "action_inference_batches_per_second": 314.5726911505375,
+    "replay_insertion_calls": 125000,
+    "replay_insertion_transitions": 250000,
+    "replay_insertion_transitions_per_second": 629.145382301075,
+    "replay_insertion_calls_per_second": 314.5726911505375,
+    "optimizer_updates_per_second": 156.0305713921958,
+    "training_samples_per_second": 4992.978284550266,
+    "diagnostics_interval": 100,
+    "metrics_flush_interval": 500,
+    "metrics_row_cadence": 1,
+    "global_step_definition": "accepted environment transitions",
+    "schedule_semantics": "optimizer, target, and checkpoint events execute at exact transition boundaries; replay insertion is chunked when crossed",
+    "action_selection_batch_semantics": "one batched forward selects all N actions before env.step; if the vector step crosses an optimizer boundary, later transitions use the pre-update online-network snapshot",
+    "strict_action_selection_parity_rule": "strict parity requires num_envs <= train_frequency and train_frequency % num_envs == 0",
+    "strict_action_selection_parity_requested": true,
+    "strict_action_selection_parity_satisfied": true,
+    "behavior_policy_lag_warning": null,
+    "configured_cpu_threads": 2,
+    "replay_transfer": "direct",
+    "replay_backend": "gpu",
+    "replay_storage_device": "cuda:0",
+    "replay_bytes": 564620000,
+    "replay_rewarm_steps_remaining": 0,
+    "resume_provenance": {
+      "source_checkpoint": "C:\\Users\\tommy\\.codex\\worktrees\\ab66\\breakout-rl-engineering\\runs\\day18-dqn-vs-double\\dqn-seed22\\stage-100k-retry-02\\checkpoints\\step-00100000.pt",
+      "source_checkpoint_sha256": "04c8b8d249c84076ccf9f034735e2c8f4cdbcdf37758581ddad3625cf7394658",
+      "source_step": 100000,
+      "replay_saved": false,
+      "replay_resume_semantics": "fresh_replay_with_learning_starts_rewarm",
+      "source_resume_provenance": null
+    },
+    "stage_timings": {
+      "batched_action_inference": {
+        "calls": 75000,
+        "wall_seconds": 85.3282776302658,
+        "cpu_seconds": 150.171875,
+        "gpu_seconds": 83.84848419427871
+      },
+      "env_step": {
+        "calls": 75000,
+        "wall_seconds": 94.16432601772249,
+        "cpu_seconds": 147.796875
+      },
+      "batched_replay_insert": {
+        "calls": 75000,
+        "wall_seconds": 25.185261316830292,
+        "cpu_seconds": 95.984375,
+        "gpu_seconds": 23.05019740669429
+      },
+      "metrics_write": {
+        "calls": 150000,
+        "wall_seconds": 3.9548622076399624,
+        "cpu_seconds": 5.140625
+      },
+      "gpu_replay_gather_cast": {
+        "calls": 37250,
+        "wall_seconds": 16.087717899121344,
+        "cpu_seconds": 20.125,
+        "gpu_seconds": 15.564416998311877
+      },
+      "forward": {
+        "calls": 37250,
+        "wall_seconds": 20.978144092019647,
+        "cpu_seconds": 36.84375,
+        "gpu_seconds": 20.449935941711068
+      },
+      "target_forward": {
+        "calls": 37250,
+        "wall_seconds": 21.91162579925731,
+        "cpu_seconds": 47.84375,
+        "gpu_seconds": 21.399310595959424
+      },
+      "loss": {
+        "calls": 37250,
+        "wall_seconds": 4.145966528682038,
+        "cpu_seconds": 8.609375,
+        "gpu_seconds": 3.6449975785482676
+      },
+      "backward": {
+        "calls": 37250,
+        "wall_seconds": 42.490793901029974,
+        "cpu_seconds": 97.8125,
+        "gpu_seconds": 42.107961854487655
+      },
+      "optimizer_step": {
+        "calls": 37250,
+        "wall_seconds": 47.46314122295007,
+        "cpu_seconds": 57.453125,
+        "gpu_seconds": 47.3976851823926
+      },
+      "dqn_update": {
+        "calls": 37250,
+        "wall_seconds": 149.72543663228862,
+        "cpu_seconds": 268.03125,
+        "gpu_seconds": 149.29470742321016
+      },
+      "gradient_diagnostics": {
+        "calls": 374,
+        "wall_seconds": 0.6758617998566478,
+        "cpu_seconds": 0.8125,
+        "gpu_seconds": 0.6685722862482071
+      },
+      "diagnostics": {
+        "calls": 374,
+        "wall_seconds": 0.5919447997584939,
+        "cpu_seconds": 1.15625,
+        "gpu_seconds": 0.5873856333494186
+      },
+      "checkpoint": {
+        "calls": 1,
+        "wall_seconds": 0.5879993000999093,
+        "cpu_seconds": 0.671875
+      }
+    },
+    "day18_comparison": {
+      "experiment_id": "day18-dqn-vs-double",
+      "run_id": "day18-dqn-vs-double-dqn-seed22-pilot",
+      "pair_id": "training-seed-22",
+      "algorithm": "dqn",
+      "training_seed": 22,
+      "stage": "pilot",
+      "target_transitions": 250000,
+      "resume_from": {
+        "path": "../../runs/day18-dqn-vs-double/dqn-seed22/stage-100k-retry-02/checkpoints/step-00100000.pt",
+        "sha256": "04c8b8d249c84076ccf9f034735e2c8f4cdbcdf37758581ddad3625cf7394658",
+        "step": 100000
+      }
+    },
+    "environment_contract": {
+      "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+      "contract_path": "configs/eval/breakout_contract_v2.json",
+      "contract_sha256": "e9947fc3a1235100aa92f75a79cf33668b36b4f325f22a0bc8b9546a356b85ba",
+      "semantics": {
+        "schema_version": 2,
+        "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+        "environment_id": "ALE/Breakout-v5",
+        "frame_skip": 4,
+        "frame_stack": 4,
+        "sticky_action_probability": 0.25,
+        "fire_reset": true,
+        "fire_reset_confirmation": {
+          "max_fire_attempts": 8,
+          "confirmation_steps": 2,
+          "min_observation_change_fraction": 0.0001,
+          "confirmation_operator": "any",
+          "confirmation_signals": [
+            "raw_reward",
+            "observation_activity_streak"
+          ]
+        },
+        "terminal_on_life_loss": false,
+        "time_limit_semantics": {
+          "source": "ale.game_truncated",
+          "max_num_frames_per_episode": 108000,
+          "agent_step_limit": 27000,
+          "truncated_is_finished": true,
+          "external_time_limit_wrapper": false
+        },
+        "concrete_episode_seeds": [
+          101,
+          102,
+          103,
+          104,
+          105,
+          202,
+          203,
+          204,
+          205,
+          206,
+          303,
+          304,
+          305,
+          306,
+          307
+        ],
+        "evaluation_epsilon": 0.0,
+        "raw_reward_rule": "sum environment rewards without clipping"
+      }
+    }
+  },
+  "last_loss": 0.003561808727681637,
+  "last_q_mean": 2.0239062309265137,
+  "last_q_max": 3.1671814918518066,
+  "last_q_min": 0.03435761481523514,
+  "last_target_mean": 2.040132522583008,
+  "last_target_max": 3.162511110305786,
+  "last_td_error_mean_abs": 0.05415236949920654,
+  "last_td_error_max_abs": 0.3317141532897949,
+  "action_distribution": {
+    "NOOP": 40636,
+    "FIRE": 57376,
+    "RIGHT": 70499,
+    "LEFT": 81489
+  },
+  "action_distribution_semantics": "environment-executed actions; requested_action is preserved per row",
+  "random_decision_count": 16822,
+  "greedy_decision_count": 233178,
+  "random_decision_ratio": 0.067288,
+  "last_checkpoint": "C:\\Users\\tommy\\.codex\\worktrees\\ab66\\breakout-rl-engineering\\runs\\day18-dqn-vs-double\\dqn-seed22\\stage-250k\\checkpoints\\step-00250000.pt",
+  "action_selection_batch_semantics": "one batched forward selects all N actions before env.step; if the vector step crosses an optimizer boundary, later transitions use the pre-update online-network snapshot",
+  "strict_action_selection_parity_rule": "strict parity requires num_envs <= train_frequency and train_frequency % num_envs == 0",
+  "strict_action_selection_parity_requested": true,
+  "strict_action_selection_parity_satisfied": true,
+  "behavior_policy_lag_warning": null,
+  "resume_provenance": {
+    "source_checkpoint": "C:\\Users\\tommy\\.codex\\worktrees\\ab66\\breakout-rl-engineering\\runs\\day18-dqn-vs-double\\dqn-seed22\\stage-100k-retry-02\\checkpoints\\step-00100000.pt",
+    "source_checkpoint_sha256": "04c8b8d249c84076ccf9f034735e2c8f4cdbcdf37758581ddad3625cf7394658",
+    "source_step": 100000,
+    "replay_saved": false,
+    "replay_resume_semantics": "fresh_replay_with_learning_starts_rewarm",
+    "source_resume_provenance": null
+  },
+  "metadata": {
+    "day18_comparison": {
+      "experiment_id": "day18-dqn-vs-double",
+      "run_id": "day18-dqn-vs-double-dqn-seed22-pilot",
+      "pair_id": "training-seed-22",
+      "algorithm": "dqn",
+      "training_seed": 22,
+      "stage": "pilot",
+      "target_transitions": 250000,
+      "resume_from": {
+        "path": "../../runs/day18-dqn-vs-double/dqn-seed22/stage-100k-retry-02/checkpoints/step-00100000.pt",
+        "sha256": "04c8b8d249c84076ccf9f034735e2c8f4cdbcdf37758581ddad3625cf7394658",
+        "step": 100000
+      }
+    },
+    "environment_contract": {
+      "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+      "contract_path": "configs/eval/breakout_contract_v2.json",
+      "contract_sha256": "e9947fc3a1235100aa92f75a79cf33668b36b4f325f22a0bc8b9546a356b85ba",
+      "semantics": {
+        "schema_version": 2,
+        "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+        "environment_id": "ALE/Breakout-v5",
+        "frame_skip": 4,
+        "frame_stack": 4,
+        "sticky_action_probability": 0.25,
+        "fire_reset": true,
+        "fire_reset_confirmation": {
+          "max_fire_attempts": 8,
+          "confirmation_steps": 2,
+          "min_observation_change_fraction": 0.0001,
+          "confirmation_operator": "any",
+          "confirmation_signals": [
+            "raw_reward",
+            "observation_activity_streak"
+          ]
+        },
+        "terminal_on_life_loss": false,
+        "time_limit_semantics": {
+          "source": "ale.game_truncated",
+          "max_num_frames_per_episode": 108000,
+          "agent_step_limit": 27000,
+          "truncated_is_finished": true,
+          "external_time_limit_wrapper": false
+        },
+        "concrete_episode_seeds": [
+          101,
+          102,
+          103,
+          104,
+          105,
+          202,
+          203,
+          204,
+          205,
+          206,
+          303,
+          304,
+          305,
+          306,
+          307
+        ],
+        "evaluation_epsilon": 0.0,
+        "raw_reward_rule": "sum environment rewards without clipping"
+      }
+    }
+  },
+  "environment_contract": {
+    "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+    "contract_path": "configs/eval/breakout_contract_v2.json",
+    "contract_sha256": "e9947fc3a1235100aa92f75a79cf33668b36b4f325f22a0bc8b9546a356b85ba",
+    "semantics": {
+      "schema_version": 2,
+      "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+      "environment_id": "ALE/Breakout-v5",
+      "frame_skip": 4,
+      "frame_stack": 4,
+      "sticky_action_probability": 0.25,
+      "fire_reset": true,
+      "fire_reset_confirmation": {
+        "max_fire_attempts": 8,
+        "confirmation_steps": 2,
+        "min_observation_change_fraction": 0.0001,
+        "confirmation_operator": "any",
+        "confirmation_signals": [
+          "raw_reward",
+          "observation_activity_streak"
+        ]
+      },
+      "terminal_on_life_loss": false,
+      "time_limit_semantics": {
+        "source": "ale.game_truncated",
+        "max_num_frames_per_episode": 108000,
+        "agent_step_limit": 27000,
+        "truncated_is_finished": true,
+        "external_time_limit_wrapper": false
+      },
+      "concrete_episode_seeds": [
+        101,
+        102,
+        103,
+        104,
+        105,
+        202,
+        203,
+        204,
+        205,
+        206,
+        303,
+        304,
+        305,
+        306,
+        307
+      ],
+      "evaluation_epsilon": 0.0,
+      "raw_reward_rule": "sum environment rewards without clipping"
+    }
+  }
+}

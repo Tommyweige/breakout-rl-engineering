@@ -1037,9 +1037,23 @@ class DQNTrainer:
         if "numpy_global" in state:
             np.random.set_state(state["numpy_global"])
         if "torch_cpu" in state:
-            torch.set_rng_state(state["torch_cpu"])
+            cpu_state = state["torch_cpu"]
+            if not isinstance(cpu_state, torch.Tensor):
+                raise ValueError("checkpoint torch_cpu RNG state must be a tensor")
+            torch.set_rng_state(cpu_state.detach().to(device="cpu", dtype=torch.uint8))
         if torch.cuda.is_available() and state.get("torch_cuda") is not None:
-            torch.cuda.set_rng_state_all(state["torch_cuda"])
+            raw_cuda_states = state["torch_cuda"]
+            if not isinstance(raw_cuda_states, (list, tuple)):
+                raise ValueError("checkpoint torch_cuda RNG state must be a sequence")
+            cuda_states = [
+                value.detach().to(device="cpu", dtype=torch.uint8)
+                if isinstance(value, torch.Tensor)
+                else value
+                for value in raw_cuda_states
+            ]
+            if not all(isinstance(value, torch.Tensor) for value in cuda_states):
+                raise ValueError("checkpoint torch_cuda RNG state must contain tensors")
+            torch.cuda.set_rng_state_all(cuda_states)
         if "action_rng" in state:
             self.rng.bit_generator.state = state["action_rng"]
 

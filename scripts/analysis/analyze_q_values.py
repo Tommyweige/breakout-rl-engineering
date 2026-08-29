@@ -83,6 +83,16 @@ def load_checkpoint_model(
             "input_shape": list(input_shape),
             "hidden_dim": hidden_dim,
         },
+        "environment_contract": (
+            dict(payload["environment_contract"])
+            if isinstance(payload.get("environment_contract"), Mapping)
+            else (
+                dict(payload["metadata"]["environment_contract"])
+                if isinstance(payload.get("metadata"), Mapping)
+                and isinstance(payload["metadata"].get("environment_contract"), Mapping)
+                else None
+            )
+        ),
     }
     return model, metadata
 

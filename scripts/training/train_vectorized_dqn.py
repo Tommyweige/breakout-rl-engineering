@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from datetime import datetime, timezone
 from pathlib import Path
@@ -181,6 +182,20 @@ def _run_path(args: argparse.Namespace, config: DQNConfig) -> Path:
     return root / run_id
 
 
+def _contract_provenance(
+    contract_path: Path,
+    contract: BreakoutEvaluationContractV2,
+) -> dict[str, Any]:
+    """Return the contract identity and full semantics stored in run artifacts."""
+
+    return {
+        "contract_id": contract.contract_id,
+        "contract_path": contract_path.as_posix(),
+        "contract_sha256": hashlib.sha256(contract_path.read_bytes()).hexdigest(),
+        "semantics": contract.to_dict(),
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
@@ -198,7 +213,12 @@ def main(argv: list[str] | None = None) -> int:
         **breakout_environment_kwargs(contract),
     )
     try:
-        trainer = VectorizedDQNTrainer(env, config, run_dir=run_path)
+        trainer = VectorizedDQNTrainer(
+            env,
+            config,
+            run_dir=run_path,
+            environment_contract=_contract_provenance(contract_path, contract),
+        )
         summary = trainer.train()
     except (RuntimeError, ValueError) as error:
         print(f"Vectorized training could not start or was stopped: {error}")
