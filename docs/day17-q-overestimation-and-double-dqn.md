@@ -1,140 +1,419 @@
-# Q-value 為什麼會被 `max` 拉高？從估計誤差走到 Double DQN
+# Day 17｜DQN 為什麼會把自己看得太樂觀？從 `max` 的陷阱到 Double DQN
 
-Day 16 已經把 Breakout 的環境規則和訓練資料流固定下來，也選出 N=2 的向量化 GPU Replay backend（把 replay 資料放在 GPU 上供訓練抽樣）。現在問題換了：即使資料流沒有 bug，DQN 用來表示「現在做某個動作有多值得」的 Q-value，仍然只是模型的估計，不是真正可以直接查表的答案。
+Day 16 解決的是「怎麼訓練得更有效率」。環境規則固定下來後，我們也選出了後續實驗要使用的向量化訓練方式。
 
-這個差別在 target 計算裡會被放大。Vanilla DQN 會在下一個 state 的多個估計中取最大值；只要估計帶有一點誤差，這個選擇就可能偏愛「剛好被高估」的 action。這篇文章要回答的不是「Double DQN 一定比較強嗎」，而是更前面的問題：**為什麼 `max` 會製造這個偏差，以及 Double DQN 到底把哪兩個工作拆開？**
+但訓練流程穩定，不代表演算法本身就沒有問題。
 
-## 一個單獨看起來沒問題的估計，為什麼合在一起會偏高？
+DQN 每次看到一個狀態，都會替每個 action 估計一個 Q-value。這個數字可以先理解成：**如果現在做這個動作，從現在開始大概能累積多少未來回報。**
 
-先不碰 Breakout，也不假設神經網路的最佳 Q-value 可以取得。我建立一個最小的 toy experiment：四個 action 的真實價值都設成 `0`，每次估計都加上平均為 `0` 的隨機 noise。單獨看所有估計值，它們的平均應該接近 `0`；但如果每次都挑四個估計裡最大的那個，結果會怎樣？
+問題是，Q-value 不是遊戲偷偷告訴模型的正確答案，而是神經網路自己估出來的。
 
-以下是 seed `42`、每個 noise scale 各 `100,000` trials 的實際輸出。`single estimate mean` 是所有 action 估計混在一起的平均，`vanilla max mean` 是每次挑最大值後再平均，`decoupled mean` 則是用估計 A 選 action、再用獨立的估計 B 評估該 action。
+只要是估計，就會有誤差。
 
-| noise std | single estimate mean | vanilla max mean | decoupled mean |
+而 Vanilla DQN 剛好有一個很容易把誤差放大的動作：
+
+> **從好幾個估計值裡，直接挑最大的那一個。**
+
+這一篇要處理的，就是這個看起來很自然的 `max`。
+
+---
+
+## 當四個答案都有誤差，挑最大的那個會發生什麼？
+
+先不要急著回到 Breakout。
+
+假設現在有四個 action，而且我們知道它們真正的價值其實全部都是：
+
+```text
+0, 0, 0, 0
+```
+
+如果估計器完全準確，那當然沒問題。
+
+但現實中的神經網路不可能每次都剛好估到 0。可能某次變成：
+
+```text
+-0.2, 0.1, -0.1, 0.3
+```
+
+下一次又變成：
+
+```text
+0.1, -0.4, 0.8, -0.2
+```
+
+這些誤差如果平均起來接近 0，看起來好像很公平：有時高估、有時低估，最後應該互相抵銷。
+
+但 DQN 並不是把四個估計值全部平均。
+
+它會做：
+
+```text
+max(Q1, Q2, Q3, Q4)
+```
+
+也就是每次專門挑最大的那一個。
+
+這就像四個人同時猜一個答案，每個人的猜測都有正有負的誤差，但我們永遠只採用「猜得最高」的人。久了以後，即使每個人本身都沒有刻意往高處猜，最後被選中的答案仍然很容易偏高。
+
+我用一個最小實驗把這件事直接量出來。四個 action 的真實價值都固定為 0，只改估計誤差的大小；每個設定跑 100,000 次。
+
+| noise std | 所有估計平均 | 每次取 `max` 後平均 | 分開選擇與評估後平均 |
 |---:|---:|---:|---:|
 | 0.1 | 0.000003 | 0.102909 | 0.000550 |
 | 0.5 | 0.000015 | 0.514543 | 0.002750 |
 | 1.0 | 0.000029 | 1.029086 | 0.005499 |
 
-真實值在三組實驗中都是 `0`。單一估計的平均確實接近真實值，但 `vanilla max mean` 隨 noise 增加而明顯高於 `0`。這就是這裡所說的 overestimation bias：**不是每個 Q-value 都一定被高估，而是「選最大值」這個規則的平均結果偏向高估。**
+可以看到，原本所有估計混在一起時幾乎就是 0；但只要每次都挑最大的那個，平均值就開始往上飄，而且誤差越大，偏得越明顯。
 
 [![四個 action 的估計加入不同 noise 後，max selection 的平均值偏離真實值](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/1464032ac877d0de02481d6d8490be6534ead2ff/assets/day17/overestimation-bias.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/1464032ac877d0de02481d6d8490be6534ead2ff/assets/day17/overestimation-bias.png)
 
-圖的橫軸是 noise 的標準差，縱軸是估計值的平均。藍線的單一估計和黑色虛線真實值幾乎重疊；橘線則是每次先取最大值再平均，所以被推到真實值上方。綠線把「選 action」和「評估 value」分開後，平均值回到接近 `0`。這個實驗證明的是 max 加上估計誤差會產生偏差；它沒有測量 Breakout 神經網路的真實偏差大小。
+這就是 **overestimation bias（高估偏差）**。
 
-## max 不是中立的選擇器
+它不是說「DQN 的每一個 Q-value 都一定高估」，而是：
 
-關鍵不在於 noise 是否有正的平均。假設某一輪四個估計是：
+> 當同一組帶有誤差的估計，同時負責「挑出最好的一個」和「告訴我們它有多好」時，最大值會比較容易保留下剛好偏高的誤差。
 
-```text
-[-0.8, 0.2, -0.1, 0.4]
-```
+這個差別非常重要。
 
-它們的誤差可能整體偏低，但 `max` 還是會選 `0.4`。另一輪如果四個誤差剛好是：
+---
 
-```text
-[-0.2, 0.1, 0.3, 1.1]
-```
+## `max` 本身不是錯，問題是它相信了同一份估計
 
-`max` 就會選到 `1.1`。在大量輪次中，越多 action 可以比較，就越有機會出現一個特別大的正誤差；max 會把這個正誤差保留下來，卻不會對稱地保留「所有值都偏低」的情況。
-
-因此，「估計器平均無偏」和「估計器取最大值後無偏」是兩個不同命題。前者在 toy experiment 裡成立，後者不成立。這也是為什麼不能看到一個很大的 Q-value，就直接說模型知道那個 action 的真實價值很高。
-
-## Vanilla DQN 的 target 把這個選擇寫進去了
-
-在一次 DQN update 裡，模型先用目前的 online network 估計目前 state 的 Q-value，再拿下一個 state 的估計建立學習目標。target network 是一份暫時固定的網路，用來讓這個目標不要在每個 optimizer step 都跟著目前網路一起漂移；Day 11 已經介紹過它的同步角色。
-
-Vanilla DQN 在下一個 state 做的是：把 target network 輸出的所有 action value 放在一起，直接取最大值。若 `reward` 是這一步得到的回饋、`gamma` 是未來回饋的折扣率，而 `terminated` 表示遊戲本身真的結束，target 可以寫成：
+假設某個 next state 的四個 Q-value 是：
 
 ```text
-target = reward + gamma × (1 - terminated) × max_a Q_target(next_state, a)
+NOOP   = -0.8
+FIRE   =  0.2
+RIGHT  = -0.1
+LEFT   =  0.4
 ```
 
-這裡的 `max` 就是前面 toy experiment 的選擇器。它同時負責兩件事：決定哪個 action 看起來最好，也使用同一個估計器讀出那個 action 的 value。當 Q estimates 有 noise 時，selection 和 evaluation 會共享同一個「幸運的高估」。
+DQN 當然會選 LEFT，因為 0.4 最大。
 
-把下一個 state 的估計接回目前 target，這個動作叫做 bootstrap；公式中的 `(1 - terminated)` 就是控制這個動作是否發生的 mask。`truncated` 在這裡仍然和 `terminated` 分開。Contract v2 把 `terminated=True` 作為不 bootstrap 的訊號；時間限制造成的 `truncated=True` 不會被自動改寫成 terminated。這個語意和 Day 16 相同，不能因為換 Double DQN 就重新合併成模糊的 `done`。
+另一個 state 可能是：
 
-## Double DQN 改的是角色分工，不是輸出介面
-
-Double Deep Q-Network（Double DQN）沒有新增另一種 observation，也沒有把四個 action 改成別的數量。它重新分配的是兩個既有網路的工作：
-
-- online network 只負責從 `next_state` 選出看起來最好的 action；
-- target network 再負責評估這個已經選定的 action。
-
-`argmax` 可以先理解成「回傳最大值所在的 action index」，`gather` 則是「依照這個 index，從另一組 Q-values 取出對應欄位」。實際 target branch 的核心因此是：
-
-```python
-with torch.no_grad():
-    online_next_q = online_network(next_states)
-    next_actions = online_next_q.argmax(dim=1)
-
-    target_next_q = target_network(next_states)
-    next_values = target_next_q.gather(
-        1, next_actions[:, None]
-    ).squeeze(1)
-
-target = rewards + gamma * (~terminated) * next_values
+```text
+NOOP   = -0.2
+FIRE   =  0.1
+RIGHT  =  1.1
+LEFT   =  0.3
 ```
 
-`with torch.no_grad()` 的原因是這段 forward 只在建立 target，不是要更新 next-state branch 的參數；真正需要 backward 的仍然是目前 state 上由 online network 產生、再依 replay action 選出的 prediction Q-value。這樣既保留 current-state online gradient，也不讓 target 分支把梯度接回 update。
+這次就會選 RIGHT。
 
-這裡的「Double」也不是兩個完全獨立、各自學一套世界模型的意思。Vanilla DQN 原本就有 online network 和 target network；Double DQN 改的是 `next_state` 上的使用方式：**一個網路選，一個網路評估。**
+如果 1.1 真的是 RIGHT 的價值，那完全沒問題。
 
-下面的流程圖把這個資料關係和 vanilla 分支並列。它是根據實際 target implementation 整理的結構圖，不是某次 Breakout rollout 的數值紀錄。
+麻煩的是，我們不知道那個 1.1 到底是「真的比較好」，還是神經網路這次剛好把 RIGHT 高估了。
+
+DQN 又沒有另一份 ground truth 可以馬上核對。
+
+於是，一個偶然偏高的估計可能被選成最佳 action，接著再被放進下一次學習的 target。模型就有機會用自己的高估，繼續教下一個自己。
+
+---
+
+## Vanilla DQN 的 target 為什麼會碰到這個問題？
+
+DQN 不只要估計「目前 state 做了某個 action 的價值」，它還要替這次預測建立一個學習目標。
+
+如果這一步得到的 reward 是 `r`，折扣率是 `γ`，下一個 state 是 `s'`，Vanilla DQN 的核心概念可以寫成：
+
+```text
+target
+= r + γ × max Q_target(s', a)
+```
+
+如果 episode 真正結束，就不再加後面的未來價值。
+
+這裡的 target network，是前面已經做過的那份「更新比較慢的網路」。它的作用是讓學習目標不要每一次 optimizer update 都跟著劇烈變動。
+
+可是，即使有 target network，Vanilla DQN 在 `next_state` 上還是做了同一件事：
+
+```text
+Q_target(s', NOOP)
+Q_target(s', FIRE)
+Q_target(s', RIGHT)
+Q_target(s', LEFT)
+          ↓
+         max
+```
+
+也就是說，同一組 Q-values 同時決定：
+
+```text
+哪個 action 最好？
+```
+
+以及：
+
+```text
+那個 action 到底值多少？
+```
+
+如果最大的那個值只是剛好被高估，兩個步驟就會一起相信它。
+
+這才是 Double DQN 想拆開的地方。
+
+---
+
+## Double DQN 沒有多做一套模型，它只是把兩個工作分開
+
+名字叫 Double DQN，很容易讓人第一眼以為：是不是又多訓練了一個完全獨立的 DQN？
+
+其實不是。
+
+Vanilla DQN 本來就有：
+
+```text
+online network
++
+target network
+```
+
+Double DQN 沒有把 action space 改掉，也沒有改 observation，更沒有增加另一套遊戲環境。
+
+它只是重新分配這兩個網路在 `next_state` 上的工作。
+
+### Vanilla DQN
+
+```text
+target network
+    ↓
+找最大值
+    ↓
+直接用這個最大值
+```
+
+### Double DQN
+
+```text
+online network
+    ↓
+只負責選 action
+    ↓
+得到 a*
+    ↓
+target network
+    ↓
+只負責評估 Q_target(s', a*)
+```
 
 [![Vanilla DQN 與 Double DQN 的 next-state target 計算流程](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/1464032ac877d0de02481d6d8490be6534ead2ff/assets/day17/double-dqn-target-flow.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/1464032ac877d0de02481d6d8490be6534ead2ff/assets/day17/double-dqn-target-flow.png)
 
-讀圖時可以只追兩條線：Vanilla 把 target network 的最大值直接送進 target；Double DQN 先從 online network 得到 `a*`，再讓 target network 只評估 `Q_target(next_state, a*)`。兩者最後都還要合併 reward 和 bootstrap mask。
+所以 Double DQN 最值得記住的其實只有一句話：
 
-## 讓兩種 target 在同一個 next state 上分開現形
+> **online network 負責選，target network 負責評估。**
 
-為了避免「剛把 online 權重完整複製給 target、兩個 network 輸出一樣」而看不出差異，我使用一個刻意不同的 synthetic fixture（人工構造、只用來測試計算路徑的輸入）。online 輸出是：
+不是「永遠不要取最大值」，而是不要再讓同一份估計同時扮演裁判和選手。
+
+---
+
+## 用一組數字看，差異會非常直觀
+
+假設同一個 next state 上，online network 認為：
 
 ```text
 [1, 5, 2, 0]
 ```
 
-target 輸出是：
+它會選 index 1，因為 5 最大。
+
+但 target network 對同一個 state 的估計是：
 
 ```text
 [4, 3, 2, 1]
 ```
 
-令 `reward=1`、`gamma=0.5`，Vanilla DQN 會從 target 的最大值 `4` 得到 `1 + 0.5 × 4 = 3.0`。Double DQN 則由 online 選出 action `1`，再從 target 取 action `1` 的 value `3`，所以 target 是 `1 + 0.5 × 3 = 2.5`。
+如果是 Vanilla DQN，它完全不管 online network 怎麼想，直接取 target network 自己的最大值：
 
-[![同一個 crafted fixture 下 Vanilla 與 Double DQN 的 evaluated value 和最終 target](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/1464032ac877d0de02481d6d8490be6534ead2ff/assets/day17/dqn-vs-double-targets.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/1464032ac877d0de02481d6d8490be6534ead2ff/assets/day17/dqn-vs-double-targets.png)
+```text
+max([4, 3, 2, 1]) = 4
+```
 
-左圖比較的是 next-state value：Vanilla 取 target 的 `4.0`，Double DQN 評估 online 選出的 action `1`，因此使用 `3.0`。右圖再把相同的 reward 和 gamma 套回去，得到 `3.0` 與 `2.5`。這張圖的數字全部來自同一個 inspection fixture 的實際 target function；它用來展示演算法差異，不代表 Breakout 的平均回報或最佳策略下的真實 Q-value。
+假設：
 
-## 回到 Breakout：先固定 probe，再看實際 Q-values
+```text
+reward = 1
+gamma  = 0.5
+```
 
-toy experiment 裡的兩個 estimator 是獨立產生的，真實的 online/target network 卻來自同一條 training history，因此不能把 toy 的 bias 數字直接貼到 Breakout 上。要觀察真實模型，我先在 Contract v2 下固定一批 probe states，也就是之後會反覆餵給模型的 observations：使用 15 個 concrete seeds，每個 seed 取 4 張 observation；狀態形狀是 `(4, 84, 84)`，每個像素以 0–255 的整數資料型別 `uint8` 保存，由 seeded random requested actions 產生，環境仍保有 Contract v2 的 mandatory serve FIRE。
+那 target 就是：
 
-這批 states 只做 diagnostics，不參與訓練，也不因為換 DQN family 而換一批。對 Day 17 smoke checkpoint 做 no-grad inference 後，60 個 probe 中有 41 個選到 `RIGHT`、18 個選到 `FIRE`、1 個選到 `LEFT`；Q-value 的整體平均是 `0.193705`，標準差是 `0.104216`，每個 probe 的最大 Q-value 平均是 `0.206222`。
+```text
+1 + 0.5 × 4 = 3.0
+```
 
-[![Day 17 smoke checkpoint 在固定 Contract v2 probes 上的 Q-value 分布與 greedy action](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/1464032ac877d0de02481d6d8490be6534ead2ff/assets/day17/q-probe-summary.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/1464032ac877d0de02481d6d8490be6534ead2ff/assets/day17/q-probe-summary.png)
+Double DQN 則不一樣。
 
-左圖的四組 boxplot 是 `NOOP`、`FIRE`、`RIGHT`、`LEFT` 在 60 個固定 states 上的實際輸出；右圖則統計每個 state 的 argmax action。它能告訴我們這個 checkpoint 在這批輸入上偏好什麼、Q-values 分布多寬，卻不能告訴我們最佳策略下的真實 Q-value 是多少，也不能只靠「大多數選 RIGHT」就宣稱模型已經學會或完全沒學會 Breakout。這正是固定 probe 的用途：提供可重複的觀察面，而不是偽造真實答案（ground truth）。
+online network 已經選出 index 1，所以 target network 只去看 index 1 的值：
 
-## 只改 target rule 的 smoke training
+```text
+Q_target(index 1) = 3
+```
 
-最後把 `algorithm` 放進同一個 `DQNConfig`，讓單一 trainer 依照 config 選 Vanilla 或 Double target；沒有複製第二套 environment loop、Replay、evaluation 或 checkpoint infrastructure。Day 17 的 canonical config 沿用 Day 16 selected backend：Contract v2、N=2、GPU Replay、float32（32-bit 浮點數）、batch size 32、learning starts 1,000、train frequency 4、target sync interval 500、CPU threads 2，唯一主要演算法變因是 `dqn` 或 `double_dqn`。
+最後變成：
 
-我在同一台 NVIDIA GeForce RTX 4060 Laptop GPU 上各跑 10,000 transitions，seed 都是 `42`。這是 systems smoke 與 performance regression，不是 Day 18 的 model-quality comparison；其中一次 optimizer update 指的是用一批 Replay 資料完成一次 backward 與參數更新：
+```text
+1 + 0.5 × 3 = 2.5
+```
 
-| target rule | optimizer updates | transitions/s（每秒 transition） | optimizer updates/s | target forward GPU seconds | peak VRAM（最高顯存） |
-|---|---:|---:|---:|---:|---:|
-| DQN | 2,251 | 248.62 | 55.96 | 2.48 | 639,140,864 bytes |
-| Double DQN | 2,251 | 237.81 | 53.53 | 4.25 | 639,140,864 bytes |
+[![同一組 next-state Q-values 下 Vanilla 與 Double DQN 的 target 差異](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/1464032ac877d0de02481d6d8490be6534ead2ff/assets/day17/dqn-vs-double-targets.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/1464032ac877d0de02481d6d8490be6534ead2ff/assets/day17/dqn-vs-double-targets.png)
 
-[![同一 N=2 GPU smoke config 下 DQN 與 Double DQN 的實際吞吐與 target-forward 成本](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/1464032ac877d0de02481d6d8490be6534ead2ff/assets/day17/smoke-performance.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/1464032ac877d0de02481d6d8490be6534ead2ff/assets/day17/smoke-performance.png)
+這個例子不代表 Double DQN 的 target 永遠比較小，也不代表越小越正確。
 
-結果符合機制預期：Double DQN 的 next-state target branch 多做一次 online forward，所以 `target_forward` 的 GPU 累計時間較高，整體 transitions/s 約低 4.4%。但 replay sampling、backward、optimizer step、target sync 都確實跑過，兩邊的 checkpoint metadata 也保存了 `algorithm`、`architecture=standard`、`num_envs=2`、replay backend、training steps，以及 GPU/CUDA/runtime 資訊。這表示新的 target rule 接上了既有 pipeline，也沒有因為追速度而偷偷改 batch、environment count 或 precision。
+它只是很清楚地展示：**兩個演算法真正不同的地方，就是下一個 state 的 action 怎麼選、value 又由誰來讀。**
 
-## 這次學到的是機制，不是「Double DQN 已經贏了」
+---
 
-Day 17 的證據鏈可以收斂成四步：單一 Q estimate 可以平均無偏；`max` 會選中正誤差，形成 overestimation bias；Double DQN 把 action selection 與 value evaluation 分開；同一套 N=2 Contract v2 trainer 可以用 config 切換 target rule，並在真實 CUDA smoke 裡完成 replay、backward、optimizer step 和 target sync。
+## 回到 Breakout：我們看得到模型的估計，但看不到真正答案
 
-但 Double DQN 不保證完全消除 overestimation。真實 online/target network 並非 toy experiment 中彼此獨立的 estimator，剩餘誤差也會受到資料分布、同步週期與訓練穩定性影響。這次 smoke 的吞吐差異更不能解讀成哪個演算法的遊戲策略比較好。
+前面的 toy experiment 有一個現實裡不可能得到的優勢：我們事先知道四個 action 的真實價值都是 0。
 
-因此下一個公平問題要留到 Day 18：固定同一套 Contract v2、N=2 backend、training budget、training seeds 和 Day 15 evaluation protocol，才比較 DQN 與 Double DQN 的學習結果。Day 17 先把「為什麼要比較」和「比較時到底改了什麼」弄清楚。
+所以可以直接量「高估了多少」。
+
+Breakout 沒有這麼方便。
+
+對一張真實遊戲畫面，我們沒有一個資料表可以告訴我們：
+
+```text
+NOOP  真實 Q-value = ?
+FIRE  真實 Q-value = ?
+RIGHT 真實 Q-value = ?
+LEFT  真實 Q-value = ?
+```
+
+因此不能看到模型輸出 0.3，就說「它高估了 0.1」。
+
+能做的是固定一批相同的遊戲狀態，之後反覆把不同 checkpoint 餵進去，看 Q-value 分布和 action preference 怎麼變。
+
+Day 17 固定了 60 個 Breakout states。對這次 Double DQN 的短程 checkpoint 做推論後，greedy action 分布是：
+
+```text
+RIGHT = 41
+FIRE  = 18
+LEFT  = 1
+NOOP  = 0
+```
+
+[![Day 17 smoke checkpoint 在固定 Breakout states 上的 Q-value 分布與 greedy action](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/1464032ac877d0de02481d6d8490be6534ead2ff/assets/day17/q-probe-summary.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/1464032ac877d0de02481d6d8490be6534ead2ff/assets/day17/q-probe-summary.png)
+
+這張圖能回答的是：
+
+```text
+這個 checkpoint 面對同一批 states 時，
+各 action 的估計分布長什麼樣？
+它比較常把哪個 action 放在最高？
+```
+
+但它不能回答：
+
+```text
+RIGHT 真的是最佳 action 嗎？
+這個 Q-value 距離真實值差多少？
+Double DQN 已經比 Vanilla DQN 強了嗎？
+```
+
+這個界線很重要。
+
+固定 probe 的價值，是讓之後的模型有一把共同的尺，而不是假裝我們突然知道 Breakout 的真正 Q-function。
+
+---
+
+## Double DQN 的代價：多一次 forward，但幅度不大
+
+Double DQN 在計算 next-state target 時，需要：
+
+```text
+online(next_state)
++
+target(next_state)
+```
+
+Vanilla DQN 則主要只需要 target network 的 next-state forward。
+
+所以 Double DQN 理論上就會多一點計算成本。
+
+在同一台 RTX 4060 Laptop GPU、相同訓練條件下，各跑 10,000 transitions，實際量到：
+
+| | Vanilla DQN | Double DQN |
+|---|---:|---:|
+| transitions/s | 248.62 | 237.81 |
+| optimizer updates | 2,251 | 2,251 |
+| next-state target forward GPU time | 2.48 s | 4.25 s |
+| peak VRAM | 639 MB | 639 MB |
+
+[![相同訓練條件下 Vanilla DQN 與 Double DQN 的短程執行成本](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/1464032ac877d0de02481d6d8490be6534ead2ff/assets/day17/smoke-performance.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/1464032ac877d0de02481d6d8490be6534ead2ff/assets/day17/smoke-performance.png)
+
+Double DQN 的整體吞吐大約低 4.4%。這和它多做一次 next-state online forward 的預期一致。
+
+但這個 10K 實驗只有一個目的：確認 Double DQN 的計算路徑真的可以接進現有訓練流程，而且成本沒有突然失控。
+
+它完全不能拿來回答：
+
+> **Double DQN 到底有沒有學得比較好？**
+
+10,000 transitions 對這個問題還太短，而且只有單一 training seed。
+
+---
+
+## 所以 Double DQN 解決了 overestimation 嗎？
+
+比較精確的說法是：
+
+> Double DQN **降低了讓同一份估計同時負責選擇與評估所造成的高估傾向**。
+
+但不能把它講成：
+
+> Double DQN 讓所有 Q-value 從此都變成正確答案。
+
+真實訓練中的 online network 和 target network 並不是兩個完全獨立的估計器，它們來自同一條 training history，而且 target network 還會定期從 online network 同步權重。
+
+所以兩邊的誤差仍然可能相關。
+
+除此之外，Breakout 的學習結果還會受到探索、Replay 裡的資料分布、optimizer、訓練長度和 random seed 影響。
+
+Double DQN 只處理其中一個很具體的問題：
+
+```text
+同一個 noisy estimator
+同時選 action
+又評估這個 action
+```
+
+把這兩件事拆開。
+
+這也是我覺得它很適合接在 Vanilla DQN 後面學的原因：改動不大，但它直接指出 DQN target 裡一個很容易忽略的統計問題。
+
+---
+
+## Day 17 到這裡，真正得到的是一個可以被公平比較的假設
+
+現在我們已經知道：
+
+```text
+Vanilla DQN
+    ↓
+同一組 next-state estimates
+    ↓
+直接 max
+    ↓
+可能偏愛剛好被高估的 action
+```
+
+而 Double DQN 改成：
+
+```text
+online network 選 action
+        ↓
+target network 評估 action
+```
+
+toy experiment 告訴我們這個設計在統計上有理由；真實 Breakout smoke 則確認它可以正常跑，而且額外計算成本目前大約只有幾個百分點。
+
+可是「設計有道理」和「在 Breakout 上真的比較好」仍然是兩件事。
+
+因此 Day 18 才會進入真正的比較：在相同的環境規則、相同訓練 backend、相同 budget 和多個 training seeds 下，讓 Vanilla DQN 和 Double DQN 正面跑一次。
+
+到那時候才有資格回答：
+
+> **把選擇與評估拆開之後，這個理論上的修正，在真正的 Breakout 訓練裡到底值不值得。**
