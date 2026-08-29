@@ -18,7 +18,7 @@ Day 16 已經把 Breakout 的環境規則和訓練資料流固定下來，也選
 
 真實值在三組實驗中都是 `0`。單一估計的平均確實接近真實值，但 `vanilla max mean` 隨 noise 增加而明顯高於 `0`。這就是這裡所說的 overestimation bias：**不是每個 Q-value 都一定被高估，而是「選最大值」這個規則的平均結果偏向高估。**
 
-[![四個 action 的估計加入不同 noise 後，max selection 的平均值偏離真實值](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/5b34e43/assets/day17/overestimation-bias.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/5b34e43/assets/day17/overestimation-bias.png)
+[![四個 action 的估計加入不同 noise 後，max selection 的平均值偏離真實值](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/1464032ac877d0de02481d6d8490be6534ead2ff/assets/day17/overestimation-bias.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/1464032ac877d0de02481d6d8490be6534ead2ff/assets/day17/overestimation-bias.png)
 
 圖的橫軸是 noise 的標準差，縱軸是估計值的平均。藍線的單一估計和黑色虛線真實值幾乎重疊；橘線則是每次先取最大值再平均，所以被推到真實值上方。綠線把「選 action」和「評估 value」分開後，平均值回到接近 `0`。這個實驗證明的是 max 加上估計誤差會產生偏差；它沒有測量 Breakout 神經網路的真實偏差大小。
 
@@ -82,7 +82,7 @@ target = rewards + gamma * (~terminated) * next_values
 
 下面的流程圖把這個資料關係和 vanilla 分支並列。它是根據實際 target implementation 整理的結構圖，不是某次 Breakout rollout 的數值紀錄。
 
-[![Vanilla DQN 與 Double DQN 的 next-state target 計算流程](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/5b34e43/assets/day17/double-dqn-target-flow.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/5b34e43/assets/day17/double-dqn-target-flow.png)
+[![Vanilla DQN 與 Double DQN 的 next-state target 計算流程](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/1464032ac877d0de02481d6d8490be6534ead2ff/assets/day17/double-dqn-target-flow.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/1464032ac877d0de02481d6d8490be6534ead2ff/assets/day17/double-dqn-target-flow.png)
 
 讀圖時可以只追兩條線：Vanilla 把 target network 的最大值直接送進 target；Double DQN 先從 online network 得到 `a*`，再讓 target network 只評估 `Q_target(next_state, a*)`。兩者最後都還要合併 reward 和 bootstrap mask。
 
@@ -102,7 +102,7 @@ target 輸出是：
 
 令 `reward=1`、`gamma=0.5`，Vanilla DQN 會從 target 的最大值 `4` 得到 `1 + 0.5 × 4 = 3.0`。Double DQN 則由 online 選出 action `1`，再從 target 取 action `1` 的 value `3`，所以 target 是 `1 + 0.5 × 3 = 2.5`。
 
-[![同一個 crafted fixture 下 Vanilla 與 Double DQN 的 evaluated value 和最終 target](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/5b34e43/assets/day17/dqn-vs-double-targets.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/5b34e43/assets/day17/dqn-vs-double-targets.png)
+[![同一個 crafted fixture 下 Vanilla 與 Double DQN 的 evaluated value 和最終 target](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/1464032ac877d0de02481d6d8490be6534ead2ff/assets/day17/dqn-vs-double-targets.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/1464032ac877d0de02481d6d8490be6534ead2ff/assets/day17/dqn-vs-double-targets.png)
 
 左圖比較的是 next-state value：Vanilla 取 target 的 `4.0`，Double DQN 評估 online 選出的 action `1`，因此使用 `3.0`。右圖再把相同的 reward 和 gamma 套回去，得到 `3.0` 與 `2.5`。這張圖的數字全部來自同一個 inspection fixture 的實際 target function；它用來展示演算法差異，不代表 Breakout 的平均回報或最佳策略下的真實 Q-value。
 
@@ -112,9 +112,9 @@ toy experiment 裡的兩個 estimator 是獨立產生的，真實的 online/targ
 
 這批 states 只做 diagnostics，不參與訓練，也不因為換 DQN family 而換一批。對 Day 17 smoke checkpoint 做 no-grad inference 後，60 個 probe 中有 41 個選到 `RIGHT`、18 個選到 `FIRE`、1 個選到 `LEFT`；Q-value 的整體平均是 `0.193705`，標準差是 `0.104216`，每個 probe 的最大 Q-value 平均是 `0.206222`。
 
-[![Day 17 smoke checkpoint 在固定 Contract v2 probes 上的 Q-value 分布與 greedy action](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/5b34e43/assets/day17/q-probe-summary.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/5b34e43/assets/day17/q-probe-summary.png)
+[![Day 17 smoke checkpoint 在固定 Contract v2 probes 上的 Q-value 分布與 greedy action](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/1464032ac877d0de02481d6d8490be6534ead2ff/assets/day17/q-probe-summary.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/1464032ac877d0de02481d6d8490be6534ead2ff/assets/day17/q-probe-summary.png)
 
-左圖的四組 boxplot 是 `NOOP`、`FIRE`、`RIGHT`、`LEFT` 在 60 個固定 states 上的實際輸出；右圖則統計每個 state 的 argmax action。它能告訴我們這個 checkpoint 在這批輸入上偏好什麼、Q-values 分布多寬，卻不能告訴我們最佳策略下的真實 Q-value 是多少，也不能只靠「大多數選 LEFT」就宣稱模型已經學會或完全沒學會 Breakout。這正是固定 probe 的用途：提供可重複的觀察面，而不是偽造真實答案（ground truth）。
+左圖的四組 boxplot 是 `NOOP`、`FIRE`、`RIGHT`、`LEFT` 在 60 個固定 states 上的實際輸出；右圖則統計每個 state 的 argmax action。它能告訴我們這個 checkpoint 在這批輸入上偏好什麼、Q-values 分布多寬，卻不能告訴我們最佳策略下的真實 Q-value 是多少，也不能只靠「大多數選 RIGHT」就宣稱模型已經學會或完全沒學會 Breakout。這正是固定 probe 的用途：提供可重複的觀察面，而不是偽造真實答案（ground truth）。
 
 ## 只改 target rule 的 smoke training
 
@@ -127,7 +127,7 @@ toy experiment 裡的兩個 estimator 是獨立產生的，真實的 online/targ
 | DQN | 2,251 | 248.62 | 55.96 | 2.48 | 639,140,864 bytes |
 | Double DQN | 2,251 | 237.81 | 53.53 | 4.25 | 639,140,864 bytes |
 
-[![同一 N=2 GPU smoke config 下 DQN 與 Double DQN 的實際吞吐與 target-forward 成本](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/5b34e43/assets/day17/smoke-performance.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/5b34e43/assets/day17/smoke-performance.png)
+[![同一 N=2 GPU smoke config 下 DQN 與 Double DQN 的實際吞吐與 target-forward 成本](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/1464032ac877d0de02481d6d8490be6534ead2ff/assets/day17/smoke-performance.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/1464032ac877d0de02481d6d8490be6534ead2ff/assets/day17/smoke-performance.png)
 
 結果符合機制預期：Double DQN 的 next-state target branch 多做一次 online forward，所以 `target_forward` 的 GPU 累計時間較高，整體 transitions/s 約低 4.4%。但 replay sampling、backward、optimizer step、target sync 都確實跑過，兩邊的 checkpoint metadata 也保存了 `algorithm`、`architecture=standard`、`num_envs=2`、replay backend、training steps，以及 GPU/CUDA/runtime 資訊。這表示新的 target rule 接上了既有 pipeline，也沒有因為追速度而偷偷改 batch、environment count 或 precision。
 
