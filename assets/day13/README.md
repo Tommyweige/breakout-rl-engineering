@@ -26,14 +26,14 @@ The compact `debug-run/` directory keeps `config.json`, `metrics.csv`, and
 training checkpoint:
 
 ```text
-python analyze_training_run.py assets/day13/debug-run --plots-dir assets/day13
+python -m scripts.analysis.analyze_training_run assets/day13/debug-run --plots-dir assets/day13
 ```
 
 The PNGs in this directory were generated from that run's `metrics.csv`. The
 training run itself was started with:
 
 ```text
-python train_dqn.py --preset debug --total-steps 10000 --seed 42 --device cuda --run-dir runs --run-id day13-debug-cuda-seed42-final
+python -m scripts.training.train_dqn --preset debug --total-steps 10000 --seed 42 --device cuda --run-dir runs --run-id day13-debug-cuda-seed42-final
 ```
 
 `debugging-workflow.mmd` is the verified conceptual flow source rendered to

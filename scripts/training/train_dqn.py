@@ -23,7 +23,13 @@ from breakout_rl.training.dqn_trainer import DQNTrainer, NonFiniteTrainingError
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Train the baseline vanilla DQN on preprocessed Breakout."
+        description="Train a configurable DQN-family policy on preprocessed Breakout."
+    )
+    parser.add_argument(
+        "--algorithm",
+        choices=("dqn", "double_dqn"),
+        default=None,
+        help="target rule to train (default: dqn)",
     )
     parser.add_argument(
         "--preset",
@@ -48,6 +54,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--train-frequency", type=int, default=None)
     parser.add_argument("--target-update-interval", type=int, default=None)
     parser.add_argument("--checkpoint-interval", type=int, default=None)
+    parser.add_argument("--replay-backend", choices=("cpu", "gpu"), default=None)
     parser.add_argument(
         "--fire-reset",
         action="store_true",
@@ -58,8 +65,8 @@ def build_parser() -> argparse.ArgumentParser:
         "--evaluation-contract",
         dest="contract",
         type=Path,
-        default=None,
-        help="load a machine-readable Breakout environment contract",
+        default=Path("configs/eval/breakout_contract_v2.json"),
+        help="load the machine-readable Breakout environment contract",
     )
     parser.add_argument(
         "--no-reward-clip",
@@ -87,9 +94,15 @@ def _config_from_args(args: argparse.Namespace) -> DQNConfig:
     elif args.preset == "debug":
         base = DQNConfig.debug(device=args.device or "cuda")
     elif args.preset == "smoke":
-        base = DQNConfig.smoke(device=args.device or "cpu")
+        base = DQNConfig.smoke(
+            device=args.device or "cpu",
+            algorithm=args.algorithm or "dqn",
+        )
     else:
-        base = DQNConfig(device=args.device or "cpu")
+        base = DQNConfig(
+            device=args.device or "cpu",
+            algorithm=args.algorithm or "dqn",
+        )
 
     overrides: dict[str, Any] = {}
     for name in (
@@ -102,12 +115,15 @@ def _config_from_args(args: argparse.Namespace) -> DQNConfig:
         "train_frequency",
         "target_update_interval",
         "checkpoint_interval",
+        "replay_backend",
     ):
         value = getattr(args, name)
         if value is not None:
             overrides[name] = value
     if args.no_reward_clip:
         overrides["reward_clip"] = False
+    if args.algorithm is not None:
+        overrides["algorithm"] = args.algorithm
     return base.with_overrides(**overrides)
 
 
@@ -120,7 +136,10 @@ def _run_path(args: argparse.Namespace, config: DQNConfig) -> Path:
     if run_id is None:
         timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
         preset_name = args.preset or "development"
-        day_prefix = "day13" if preset_name == "debug" else "day12"
+        if config.algorithm == "double_dqn":
+            day_prefix = "day17"
+        else:
+            day_prefix = "day13" if preset_name == "debug" else "day12"
         run_id = f"{day_prefix}-{preset_name}-seed{config.seed}-{timestamp}"
     if not run_id or Path(run_id).name != run_id:
         raise ValueError("run-id must be a single directory name")
@@ -132,9 +151,10 @@ def main(argv: list[str] | None = None) -> int:
     try:
         config = _config_from_args(args)
         run_path = _run_path(args, config)
+        contract_path = args.contract
         contract: BreakoutEvaluationContractV2 | None = (
-            load_evaluation_contract(args.contract)
-            if args.contract is not None
+            load_evaluation_contract(contract_path)
+            if contract_path is not None
             else None
         )
         if contract is not None:

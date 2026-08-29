@@ -9,6 +9,7 @@ __all__ = [
     "estimate_replay_memory_bytes",
     "LinearEpsilonSchedule",
     "compute_dqn_targets",
+    "compute_double_dqn_targets",
     "DQNConfig",
     "DQNTrainer",
     "DQNTrainingStepResult",
@@ -64,14 +65,21 @@ def __getattr__(name: str) -> Any:
             "select_epsilon_greedy_action": select_epsilon_greedy_action,
         }[name]
 
-    if name in {"compute_dqn_targets", "hard_update", "should_update_target"}:
+    if name in {
+        "compute_dqn_targets",
+        "compute_double_dqn_targets",
+        "hard_update",
+        "should_update_target",
+    }:
         from breakout_rl.targets import (
+            compute_double_dqn_targets,
             compute_dqn_targets,
             hard_update,
             should_update_target,
         )
 
         return {
+            "compute_double_dqn_targets": compute_double_dqn_targets,
             "compute_dqn_targets": compute_dqn_targets,
             "hard_update": hard_update,
             "should_update_target": should_update_target,

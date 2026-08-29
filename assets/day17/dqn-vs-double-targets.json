@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "seed": 42,
+  "fixture": {
+    "rewards": [
+      1.0
+    ],
+    "terminated": [
+      false
+    ],
+    "gamma": 0.5,
+    "online_next_q": [
+      1.0,
+      5.0,
+      2.0,
+      0.0
+    ],
+    "target_next_q": [
+      4.0,
+      3.0,
+      2.0,
+      1.0
+    ]
+  },
+  "vanilla": {
+    "selected_action": 0,
+    "evaluated_next_value": 4.0,
+    "final_target": 3.0
+  },
+  "double_dqn": {
+    "selected_action": 1,
+    "evaluated_next_value": 3.0,
+    "final_target": 2.5
+  }
+}

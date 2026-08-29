@@ -21,7 +21,7 @@ matplotlib.rcParams["font.family"] = "Microsoft JhengHei"
 matplotlib.rcParams["axes.unicode_minus"] = False
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "assets" / "day06"
 
 
@@ -267,7 +267,7 @@ def main() -> int:
 
     command = [
         sys.executable,
-        str(PROJECT_ROOT / "q_learning_demo.py"),
+        str(PROJECT_ROOT / "scripts" / "demos" / "q_learning_demo.py"),
         "--episodes",
         str(args.episodes),
         "--alpha",

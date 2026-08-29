@@ -8,8 +8,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from profile_batch_size_experiment import _sample_summary
-from summarize_thread_profiles import summarize
+from scripts.benchmarks.profile_batch_size_experiment import _sample_summary
+from scripts.analysis.summarize_thread_profiles import summarize
 
 
 class Day14ProfilingTests(unittest.TestCase):

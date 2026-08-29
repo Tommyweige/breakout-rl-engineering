@@ -29,15 +29,15 @@ from breakout_rl.models import DQNNetwork
 from breakout_rl.evaluation_artifacts import validate_episode_rows
 from breakout_rl.evaluation_artifacts import read_evaluation_results
 from breakout_rl.training.config import DQNConfig
-from evaluate_dqn import (
+from scripts.evaluation.evaluate_dqn import (
     DQN_REFERENCE_EVALUATION_ID,
     DQN_REFERENCE_OUTPUT_DIR,
     FORMAL_DQN_EVALUATION_ID,
     FORMAL_DQN_OUTPUT_DIR,
     _output_destination,
 )
-from generate_dqn_milestone_report import build_report
-from visualize_day15_evaluation import render_evaluation_comparison
+from scripts.analysis.generate_dqn_milestone_report import build_report
+from scripts.visualization.visualize_day15_evaluation import render_evaluation_comparison
 
 
 class _ActionSpace:

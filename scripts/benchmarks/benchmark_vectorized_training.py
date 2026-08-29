@@ -20,7 +20,7 @@ from breakout_rl.evaluation_contract import (
 from breakout_rl.training.config import DQNConfig
 from breakout_rl.training.dqn_trainer import resolve_device
 from breakout_rl.training.vectorized import VectorizedDQNTrainer
-from profile_batch_size_experiment import RuntimeSampler, _sample_summary
+from scripts.benchmarks.profile_batch_size_experiment import RuntimeSampler, _sample_summary
 
 
 def _git_commit_sha() -> str | None:

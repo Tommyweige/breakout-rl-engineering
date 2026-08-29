@@ -16,7 +16,7 @@ from breakout_rl.experiments import (
     update_manifest,
 )
 from breakout_rl.training.config import DQNConfig
-from run_experiments import build_parser, run_batch
+from scripts.training.run_experiments import build_parser, run_batch
 
 
 class ExperimentConfigTests(unittest.TestCase):

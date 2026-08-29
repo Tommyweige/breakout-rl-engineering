@@ -25,9 +25,14 @@ from breakout_rl.replay_tensors import (
     ReplayTensorBatch,
     replay_batch_to_tensors,
 )
-from breakout_rl.targets import hard_update, should_update_target
+from breakout_rl.targets import (
+    compute_double_dqn_targets,
+    compute_dqn_targets,
+    hard_update,
+    should_update_target,
+)
 from breakout_rl.tensors import observation_to_tensor
-from breakout_rl.training.config import DQNConfig
+from breakout_rl.training.config import DQNConfig, normalize_algorithm
 from breakout_rl.training.diagnostics import (
     ATARI_ACTION_NAMES,
     collect_runtime_metadata,
@@ -38,6 +43,9 @@ from breakout_rl.training.metrics import MetricsLogger
 
 class NonFiniteTrainingError(RuntimeError):
     """Raised when a training value becomes NaN or infinity."""
+
+
+MODEL_ARCHITECTURE = "standard"
 
 
 class _StageProfiler:
@@ -174,6 +182,9 @@ class TrainingStepSnapshot:
     optimizer_updated: bool
     optimizer_updates: int
     target_sync_count: int
+    requested_action: int | None = None
+    action_overridden: bool = False
+    fire_reset_reason: str | None = None
 
 
 TrainingStepCallback = Callable[
@@ -280,21 +291,24 @@ def dqn_training_step(
     *,
     gamma: float,
     gradient_clip_norm: float | None,
+    algorithm: str = "dqn",
     loss_fn: nn.Module | None = None,
     collect_diagnostics: bool = True,
     stage_measure: Callable[[str, Callable[[], Any]], Any] | None = None,
 ) -> DQNTrainingStepResult:
-    """Perform one vanilla-DQN Huber-loss update.
+    """Perform one configurable DQN-family Huber-loss update.
 
     The online network predicts every action, then ``gather`` selects the Q
     value for the action actually recorded in each transition. The target
-    network supplies the detached vanilla-DQN Bellman target, so its
-    parameters are not part of the backward pass or optimizer update.
+    branch supplies a detached Bellman target: ``dqn`` uses the target-network
+    maximum, while ``double_dqn`` selects with the online network and evaluates
+    that action with the target network.
 
     ``gradient_norm`` is the total norm before clipping when clipping is
     enabled. This makes the metric useful for spotting exploding gradients.
     """
 
+    parsed_algorithm = normalize_algorithm(algorithm)
     if not isinstance(online_network, nn.Module):
         raise TypeError("online_network must be a torch.nn.Module")
     if not isinstance(target_network, nn.Module):
@@ -331,16 +345,25 @@ def dqn_training_step(
         raise ValueError("actions must be valid indices for the network output")
     selected_q_values = all_q_values.gather(1, actions[:, None]).squeeze(1)
 
-    from breakout_rl.targets import compute_dqn_targets
-
     targets = measure_stage(
         "target_forward",
-        lambda: compute_dqn_targets(
-            batch.rewards,
-            batch.next_states,
-            batch.terminated,
-            target_network,
-            gamma,
+        lambda: (
+            compute_double_dqn_targets(
+                batch.rewards,
+                batch.next_states,
+                batch.terminated,
+                online_network,
+                target_network,
+                gamma,
+            )
+            if parsed_algorithm == "double_dqn"
+            else compute_dqn_targets(
+                batch.rewards,
+                batch.next_states,
+                batch.terminated,
+                target_network,
+                gamma,
+            )
         ),
     )
     if collect_diagnostics:
@@ -627,6 +650,8 @@ class DQNTrainer:
         self._action_counts = [0 for _ in range(self.action_count)]
         self._random_decision_count = 0
         self._greedy_decision_count = 0
+        self._action_overridden_count = 0
+        self._fire_reset_auto_count = 0
         self._started_at = time.perf_counter()
         environment_spec = getattr(env, "spec", None)
         self._environment_id = getattr(environment_spec, "id", None) or "unavailable"
@@ -635,6 +660,9 @@ class DQNTrainer:
             config,
             metadata={
                 "environment_id": self._environment_id,
+                "algorithm": self.config.algorithm,
+                "architecture": MODEL_ARCHITECTURE,
+                "num_envs": 1,
                 "observation_shape": list(self.observation_shape),
                 "action_count": self.action_count,
                 "requested_device": self.requested_device,
@@ -707,6 +735,7 @@ class DQNTrainer:
                 tensor_batch,
                 gamma=self.config.gamma,
                 gradient_clip_norm=self.config.gradient_clip_norm,
+                algorithm=self.config.algorithm,
                 collect_diagnostics=collect_diagnostics,
                 stage_measure=self._stage_profiler.measure_cuda,
             ),
@@ -752,8 +781,11 @@ class DQNTrainer:
     def _notify_step_callback(
         self,
         *,
+        requested_action: int,
         action: int,
         action_source: str,
+        action_overridden: bool,
+        fire_reset_reason: str | None,
         epsilon: float,
         raw_reward: float,
         terminated: bool,
@@ -779,15 +811,21 @@ class DQNTrainer:
             optimizer_updated=result is not None,
             optimizer_updates=self.optimizer_updates,
             target_sync_count=self.target_sync_count,
+            requested_action=requested_action,
+            action_overridden=action_overridden,
+            fire_reset_reason=fire_reset_reason,
         )
         self.on_step(snapshot, self._render_callback_frame())
 
     def _metric_row(
         self,
         *,
+        requested_action: int,
         action: int,
         epsilon: float,
         action_source: str,
+        action_overridden: bool,
+        fire_reset_reason: str | None,
         raw_reward: float,
         training_reward: float,
         completed_return: float | None,
@@ -798,6 +836,7 @@ class DQNTrainer:
         sps = float(self.global_step / elapsed)
         return {
             "global_step": self.global_step,
+            "algorithm": self.config.algorithm,
             "episode": self.episode,
             "raw_episode_return": completed_return,
             "episode_length": completed_length,
@@ -826,9 +865,17 @@ class DQNTrainer:
             "last_target_sync_step": self.last_target_sync_step,
             "raw_reward": raw_reward,
             "training_reward": training_reward,
+            "requested_action": requested_action,
+            "requested_action_name": ATARI_ACTION_NAMES.get(
+                requested_action,
+                f"ACTION_{requested_action}",
+            ),
             "action": action,
             "action_name": ATARI_ACTION_NAMES.get(action, f"ACTION_{action}"),
             "action_source": action_source,
+            "action_overridden": action_overridden,
+            "fire_reset_reason": fire_reset_reason,
+            "fire_reset_auto_count": self._fire_reset_auto_count,
             "noop_count": self._action_counts[0]
             if len(self._action_counts) > 0
             else 0,
@@ -879,6 +926,10 @@ class DQNTrainer:
             run_dir=self.run_dir,
             extra={
                 "environment_id": self._environment_id,
+                "algorithm": self.config.algorithm,
+                "architecture": MODEL_ARCHITECTURE,
+                "num_envs": 1,
+                "training_steps": self.global_step,
                 "observation_shape": list(self.observation_shape),
                 "action_count": self.action_count,
                 "wall_clock_seconds": float(elapsed),
@@ -893,6 +944,8 @@ class DQNTrainer:
                 if self.config.replay_backend == "gpu"
                 else "cpu",
                 "replay_bytes": int(self.replay.allocated_bytes),
+                "action_overridden_count": self._action_overridden_count,
+                "fire_reset_auto_count": self._fire_reset_auto_count,
                 "replay_rewarm_steps_remaining": self._resume_rewarm_steps_remaining,
                 "stage_timings": self._stage_profiler.summary(),
             },
@@ -904,10 +957,15 @@ class DQNTrainer:
         elapsed = max(time.perf_counter() - self._started_at, 1e-9)
         summary: dict[str, Any] = {
             "status": status,
+            "trainer": "dqn",
             "run_id": self.run_dir.name,
             "run_dir": str(self.run_dir),
             "seed": self.config.seed,
+            "algorithm": self.config.algorithm,
+            "architecture": MODEL_ARCHITECTURE,
+            "num_envs": 1,
             "total_steps": self.global_step,
+            "training_steps": self.global_step,
             "episodes": self.episode,
             "optimizer_updates": self.optimizer_updates,
             "replay_backend": self.config.replay_backend,
@@ -943,6 +1001,11 @@ class DQNTrainer:
                 ATARI_ACTION_NAMES.get(index, f"ACTION_{index}"): count
                 for index, count in enumerate(self._action_counts)
             },
+            "action_distribution_semantics": (
+                "environment-executed actions; requested_action is preserved per row"
+            ),
+            "action_overridden_count": self._action_overridden_count,
+            "fire_reset_auto_count": self._fire_reset_auto_count,
             "random_decision_count": self._random_decision_count,
             "greedy_decision_count": self._greedy_decision_count,
             "random_decision_ratio": (
@@ -984,6 +1047,7 @@ class DQNTrainer:
         """Save model/optimizer/RNG state without serializing the replay arrays."""
 
         self.metrics.flush()
+        elapsed = max(time.perf_counter() - self._started_at, 1e-9)
         filename = f"step-{self.global_step:08d}"
         if suffix:
             filename += f"-{suffix}"
@@ -991,6 +1055,19 @@ class DQNTrainer:
         temporary_path = path.with_suffix(".tmp")
         payload = {
             "format_version": 1,
+            "trainer": "dqn",
+            "algorithm": self.config.algorithm,
+            "architecture": MODEL_ARCHITECTURE,
+            "num_envs": 1,
+            "replay_backend": self.config.replay_backend,
+            "training_steps": self.global_step,
+            "runtime": self._runtime_metadata(elapsed),
+            "model_config": {
+                "architecture": MODEL_ARCHITECTURE,
+                "num_actions": self.action_count,
+                "input_shape": list(self.observation_shape),
+                "hidden_dim": getattr(self.online_network, "hidden_dim", None),
+            },
             "online_network": self.online_network.state_dict(),
             "target_network": self.target_network.state_dict(),
             "optimizer": self.optimizer.state_dict(),
@@ -1000,6 +1077,8 @@ class DQNTrainer:
             "target_sync_count": self.target_sync_count,
             "last_target_sync_step": self.last_target_sync_step,
             "action_counts": list(self._action_counts),
+            "action_overridden_count": self._action_overridden_count,
+            "fire_reset_auto_count": self._fire_reset_auto_count,
             "random_decision_count": self._random_decision_count,
             "greedy_decision_count": self._greedy_decision_count,
             "config": self.config.to_dict(),
@@ -1030,6 +1109,18 @@ class DQNTrainer:
         if not isinstance(payload, dict):
             raise ValueError("checkpoint must contain a mapping")
 
+        saved_algorithm = payload.get("algorithm")
+        if saved_algorithm is None and isinstance(payload.get("config"), Mapping):
+            saved_algorithm = payload["config"].get("algorithm", "dqn")
+        if (
+            saved_algorithm is not None
+            and normalize_algorithm(str(saved_algorithm)) != self.config.algorithm
+        ):
+            raise ValueError(
+                "checkpoint algorithm does not match trainer config: "
+                f"checkpoint={saved_algorithm!r}, config={self.config.algorithm!r}"
+            )
+
         self.online_network.load_state_dict(payload["online_network"])
         self.target_network.load_state_dict(payload["target_network"])
         self.optimizer.load_state_dict(payload["optimizer"])
@@ -1041,6 +1132,8 @@ class DQNTrainer:
         saved_action_counts = payload.get("action_counts")
         if isinstance(saved_action_counts, list) and len(saved_action_counts) == self.action_count:
             self._action_counts = [int(count) for count in saved_action_counts]
+        self._action_overridden_count = int(payload.get("action_overridden_count", 0))
+        self._fire_reset_auto_count = int(payload.get("fire_reset_auto_count", 0))
         self._random_decision_count = int(payload.get("random_decision_count", 0))
         self._greedy_decision_count = int(payload.get("greedy_decision_count", 0))
         replay_saved = bool(payload.get("replay_saved", False))
@@ -1084,6 +1177,7 @@ class DQNTrainer:
                         epsilon,
                     ),
                 )
+                requested_action = action
                 self._action_counts[action] += 1
                 if action_source == "random":
                     self._random_decision_count += 1
@@ -1096,7 +1190,9 @@ class DQNTrainer:
                     )
                 )
                 executed_action = action
+                action_overridden = False
                 auto_fire = False
+                fire_reset_reason: str | None = None
                 if isinstance(step_info, Mapping):
                     raw_executed_action = step_info.get(
                         "fire_reset_executed_action",
@@ -1109,17 +1205,24 @@ class DQNTrainer:
                             "fire_reset_executed_action must be an integer"
                         ) from error
                     auto_fire = bool(step_info.get("fire_reset_auto", False))
+                    raw_fire_reset_reason = step_info.get("fire_reset_reason")
+                    if raw_fire_reset_reason is not None:
+                        fire_reset_reason = str(raw_fire_reset_reason)
                 if not 0 <= executed_action < self.action_count:
                     raise ValueError(
                         f"environment executed illegal action {executed_action}; "
                         f"expected 0 <= action < {self.action_count}"
                     )
-                if executed_action != action:
-                    self._action_counts[action] -= 1
+                action_overridden = executed_action != requested_action
+                if action_overridden:
+                    self._action_counts[requested_action] -= 1
                     self._action_counts[executed_action] += 1
                     action = executed_action
-                    if auto_fire:
-                        action_source = "fire_reset"
+                if auto_fire:
+                    self._fire_reset_auto_count += 1
+                    action_source = "fire_reset"
+                if action_overridden:
+                    self._action_overridden_count += 1
                 next_observation_array = _as_uint8_observation(
                     next_observation,
                     expected_shape=self.observation_shape,
@@ -1167,8 +1270,11 @@ class DQNTrainer:
                 self._sync_target_if_due()
 
                 self._notify_step_callback(
+                    requested_action=requested_action,
                     action=action,
                     action_source=action_source,
+                    action_overridden=action_overridden,
+                    fire_reset_reason=fire_reset_reason,
                     epsilon=epsilon,
                     raw_reward=raw_reward,
                     terminated=terminated,
@@ -1200,9 +1306,12 @@ class DQNTrainer:
                     "metrics_write",
                     lambda: self.metrics.write(
                         self._metric_row(
+                            requested_action=requested_action,
                             action=action,
                             epsilon=epsilon,
                             action_source=action_source,
+                            action_overridden=action_overridden,
+                            fire_reset_reason=fire_reset_reason,
                             raw_reward=raw_reward,
                             training_reward=training_reward,
                             completed_return=completed_return,

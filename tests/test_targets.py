@@ -8,6 +8,7 @@ import torch
 from torch import nn
 
 from breakout_rl.targets import (
+    compute_double_dqn_targets,
     compute_dqn_targets,
     hard_update,
     should_update_target,
@@ -23,6 +24,17 @@ class TinyQNetwork(nn.Module):
 
     def forward(self, states: torch.Tensor) -> torch.Tensor:
         return self.linear(states)
+
+
+class FixedQNetwork(nn.Module):
+    """Return a fixed action table while keeping a real module boundary."""
+
+    def __init__(self, values: list[float]) -> None:
+        super().__init__()
+        self.values = nn.Parameter(torch.tensor(values), requires_grad=False)
+
+    def forward(self, states: torch.Tensor) -> torch.Tensor:
+        return self.values.unsqueeze(0).expand(states.shape[0], -1)
 
 
 class TargetNetworkTests(unittest.TestCase):
@@ -107,6 +119,42 @@ class TargetNetworkTests(unittest.TestCase):
         )
 
         torch.testing.assert_close(targets, torch.tensor([2.0]))
+
+    def test_double_dqn_selects_with_online_and_evaluates_with_target(self) -> None:
+        online = FixedQNetwork([1.0, 5.0, 2.0, 0.0])
+        target = FixedQNetwork([4.0, 3.0, 2.0, 1.0])
+
+        targets = compute_double_dqn_targets(
+            torch.tensor([1.0]),
+            torch.zeros(1, 2),
+            torch.tensor([False]),
+            online,
+            target,
+            gamma=0.5,
+        )
+
+        # Online selects action 1 (5.0); target evaluates action 1 (3.0),
+        # instead of taking target's independent maximum (4.0).
+        torch.testing.assert_close(targets, torch.tensor([2.5]))
+
+    def test_double_dqn_does_not_bootstrap_terminated_rows_or_create_gradients(self) -> None:
+        online = FixedQNetwork([1.0, 5.0, 2.0, 0.0])
+        target = FixedQNetwork([4.0, 3.0, 2.0, 1.0])
+        next_states = torch.zeros(2, 2, requires_grad=True)
+
+        targets = compute_double_dqn_targets(
+            torch.tensor([1.0, -2.0]),
+            next_states,
+            torch.tensor([False, True]),
+            online,
+            target,
+            gamma=0.5,
+        )
+
+        torch.testing.assert_close(targets, torch.tensor([2.5, -2.0]))
+        self.assertFalse(targets.requires_grad)
+        self.assertTrue(all(parameter.grad is None for parameter in online.parameters()))
+        self.assertTrue(all(parameter.grad is None for parameter in target.parameters()))
 
     def test_target_inference_does_not_create_gradients(self) -> None:
         hard_update(self.target, self.online)

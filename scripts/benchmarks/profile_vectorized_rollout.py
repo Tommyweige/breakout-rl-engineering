@@ -22,7 +22,7 @@ from breakout_rl.evaluation_contract import (
 from breakout_rl.models.dqn import DQNNetwork
 from breakout_rl.tensors import observation_to_tensor
 from breakout_rl.training.dqn_trainer import resolve_device
-from profile_batch_size_experiment import RuntimeSampler, _sample_summary
+from scripts.benchmarks.profile_batch_size_experiment import RuntimeSampler, _sample_summary
 
 
 def _build_vector_env(

@@ -11,7 +11,7 @@ from pathlib import Path
 import torch
 from torch import nn
 
-from analyze_training_run import analyze_run
+from scripts.analysis.analyze_training_run import analyze_run
 from breakout_rl.replay_tensors import ReplayTensorBatch
 from breakout_rl.training.diagnostics import (
     aggregate_training_metrics,

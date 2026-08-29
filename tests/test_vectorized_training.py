@@ -462,6 +462,39 @@ class VectorizedTrainingTests(unittest.TestCase):
         self.assertEqual(rows[0]["action_overridden"], "True")
         self.assertEqual(rows[0]["fire_reset_reason"], "initial_serve")
 
+    def test_vectorized_trainer_switches_to_double_dqn_and_records_metadata(self) -> None:
+        config = DQNConfig(
+            algorithm="double_dqn",
+            total_steps=6,
+            num_envs=3,
+            batch_size=3,
+            replay_capacity=6,
+            learning_starts=3,
+            train_frequency=3,
+            target_update_interval=3,
+            checkpoint_interval=6,
+            epsilon_start=0.0,
+            epsilon_end=0.0,
+            device="cpu",
+        )
+
+        with tempfile.TemporaryDirectory() as directory:
+            run_dir = Path(directory) / "double-vectorized"
+            trainer = VectorizedDQNTrainer(
+                DeterministicVectorEnv(),
+                config,
+                run_dir=run_dir,
+                online_network=CountingQNetwork(),
+            )
+            summary = trainer.train()
+            checkpoint = next((run_dir / "checkpoints").glob("*.pt"))
+            payload = torch.load(checkpoint, map_location="cpu", weights_only=False)
+
+        self.assertEqual(summary["algorithm"], "double_dqn")
+        self.assertEqual(summary["num_envs"], 3)
+        self.assertEqual(payload["algorithm"], "double_dqn")
+        self.assertEqual(payload["num_envs"], 3)
+
 
 if __name__ == "__main__":
     unittest.main()

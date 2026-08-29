@@ -44,6 +44,7 @@ from breakout_rl.training.diagnostics import (
 )
 from breakout_rl.training.dqn_trainer import (
     DQNTrainingStepResult,
+    MODEL_ARCHITECTURE,
     NonFiniteTrainingError,
     _StageProfiler,
     _ensure_optimizer_excludes_target,
@@ -331,7 +332,7 @@ def _space_for(env: Any, *, kind: str) -> Any:
 
 
 class VectorizedDQNTrainer:
-    """Train vanilla DQN from multiple environments in one model batch."""
+    """Train a configurable DQN-family policy from multiple environments."""
 
     def __init__(
         self,
@@ -515,6 +516,8 @@ class VectorizedDQNTrainer:
             config,
             metadata={
                 "environment_id": self._environment_id,
+                "algorithm": self.config.algorithm,
+                "architecture": MODEL_ARCHITECTURE,
                 "vectorized": True,
                 "num_envs": self.num_envs,
                 "observation_shape": list(self.observation_shape),
@@ -697,6 +700,7 @@ class VectorizedDQNTrainer:
                 tensor_batch,
                 gamma=self.config.gamma,
                 gradient_clip_norm=self.config.gradient_clip_norm,
+                algorithm=self.config.algorithm,
                 collect_diagnostics=collect_diagnostics,
                 stage_measure=self._stage_profiler.measure_cuda,
             ),
@@ -766,6 +770,7 @@ class VectorizedDQNTrainer:
         vector_sps = float(self.vector_iterations / elapsed)
         return {
             "global_step": global_step,
+            "algorithm": self.config.algorithm,
             "episode": self.episode,
             "raw_episode_return": completed_return,
             "episode_length": completed_length,
@@ -856,6 +861,9 @@ class VectorizedDQNTrainer:
             run_dir=self.run_dir,
             extra={
                 "environment_id": self._environment_id,
+                "algorithm": self.config.algorithm,
+                "architecture": MODEL_ARCHITECTURE,
+                "training_steps": self.global_step,
                 "vectorized": True,
                 "num_envs": self.num_envs,
                 "observation_shape": list(self.observation_shape),
@@ -930,9 +938,12 @@ class VectorizedDQNTrainer:
             "run_id": self.run_dir.name,
             "run_dir": str(self.run_dir),
             "seed": self.config.seed,
+            "algorithm": self.config.algorithm,
+            "architecture": MODEL_ARCHITECTURE,
             "num_envs": self.num_envs,
             "total_steps": self.global_step,
             "total_transitions": self.global_step,
+            "training_steps": self.global_step,
             "physical_environment_steps": self.physical_environment_steps,
             "vector_iterations": self.vector_iterations,
             "episodes": self.episode,
@@ -996,6 +1007,9 @@ class VectorizedDQNTrainer:
                 ATARI_ACTION_NAMES.get(index, f"ACTION_{index}"): count
                 for index, count in enumerate(self._action_counts)
             },
+            "action_distribution_semantics": (
+                "environment-executed actions; requested_action is preserved per row"
+            ),
             "random_decision_count": self._random_decision_count,
             "greedy_decision_count": self._greedy_decision_count,
             "random_decision_ratio": (
@@ -1046,6 +1060,7 @@ class VectorizedDQNTrainer:
         """Save model, optimizer, schedule, and per-environment counters."""
 
         self.metrics.flush()
+        elapsed = max(time.perf_counter() - self._started_at, 1e-9)
         filename = f"step-{self.global_step:08d}"
         if suffix:
             filename += f"-{suffix}"
@@ -1054,6 +1069,18 @@ class VectorizedDQNTrainer:
         payload = {
             "format_version": 1,
             "trainer": "vectorized_dqn",
+            "algorithm": self.config.algorithm,
+            "architecture": MODEL_ARCHITECTURE,
+            "num_envs": self.num_envs,
+            "replay_backend": self.config.replay_backend,
+            "training_steps": self.global_step,
+            "runtime": self._runtime_metadata(elapsed),
+            "model_config": {
+                "architecture": MODEL_ARCHITECTURE,
+                "num_actions": self.action_count,
+                "input_shape": list(self.observation_shape),
+                "hidden_dim": getattr(self.online_network, "hidden_dim", None),
+            },
             "online_network": self.online_network.state_dict(),
             "target_network": self.target_network.state_dict(),
             "optimizer": self.optimizer.state_dict(),
@@ -1101,8 +1128,19 @@ class VectorizedDQNTrainer:
             payload = torch.load(checkpoint_path, map_location=self.device)
         if not isinstance(payload, dict):
             raise ValueError("checkpoint must contain a mapping")
-        saved_num_envs = payload.get("num_envs")
+        saved_algorithm = payload.get("algorithm")
         config_payload = payload.get("config")
+        if saved_algorithm is None and isinstance(config_payload, Mapping):
+            saved_algorithm = config_payload.get("algorithm", "dqn")
+        if (
+            saved_algorithm is not None
+            and str(saved_algorithm).strip().lower() != self.config.algorithm
+        ):
+            raise ValueError(
+                "checkpoint algorithm does not match trainer config: "
+                f"checkpoint={saved_algorithm!r}, config={self.config.algorithm!r}"
+            )
+        saved_num_envs = payload.get("num_envs")
         if saved_num_envs is None and isinstance(config_payload, Mapping):
             saved_num_envs = config_payload.get("num_envs")
         if saved_num_envs is not None and int(saved_num_envs) != self.num_envs:
