@@ -42,15 +42,15 @@ separate `evaluations/day15-contract-v2-*` directories by default.
 Recreate the evaluation artifacts from a local copy of that checkpoint:
 
 ```powershell
-python evaluate_dqn.py --policy random --config configs/eval/breakout_eval.json
-python evaluate_dqn.py --checkpoint assets/day14/final-runs/day14-final-frozen-100k/day14-final-vanilla-dqn-seed42/checkpoints/step-00100000.pt --config configs/eval/breakout_eval.json --device cuda
+python -m scripts.evaluation.evaluate_dqn --policy random --config configs/eval/breakout_eval.json
+python -m scripts.evaluation.evaluate_dqn --checkpoint assets/day14/final-runs/day14-final-frozen-100k/day14-final-vanilla-dqn-seed42/checkpoints/step-00100000.pt --config configs/eval/breakout_eval.json --device cuda
 ```
 
 Recreate the plot and report:
 
 ```powershell
-python visualize_day15_evaluation.py evaluations/day15-random-baseline/results.json evaluations/day15-dqn-cuda/results.json --output assets/day15/random-vs-dqn-returns.png --metadata-output assets/day15/random-vs-dqn-returns.json
-python generate_dqn_milestone_report.py --random-results evaluations/day15-random-baseline/results.json --dqn-results evaluations/day15-dqn-cuda/results.json --output reports/day15-dqn-milestone.md
+python -m scripts.visualization.visualize_day15_evaluation evaluations/day15-random-baseline/results.json evaluations/day15-dqn-cuda/results.json --output assets/day15/random-vs-dqn-returns.png --metadata-output assets/day15/random-vs-dqn-returns.json
+python -m scripts.analysis.generate_dqn_milestone_report --random-results evaluations/day15-random-baseline/results.json --dqn-results evaluations/day15-dqn-cuda/results.json --output reports/day15-dqn-milestone.md
 ```
 
 Run the FIRE/TimeLimit root-cause trace and the two diagnostic ablations with
@@ -58,9 +58,9 @@ the same frozen checkpoint. These commands write only to
 `evaluations/day15-diagnostics/` and do not replace the v1 results:
 
 ```powershell
-python diagnose_day15_fire.py --checkpoint assets/day14/final-runs/day14-final-frozen-100k/day14-final-vanilla-dqn-seed42/checkpoints/step-00100000.pt --config configs/eval/breakout_eval.json --device cuda --output-root evaluations/day15-diagnostics
-python visualize_day15_diagnostics.py --manifest evaluations/day15-diagnostics/manifest.json --output assets/day15/fire-time-limit-diagnostics.png --metadata-output assets/day15/fire-time-limit-diagnostics.json
-python generate_dqn_milestone_report.py --random-results evaluations/day15-random-baseline/results.json --dqn-results evaluations/day15-dqn-cuda/results.json --diagnostic-manifest evaluations/day15-diagnostics/manifest.json --output reports/day15-dqn-milestone.md
+python -m scripts.analysis.diagnose_day15_fire --checkpoint assets/day14/final-runs/day14-final-frozen-100k/day14-final-vanilla-dqn-seed42/checkpoints/step-00100000.pt --config configs/eval/breakout_eval.json --device cuda --output-root evaluations/day15-diagnostics
+python -m scripts.visualization.visualize_day15_diagnostics --manifest evaluations/day15-diagnostics/manifest.json --output assets/day15/fire-time-limit-diagnostics.png --metadata-output assets/day15/fire-time-limit-diagnostics.json
+python -m scripts.analysis.generate_dqn_milestone_report --random-results evaluations/day15-random-baseline/results.json --dqn-results evaluations/day15-dqn-cuda/results.json --diagnostic-manifest evaluations/day15-diagnostics/manifest.json --output reports/day15-dqn-milestone.md
 ```
 
 The Mermaid figures were rendered with:
