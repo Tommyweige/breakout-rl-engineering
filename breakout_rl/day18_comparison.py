@@ -56,6 +56,38 @@ DAY18_REQUIRED_TRAINING_FIELDS: tuple[str, ...] = (
     "gradient_norm",
     "sps",
 )
+DAY18_STAGE_COUNTER_FIELDS: tuple[str, ...] = (
+    "vector_iterations",
+    "optimizer_updates",
+    "action_inference_batches",
+    "action_inference_transitions",
+    "replay_insertion_calls",
+    "replay_insertion_transitions",
+)
+DAY18_STAGE_RATE_FIELDS: tuple[str, ...] = (
+    "vector_iterations_per_second",
+    "action_inference_batches_per_second",
+    "action_inference_transitions_per_second",
+    "replay_insertion_calls_per_second",
+    "replay_insertion_transitions_per_second",
+    "optimizer_updates_per_second",
+    "training_samples_per_second",
+)
+DAY18_PROVENANCE_SOURCE_PATHS: tuple[str, ...] = (
+    "configs/eval/breakout_contract_v2.json",
+    "configs/training/day16-canonical-backend.json",
+    "configs/experiments/day18-dqn-vs-double.json",
+    "breakout_rl/training/vectorized.py",
+    "breakout_rl/day18_comparison.py",
+    "breakout_rl/evaluation.py",
+    "scripts/training/train_vectorized_dqn.py",
+    "scripts/training/run_day18_comparison.py",
+    "scripts/analysis/analyze_q_values.py",
+    "scripts/analysis/export_day18_evidence.py",
+    "scripts/analysis/generate_day18_comparison_report.py",
+    "scripts/visualization/visualize_day18_comparison.py",
+    "scripts/analysis/rebuild_day18_derived_evidence.py",
+)
 
 
 def utc_timestamp() -> str:
@@ -557,6 +589,17 @@ def build_day18_manifest(
             "trainer": config.backend_manifest.get("trainer"),
             "control_values": base_values,
         },
+        "provenance": {
+            "source_hashes": day18_source_hashes(config.repository_root),
+            "historical_run_worktree_provenance": {
+                "git_dirty_at_run": "not_applicable_before_runs_exist",
+                "git_diff_sha256_at_run": "not_applicable_before_runs_exist",
+                "limitation": (
+                    "Future runs record git_dirty and git_diff_sha256 in runtime metadata; "
+                    "this planned manifest has no historical run state."
+                ),
+            },
+        },
         "runs": entries,
         "random_baseline_results": relative_path(
             config.repository_root
@@ -617,6 +660,303 @@ def _number(value: Any) -> float | None:
     except (TypeError, ValueError):
         return None
     return parsed if math.isfinite(parsed) else None
+
+
+def _integer_value(value: Any) -> int | None:
+    number = _number(value)
+    if number is None or not number.is_integer():
+        return None
+    return int(number)
+
+
+def _counter_from_report(
+    summary: Mapping[str, Any],
+    runtime: Mapping[str, Any],
+    name: str,
+) -> int | None:
+    value = summary.get(name)
+    if value is None:
+        value = runtime.get(name)
+    return _integer_value(value)
+
+
+def _stage_start_from_report(
+    summary: Mapping[str, Any],
+    runtime: Mapping[str, Any],
+) -> dict[str, int] | None:
+    raw = runtime.get("stage_start_counters", summary.get("stage_start_counters"))
+    if not isinstance(raw, Mapping):
+        return None
+    result: dict[str, int] = {}
+    for name in ("global_step", "physical_environment_steps", *DAY18_STAGE_COUNTER_FIELDS):
+        value = _integer_value(raw.get(name))
+        if value is None or value < 0:
+            return None
+        result[name] = value
+    return result
+
+
+def _current_stage_counters(
+    summary: Mapping[str, Any],
+    runtime: Mapping[str, Any],
+) -> dict[str, int] | None:
+    result: dict[str, int] = {}
+    for name in DAY18_STAGE_COUNTER_FIELDS:
+        value = _counter_from_report(summary, runtime, name)
+        if value is None or value < 0:
+            return None
+        result[name] = value
+    return result
+
+
+def _historical_stage_accounting(
+    report: dict[str, Any],
+    *,
+    previous_report: Mapping[str, Any] | None,
+) -> None:
+    """Rebuild stage-local rates without changing cumulative run semantics.
+
+    Day 18 artifacts created before stage counter snapshots existed contain the
+    cumulative counters and stage wall-clock needed for an unambiguous rebuild,
+    provided the previous stage for the same algorithm/seed is available.
+    """
+
+    summary_raw = report.get("summary")
+    if not isinstance(summary_raw, Mapping) or not summary_raw:
+        return
+    summary = dict(summary_raw)
+    runtime_raw = summary.get("runtime")
+    runtime = dict(runtime_raw) if isinstance(runtime_raw, Mapping) else {}
+    report_runtime = report.get("runtime")
+    if isinstance(report_runtime, Mapping):
+        runtime.update(dict(report_runtime))
+    current = _current_stage_counters(summary, runtime)
+    elapsed = _number(runtime.get("wall_clock_seconds"))
+    total_steps = _integer_value(
+        summary.get("total_transitions", summary.get("total_steps", runtime.get("training_steps")))
+    )
+    stage_start_step = _integer_value(
+        runtime.get("stage_start_step", summary.get("stage_start_step"))
+    )
+    current_physical = _integer_value(
+        runtime.get("physical_environment_steps", summary.get("physical_environment_steps"))
+    )
+    if current_physical is None and total_steps is not None:
+        current_physical = total_steps
+    if current is None or elapsed is None or elapsed <= 0 or total_steps is None:
+        return
+
+    stage_start = _stage_start_from_report(summary, runtime)
+    source = "runtime_stage_start_snapshot"
+    if stage_start is None:
+        previous_summary = (
+            previous_report.get("summary") if previous_report is not None else None
+        )
+        previous_runtime = (
+            previous_report.get("runtime")
+            if previous_report is not None
+            else None
+        )
+        previous_summary = (
+            previous_summary if isinstance(previous_summary, Mapping) else {}
+        )
+        previous_runtime = (
+            previous_runtime if isinstance(previous_runtime, Mapping) else {}
+        )
+        previous_counters = _current_stage_counters(
+            previous_summary,
+            previous_runtime,
+        )
+        previous_steps = _integer_value(
+            previous_summary.get(
+                "total_transitions",
+                previous_summary.get("total_steps", previous_runtime.get("training_steps")),
+            )
+        )
+        previous_physical = _integer_value(
+            previous_runtime.get(
+                "physical_environment_steps",
+                previous_summary.get("physical_environment_steps", previous_steps),
+            )
+        )
+        if previous_counters is not None and previous_steps is not None:
+            if previous_physical is None:
+                previous_physical = previous_steps
+            stage_start = {
+                "global_step": previous_steps,
+                "physical_environment_steps": previous_physical,
+                **previous_counters,
+            }
+            source = "previous_stage_cumulative_counters"
+        elif stage_start_step == 0:
+            stage_start = {
+                "global_step": 0,
+                "physical_environment_steps": 0,
+                **{name: 0 for name in DAY18_STAGE_COUNTER_FIELDS},
+            }
+            source = "fresh_run_zero_baseline"
+
+    if stage_start is None or stage_start_step is None or current_physical is None:
+        return
+    if stage_start["global_step"] != stage_start_step:
+        return
+    if stage_start["global_step"] > total_steps or stage_start["physical_environment_steps"] > current_physical:
+        return
+    if any(
+        current[name] < stage_start[name] for name in DAY18_STAGE_COUNTER_FIELDS
+    ):
+        return
+
+    stage_steps = total_steps - stage_start["global_step"]
+    stage_physical_steps = current_physical - stage_start["physical_environment_steps"]
+    stage_counters = {
+        name: current[name] - stage_start[name]
+        for name in DAY18_STAGE_COUNTER_FIELDS
+    }
+    config = report.get("config")
+    if not isinstance(config, Mapping):
+        config = report.get("training_config")
+    if not isinstance(config, Mapping):
+        config = {}
+    rates = {
+        "steps_per_second": float(stage_steps / elapsed),
+        "environment_transitions_per_second": float(stage_steps / elapsed),
+        "physical_environment_steps_per_second": float(
+            stage_physical_steps / elapsed
+        ),
+        "vector_iterations_per_second": float(
+            stage_counters["vector_iterations"] / elapsed
+        ),
+        "action_inference_batches_per_second": float(
+            stage_counters["action_inference_batches"] / elapsed
+        ),
+        "action_inference_transitions_per_second": float(
+            stage_counters["action_inference_transitions"] / elapsed
+        ),
+        "replay_insertion_calls_per_second": float(
+            stage_counters["replay_insertion_calls"] / elapsed
+        ),
+        "replay_insertion_transitions_per_second": float(
+            stage_counters["replay_insertion_transitions"] / elapsed
+        ),
+        "optimizer_updates_per_second": float(
+            stage_counters["optimizer_updates"]
+            / elapsed
+        ),
+        "training_samples_per_second": float(
+            stage_counters["optimizer_updates"]
+            * int(config.get("batch_size", 0) or 0)
+            / elapsed
+        ),
+    }
+    accounting = {
+        "schema_version": 1,
+        "counter_semantics": "stage-local counter delta divided by stage-local wall-clock elapsed",
+        "stage_start_source": source,
+        "stage_start_counters": stage_start,
+        "stage_counters": stage_counters,
+        "stage_elapsed_seconds": float(elapsed),
+        "reconstructed_from_existing_artifacts": True,
+    }
+    summary["stage_start_counters"] = stage_start
+    summary["stage_counters"] = stage_counters
+    summary["stage_rates"] = rates
+    summary["throughput_accounting"] = accounting
+    for field, value in rates.items():
+        summary[field] = value
+    runtime["stage_start_counters"] = stage_start
+    runtime["stage_counters"] = stage_counters
+    runtime["stage_rates"] = rates
+    runtime["throughput_accounting"] = accounting
+    for field, value in rates.items():
+        runtime[field] = value
+    summary["runtime"] = runtime
+    report["summary"] = summary
+    report["runtime"] = runtime
+
+
+def normalize_training_stage_accounting(
+    reports: Sequence[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Normalize vectorized stage rates while preserving cumulative counters."""
+
+    grouped: dict[tuple[str, int], list[dict[str, Any]]] = {}
+    for report in reports:
+        grouped.setdefault(
+            (str(report.get("algorithm")), int(report.get("training_seed", -1))),
+            [],
+        ).append(report)
+    stage_order = {stage: index for index, stage in enumerate(DAY18_MILESTONES)}
+    for group in grouped.values():
+        ordered = sorted(
+            group,
+            key=lambda item: (
+                stage_order.get(str(item.get("stage")), len(stage_order)),
+                int(item.get("target_transitions", 0)),
+            ),
+        )
+        previous: dict[str, Any] | None = None
+        for report in ordered:
+            _historical_stage_accounting(report, previous_report=previous)
+            if isinstance(report.get("summary"), Mapping) and report.get("summary"):
+                previous = report
+    return list(reports)
+
+
+def compact_training_summary(summary: Mapping[str, Any]) -> dict[str, Any]:
+    """Keep manifest summaries compact while retaining corrected runtime data."""
+
+    fields = (
+        "status",
+        "total_transitions",
+        "episodes",
+        "optimizer_updates",
+        "steps_per_second",
+        "stage_start_counters",
+        "stage_counters",
+        "stage_rates",
+        "throughput_accounting",
+        "runtime",
+        "resume_provenance",
+    )
+    return {field: summary[field] for field in fields if field in summary}
+
+
+def day18_source_hashes(repository_root: str | Path) -> dict[str, str | None]:
+    """Hash the source/config files that define or interpret Day 18 evidence."""
+
+    root = Path(repository_root).resolve()
+    return {
+        path: sha256_file(root / path) if (root / path).is_file() else None
+        for path in DAY18_PROVENANCE_SOURCE_PATHS
+    }
+
+
+def historical_run_provenance(
+    training: Sequence[Mapping[str, Any]],
+) -> dict[str, Any]:
+    """Describe what can and cannot be recovered from historical run metadata."""
+
+    commits = sorted(
+        {
+            str(entry.get("runtime", {}).get("git_commit_sha"))
+            for entry in training
+            if isinstance(entry.get("runtime"), Mapping)
+            and entry.get("runtime", {}).get("git_commit_sha")
+            not in (None, "", "unavailable")
+        }
+    )
+    return {
+        "run_base_git_commit": commits[0] if len(commits) == 1 else None,
+        "run_base_git_commits": commits,
+        "git_dirty_at_run": "unknown",
+        "git_diff_sha256_at_run": "unavailable",
+        "limitation": (
+            "Historical Day 18 runs recorded git_commit_sha but not working-tree "
+            "cleanliness or tracked diff bytes; the uncommitted source state at "
+            "run time cannot be recovered without fabricating provenance."
+        ),
+    }
 
 
 def _summary_for_entry(
@@ -753,6 +1093,7 @@ def load_training_entries(
         )
         for entry in manifest["runs"]
     ]
+    normalize_training_stage_accounting(reports)
     if not include_metrics:
         for report in reports:
             report.pop("metrics", None)
@@ -1322,6 +1663,22 @@ def build_day18_report(
             "training_seed": entry["training_seed"],
             "stage": entry["stage"],
             "eligible": entry["eligible"],
+            "stage_start_counters": entry.get("summary", {}).get(
+                "stage_start_counters"
+            ),
+            "stage_counters": entry.get("summary", {}).get("stage_counters"),
+            "stage_rates": {
+                field: entry.get("runtime", {}).get(field)
+                for field in (
+                    "steps_per_second",
+                    "environment_transitions_per_second",
+                    "physical_environment_steps_per_second",
+                    *DAY18_STAGE_RATE_FIELDS,
+                )
+            },
+            "throughput_accounting": entry.get("summary", {}).get(
+                "throughput_accounting"
+            ),
             "steps_per_second": entry.get("runtime", {}).get(
                 "steps_per_second",
                 entry.get("summary", {}).get("steps_per_second"),
@@ -1351,6 +1708,10 @@ def build_day18_report(
         "manifest_status": manifest.get("status"),
         "protocol": manifest.get("protocol"),
         "source_of_truth": manifest.get("source_of_truth"),
+        "provenance": {
+            **historical_run_provenance(training),
+            "source_hashes": day18_source_hashes(source.parent.parent.parent),
+        },
         "training": {
             "entries": training,
             "completed_entry_count": sum(bool(entry.get("eligible")) for entry in training),
@@ -1389,14 +1750,21 @@ __all__ = [
     "DAY18_MILESTONES",
     "DAY18_SCHEMA_VERSION",
     "DAY18_TRAINING_SEEDS",
+    "DAY18_PROVENANCE_SOURCE_PATHS",
+    "DAY18_STAGE_COUNTER_FIELDS",
+    "DAY18_STAGE_RATE_FIELDS",
     "Day18ExperimentConfig",
     "build_day18_manifest",
     "build_day18_report",
+    "compact_training_summary",
     "config_diff",
     "load_day18_config",
     "load_evaluation_entries",
     "load_q_probe_entries",
     "load_training_entries",
+    "day18_source_hashes",
+    "historical_run_provenance",
+    "normalize_training_stage_accounting",
     "read_day18_manifest",
     "relative_path",
     "repository_path",

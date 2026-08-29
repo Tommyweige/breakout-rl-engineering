@@ -59,6 +59,7 @@
     "environment_id": "ALE/Breakout-v5",
     "algorithm": "dqn",
     "architecture": "standard",
+    "training_steps": 500000,
     "vectorized": true,
     "num_envs": 2,
     "observation_shape": [
@@ -67,6 +68,24 @@
       84
     ],
     "action_count": 4,
+    "environment_transitions_per_second": 336.1409024892768,
+    "stage_start_step": 250000,
+    "stage_training_steps": 250000,
+    "physical_environment_steps": 500000,
+    "stage_physical_environment_steps": 250000,
+    "physical_environment_steps_per_second": 336.1409024892768,
+    "vector_iterations": 250000,
+    "vector_iterations_per_second": 168.0704512446384,
+    "action_inference_batches": 250000,
+    "action_inference_transitions": 500000,
+    "action_inference_transitions_per_second": 336.1409024892768,
+    "action_inference_batches_per_second": 168.0704512446384,
+    "replay_insertion_calls": 250000,
+    "replay_insertion_transitions": 500000,
+    "replay_insertion_transitions_per_second": 336.1409024892768,
+    "replay_insertion_calls_per_second": 168.0704512446384,
+    "optimizer_updates_per_second": 83.69908471982993,
+    "training_samples_per_second": 2678.3707110345576,
     "diagnostics_interval": 100,
     "metrics_flush_interval": 500,
     "metrics_row_cadence": 1,
@@ -77,95 +96,11 @@
     "strict_action_selection_parity_requested": true,
     "strict_action_selection_parity_satisfied": true,
     "behavior_policy_lag_warning": null,
+    "configured_cpu_threads": 2,
     "replay_transfer": "direct",
     "replay_backend": "gpu",
     "replay_storage_device": "cuda:0",
     "replay_bytes": 564620000,
-    "day18_comparison": {
-      "experiment_id": "day18-dqn-vs-double",
-      "run_id": "day18-dqn-vs-double-dqn-seed11-main",
-      "pair_id": "training-seed-11",
-      "algorithm": "dqn",
-      "training_seed": 11,
-      "stage": "main",
-      "target_transitions": 500000,
-      "resume_from": {
-        "path": "../../runs/day18-dqn-vs-double/dqn-seed11/stage-250k/checkpoints/step-00250000.pt",
-        "sha256": "35117659098069b505ba17477f772ef94ec6a6721aa8202b3ede937b3c25726e",
-        "step": 250000
-      }
-    },
-    "environment_contract": {
-      "contract_id": "day15-breakout-evaluation-v2-fire-reset",
-      "contract_path": "configs/eval/breakout_contract_v2.json",
-      "contract_sha256": "e9947fc3a1235100aa92f75a79cf33668b36b4f325f22a0bc8b9546a356b85ba",
-      "semantics": {
-        "schema_version": 2,
-        "contract_id": "day15-breakout-evaluation-v2-fire-reset",
-        "environment_id": "ALE/Breakout-v5",
-        "frame_skip": 4,
-        "frame_stack": 4,
-        "sticky_action_probability": 0.25,
-        "fire_reset": true,
-        "fire_reset_confirmation": {
-          "max_fire_attempts": 8,
-          "confirmation_steps": 2,
-          "min_observation_change_fraction": 0.0001,
-          "confirmation_operator": "any",
-          "confirmation_signals": [
-            "raw_reward",
-            "observation_activity_streak"
-          ]
-        },
-        "terminal_on_life_loss": false,
-        "time_limit_semantics": {
-          "source": "ale.game_truncated",
-          "max_num_frames_per_episode": 108000,
-          "agent_step_limit": 27000,
-          "truncated_is_finished": true,
-          "external_time_limit_wrapper": false
-        },
-        "concrete_episode_seeds": [
-          101,
-          102,
-          103,
-          104,
-          105,
-          202,
-          203,
-          204,
-          205,
-          206,
-          303,
-          304,
-          305,
-          306,
-          307
-        ],
-        "evaluation_epsilon": 0.0,
-        "raw_reward_rule": "sum environment rewards without clipping"
-      }
-    },
-    "training_steps": 500000,
-    "environment_transitions_per_second": 336.1409024892768,
-    "stage_start_step": 250000,
-    "stage_training_steps": 250000,
-    "physical_environment_steps": 500000,
-    "stage_physical_environment_steps": 250000,
-    "physical_environment_steps_per_second": 336.1409024892768,
-    "vector_iterations": 250000,
-    "vector_iterations_per_second": 336.1409024892768,
-    "action_inference_batches": 250000,
-    "action_inference_transitions": 500000,
-    "action_inference_transitions_per_second": 672.2818049785536,
-    "action_inference_batches_per_second": 336.1409024892768,
-    "replay_insertion_calls": 250000,
-    "replay_insertion_transitions": 500000,
-    "replay_insertion_transitions_per_second": 672.2818049785536,
-    "replay_insertion_calls_per_second": 336.1409024892768,
-    "optimizer_updates_per_second": 167.06337310078052,
-    "training_samples_per_second": 5346.027939224977,
-    "configured_cpu_threads": 2,
     "replay_rewarm_steps_remaining": 0,
     "resume_provenance": {
       "source_checkpoint": "C:\\Users\\tommy\\.codex\\worktrees\\ab66\\breakout-rl-engineering\\runs\\day18-dqn-vs-double\\dqn-seed11\\stage-250k\\checkpoints\\step-00250000.pt",
@@ -264,6 +199,126 @@
         "wall_seconds": 0.8893778000492603,
         "cpu_seconds": 1.015625
       }
+    },
+    "day18_comparison": {
+      "experiment_id": "day18-dqn-vs-double",
+      "run_id": "day18-dqn-vs-double-dqn-seed11-main",
+      "pair_id": "training-seed-11",
+      "algorithm": "dqn",
+      "training_seed": 11,
+      "stage": "main",
+      "target_transitions": 500000,
+      "resume_from": {
+        "path": "../../runs/day18-dqn-vs-double/dqn-seed11/stage-250k/checkpoints/step-00250000.pt",
+        "sha256": "35117659098069b505ba17477f772ef94ec6a6721aa8202b3ede937b3c25726e",
+        "step": 250000
+      }
+    },
+    "environment_contract": {
+      "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+      "contract_path": "configs/eval/breakout_contract_v2.json",
+      "contract_sha256": "e9947fc3a1235100aa92f75a79cf33668b36b4f325f22a0bc8b9546a356b85ba",
+      "semantics": {
+        "schema_version": 2,
+        "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+        "environment_id": "ALE/Breakout-v5",
+        "frame_skip": 4,
+        "frame_stack": 4,
+        "sticky_action_probability": 0.25,
+        "fire_reset": true,
+        "fire_reset_confirmation": {
+          "max_fire_attempts": 8,
+          "confirmation_steps": 2,
+          "min_observation_change_fraction": 0.0001,
+          "confirmation_operator": "any",
+          "confirmation_signals": [
+            "raw_reward",
+            "observation_activity_streak"
+          ]
+        },
+        "terminal_on_life_loss": false,
+        "time_limit_semantics": {
+          "source": "ale.game_truncated",
+          "max_num_frames_per_episode": 108000,
+          "agent_step_limit": 27000,
+          "truncated_is_finished": true,
+          "external_time_limit_wrapper": false
+        },
+        "concrete_episode_seeds": [
+          101,
+          102,
+          103,
+          104,
+          105,
+          202,
+          203,
+          204,
+          205,
+          206,
+          303,
+          304,
+          305,
+          306,
+          307
+        ],
+        "evaluation_epsilon": 0.0,
+        "raw_reward_rule": "sum environment rewards without clipping"
+      }
+    },
+    "stage_start_counters": {
+      "global_step": 250000,
+      "physical_environment_steps": 250000,
+      "vector_iterations": 125000,
+      "optimizer_updates": 62001,
+      "action_inference_batches": 125000,
+      "action_inference_transitions": 250000,
+      "replay_insertion_calls": 125000,
+      "replay_insertion_transitions": 250000
+    },
+    "stage_counters": {
+      "vector_iterations": 125000,
+      "optimizer_updates": 62250,
+      "action_inference_batches": 125000,
+      "action_inference_transitions": 250000,
+      "replay_insertion_calls": 125000,
+      "replay_insertion_transitions": 250000
+    },
+    "stage_rates": {
+      "steps_per_second": 336.1409024892768,
+      "environment_transitions_per_second": 336.1409024892768,
+      "physical_environment_steps_per_second": 336.1409024892768,
+      "vector_iterations_per_second": 168.0704512446384,
+      "action_inference_batches_per_second": 168.0704512446384,
+      "action_inference_transitions_per_second": 336.1409024892768,
+      "replay_insertion_calls_per_second": 168.0704512446384,
+      "replay_insertion_transitions_per_second": 336.1409024892768,
+      "optimizer_updates_per_second": 83.69908471982993,
+      "training_samples_per_second": 2678.3707110345576
+    },
+    "throughput_accounting": {
+      "schema_version": 1,
+      "counter_semantics": "stage-local counter delta divided by stage-local wall-clock elapsed",
+      "stage_start_source": "previous_stage_cumulative_counters",
+      "stage_start_counters": {
+        "global_step": 250000,
+        "physical_environment_steps": 250000,
+        "vector_iterations": 125000,
+        "optimizer_updates": 62001,
+        "action_inference_batches": 125000,
+        "action_inference_transitions": 250000,
+        "replay_insertion_calls": 125000,
+        "replay_insertion_transitions": 250000
+      },
+      "stage_counters": {
+        "vector_iterations": 125000,
+        "optimizer_updates": 62250,
+        "action_inference_batches": 125000,
+        "action_inference_transitions": 250000,
+        "replay_insertion_calls": 125000,
+        "replay_insertion_transitions": 250000
+      },
+      "stage_elapsed_seconds": 743.7357315002009,
+      "reconstructed_from_existing_artifacts": true
     }
   }
 }

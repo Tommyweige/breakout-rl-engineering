@@ -244,6 +244,132 @@ class VectorizedTrainingTests(unittest.TestCase):
         self.assertEqual(summary["runtime"]["environment_contract"], contract)
         self.assertEqual(payload["environment_contract"], contract)
 
+    def test_fresh_and_resumed_stage_rates_use_local_counter_deltas(self) -> None:
+        base_values = {
+            "num_envs": 3,
+            "batch_size": 3,
+            "replay_capacity": 20,
+            "learning_starts": 3,
+            "train_frequency": 3,
+            "target_update_interval": 6,
+            "checkpoint_interval": 12,
+            "epsilon_start": 0.0,
+            "epsilon_end": 0.0,
+            "device": "cpu",
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            run_dir = Path(directory) / "resumed-accounting"
+            first_trainer = VectorizedDQNTrainer(
+                DeterministicVectorEnv(),
+                DQNConfig(total_steps=12, **base_values),
+                run_dir=run_dir,
+                online_network=CountingQNetwork(),
+            )
+            first_summary = first_trainer.train()
+            checkpoint = Path(str(first_summary["last_checkpoint"]))
+
+            resumed_trainer = VectorizedDQNTrainer(
+                DeterministicVectorEnv(),
+                DQNConfig(total_steps=24, **base_values),
+                run_dir=run_dir,
+                online_network=CountingQNetwork(),
+                resume_from=checkpoint,
+            )
+            self.assertEqual(
+                resumed_trainer._stage_start_counter_snapshot(),  # type: ignore[attr-defined]
+                {
+                    "global_step": 12,
+                    "physical_environment_steps": 12,
+                    "vector_iterations": first_summary["vector_iterations"],
+                    "optimizer_updates": first_summary["optimizer_updates"],
+                    "action_inference_batches": first_summary["runtime"][
+                        "action_inference_batches"
+                    ],
+                    "action_inference_transitions": first_summary["runtime"][
+                        "action_inference_transitions"
+                    ],
+                    "replay_insertion_calls": first_summary["runtime"][
+                        "replay_insertion_calls"
+                    ],
+                    "replay_insertion_transitions": first_summary["runtime"][
+                        "replay_insertion_transitions"
+                    ],
+                },
+            )
+            resumed_summary = resumed_trainer.train()
+
+        first_runtime = first_summary["runtime"]
+        resumed_runtime = resumed_summary["runtime"]
+        self.assertEqual(
+            resumed_summary["stage_start_counters"]["optimizer_updates"],
+            first_summary["optimizer_updates"],
+        )
+        self.assertEqual(
+            resumed_summary["stage_counters"],
+            {
+                "vector_iterations": resumed_summary["vector_iterations"]
+                - first_summary["vector_iterations"],
+                "optimizer_updates": resumed_summary["optimizer_updates"]
+                - first_summary["optimizer_updates"],
+                "action_inference_batches": resumed_runtime[
+                    "action_inference_batches"
+                ]
+                - first_runtime["action_inference_batches"],
+                "action_inference_transitions": resumed_runtime[
+                    "action_inference_transitions"
+                ]
+                - first_runtime["action_inference_transitions"],
+                "replay_insertion_calls": resumed_runtime["replay_insertion_calls"]
+                - first_runtime["replay_insertion_calls"],
+                "replay_insertion_transitions": resumed_runtime[
+                    "replay_insertion_transitions"
+                ]
+                - first_runtime["replay_insertion_transitions"],
+            },
+        )
+        stage = resumed_summary["stage_counters"]
+        elapsed = resumed_runtime["wall_clock_seconds"]
+        expected_rates = {
+            "steps_per_second": 12 / elapsed,
+            "environment_transitions_per_second": 12 / elapsed,
+            "physical_environment_steps_per_second": 12 / elapsed,
+            "vector_iterations_per_second": stage["vector_iterations"] / elapsed,
+            "action_inference_batches_per_second": stage[
+                "action_inference_batches"
+            ]
+            / elapsed,
+            "action_inference_transitions_per_second": stage[
+                "action_inference_transitions"
+            ]
+            / elapsed,
+            "replay_insertion_calls_per_second": stage["replay_insertion_calls"]
+            / elapsed,
+            "replay_insertion_transitions_per_second": stage[
+                "replay_insertion_transitions"
+            ]
+            / elapsed,
+            "optimizer_updates_per_second": stage["optimizer_updates"] / elapsed,
+            "training_samples_per_second": stage["optimizer_updates"] * 3 / elapsed,
+        }
+        for field, expected in expected_rates.items():
+            self.assertAlmostEqual(resumed_summary[field], expected, places=7)
+            self.assertAlmostEqual(resumed_runtime[field], expected, places=7)
+        self.assertEqual(
+            first_summary["stage_counters"],
+            {
+                "vector_iterations": first_summary["vector_iterations"],
+                "optimizer_updates": first_summary["optimizer_updates"],
+                "action_inference_batches": first_runtime["action_inference_batches"],
+                "action_inference_transitions": first_runtime[
+                    "action_inference_transitions"
+                ],
+                "replay_insertion_calls": first_runtime["replay_insertion_calls"],
+                "replay_insertion_transitions": first_runtime[
+                    "replay_insertion_transitions"
+                ],
+            },
+        )
+
     def test_checkpoint_boundaries_are_captured_inside_a_vector_step(self) -> None:
         config = DQNConfig(
             total_steps=6,

@@ -211,6 +211,9 @@ class TrainingDiagnosticsTests(unittest.TestCase):
         self.assertIn("torch_cuda_version", metadata)
         self.assertIn("cuda_available", metadata)
         self.assertIn("git_commit_sha", metadata)
+        self.assertIn("git_dirty", metadata)
+        self.assertIn("git_diff_sha256", metadata)
+        self.assertIn("git_diff_scope", metadata)
 
     def test_finite_check_accepts_cuda_tensors_when_cuda_is_available(self) -> None:
         if not torch.cuda.is_available():

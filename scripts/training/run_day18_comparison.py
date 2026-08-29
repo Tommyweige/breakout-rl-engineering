@@ -17,6 +17,7 @@ from breakout_rl.day18_comparison import (
     DAY18_FORMAL_STAGE,
     Day18ExperimentConfig,
     build_day18_manifest,
+    compact_training_summary,
     load_evaluation_entries,
     load_day18_config,
     load_q_probe_entries,
@@ -574,15 +575,7 @@ def _run_one_entry(
     if not checkpoint.is_file():
         raise FileNotFoundError(f"completed stage checkpoint is missing: {checkpoint}")
     entry["status"] = "completed"
-    entry["summary"] = {
-        "status": summary.get("status"),
-        "total_transitions": summary.get("total_transitions"),
-        "episodes": summary.get("episodes"),
-        "optimizer_updates": summary.get("optimizer_updates"),
-        "steps_per_second": summary.get("steps_per_second"),
-        "runtime": summary.get("runtime", {}),
-        "resume_provenance": summary.get("resume_provenance"),
-    }
+    entry["summary"] = compact_training_summary(summary)
     entry["checkpoint"] = _checkpoint_reference(
         checkpoint,
         manifest_path=manifest_path,

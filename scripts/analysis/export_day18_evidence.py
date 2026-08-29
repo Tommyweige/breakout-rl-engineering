@@ -12,6 +12,7 @@ from typing import Any, Mapping, Sequence
 
 from breakout_rl.day18_comparison import (
     build_day18_report,
+    compact_training_summary,
     load_training_entries,
     read_day18_manifest,
     relative_path,
@@ -83,6 +84,19 @@ def export_evidence(
 ) -> Path:
     source = Path(manifest_path).resolve()
     manifest = read_day18_manifest(source)
+    training_entries = load_training_entries(
+        source,
+        include_metrics=False,
+        require_checkpoint=False,
+    )
+    training_by_key = {
+        (
+            str(entry["algorithm"]),
+            int(entry["training_seed"]),
+            str(entry["stage"]),
+        ): entry
+        for entry in training_entries
+    }
     if require_formal:
         report = build_day18_report(source)
         if not report["comparison_conditions"].get("formal_quality_eligible"):
@@ -114,10 +128,29 @@ def export_evidence(
         )
         compact_run = output_root / "evidence-runs" / compact_name
         compact_run.mkdir(parents=True, exist_ok=True)
+        training_report = training_by_key.get(
+            (
+                str(entry["algorithm"]),
+                int(entry["training_seed"]),
+                str(entry["stage"]),
+            )
+        )
         for name in ("config.json", "summary.json"):
             source_file = source_run / name
             if source_file.is_file():
-                shutil.copy2(source_file, compact_run / name)
+                if name == "summary.json" and training_report is not None:
+                    write_json(compact_run / name, training_report["summary"])
+                elif name == "config.json" and training_report is not None:
+                    config_payload = json.loads(
+                        source_file.read_text(encoding="utf-8")
+                    )
+                    if isinstance(config_payload, dict):
+                        config_payload["runtime"] = dict(
+                            training_report.get("runtime", {})
+                        )
+                    write_json(compact_run / name, config_payload)
+                else:
+                    shutil.copy2(source_file, compact_run / name)
         source_metrics = source_run / "metrics.csv"
         if not source_metrics.is_file():
             continue
@@ -127,6 +160,8 @@ def export_evidence(
         )
         entry["source_run_dir"] = entry.get("run_dir")
         entry["run_dir"] = relative_path(compact_run, start=output_root)
+        if training_report is not None:
+            entry["summary"] = compact_training_summary(training_report["summary"])
 
         raw_q_path = entry.get("q_probe")
         if isinstance(raw_q_path, str):

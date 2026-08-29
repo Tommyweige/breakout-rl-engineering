@@ -1,16 +1,13 @@
 {
   "schema_version": 1,
-  "generated_at_utc": "2026-08-29T06:44:21.635391Z",
+  "generated_at_utc": "2026-08-29T16:19:54.438844Z",
   "command": [
-    "C:\\Users\\tommy\\.codex\\worktrees\\ab66\\breakout-rl-engineering\\scripts\\visualization\\visualize_day18_comparison.py",
-    "--manifest",
-    "assets/day18/evidence-manifest.json",
-    "--output-dir",
-    "assets/day18"
+    "C:\\Users\\tommy\\.codex\\worktrees\\ab66\\breakout-rl-engineering\\scripts\\analysis\\rebuild_day18_derived_evidence.py",
+    "--require-formal"
   ],
   "question": "在相同 NVIDIA CUDA、precision 與 actual transition budget 下，兩個 algorithm 的 SPS、wall-clock 與 peak VRAM 工程成本是多少？",
-  "source_manifest": "assets/day18/evidence-manifest.json",
-  "source_manifest_sha256": "5cb36418f736d5b6734416c8065574379e1fcfb60a9fe71c4896194abbf6e586",
+  "source_manifest": "experiments/day18-dqn-vs-double/manifest.json",
+  "source_manifest_sha256": "c6bda76a260398685886f469730d276935264c5a2bdd83fcee36597393d33388",
   "source_entries": [
     {
       "run_id": "day18-dqn-vs-double-dqn-seed11-main",
@@ -18,13 +15,68 @@
       "training_seed": 11,
       "stage": "main",
       "target_transitions": 500000,
-      "run_dir": "evidence-runs/dqn-seed11-main",
+      "run_dir": "../../runs/day18-dqn-vs-double/dqn-seed11/stage-500k",
       "checkpoint": {
         "path": "../../runs/day18-dqn-vs-double/dqn-seed11/stage-500k/checkpoints/step-00500000.pt",
         "sha256": "1cd79e6d5236217213c917d6f6ba9455ef5c81739e4a869723d0e6d60b274f97"
       },
       "evaluation": null,
-      "q_probe": null
+      "q_probe": null,
+      "throughput_accounting": {
+        "schema_version": 1,
+        "counter_semantics": "stage-local counter delta divided by stage-local wall-clock elapsed",
+        "stage_start_source": "previous_stage_cumulative_counters",
+        "stage_start_counters": {
+          "global_step": 250000,
+          "physical_environment_steps": 250000,
+          "vector_iterations": 125000,
+          "optimizer_updates": 62001,
+          "action_inference_batches": 125000,
+          "action_inference_transitions": 250000,
+          "replay_insertion_calls": 125000,
+          "replay_insertion_transitions": 250000
+        },
+        "stage_counters": {
+          "vector_iterations": 125000,
+          "optimizer_updates": 62250,
+          "action_inference_batches": 125000,
+          "action_inference_transitions": 250000,
+          "replay_insertion_calls": 125000,
+          "replay_insertion_transitions": 250000
+        },
+        "stage_elapsed_seconds": 743.7357315002009,
+        "reconstructed_from_existing_artifacts": true
+      },
+      "stage_start_counters": {
+        "global_step": 250000,
+        "physical_environment_steps": 250000,
+        "vector_iterations": 125000,
+        "optimizer_updates": 62001,
+        "action_inference_batches": 125000,
+        "action_inference_transitions": 250000,
+        "replay_insertion_calls": 125000,
+        "replay_insertion_transitions": 250000
+      },
+      "stage_counters": {
+        "vector_iterations": 125000,
+        "optimizer_updates": 62250,
+        "action_inference_batches": 125000,
+        "action_inference_transitions": 250000,
+        "replay_insertion_calls": 125000,
+        "replay_insertion_transitions": 250000
+      },
+      "stage_rates": {
+        "steps_per_second": 336.1409024892768,
+        "environment_transitions_per_second": 336.1409024892768,
+        "physical_environment_steps_per_second": 336.1409024892768,
+        "vector_iterations_per_second": 168.0704512446384,
+        "action_inference_batches_per_second": 168.0704512446384,
+        "action_inference_transitions_per_second": 336.1409024892768,
+        "replay_insertion_calls_per_second": 168.0704512446384,
+        "replay_insertion_transitions_per_second": 336.1409024892768,
+        "optimizer_updates_per_second": 83.69908471982993,
+        "training_samples_per_second": 2678.3707110345576
+      }
     },
     {
       "run_id": "day18-dqn-vs-double-double_dqn-seed11-main",
@@ -32,13 +84,68 @@
       "training_seed": 11,
       "stage": "main",
       "target_transitions": 500000,
-      "run_dir": "evidence-runs/double_dqn-seed11-main",
+      "run_dir": "../../runs/day18-dqn-vs-double/double_dqn-seed11/stage-500k",
       "checkpoint": {
         "path": "../../runs/day18-dqn-vs-double/double_dqn-seed11/stage-500k/checkpoints/step-00500000.pt",
         "sha256": "5bf7bbbb8e038fab540f46f53fd3a39304c5517fa01e51da66f129aee3ed9011"
       },
       "evaluation": null,
-      "q_probe": null
+      "q_probe": null,
+      "throughput_accounting": {
+        "schema_version": 1,
+        "counter_semantics": "stage-local counter delta divided by stage-local wall-clock elapsed",
+        "stage_start_source": "previous_stage_cumulative_counters",
+        "stage_start_counters": {
+          "global_step": 250000,
+          "physical_environment_steps": 250000,
+          "vector_iterations": 125000,
+          "optimizer_updates": 62001,
+          "action_inference_batches": 125000,
+          "action_inference_transitions": 250000,
+          "replay_insertion_calls": 125000,
+          "replay_insertion_transitions": 250000
+        },
+        "stage_counters": {
+          "vector_iterations": 125000,
+          "optimizer_updates": 62250,
+          "action_inference_batches": 125000,
+          "action_inference_transitions": 250000,
+          "replay_insertion_calls": 125000,
+          "replay_insertion_transitions": 250000
+        },
+        "stage_elapsed_seconds": 719.9474418999162,
+        "reconstructed_from_existing_artifacts": true
+      },
+      "stage_start_counters": {
+        "global_step": 250000,
+        "physical_environment_steps": 250000,
+        "vector_iterations": 125000,
+        "optimizer_updates": 62001,
+        "action_inference_batches": 125000,
+        "action_inference_transitions": 250000,
+        "replay_insertion_calls": 125000,
+        "replay_insertion_transitions": 250000
+      },
+      "stage_counters": {
+        "vector_iterations": 125000,
+        "optimizer_updates": 62250,
+        "action_inference_batches": 125000,
+        "action_inference_transitions": 250000,
+        "replay_insertion_calls": 125000,
+        "replay_insertion_transitions": 250000
+      },
+      "stage_rates": {
+        "steps_per_second": 347.24757037855255,
+        "environment_transitions_per_second": 347.24757037855255,
+        "physical_environment_steps_per_second": 347.24757037855255,
+        "vector_iterations_per_second": 173.62378518927628,
+        "action_inference_batches_per_second": 173.62378518927628,
+        "action_inference_transitions_per_second": 347.24757037855255,
+        "replay_insertion_calls_per_second": 173.62378518927628,
+        "replay_insertion_transitions_per_second": 347.24757037855255,
+        "optimizer_updates_per_second": 86.46464502425958,
+        "training_samples_per_second": 2766.8686407763066
+      }
     },
     {
       "run_id": "day18-dqn-vs-double-dqn-seed22-main",
@@ -46,13 +153,68 @@
       "training_seed": 22,
       "stage": "main",
       "target_transitions": 500000,
-      "run_dir": "evidence-runs/dqn-seed22-main",
+      "run_dir": "../../runs/day18-dqn-vs-double/dqn-seed22/stage-500k",
       "checkpoint": {
         "path": "../../runs/day18-dqn-vs-double/dqn-seed22/stage-500k/checkpoints/step-00500000.pt",
         "sha256": "6aa0dbd246eda79ce4c9d4d3fbe4eba6f3ac71e6b7448e9dee4ff008c21f33ff"
       },
       "evaluation": null,
-      "q_probe": null
+      "q_probe": null,
+      "throughput_accounting": {
+        "schema_version": 1,
+        "counter_semantics": "stage-local counter delta divided by stage-local wall-clock elapsed",
+        "stage_start_source": "previous_stage_cumulative_counters",
+        "stage_start_counters": {
+          "global_step": 250000,
+          "physical_environment_steps": 250000,
+          "vector_iterations": 125000,
+          "optimizer_updates": 62001,
+          "action_inference_batches": 125000,
+          "action_inference_transitions": 250000,
+          "replay_insertion_calls": 125000,
+          "replay_insertion_transitions": 250000
+        },
+        "stage_counters": {
+          "vector_iterations": 125000,
+          "optimizer_updates": 62250,
+          "action_inference_batches": 125000,
+          "action_inference_transitions": 250000,
+          "replay_insertion_calls": 125000,
+          "replay_insertion_transitions": 250000
+        },
+        "stage_elapsed_seconds": 694.845835900167,
+        "reconstructed_from_existing_artifacts": true
+      },
+      "stage_start_counters": {
+        "global_step": 250000,
+        "physical_environment_steps": 250000,
+        "vector_iterations": 125000,
+        "optimizer_updates": 62001,
+        "action_inference_batches": 125000,
+        "action_inference_transitions": 250000,
+        "replay_insertion_calls": 125000,
+        "replay_insertion_transitions": 250000
+      },
+      "stage_counters": {
+        "vector_iterations": 125000,
+        "optimizer_updates": 62250,
+        "action_inference_batches": 125000,
+        "action_inference_transitions": 250000,
+        "replay_insertion_calls": 125000,
+        "replay_insertion_transitions": 250000
+      },
+      "stage_rates": {
+        "steps_per_second": 359.79203887165426,
+        "environment_transitions_per_second": 359.79203887165426,
+        "physical_environment_steps_per_second": 359.79203887165426,
+        "vector_iterations_per_second": 179.89601943582713,
+        "action_inference_batches_per_second": 179.89601943582713,
+        "action_inference_transitions_per_second": 359.79203887165426,
+        "replay_insertion_calls_per_second": 179.89601943582713,
+        "replay_insertion_transitions_per_second": 359.79203887165426,
+        "optimizer_updates_per_second": 89.58821767904192,
+        "training_samples_per_second": 2866.8229657293414
+      }
     },
     {
       "run_id": "day18-dqn-vs-double-double_dqn-seed22-main",
@@ -60,13 +222,68 @@
       "training_seed": 22,
       "stage": "main",
       "target_transitions": 500000,
-      "run_dir": "evidence-runs/double_dqn-seed22-main",
+      "run_dir": "../../runs/day18-dqn-vs-double/double_dqn-seed22/stage-500k",
       "checkpoint": {
         "path": "../../runs/day18-dqn-vs-double/double_dqn-seed22/stage-500k/checkpoints/step-00500000.pt",
         "sha256": "6b777cbcbb7c78b355bfce70e466f88c52778ba9c025c98c772bdc0dd1269b4b"
       },
       "evaluation": null,
-      "q_probe": null
+      "q_probe": null,
+      "throughput_accounting": {
+        "schema_version": 1,
+        "counter_semantics": "stage-local counter delta divided by stage-local wall-clock elapsed",
+        "stage_start_source": "previous_stage_cumulative_counters",
+        "stage_start_counters": {
+          "global_step": 250000,
+          "physical_environment_steps": 250000,
+          "vector_iterations": 125000,
+          "optimizer_updates": 62001,
+          "action_inference_batches": 125000,
+          "action_inference_transitions": 250000,
+          "replay_insertion_calls": 125000,
+          "replay_insertion_transitions": 250000
+        },
+        "stage_counters": {
+          "vector_iterations": 125000,
+          "optimizer_updates": 62250,
+          "action_inference_batches": 125000,
+          "action_inference_transitions": 250000,
+          "replay_insertion_calls": 125000,
+          "replay_insertion_transitions": 250000
+        },
+        "stage_elapsed_seconds": 721.560934699839,
+        "reconstructed_from_existing_artifacts": true
+      },
+      "stage_start_counters": {
+        "global_step": 250000,
+        "physical_environment_steps": 250000,
+        "vector_iterations": 125000,
+        "optimizer_updates": 62001,
+        "action_inference_batches": 125000,
+        "action_inference_transitions": 250000,
+        "replay_insertion_calls": 125000,
+        "replay_insertion_transitions": 250000
+      },
+      "stage_counters": {
+        "vector_iterations": 125000,
+        "optimizer_updates": 62250,
+        "action_inference_batches": 125000,
+        "action_inference_transitions": 250000,
+        "replay_insertion_calls": 125000,
+        "replay_insertion_transitions": 250000
+      },
+      "stage_rates": {
+        "steps_per_second": 346.4710850844456,
+        "environment_transitions_per_second": 346.4710850844456,
+        "physical_environment_steps_per_second": 346.4710850844456,
+        "vector_iterations_per_second": 173.2355425422228,
+        "action_inference_batches_per_second": 173.2355425422228,
+        "action_inference_transitions_per_second": 346.4710850844456,
+        "replay_insertion_calls_per_second": 173.2355425422228,
+        "replay_insertion_transitions_per_second": 346.4710850844456,
+        "optimizer_updates_per_second": 86.27130018602695,
+        "training_samples_per_second": 2760.6816059528624
+      }
     },
     {
       "run_id": "day18-dqn-vs-double-dqn-seed33-main",
@@ -74,13 +291,68 @@
       "training_seed": 33,
       "stage": "main",
       "target_transitions": 500000,
-      "run_dir": "evidence-runs/dqn-seed33-main",
+      "run_dir": "../../runs/day18-dqn-vs-double/dqn-seed33/stage-500k",
       "checkpoint": {
         "path": "../../runs/day18-dqn-vs-double/dqn-seed33/stage-500k/checkpoints/step-00500000.pt",
         "sha256": "b20349b96cd0842671a6eb4f5d499e40520941dddcebf3977e067294e394ea53"
       },
       "evaluation": null,
-      "q_probe": null
+      "q_probe": null,
+      "throughput_accounting": {
+        "schema_version": 1,
+        "counter_semantics": "stage-local counter delta divided by stage-local wall-clock elapsed",
+        "stage_start_source": "previous_stage_cumulative_counters",
+        "stage_start_counters": {
+          "global_step": 250000,
+          "physical_environment_steps": 250000,
+          "vector_iterations": 125000,
+          "optimizer_updates": 62001,
+          "action_inference_batches": 125000,
+          "action_inference_transitions": 250000,
+          "replay_insertion_calls": 125000,
+          "replay_insertion_transitions": 250000
+        },
+        "stage_counters": {
+          "vector_iterations": 125000,
+          "optimizer_updates": 62250,
+          "action_inference_batches": 125000,
+          "action_inference_transitions": 250000,
+          "replay_insertion_calls": 125000,
+          "replay_insertion_transitions": 250000
+        },
+        "stage_elapsed_seconds": 705.5179063999094,
+        "reconstructed_from_existing_artifacts": true
+      },
+      "stage_start_counters": {
+        "global_step": 250000,
+        "physical_environment_steps": 250000,
+        "vector_iterations": 125000,
+        "optimizer_updates": 62001,
+        "action_inference_batches": 125000,
+        "action_inference_transitions": 250000,
+        "replay_insertion_calls": 125000,
+        "replay_insertion_transitions": 250000
+      },
+      "stage_counters": {
+        "vector_iterations": 125000,
+        "optimizer_updates": 62250,
+        "action_inference_batches": 125000,
+        "action_inference_transitions": 250000,
+        "replay_insertion_calls": 125000,
+        "replay_insertion_transitions": 250000
+      },
+      "stage_rates": {
+        "steps_per_second": 354.3496171141718,
+        "environment_transitions_per_second": 354.3496171141718,
+        "physical_environment_steps_per_second": 354.3496171141718,
+        "vector_iterations_per_second": 177.1748085570859,
+        "action_inference_batches_per_second": 177.1748085570859,
+        "action_inference_transitions_per_second": 354.3496171141718,
+        "replay_insertion_calls_per_second": 177.1748085570859,
+        "replay_insertion_transitions_per_second": 354.3496171141718,
+        "optimizer_updates_per_second": 88.23305466142878,
+        "training_samples_per_second": 2823.457749165721
+      }
     },
     {
       "run_id": "day18-dqn-vs-double-double_dqn-seed33-main",
@@ -88,13 +360,68 @@
       "training_seed": 33,
       "stage": "main",
       "target_transitions": 500000,
-      "run_dir": "evidence-runs/double_dqn-seed33-main",
+      "run_dir": "../../runs/day18-dqn-vs-double/double_dqn-seed33/stage-500k",
       "checkpoint": {
         "path": "../../runs/day18-dqn-vs-double/double_dqn-seed33/stage-500k/checkpoints/step-00500000.pt",
         "sha256": "1fa87e7264fa25cc6ba9b2b2b35a0bd280c27f89758750767ef59781e2239535"
       },
       "evaluation": null,
-      "q_probe": null
+      "q_probe": null,
+      "throughput_accounting": {
+        "schema_version": 1,
+        "counter_semantics": "stage-local counter delta divided by stage-local wall-clock elapsed",
+        "stage_start_source": "previous_stage_cumulative_counters",
+        "stage_start_counters": {
+          "global_step": 250000,
+          "physical_environment_steps": 250000,
+          "vector_iterations": 125000,
+          "optimizer_updates": 62001,
+          "action_inference_batches": 125000,
+          "action_inference_transitions": 250000,
+          "replay_insertion_calls": 125000,
+          "replay_insertion_transitions": 250000
+        },
+        "stage_counters": {
+          "vector_iterations": 125000,
+          "optimizer_updates": 62250,
+          "action_inference_batches": 125000,
+          "action_inference_transitions": 250000,
+          "replay_insertion_calls": 125000,
+          "replay_insertion_transitions": 250000
+        },
+        "stage_elapsed_seconds": 728.90679729986,
+        "reconstructed_from_existing_artifacts": true
+      },
+      "stage_start_counters": {
+        "global_step": 250000,
+        "physical_environment_steps": 250000,
+        "vector_iterations": 125000,
+        "optimizer_updates": 62001,
+        "action_inference_batches": 125000,
+        "action_inference_transitions": 250000,
+        "replay_insertion_calls": 125000,
+        "replay_insertion_transitions": 250000
+      },
+      "stage_counters": {
+        "vector_iterations": 125000,
+        "optimizer_updates": 62250,
+        "action_inference_batches": 125000,
+        "action_inference_transitions": 250000,
+        "replay_insertion_calls": 125000,
+        "replay_insertion_transitions": 250000
+      },
+      "stage_rates": {
+        "steps_per_second": 342.9793780577878,
+        "environment_transitions_per_second": 342.9793780577878,
+        "physical_environment_steps_per_second": 342.9793780577878,
+        "vector_iterations_per_second": 171.4896890288939,
+        "action_inference_batches_per_second": 171.4896890288939,
+        "action_inference_transitions_per_second": 342.9793780577878,
+        "replay_insertion_calls_per_second": 171.4896890288939,
+        "replay_insertion_transitions_per_second": 342.9793780577878,
+        "optimizer_updates_per_second": 85.40186513638916,
+        "training_samples_per_second": 2732.859684364453
+      }
     }
   ],
   "outputs": [

@@ -1,16 +1,13 @@
 {
   "schema_version": 1,
-  "generated_at_utc": "2026-08-29T06:44:21.368974Z",
+  "generated_at_utc": "2026-08-29T16:19:54.195007Z",
   "command": [
-    "C:\\Users\\tommy\\.codex\\worktrees\\ab66\\breakout-rl-engineering\\scripts\\visualization\\visualize_day18_comparison.py",
-    "--manifest",
-    "assets/day18/evidence-manifest.json",
-    "--output-dir",
-    "assets/day18"
+    "C:\\Users\\tommy\\.codex\\worktrees\\ab66\\breakout-rl-engineering\\scripts\\analysis\\rebuild_day18_derived_evidence.py",
+    "--require-formal"
   ],
   "question": "相同 fixed probe states 上，兩個 algorithm 的 max-Q 分布如何隨 actual training transitions 改變？",
-  "source_manifest": "assets/day18/evidence-manifest.json",
-  "source_manifest_sha256": "5cb36418f736d5b6734416c8065574379e1fcfb60a9fe71c4896194abbf6e586",
+  "source_manifest": "experiments/day18-dqn-vs-double/manifest.json",
+  "source_manifest_sha256": "c6bda76a260398685886f469730d276935264c5a2bdd83fcee36597393d33388",
   "source_entries": [
     {
       "run_id": "day18-dqn-vs-double-dqn-seed11-screening",
@@ -22,8 +19,23 @@
       "checkpoint": null,
       "evaluation": null,
       "q_probe": {
-        "path": "evidence-q/dqn-seed11-screening.json",
+        "path": "../../runs/day18-dqn-vs-double/dqn-seed11/stage-100k/diagnostics/q-probe-step-00100000.json",
         "sha256": "2be0ce823fa7b8fca828c34d123435a519e089d04639f8d279b534d0e2e1bf99"
+      },
+      "throughput_accounting": null,
+      "stage_start_counters": null,
+      "stage_counters": null,
+      "stage_rates": {
+        "steps_per_second": null,
+        "environment_transitions_per_second": null,
+        "physical_environment_steps_per_second": null,
+        "vector_iterations_per_second": null,
+        "action_inference_batches_per_second": null,
+        "action_inference_transitions_per_second": null,
+        "replay_insertion_calls_per_second": null,
+        "replay_insertion_transitions_per_second": null,
+        "optimizer_updates_per_second": null,
+        "training_samples_per_second": null
       }
     },
     {
@@ -36,8 +48,23 @@
       "checkpoint": null,
       "evaluation": null,
       "q_probe": {
-        "path": "evidence-q/double_dqn-seed11-screening.json",
+        "path": "../../runs/day18-dqn-vs-double/double_dqn-seed11/stage-100k/diagnostics/q-probe-step-00100000.json",
         "sha256": "071f8783fcaa501bd553406b753d66fd12815ad13ec1917ea093b52fd6e079ca"
+      },
+      "throughput_accounting": null,
+      "stage_start_counters": null,
+      "stage_counters": null,
+      "stage_rates": {
+        "steps_per_second": null,
+        "environment_transitions_per_second": null,
+        "physical_environment_steps_per_second": null,
+        "vector_iterations_per_second": null,
+        "action_inference_batches_per_second": null,
+        "action_inference_transitions_per_second": null,
+        "replay_insertion_calls_per_second": null,
+        "replay_insertion_transitions_per_second": null,
+        "optimizer_updates_per_second": null,
+        "training_samples_per_second": null
       }
     },
     {
@@ -50,8 +77,23 @@
       "checkpoint": null,
       "evaluation": null,
       "q_probe": {
-        "path": "evidence-q/dqn-seed22-screening.json",
+        "path": "../../runs/day18-dqn-vs-double/dqn-seed22/stage-100k-retry-02/diagnostics/q-probe-step-00100000.json",
         "sha256": "57391b44a6fb515b778fb990e50abbace818d056b081d9556ed4110399831052"
+      },
+      "throughput_accounting": null,
+      "stage_start_counters": null,
+      "stage_counters": null,
+      "stage_rates": {
+        "steps_per_second": null,
+        "environment_transitions_per_second": null,
+        "physical_environment_steps_per_second": null,
+        "vector_iterations_per_second": null,
+        "action_inference_batches_per_second": null,
+        "action_inference_transitions_per_second": null,
+        "replay_insertion_calls_per_second": null,
+        "replay_insertion_transitions_per_second": null,
+        "optimizer_updates_per_second": null,
+        "training_samples_per_second": null
       }
     },
     {
@@ -64,8 +106,23 @@
       "checkpoint": null,
       "evaluation": null,
       "q_probe": {
-        "path": "evidence-q/double_dqn-seed22-screening.json",
+        "path": "../../runs/day18-dqn-vs-double/double_dqn-seed22/stage-100k/diagnostics/q-probe-step-00100000.json",
         "sha256": "69cded67a3f31a7d72af4fbae355f150dea2122e8779605e14d9974197b05703"
+      },
+      "throughput_accounting": null,
+      "stage_start_counters": null,
+      "stage_counters": null,
+      "stage_rates": {
+        "steps_per_second": null,
+        "environment_transitions_per_second": null,
+        "physical_environment_steps_per_second": null,
+        "vector_iterations_per_second": null,
+        "action_inference_batches_per_second": null,
+        "action_inference_transitions_per_second": null,
+        "replay_insertion_calls_per_second": null,
+        "replay_insertion_transitions_per_second": null,
+        "optimizer_updates_per_second": null,
+        "training_samples_per_second": null
       }
     },
     {
@@ -78,8 +135,23 @@
       "checkpoint": null,
       "evaluation": null,
       "q_probe": {
-        "path": "evidence-q/dqn-seed33-screening.json",
+        "path": "../../runs/day18-dqn-vs-double/dqn-seed33/stage-100k/diagnostics/q-probe-step-00100000.json",
         "sha256": "3169d38ee383b96931929a3d2c9b7619988bd91d0634893969a0b0f821def355"
+      },
+      "throughput_accounting": null,
+      "stage_start_counters": null,
+      "stage_counters": null,
+      "stage_rates": {
+        "steps_per_second": null,
+        "environment_transitions_per_second": null,
+        "physical_environment_steps_per_second": null,
+        "vector_iterations_per_second": null,
+        "action_inference_batches_per_second": null,
+        "action_inference_transitions_per_second": null,
+        "replay_insertion_calls_per_second": null,
+        "replay_insertion_transitions_per_second": null,
+        "optimizer_updates_per_second": null,
+        "training_samples_per_second": null
       }
     },
     {
@@ -92,8 +164,23 @@
       "checkpoint": null,
       "evaluation": null,
       "q_probe": {
-        "path": "evidence-q/double_dqn-seed33-screening.json",
+        "path": "../../runs/day18-dqn-vs-double/double_dqn-seed33/stage-100k/diagnostics/q-probe-step-00100000.json",
         "sha256": "71d402b15bb72662ad24ca9f6abd5634c0fc1d9c948e96b45748bb4b3aa97963"
+      },
+      "throughput_accounting": null,
+      "stage_start_counters": null,
+      "stage_counters": null,
+      "stage_rates": {
+        "steps_per_second": null,
+        "environment_transitions_per_second": null,
+        "physical_environment_steps_per_second": null,
+        "vector_iterations_per_second": null,
+        "action_inference_batches_per_second": null,
+        "action_inference_transitions_per_second": null,
+        "replay_insertion_calls_per_second": null,
+        "replay_insertion_transitions_per_second": null,
+        "optimizer_updates_per_second": null,
+        "training_samples_per_second": null
       }
     },
     {
@@ -106,8 +193,23 @@
       "checkpoint": null,
       "evaluation": null,
       "q_probe": {
-        "path": "evidence-q/dqn-seed11-pilot.json",
+        "path": "../../runs/day18-dqn-vs-double/dqn-seed11/stage-250k/diagnostics/q-probe-step-00250000.json",
         "sha256": "13a3c2aef22996fd515e9af4a9d4cfcd344a80be12c4baaed945ac774c271227"
+      },
+      "throughput_accounting": null,
+      "stage_start_counters": null,
+      "stage_counters": null,
+      "stage_rates": {
+        "steps_per_second": null,
+        "environment_transitions_per_second": null,
+        "physical_environment_steps_per_second": null,
+        "vector_iterations_per_second": null,
+        "action_inference_batches_per_second": null,
+        "action_inference_transitions_per_second": null,
+        "replay_insertion_calls_per_second": null,
+        "replay_insertion_transitions_per_second": null,
+        "optimizer_updates_per_second": null,
+        "training_samples_per_second": null
       }
     },
     {
@@ -120,8 +222,23 @@
       "checkpoint": null,
       "evaluation": null,
       "q_probe": {
-        "path": "evidence-q/double_dqn-seed11-pilot.json",
+        "path": "../../runs/day18-dqn-vs-double/double_dqn-seed11/stage-250k/diagnostics/q-probe-step-00250000.json",
         "sha256": "3e5ea7d3c0825836e57052aff8d1a0e8546fcd9bcd4887b454fef57ef70aad94"
+      },
+      "throughput_accounting": null,
+      "stage_start_counters": null,
+      "stage_counters": null,
+      "stage_rates": {
+        "steps_per_second": null,
+        "environment_transitions_per_second": null,
+        "physical_environment_steps_per_second": null,
+        "vector_iterations_per_second": null,
+        "action_inference_batches_per_second": null,
+        "action_inference_transitions_per_second": null,
+        "replay_insertion_calls_per_second": null,
+        "replay_insertion_transitions_per_second": null,
+        "optimizer_updates_per_second": null,
+        "training_samples_per_second": null
       }
     },
     {
@@ -134,8 +251,23 @@
       "checkpoint": null,
       "evaluation": null,
       "q_probe": {
-        "path": "evidence-q/dqn-seed22-pilot.json",
+        "path": "../../runs/day18-dqn-vs-double/dqn-seed22/stage-250k/diagnostics/q-probe-step-00250000.json",
         "sha256": "705951266c576cabef0e3f88b262467c11a4e0b79ade9a1b010dfb9bba14b70c"
+      },
+      "throughput_accounting": null,
+      "stage_start_counters": null,
+      "stage_counters": null,
+      "stage_rates": {
+        "steps_per_second": null,
+        "environment_transitions_per_second": null,
+        "physical_environment_steps_per_second": null,
+        "vector_iterations_per_second": null,
+        "action_inference_batches_per_second": null,
+        "action_inference_transitions_per_second": null,
+        "replay_insertion_calls_per_second": null,
+        "replay_insertion_transitions_per_second": null,
+        "optimizer_updates_per_second": null,
+        "training_samples_per_second": null
       }
     },
     {
@@ -148,8 +280,23 @@
       "checkpoint": null,
       "evaluation": null,
       "q_probe": {
-        "path": "evidence-q/double_dqn-seed22-pilot.json",
+        "path": "../../runs/day18-dqn-vs-double/double_dqn-seed22/stage-250k/diagnostics/q-probe-step-00250000.json",
         "sha256": "26caf93c8ed78e0136a2cbbd9ee6a7ca5a55aac781d595748f2762eb93689cf6"
+      },
+      "throughput_accounting": null,
+      "stage_start_counters": null,
+      "stage_counters": null,
+      "stage_rates": {
+        "steps_per_second": null,
+        "environment_transitions_per_second": null,
+        "physical_environment_steps_per_second": null,
+        "vector_iterations_per_second": null,
+        "action_inference_batches_per_second": null,
+        "action_inference_transitions_per_second": null,
+        "replay_insertion_calls_per_second": null,
+        "replay_insertion_transitions_per_second": null,
+        "optimizer_updates_per_second": null,
+        "training_samples_per_second": null
       }
     },
     {
@@ -162,8 +309,23 @@
       "checkpoint": null,
       "evaluation": null,
       "q_probe": {
-        "path": "evidence-q/dqn-seed33-pilot.json",
+        "path": "../../runs/day18-dqn-vs-double/dqn-seed33/stage-250k/diagnostics/q-probe-step-00250000.json",
         "sha256": "fca17684c9c2cb764af5766164c54a6dd8c339476c53ce6d456245eda1479356"
+      },
+      "throughput_accounting": null,
+      "stage_start_counters": null,
+      "stage_counters": null,
+      "stage_rates": {
+        "steps_per_second": null,
+        "environment_transitions_per_second": null,
+        "physical_environment_steps_per_second": null,
+        "vector_iterations_per_second": null,
+        "action_inference_batches_per_second": null,
+        "action_inference_transitions_per_second": null,
+        "replay_insertion_calls_per_second": null,
+        "replay_insertion_transitions_per_second": null,
+        "optimizer_updates_per_second": null,
+        "training_samples_per_second": null
       }
     },
     {
@@ -176,8 +338,23 @@
       "checkpoint": null,
       "evaluation": null,
       "q_probe": {
-        "path": "evidence-q/double_dqn-seed33-pilot.json",
+        "path": "../../runs/day18-dqn-vs-double/double_dqn-seed33/stage-250k/diagnostics/q-probe-step-00250000.json",
         "sha256": "1fc84dc3a0154b21bcb23d25fbc791fc0cff20e472781ee366caf755f5bec804"
+      },
+      "throughput_accounting": null,
+      "stage_start_counters": null,
+      "stage_counters": null,
+      "stage_rates": {
+        "steps_per_second": null,
+        "environment_transitions_per_second": null,
+        "physical_environment_steps_per_second": null,
+        "vector_iterations_per_second": null,
+        "action_inference_batches_per_second": null,
+        "action_inference_transitions_per_second": null,
+        "replay_insertion_calls_per_second": null,
+        "replay_insertion_transitions_per_second": null,
+        "optimizer_updates_per_second": null,
+        "training_samples_per_second": null
       }
     },
     {
@@ -190,8 +367,23 @@
       "checkpoint": null,
       "evaluation": null,
       "q_probe": {
-        "path": "evidence-q/dqn-seed11-main.json",
+        "path": "../../runs/day18-dqn-vs-double/dqn-seed11/stage-500k/diagnostics/q-probe-step-00500000.json",
         "sha256": "acdf013e02a322a6a140cefdc3251e7f309dd0c842f1ecb76e845ddc15013dea"
+      },
+      "throughput_accounting": null,
+      "stage_start_counters": null,
+      "stage_counters": null,
+      "stage_rates": {
+        "steps_per_second": null,
+        "environment_transitions_per_second": null,
+        "physical_environment_steps_per_second": null,
+        "vector_iterations_per_second": null,
+        "action_inference_batches_per_second": null,
+        "action_inference_transitions_per_second": null,
+        "replay_insertion_calls_per_second": null,
+        "replay_insertion_transitions_per_second": null,
+        "optimizer_updates_per_second": null,
+        "training_samples_per_second": null
       }
     },
     {
@@ -204,8 +396,23 @@
       "checkpoint": null,
       "evaluation": null,
       "q_probe": {
-        "path": "evidence-q/double_dqn-seed11-main.json",
+        "path": "../../runs/day18-dqn-vs-double/double_dqn-seed11/stage-500k/diagnostics/q-probe-step-00500000.json",
         "sha256": "9424d39007dcd2b6cb692e71d9aa3fd8471c5292a33d3cd3a0366d88b85e3018"
+      },
+      "throughput_accounting": null,
+      "stage_start_counters": null,
+      "stage_counters": null,
+      "stage_rates": {
+        "steps_per_second": null,
+        "environment_transitions_per_second": null,
+        "physical_environment_steps_per_second": null,
+        "vector_iterations_per_second": null,
+        "action_inference_batches_per_second": null,
+        "action_inference_transitions_per_second": null,
+        "replay_insertion_calls_per_second": null,
+        "replay_insertion_transitions_per_second": null,
+        "optimizer_updates_per_second": null,
+        "training_samples_per_second": null
       }
     },
     {
@@ -218,8 +425,23 @@
       "checkpoint": null,
       "evaluation": null,
       "q_probe": {
-        "path": "evidence-q/dqn-seed22-main.json",
+        "path": "../../runs/day18-dqn-vs-double/dqn-seed22/stage-500k/diagnostics/q-probe-step-00500000.json",
         "sha256": "cbb2f1bd6c4e65f3a89a6de23fc4d147d4566577f9a746f3bd6a317e37c8e946"
+      },
+      "throughput_accounting": null,
+      "stage_start_counters": null,
+      "stage_counters": null,
+      "stage_rates": {
+        "steps_per_second": null,
+        "environment_transitions_per_second": null,
+        "physical_environment_steps_per_second": null,
+        "vector_iterations_per_second": null,
+        "action_inference_batches_per_second": null,
+        "action_inference_transitions_per_second": null,
+        "replay_insertion_calls_per_second": null,
+        "replay_insertion_transitions_per_second": null,
+        "optimizer_updates_per_second": null,
+        "training_samples_per_second": null
       }
     },
     {
@@ -232,8 +454,23 @@
       "checkpoint": null,
       "evaluation": null,
       "q_probe": {
-        "path": "evidence-q/double_dqn-seed22-main.json",
+        "path": "../../runs/day18-dqn-vs-double/double_dqn-seed22/stage-500k/diagnostics/q-probe-step-00500000.json",
         "sha256": "12078e2a865e451b22f7e066d50269f18f86f1d326d9f47b216a7ba3c85fa924"
+      },
+      "throughput_accounting": null,
+      "stage_start_counters": null,
+      "stage_counters": null,
+      "stage_rates": {
+        "steps_per_second": null,
+        "environment_transitions_per_second": null,
+        "physical_environment_steps_per_second": null,
+        "vector_iterations_per_second": null,
+        "action_inference_batches_per_second": null,
+        "action_inference_transitions_per_second": null,
+        "replay_insertion_calls_per_second": null,
+        "replay_insertion_transitions_per_second": null,
+        "optimizer_updates_per_second": null,
+        "training_samples_per_second": null
       }
     },
     {
@@ -246,8 +483,23 @@
       "checkpoint": null,
       "evaluation": null,
       "q_probe": {
-        "path": "evidence-q/dqn-seed33-main.json",
+        "path": "../../runs/day18-dqn-vs-double/dqn-seed33/stage-500k/diagnostics/q-probe-step-00500000.json",
         "sha256": "a56de9ac08a3c2e474fdc3208ad721e2b08f438a769cefb9835fedc873fef19f"
+      },
+      "throughput_accounting": null,
+      "stage_start_counters": null,
+      "stage_counters": null,
+      "stage_rates": {
+        "steps_per_second": null,
+        "environment_transitions_per_second": null,
+        "physical_environment_steps_per_second": null,
+        "vector_iterations_per_second": null,
+        "action_inference_batches_per_second": null,
+        "action_inference_transitions_per_second": null,
+        "replay_insertion_calls_per_second": null,
+        "replay_insertion_transitions_per_second": null,
+        "optimizer_updates_per_second": null,
+        "training_samples_per_second": null
       }
     },
     {
@@ -260,8 +512,23 @@
       "checkpoint": null,
       "evaluation": null,
       "q_probe": {
-        "path": "evidence-q/double_dqn-seed33-main.json",
+        "path": "../../runs/day18-dqn-vs-double/double_dqn-seed33/stage-500k/diagnostics/q-probe-step-00500000.json",
         "sha256": "af285ad2321cf924cf7a55ff09f6a7c5e6a02a00b02507735374ef378ed064e8"
+      },
+      "throughput_accounting": null,
+      "stage_start_counters": null,
+      "stage_counters": null,
+      "stage_rates": {
+        "steps_per_second": null,
+        "environment_transitions_per_second": null,
+        "physical_environment_steps_per_second": null,
+        "vector_iterations_per_second": null,
+        "action_inference_batches_per_second": null,
+        "action_inference_transitions_per_second": null,
+        "replay_insertion_calls_per_second": null,
+        "replay_insertion_transitions_per_second": null,
+        "optimizer_updates_per_second": null,
+        "training_samples_per_second": null
       }
     }
   ],

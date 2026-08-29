@@ -14,6 +14,7 @@ from breakout_rl.day18_comparison import (
     build_day18_report,
     config_diff,
     load_day18_config,
+    normalize_training_stage_accounting,
     read_day18_manifest,
     write_json,
 )
@@ -107,6 +108,62 @@ class Day18ComparisonTests(unittest.TestCase):
         self.assertFalse(report["comparison_conditions"]["formal_quality_eligible"])
         self.assertTrue(
             all(entry["summary"] == {} for entry in report["training"]["entries"])
+        )
+
+    def test_historical_resumed_rates_are_rebuilt_from_prior_stage_counters(self) -> None:
+        def report(stage: str, target: int, vector: int, updates: int) -> dict:
+            return {
+                "algorithm": "dqn",
+                "training_seed": 11,
+                "stage": stage,
+                "target_transitions": target,
+                "config": {"batch_size": 32},
+                "summary": {
+                    "status": "completed",
+                    "total_transitions": target,
+                    "vector_iterations": vector,
+                    "optimizer_updates": updates,
+                    "runtime": {
+                        "wall_clock_seconds": 10.0,
+                        "stage_start_step": 0 if stage == "screening" else 100,
+                        "physical_environment_steps": target,
+                        "action_inference_batches": vector,
+                        "action_inference_transitions": target,
+                        "replay_insertion_calls": vector,
+                        "replay_insertion_transitions": target,
+                    },
+                },
+                "runtime": {},
+            }
+
+        reports = [
+            report("screening", 100, 50, 25),
+            report("pilot", 250, 125, 62),
+        ]
+        normalize_training_stage_accounting(reports)
+        pilot = reports[1]
+        self.assertEqual(
+            pilot["summary"]["stage_counters"],
+            {
+                "vector_iterations": 75,
+                "optimizer_updates": 37,
+                "action_inference_batches": 75,
+                "action_inference_transitions": 150,
+                "replay_insertion_calls": 75,
+                "replay_insertion_transitions": 150,
+            },
+        )
+        self.assertAlmostEqual(
+            pilot["runtime"]["optimizer_updates_per_second"],
+            3.7,
+        )
+        self.assertAlmostEqual(
+            pilot["runtime"]["training_samples_per_second"],
+            118.4,
+        )
+        self.assertEqual(
+            pilot["runtime"]["throughput_accounting"]["stage_start_source"],
+            "previous_stage_cumulative_counters",
         )
 
 

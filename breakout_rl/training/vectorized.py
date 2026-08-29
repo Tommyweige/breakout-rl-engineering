@@ -73,6 +73,14 @@ STRICT_ACTION_SELECTION_PARITY_RULE = (
     "strict parity requires num_envs <= train_frequency and "
     "train_frequency % num_envs == 0"
 )
+STAGE_COUNTER_NAMES: tuple[str, ...] = (
+    "vector_iterations",
+    "optimizer_updates",
+    "action_inference_batches",
+    "action_inference_transitions",
+    "replay_insertion_calls",
+    "replay_insertion_transitions",
+)
 
 
 def _sha256_file(path: Path) -> str:
@@ -535,6 +543,12 @@ class VectorizedDQNTrainer:
         self._started_at = time.perf_counter()
         self._stage_start_step = 0
         self._stage_start_physical_environment_steps = 0
+        self._stage_start_vector_iterations = 0
+        self._stage_start_optimizer_updates = 0
+        self._stage_start_action_inference_batches = 0
+        self._stage_start_action_inference_transitions = 0
+        self._stage_start_replay_insertion_calls = 0
+        self._stage_start_replay_insertion_transitions = 0
         self._resume_provenance: dict[str, Any] | None = None
 
         environment_spec = getattr(env, "spec", None)
@@ -592,6 +606,105 @@ class VectorizedDQNTrainer:
             return str(self.device)
         index = 0 if self.device.index is None else self.device.index
         return f"cuda:{index}"
+
+    def _cumulative_counter_snapshot(self) -> dict[str, int]:
+        return {
+            "vector_iterations": int(self.vector_iterations),
+            "optimizer_updates": int(self.optimizer_updates),
+            "action_inference_batches": int(self.action_inference_batches),
+            "action_inference_transitions": int(self.action_inference_transitions),
+            "replay_insertion_calls": int(self.replay_insertion_calls),
+            "replay_insertion_transitions": int(self.replay_insertion_transitions),
+        }
+
+    def _stage_start_counter_snapshot(self) -> dict[str, int]:
+        return {
+            "global_step": int(self._stage_start_step),
+            "physical_environment_steps": int(
+                self._stage_start_physical_environment_steps
+            ),
+            "vector_iterations": int(self._stage_start_vector_iterations),
+            "optimizer_updates": int(self._stage_start_optimizer_updates),
+            "action_inference_batches": int(
+                self._stage_start_action_inference_batches
+            ),
+            "action_inference_transitions": int(
+                self._stage_start_action_inference_transitions
+            ),
+            "replay_insertion_calls": int(self._stage_start_replay_insertion_calls),
+            "replay_insertion_transitions": int(
+                self._stage_start_replay_insertion_transitions
+            ),
+        }
+
+    def _set_stage_start_counter_snapshot(self) -> None:
+        self._stage_start_vector_iterations = int(self.vector_iterations)
+        self._stage_start_optimizer_updates = int(self.optimizer_updates)
+        self._stage_start_action_inference_batches = int(
+            self.action_inference_batches
+        )
+        self._stage_start_action_inference_transitions = int(
+            self.action_inference_transitions
+        )
+        self._stage_start_replay_insertion_calls = int(self.replay_insertion_calls)
+        self._stage_start_replay_insertion_transitions = int(
+            self.replay_insertion_transitions
+        )
+
+    def _stage_counter_deltas(self) -> dict[str, int]:
+        cumulative = self._cumulative_counter_snapshot()
+        stage_start = self._stage_start_counter_snapshot()
+        return {
+            name: max(0, cumulative[name] - stage_start[name])
+            for name in STAGE_COUNTER_NAMES
+        }
+
+    def _stage_accounting(self, elapsed: float) -> dict[str, Any]:
+        safe_elapsed = max(float(elapsed), 1e-9)
+        stage_steps = max(0, self.global_step - self._stage_start_step)
+        stage_physical_steps = max(
+            0,
+            self.physical_environment_steps
+            - self._stage_start_physical_environment_steps,
+        )
+        stage_counters = self._stage_counter_deltas()
+        stage_rates = {
+            "steps_per_second": float(stage_steps / safe_elapsed),
+            "environment_transitions_per_second": float(stage_steps / safe_elapsed),
+            "physical_environment_steps_per_second": float(
+                stage_physical_steps / safe_elapsed
+            ),
+            "vector_iterations_per_second": float(
+                stage_counters["vector_iterations"] / safe_elapsed
+            ),
+            "action_inference_batches_per_second": float(
+                stage_counters["action_inference_batches"] / safe_elapsed
+            ),
+            "action_inference_transitions_per_second": float(
+                stage_counters["action_inference_transitions"] / safe_elapsed
+            ),
+            "replay_insertion_calls_per_second": float(
+                stage_counters["replay_insertion_calls"] / safe_elapsed
+            ),
+            "replay_insertion_transitions_per_second": float(
+                stage_counters["replay_insertion_transitions"] / safe_elapsed
+            ),
+            "optimizer_updates_per_second": float(
+                stage_counters["optimizer_updates"] / safe_elapsed
+            ),
+            "training_samples_per_second": float(
+                stage_counters["optimizer_updates"]
+                * self.config.batch_size
+                / safe_elapsed
+            ),
+        }
+        return {
+            "stage_start_counters": self._stage_start_counter_snapshot(),
+            "stage_counters": stage_counters,
+            "stage_rates": stage_rates,
+            "stage_training_steps": int(stage_steps),
+            "stage_physical_environment_steps": int(stage_physical_steps),
+        }
 
     def _reset_result_observation(self, result: Any) -> np.ndarray:
         if isinstance(result, tuple) and len(result) == 2:
@@ -799,9 +912,10 @@ class VectorizedDQNTrainer:
         result: DQNTrainingStepResult | None,
     ) -> dict[str, Any]:
         elapsed = max(time.perf_counter() - self._started_at, 1e-9)
-        stage_steps = max(0, self.global_step - self._stage_start_step)
-        environment_sps = float(stage_steps / elapsed)
-        vector_sps = float(self.vector_iterations / elapsed)
+        accounting = self._stage_accounting(elapsed)
+        rates = accounting["stage_rates"]
+        environment_sps = rates["environment_transitions_per_second"]
+        vector_sps = rates["vector_iterations_per_second"]
         return {
             "global_step": global_step,
             "algorithm": self.config.algorithm,
@@ -870,6 +984,20 @@ class VectorizedDQNTrainer:
             "vector_iterations_per_second": vector_sps,
             "action_inference_batch_size": action_inference_batch_size,
             "replay_insert_batch_size": transition_batch_size,
+            "action_inference_batches_per_second": rates[
+                "action_inference_batches_per_second"
+            ],
+            "action_inference_transitions_per_second": rates[
+                "action_inference_transitions_per_second"
+            ],
+            "replay_insertion_calls_per_second": rates[
+                "replay_insertion_calls_per_second"
+            ],
+            "replay_insertion_transitions_per_second": rates[
+                "replay_insertion_transitions_per_second"
+            ],
+            "optimizer_updates_per_second": rates["optimizer_updates_per_second"],
+            "training_samples_per_second": rates["training_samples_per_second"],
         }
 
     def _runtime_metadata(self, elapsed: float) -> dict[str, Any]:
@@ -887,12 +1015,8 @@ class VectorizedDQNTrainer:
                     gpu_seconds=float(timing.get("gpu_seconds", 0.0)),
                 )
             self._transfer_timing_merged = True
-        stage_steps = max(0, self.global_step - self._stage_start_step)
-        stage_physical_steps = max(
-            0,
-            self.physical_environment_steps
-            - self._stage_start_physical_environment_steps,
-        )
+        accounting = self._stage_accounting(elapsed)
+        rates = accounting["stage_rates"]
         runtime = collect_runtime_metadata(
             seed=self.config.seed,
             device=self._resolved_device_name(),
@@ -909,37 +1033,21 @@ class VectorizedDQNTrainer:
                 "observation_shape": list(self.observation_shape),
                 "action_count": self.action_count,
                 "wall_clock_seconds": float(elapsed),
-                "steps_per_second": float(stage_steps / elapsed),
-                "environment_transitions_per_second": float(stage_steps / elapsed),
+                **rates,
                 "stage_start_step": self._stage_start_step,
-                "stage_training_steps": stage_steps,
+                "stage_start_counters": accounting["stage_start_counters"],
+                "stage_counters": accounting["stage_counters"],
+                "stage_rates": rates,
+                "stage_training_steps": accounting["stage_training_steps"],
                 "physical_environment_steps": self.physical_environment_steps,
-                "stage_physical_environment_steps": stage_physical_steps,
-                "physical_environment_steps_per_second": float(stage_physical_steps / elapsed),
+                "stage_physical_environment_steps": accounting[
+                    "stage_physical_environment_steps"
+                ],
                 "vector_iterations": self.vector_iterations,
-                "vector_iterations_per_second": float(self.vector_iterations / elapsed),
                 "action_inference_batches": self.action_inference_batches,
                 "action_inference_transitions": self.action_inference_transitions,
-                "action_inference_transitions_per_second": float(
-                    self.action_inference_transitions / elapsed
-                ),
-                "action_inference_batches_per_second": float(
-                    self.action_inference_batches / elapsed
-                ),
                 "replay_insertion_calls": self.replay_insertion_calls,
                 "replay_insertion_transitions": self.replay_insertion_transitions,
-                "replay_insertion_transitions_per_second": float(
-                    self.replay_insertion_transitions / elapsed
-                ),
-                "replay_insertion_calls_per_second": float(
-                    self.replay_insertion_calls / elapsed
-                ),
-                "optimizer_updates_per_second": float(
-                    self.optimizer_updates / elapsed
-                ),
-                "training_samples_per_second": float(
-                    self.optimizer_updates * self.config.batch_size / elapsed
-                ),
                 "diagnostics_interval": self.config.diagnostics_interval,
                 "metrics_flush_interval": self.config.metrics_flush_interval,
                 "metrics_row_cadence": 1,
@@ -976,12 +1084,8 @@ class VectorizedDQNTrainer:
         if self.device.type == "cuda":
             torch.cuda.synchronize(self.device)
         elapsed = max(time.perf_counter() - self._started_at, 1e-9)
-        stage_steps = max(0, self.global_step - self._stage_start_step)
-        stage_physical_steps = max(
-            0,
-            self.physical_environment_steps
-            - self._stage_start_physical_environment_steps,
-        )
+        accounting = self._stage_accounting(elapsed)
+        rates = accounting["stage_rates"]
         summary: dict[str, Any] = {
             "status": status,
             "trainer": "vectorized_dqn",
@@ -1010,33 +1114,19 @@ class VectorizedDQNTrainer:
                 len(self.replay),
                 self.config.replay_capacity,
             ),
-            "steps_per_second": float(stage_steps / elapsed),
-            "environment_transitions_per_second": float(stage_steps / elapsed),
-            "physical_environment_steps_per_second": float(stage_physical_steps / elapsed),
+            **rates,
             "stage_start_step": self._stage_start_step,
-            "stage_training_steps": stage_steps,
-            "stage_physical_environment_steps": stage_physical_steps,
-            "vector_iterations_per_second": float(self.vector_iterations / elapsed),
+            "stage_start_counters": accounting["stage_start_counters"],
+            "stage_counters": accounting["stage_counters"],
+            "stage_rates": rates,
+            "stage_training_steps": accounting["stage_training_steps"],
+            "stage_physical_environment_steps": accounting[
+                "stage_physical_environment_steps"
+            ],
             "action_inference_batches": self.action_inference_batches,
             "action_inference_transitions": self.action_inference_transitions,
-            "action_inference_transitions_per_second": float(
-                self.action_inference_transitions / elapsed
-            ),
-            "action_inference_batches_per_second": float(
-                self.action_inference_batches / elapsed
-            ),
             "replay_insertion_calls": self.replay_insertion_calls,
             "replay_insertion_transitions": self.replay_insertion_transitions,
-            "replay_insertion_transitions_per_second": float(
-                self.replay_insertion_transitions / elapsed
-            ),
-            "replay_insertion_calls_per_second": float(
-                self.replay_insertion_calls / elapsed
-            ),
-            "optimizer_updates_per_second": float(self.optimizer_updates / elapsed),
-            "training_samples_per_second": float(
-                self.optimizer_updates * self.config.batch_size / elapsed
-            ),
             "runtime": self._runtime_metadata(elapsed),
             "last_loss": None if self._last_result is None else self._last_result.loss,
             "last_q_mean": None if self._last_result is None else self._last_result.q_mean,
@@ -1293,6 +1383,7 @@ class VectorizedDQNTrainer:
         self._last_checkpoint = checkpoint_path
         self._stage_start_step = self.global_step
         self._stage_start_physical_environment_steps = self.physical_environment_steps
+        self._set_stage_start_counter_snapshot()
         self._started_at = time.perf_counter()
         saved_resume = payload.get("resume_provenance")
         self._resume_provenance = {

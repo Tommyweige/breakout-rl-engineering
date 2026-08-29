@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.metadata
+import hashlib
 import math
 import os
 import platform
@@ -489,6 +490,46 @@ def _git_commit_sha(path: Path) -> str:
     return value or "unavailable"
 
 
+def _git_worktree_metadata(path: Path) -> dict[str, Any]:
+    """Return best-effort tracked worktree provenance for a run directory."""
+
+    unavailable = {
+        "git_dirty": None,
+        "git_diff_sha256": None,
+        "git_diff_scope": "tracked files changed relative to HEAD; untracked files excluded",
+    }
+    try:
+        status = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(path),
+                "status",
+                "--porcelain=v1",
+                "--untracked-files=all",
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=2,
+        )
+        diff = subprocess.run(
+            ["git", "-C", str(path), "diff", "--binary", "HEAD", "--"],
+            check=False,
+            capture_output=True,
+            timeout=2,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return unavailable
+    if status.returncode != 0 or diff.returncode != 0:
+        return unavailable
+    return {
+        "git_dirty": bool(status.stdout.strip()),
+        "git_diff_sha256": hashlib.sha256(diff.stdout).hexdigest(),
+        "git_diff_scope": "tracked files changed relative to HEAD; untracked files excluded",
+    }
+
+
 def _nvidia_smi_sample(device_index: int | None) -> dict[str, Any]:
     if device_index is None:
         return {
@@ -626,6 +667,7 @@ def collect_runtime_metadata(
         "steps_per_second": None,
         "seed": int(seed),
         "git_commit_sha": _git_commit_sha(Path(run_dir)),
+        **_git_worktree_metadata(Path(run_dir)),
     }
     if extra:
         metadata.update(dict(extra))

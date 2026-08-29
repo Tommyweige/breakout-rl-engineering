@@ -177,6 +177,28 @@ def _write_metadata(
                 "checkpoint": entry.get("checkpoint"),
                 "evaluation": entry.get("results"),
                 "q_probe": entry.get("path"),
+                "throughput_accounting": entry.get("summary", {}).get(
+                    "throughput_accounting"
+                ),
+                "stage_start_counters": entry.get("summary", {}).get(
+                    "stage_start_counters"
+                ),
+                "stage_counters": entry.get("summary", {}).get("stage_counters"),
+                "stage_rates": {
+                    field: entry.get("runtime", {}).get(field)
+                    for field in (
+                        "steps_per_second",
+                        "environment_transitions_per_second",
+                        "physical_environment_steps_per_second",
+                        "vector_iterations_per_second",
+                        "action_inference_batches_per_second",
+                        "action_inference_transitions_per_second",
+                        "replay_insertion_calls_per_second",
+                        "replay_insertion_transitions_per_second",
+                        "optimizer_updates_per_second",
+                        "training_samples_per_second",
+                    )
+                },
             }
             for entry in source_entries
         ],
