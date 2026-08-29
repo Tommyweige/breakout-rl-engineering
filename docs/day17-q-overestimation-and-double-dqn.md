@@ -198,7 +198,9 @@ target network
 只負責評估 Q_target(s', a*)
 ```
 
-[![Vanilla DQN 與 Double DQN 的 next-state target 計算流程](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/1464032ac877d0de02481d6d8490be6534ead2ff/assets/day17/double-dqn-target-flow.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/1464032ac877d0de02481d6d8490be6534ead2ff/assets/day17/double-dqn-target-flow.png)
+[![Vanilla DQN 與 Double DQN：同一個 next state 的 next value 如何算出來](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/4ff80f0c9f21d55a585a034e25e8bb6e7b5ebcd7/assets/day17/double-dqn-target-flow-v2.svg?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/4ff80f0c9f21d55a585a034e25e8bb6e7b5ebcd7/assets/day17/double-dqn-target-flow-v2.svg)
+
+這張圖只要從上往下讀。左邊的 Vanilla DQN 用 target network 的同一組 Q-values 同時回答「選哪個 action」和「它值多少」；右邊的 Double DQN 先讓 online network 選出 `a*`，再讓 target network 只評估這個 `a*`。最下面的 reward、`γ` 和 `terminated` 公式兩邊完全相同，所以它們不是這次演算法差異的重點。
 
 所以 Double DQN 最值得記住的其實只有一句話：
 
