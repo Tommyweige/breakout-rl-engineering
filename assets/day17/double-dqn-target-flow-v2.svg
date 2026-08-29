@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">Vanilla DQN 與 Double DQN 的 next-state target 差異</title>
+  <desc id="desc">同一個 next state 分成兩欄。Vanilla DQN 用 target network 同時選最大 action 並評分；Double DQN 用 online network 選 action，再由 target network 評分。兩者最後使用相同 Bellman target 公式。</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#334155"/>
+    </marker>
+  </defs>
+
+  <rect width="1200" height="760" fill="#ffffff"/>
+  <text x="600" y="42" text-anchor="middle" font-family="system-ui, sans-serif" font-size="28" font-weight="700" fill="#0f172a">差別只在：next_state 的價值怎麼算？</text>
+  <text x="600" y="76" text-anchor="middle" font-family="system-ui, sans-serif" font-size="17" fill="#475569">Vanilla DQN：同一個估計器「選 + 評分」　｜　Double DQN：把「選」和「評分」拆開</text>
+
+  <rect x="420" y="104" width="360" height="66" rx="12" fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+  <text x="600" y="145" text-anchor="middle" font-family="system-ui, sans-serif" font-size="23" font-weight="700" fill="#0f172a">同一個 next_state  s′</text>
+
+  <line x1="520" y1="170" x2="305" y2="220" stroke="#334155" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <line x1="680" y1="170" x2="895" y2="220" stroke="#334155" stroke-width="2.5" marker-end="url(#arrow)"/>
+
+  <rect x="70" y="205" width="470" height="410" rx="18" fill="#fff7ed" stroke="#f97316" stroke-width="2"/>
+  <text x="305" y="245" text-anchor="middle" font-family="system-ui, sans-serif" font-size="24" font-weight="700" fill="#9a3412">Vanilla DQN</text>
+  <text x="305" y="274" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" fill="#7c2d12">同一個 target network 同時負責選和評分</text>
+
+  <rect x="135" y="305" width="340" height="68" rx="12" fill="#ffffff" stroke="#fb923c" stroke-width="2"/>
+  <text x="305" y="333" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="650" fill="#0f172a">① Target network</text>
+  <text x="305" y="358" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" fill="#475569">算出 4 個 Q-values</text>
+
+  <line x1="305" y1="373" x2="305" y2="411" stroke="#334155" stroke-width="2.5" marker-end="url(#arrow)"/>
+
+  <rect x="135" y="420" width="340" height="76" rx="12" fill="#ffedd5" stroke="#f97316" stroke-width="2"/>
+  <text x="305" y="449" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#9a3412">② 直接取最大值 max</text>
+  <text x="305" y="476" text-anchor="middle" font-family="system-ui, sans-serif" font-size="15" fill="#7c2d12">最大的是誰？它的分數是多少？一次決定</text>
+
+  <line x1="305" y1="496" x2="305" y2="534" stroke="#334155" stroke-width="2.5" marker-end="url(#arrow)"/>
+
+  <rect x="135" y="543" width="340" height="48" rx="12" fill="#ffffff" stroke="#fb923c" stroke-width="2"/>
+  <text x="305" y="574" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="17" fill="#0f172a">next value = max Q_target(s′, a)</text>
+
+  <rect x="660" y="205" width="470" height="410" rx="18" fill="#eff6ff" stroke="#2563eb" stroke-width="2"/>
+  <text x="895" y="245" text-anchor="middle" font-family="system-ui, sans-serif" font-size="24" font-weight="700" fill="#1d4ed8">Double DQN</text>
+  <text x="895" y="274" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" fill="#1e40af">online 選 action，target 只負責評分</text>
+
+  <rect x="705" y="305" width="380" height="68" rx="12" fill="#ffffff" stroke="#60a5fa" stroke-width="2"/>
+  <text x="895" y="333" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="650" fill="#0f172a">① Online network</text>
+  <text x="895" y="358" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" fill="#475569">算 Q-values，只用來選 action</text>
+
+  <line x1="895" y1="373" x2="895" y2="403" stroke="#334155" stroke-width="2.5" marker-end="url(#arrow)"/>
+
+  <rect x="705" y="412" width="380" height="62" rx="12" fill="#dbeafe" stroke="#2563eb" stroke-width="2"/>
+  <text x="895" y="450" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="17" font-weight="700" fill="#1e3a8a">a* = argmax Q_online(s′, a)</text>
+
+  <line x1="895" y1="474" x2="895" y2="504" stroke="#334155" stroke-width="2.5" marker-end="url(#arrow)"/>
+
+  <rect x="705" y="513" width="380" height="78" rx="12" fill="#ffffff" stroke="#60a5fa" stroke-width="2"/>
+  <text x="895" y="540" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="650" fill="#0f172a">② Target network</text>
+  <text x="895" y="565" text-anchor="middle" font-family="system-ui, sans-serif" font-size="15" fill="#475569">只評分剛才選到的 a*</text>
+  <text x="895" y="585" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="15" fill="#0f172a">next value = Q_target(s′, a*)</text>
+
+  <line x1="305" y1="615" x2="500" y2="658" stroke="#334155" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <line x1="895" y1="615" x2="700" y2="658" stroke="#334155" stroke-width="2.5" marker-end="url(#arrow)"/>
+
+  <rect x="330" y="650" width="540" height="78" rx="14" fill="#f1f5f9" stroke="#64748b" stroke-width="2"/>
+  <text x="600" y="679" text-anchor="middle" font-family="system-ui, sans-serif" font-size="17" font-weight="700" fill="#0f172a">兩者後面完全一樣</text>
+  <text x="600" y="708" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16" fill="#334155">target = reward + γ × (1 − terminated) × next value</text>
+
+  <text x="600" y="748" text-anchor="middle" font-family="system-ui, sans-serif" font-size="15" fill="#64748b">核心：Double DQN 沒有換模型輸出；只把「選哪個 action」與「這個 action 值多少」交給不同網路。</text>
+</svg>
