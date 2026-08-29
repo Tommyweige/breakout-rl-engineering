@@ -174,39 +174,17 @@ Double DQN 沒有把 action space 改掉，也沒有改 observation，更沒有�
 
 它只是重新分配這兩個網路在 `next_state` 上的工作。
 
-### Vanilla DQN
+[![DQN 與 Double DQN 的核心差異：DQN 直接對 Target Network 取 max；Double DQN 由 Online Network 選 action、Target Network 評估](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/916f05fc17cb0d80e29af16008829d1d346d92c3/assets/day17/dqn-vs-double-dqn-core.svg?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/916f05fc17cb0d80e29af16008829d1d346d92c3/assets/day17/dqn-vs-double-dqn-core.svg)
 
-```text
-target network
-    ↓
-找最大值
-    ↓
-直接用這個最大值
-```
+這張圖可以直接左右對照著看。
 
-### Double DQN
+左邊的 DQN 只有一條路：`next state → Target Network → 直接取 max`。也就是 Target Network 自己先決定「哪個 action 最大」，又直接把這個最大值當成未來價值。如果那個最大值只是剛好被高估，學習 target 就可能跟著被拉高。
 
-```text
-online network
-    ↓
-只負責選 action
-    ↓
-得到 a*
-    ↓
-target network
-    ↓
-只負責評估 Q_target(s', a*)
-```
+右邊的 Double DQN 則把這件事拆成兩步：先由 Online Network 做 `argmax`，只決定要選哪個 action；接著 Target Network 不再自己重新挑最大值，而是只讀取剛剛那個 action 的 Q-value。公式雖然看起來比較長，但真正的核心只有一句：
 
-[![Vanilla DQN 與 Double DQN：同一個 next state 的 next value 如何算出來](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/4ff80f0c9f21d55a585a034e25e8bb6e7b5ebcd7/assets/day17/double-dqn-target-flow-v2.svg?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/4ff80f0c9f21d55a585a034e25e8bb6e7b5ebcd7/assets/day17/double-dqn-target-flow-v2.svg)
+> **Online 負責「選」，Target 負責「評」。**
 
-這張圖只要從上往下讀。左邊的 Vanilla DQN 用 target network 的同一組 Q-values 同時回答「選哪個 action」和「它值多少」；右邊的 Double DQN 先讓 online network 選出 `a*`，再讓 target network 只評估這個 `a*`。最下面的 reward、`γ` 和 `terminated` 公式兩邊完全相同，所以它們不是這次演算法差異的重點。
-
-所以 Double DQN 最值得記住的其實只有一句話：
-
-> **online network 負責選，target network 負責評估。**
-
-不是「永遠不要取最大值」，而是不要再讓同一份估計同時扮演裁判和選手。
+這也是 Double DQN 的主要優勢：它不是保證所有 Q-value 都不會高估，而是降低「同一份估計又選又評」時，剛好偏高的最大值被一路放大的機會。
 
 ---
 
