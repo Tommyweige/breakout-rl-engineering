@@ -12,7 +12,7 @@ Day 12 第一次把它們全部接起來，回答一個很實際的問題：**Ag
 
 完整的 DQN 訓練其實一直在做兩件事：**玩遊戲收集經驗**，以及**拿過去的經驗更新模型**。
 
-[![DQN training loop 分成收集經驗與更新模型兩個不同節奏，Replay Buffer 位在兩者之間](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/4c295d296a358fec55010424d0575021953bd6db/assets/day12/dqn-training-loop-overview.svg?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/4c295d296a358fec55010424d0575021953bd6db/assets/day12/dqn-training-loop-overview.svg)
+[![DQN training loop 分成收集經驗與更新模型兩個不同節奏，Replay Buffer 位在兩者之間](https://github.com/Tommyweige/breakout-rl-engineering/blob/4c295d296a358fec55010424d0575021953bd6db/assets/day12/dqn-training-loop-overview.svg?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/4c295d296a358fec55010424d0575021953bd6db/assets/day12/dqn-training-loop-overview.svg)
 
 先看圖的上半部。
 
@@ -167,7 +167,7 @@ Replay Buffer 存的是這個拿來訓練的 reward。
 
 先直接看實際畫面：
 
-[![固定 seed 42 的 Breakout DQN smoke run：真實遊戲畫面與 step、epsilon、raw score、training phase](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/5884cd070c380c78209e5cd2b53fce21d9cf5e1e/assets/day12/training-smoke.gif?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/5884cd070c380c78209e5cd2b53fce21d9cf5e1e/assets/day12/training-smoke.gif)
+[![固定 seed 42 的 Breakout DQN smoke run：真實遊戲畫面與 step、epsilon、raw score、training phase](https://github.com/Tommyweige/breakout-rl-engineering/blob/5884cd070c380c78209e5cd2b53fce21d9cf5e1e/assets/day12/training-smoke.gif?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/5884cd070c380c78209e5cd2b53fce21d9cf5e1e/assets/day12/training-smoke.gif)
 
 這不是示意動畫，而是 `ALE/Breakout-v5` 實際執行時 render 出來的畫面。GIF 使用固定 seed `42`，每 8 個 environment steps 取一張，共 125 張，播放時間約 12.5 秒。
 
@@ -187,7 +187,7 @@ Replay Buffer 存的是這個拿來訓練的 reward。
 
 除了最後結果，我也把訓練過程中的幾個重要訊號持續記錄下來：
 
-[![Day 12 真實 CPU smoke run 的 raw episode return、Huber loss、selected Q mean 與 epsilon](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/5d725ae7d752439d390098726f238dbbd5d01a5a/assets/day12/training-overview.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/5d725ae7d752439d390098726f238dbbd5d01a5a/assets/day12/training-overview.png)
+[![Day 12 真實 CPU smoke run 的 raw episode return、Huber loss、selected Q mean 與 epsilon](https://github.com/Tommyweige/breakout-rl-engineering/blob/5d725ae7d752439d390098726f238dbbd5d01a5a/assets/day12/training-overview.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/5d725ae7d752439d390098726f238dbbd5d01a5a/assets/day12/training-overview.png)
 
 這張圖不用每條線都急著分析。Day 12 先看最基本的現象就夠了：epsilon 確實隨步數下降；開始訓練之後 loss 真的出現；Q-value 也會隨模型更新而改變。
 

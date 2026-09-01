@@ -12,7 +12,7 @@ Day 17 把問題縮小到一個很具體的差異：深度 Q 網路（Deep Q-Net
 
 100K transitions 已經能讓 episode return（把一局中所有 reward 加總後的回報）出現上升的早期訊號，所以它適合回答「訓練流程有沒有完全失效」。但這個訊號不等於「兩個 model family 已經分開」。要回答後者，還需要相同條件下的重複訓練。
 
-[![DQN 與 Double DQN 在 100K、250K、500K actual environment transitions 上的每局回報與 seed-level rolling curves](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/0bae0fc0e0839d4c9b2e9b430554738e8f89d76a/assets/day18/dqn-vs-double-training.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/0bae0fc0e0839d4c9b2e9b430554738e8f89d76a/assets/day18/dqn-vs-double-training.png)
+[![DQN 與 Double DQN 在 100K、250K、500K actual environment transitions 上的每局回報與 seed-level rolling curves](https://github.com/Tommyweige/breakout-rl-engineering/blob/0bae0fc0e0839d4c9b2e9b430554738e8f89d76a/assets/day18/dqn-vs-double-training.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/0bae0fc0e0839d4c9b2e9b430554738e8f89d76a/assets/day18/dqn-vs-double-training.png)
 
 圖的上半部保留每個完成 episode 的 raw Atari return，下半部是同一批資料的 20-episode rolling mean。每條線都代表一個 training seed，而不是把三個 seed 先揉成一條平均線；垂直線標出 100K screening、250K pilot 和 500K main。可以看到 100K 左右已經有可觀察的 learning signal，但不同 seed 的波動仍然很大。這張圖支持的是「值得把 budget 拉長」，不是「100K 已經選出 winner」。
 
@@ -22,7 +22,7 @@ Day 17 把問題縮小到一個很具體的差異：深度 Q 網路（Deep Q-Net
 
 訓練系統也固定沿用 Day 16 選出的向量化路徑：兩個環境、GPU Replay（保存過去 transition 供抽樣的 replay buffer 放在 GPU）、batch size 32、相同 optimizer/update cadence、相同 epsilon schedule、float32 和兩個 CPU threads。正式 run 都明確 request `cuda`，實際 resolve 到同一張 `cuda:0` 的 NVIDIA GeForce RTX 4060 Laptop GPU；每個 run 也保存 PyTorch/CUDA 版本、SPS、wall-clock 與可取得的 peak VRAM（GPU 記憶體）。這樣 quality 的主要變因才是 target rule，而不是 backend 或硬體。
 
-[![Day 18 staged comparison 的實際 gate 與 evidence flow](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/0bae0fc0e0839d4c9b2e9b430554738e8f89d76a/assets/day18/staged-comparison-flow.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/0bae0fc0e0839d4c9b2e9b430554738e8f89d76a/assets/day18/staged-comparison-flow.png)
+[![Day 18 staged comparison 的實際 gate 與 evidence flow](https://github.com/Tommyweige/breakout-rl-engineering/blob/0bae0fc0e0839d4c9b2e9b430554738e8f89d76a/assets/day18/staged-comparison-flow.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/0bae0fc0e0839d4c9b2e9b430554738e8f89d76a/assets/day18/staged-comparison-flow.png)
 
 這張結構圖把執行順序和判斷邊界放在一起看：先完成 100K screening，再讓 seed 11 的 DQN/Double DQN 走完 250K pilot；pilot 的 training、evaluation 和 Q probe 都完整後，才展開 seeds 11、22、33 的 500K main。每個 checkpoint 同時留下 training metrics、CUDA runtime metadata、Contract v2 evaluation 和固定 probe diagnostics，最後只聚合實際完成 target transitions 的 runs。
 
@@ -42,7 +42,7 @@ training seed 是一條完整訓練的隨機起點；evaluation seed 則是固�
 
 每個 training seed 的 checkpoint 都用同一套 Contract v2 evaluation：三個 evaluation seed groups、每組五局，共 15 局；分數是 raw Atari episode return，也就是不做 training reward clipping、直接加總環境回報。下圖的每個點仍保留 training seed，誤差棒則表示該 seed 的 15 局 episode spread。
 
-[![DQN 與 Double DQN 在 250K pilot 和 500K main 的 per-training-seed evaluation return 與 spread](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/0bae0fc0e0839d4c9b2e9b430554738e8f89d76a/assets/day18/dqn-vs-double-eval.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/0bae0fc0e0839d4c9b2e9b430554738e8f89d76a/assets/day18/dqn-vs-double-eval.png)
+[![DQN 與 Double DQN 在 250K pilot 和 500K main 的 per-training-seed evaluation return 與 spread](https://github.com/Tommyweige/breakout-rl-engineering/blob/0bae0fc0e0839d4c9b2e9b430554738e8f89d76a/assets/day18/dqn-vs-double-eval.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/0bae0fc0e0839d4c9b2e9b430554738e8f89d76a/assets/day18/dqn-vs-double-eval.png)
 
 500K 的真實結果如下：
 
@@ -58,7 +58,7 @@ training seed 是一條完整訓練的隨機起點；evaluation seed 則是固�
 
 這個結論的 evidence strength 是「three paired CUDA seeds at 500K」，不是統計學上的普遍定理。Contract v2 下的 Random baseline mean 是 1.73 ± 1.12，它只提供同 protocol 的參考尺度，也不能取代演算法之間的 paired comparison。
 
-[![500K DQN 與 Double DQN 的 paired seed mean，連線表示同一 training seed 的配對](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/0bae0fc0e0839d4c9b2e9b430554738e8f89d76a/assets/day18/paired-seed-comparison.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/0bae0fc0e0839d4c9b2e9b430554738e8f89d76a/assets/day18/paired-seed-comparison.png)
+[![500K DQN 與 Double DQN 的 paired seed mean，連線表示同一 training seed 的配對](https://github.com/Tommyweige/breakout-rl-engineering/blob/0bae0fc0e0839d4c9b2e9b430554738e8f89d76a/assets/day18/paired-seed-comparison.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/0bae0fc0e0839d4c9b2e9b430554738e8f89d76a/assets/day18/paired-seed-comparison.png)
 
 paired 圖的連線很重要：它把 seed 11 的 DQN 和 seed 11 的 Double DQN 連在一起，而不是先各自平均後才比較兩個孤立的數字。三條線都往 Double DQN 一側移動，但 seed 33 的差距比前兩組小，這正是保留 seed-level evidence 的價值。
 
@@ -66,7 +66,7 @@ paired 圖的連線很重要：它把 seed 11 的 DQN 和 seed 11 的 Double DQN
 
 Q-value 是模型對「從這個 state 開始採取某個 action，未來大概能得到多少回報」的估計。固定 probe states 可以讓不同 checkpoint 使用同一把尺；這裡保存了 60 個相同的 Breakout observations，並觀察每個 checkpoint 的 max-Q mean 和 spread。
 
-[![固定 Contract v2 probe states 上各 training seed 的 max-Q mean 與 spread](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/0bae0fc0e0839d4c9b2e9b430554738e8f89d76a/assets/day18/q-probe-comparison.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/0bae0fc0e0839d4c9b2e9b430554738e8f89d76a/assets/day18/q-probe-comparison.png)
+[![固定 Contract v2 probe states 上各 training seed 的 max-Q mean 與 spread](https://github.com/Tommyweige/breakout-rl-engineering/blob/0bae0fc0e0839d4c9b2e9b430554738e8f89d76a/assets/day18/q-probe-comparison.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/0bae0fc0e0839d4c9b2e9b430554738e8f89d76a/assets/day18/q-probe-comparison.png)
 
 500K 時 Double DQN 的 max-Q scale 在三個 seed 都低於對應的 DQN：DQN 約為 2.69、2.75、2.68；Double DQN 約為 2.01、2.52、2.52。這個現象和 Day 17 對 overestimation 的假設相容，但它不能單獨證明 Double DQN 的 policy 比較好。沒有 Breakout 的 ground-truth Q-function，我們不知道較低的估計是不是較接近真實值；所以最後的 quality 判斷仍回到固定 evaluation return。
 
@@ -79,7 +79,7 @@ Q-value 是模型對「從這個 state 開始採取某個 action，未來大概�
 | DQN | 350.09 transitions/s | 714.7 s | 608.6 MiB |
 | Double DQN | 345.57 transitions/s | 723.5 s | 608.6 MiB |
 
-[![500K main 的 seed-level SPS、wall-clock 與 peak allocated VRAM](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/0bae0fc0e0839d4c9b2e9b430554738e8f89d76a/assets/day18/runtime-comparison.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/0bae0fc0e0839d4c9b2e9b430554738e8f89d76a/assets/day18/runtime-comparison.png)
+[![500K main 的 seed-level SPS、wall-clock 與 peak allocated VRAM](https://github.com/Tommyweige/breakout-rl-engineering/blob/0bae0fc0e0839d4c9b2e9b430554738e8f89d76a/assets/day18/runtime-comparison.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/0bae0fc0e0839d4c9b2e9b430554738e8f89d76a/assets/day18/runtime-comparison.png)
 
 Double DQN 平均約少 1.3% SPS、wall-clock 約多 1.2%，而 peak allocated VRAM 在這批 run 都約 608.6 MiB。這和它在 next state 多做一次 online-network forward 的計算路徑一致，但 seed-level runtime 仍有波動；因此圖中保留每個 seed 的點，而不是把小差異包裝成精確的固定 overhead。
 

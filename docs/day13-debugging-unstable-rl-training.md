@@ -43,7 +43,7 @@ RL 不一樣。Agent 會自己和環境互動，今天模型做出的 action，�
 
 只有這三關都沒有明顯問題，才輪到 learning rate、gamma 或其他超參數。
 
-[![從數值檢查、固定 batch 到探索訊號與最後超參數調整的 RL 除錯流程](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/39ae567c4ee01e11b4a9405ba1dd1c1e4af5a6d5/assets/day13/debugging-workflow.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/39ae567c4ee01e11b4a9405ba1dd1c1e4af5a6d5/assets/day13/debugging-workflow.png)
+[![從數值檢查、固定 batch 到探索訊號與最後超參數調整的 RL 除錯流程](https://github.com/Tommyweige/breakout-rl-engineering/blob/39ae567c4ee01e11b4a9405ba1dd1c1e4af5a6d5/assets/day13/debugging-workflow.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/39ae567c4ee01e11b4a9405ba1dd1c1e4af5a6d5/assets/day13/debugging-workflow.png)
 
 圖裡最重要的不是每一個名詞，而是順序。
 
@@ -91,7 +91,7 @@ loss 可以先理解成「模型目前的 Q-value 和這次學習目標差多少
 
 這次 2,251 次更新裡，loss 都保持為正常有限數值，平均約 `0.00299`，最大約 `0.0463`。
 
-[![10K-step CUDA debug run 的 Huber loss 曲線，尖峰代表部分 batch 的誤差較大](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/39ae567c4ee01e11b4a9405ba1dd1c1e4af5a6d5/assets/day13/loss-curve.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/39ae567c4ee01e11b4a9405ba1dd1c1e4af5a6d5/assets/day13/loss-curve.png)
+[![10K-step CUDA debug run 的 Huber loss 曲線，尖峰代表部分 batch 的誤差較大](https://github.com/Tommyweige/breakout-rl-engineering/blob/39ae567c4ee01e11b4a9405ba1dd1c1e4af5a6d5/assets/day13/loss-curve.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/39ae567c4ee01e11b4a9405ba1dd1c1e4af5a6d5/assets/day13/loss-curve.png)
 
 圖裡的尖峰不是憑空出現的。每次更新抽到的 mini-batch 都不同，有些 batch 可能剛好包含比較少見的畫面、真正拿到 reward 的 transition，或目前 Q-value 和 target 差距特別大的資料。這時同一批資料的平均誤差就會突然變大，loss 也跟著形成波峰。
 
@@ -114,7 +114,7 @@ target = 這一步拿到的 reward
 
 因此 target 並不是固定答案。只要下一個 state 的估計價值變了，target 就會跟著變。
 
-[![10K-step CUDA debug run 的所有 action Q-values 與 Bellman targets](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/39ae567c4ee01e11b4a9405ba1dd1c1e4af5a6d5/assets/day13/q-values.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/39ae567c4ee01e11b4a9405ba1dd1c1e4af5a6d5/assets/day13/q-values.png)
+[![10K-step CUDA debug run 的所有 action Q-values 與 Bellman targets](https://github.com/Tommyweige/breakout-rl-engineering/blob/39ae567c4ee01e11b4a9405ba1dd1c1e4af5a6d5/assets/day13/q-values.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/39ae567c4ee01e11b4a9405ba1dd1c1e4af5a6d5/assets/day13/q-values.png)
 
 這張圖裡的 **Target max** 有兩個值得分開看的現象：尖峰，以及整體往上的趨勢。
 
@@ -139,7 +139,7 @@ target = 這一步拿到的 reward
 
 反向傳播之後，每個參數都會得到一個「應該往哪裡調」的梯度。**Gradient norm** 就是把所有參數的梯度濃縮成一個總大小，可以把它理解成「這一次模型想把參數推動多強」。
 
-[![10K-step CUDA debug run 的 gradient norm 曲線，數值取 clipping 前的總 norm](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/39ae567c4ee01e11b4a9405ba1dd1c1e4af5a6d5/assets/day13/gradient-norm.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/39ae567c4ee01e11b4a9405ba1dd1c1e4af5a6d5/assets/day13/gradient-norm.png)
+[![10K-step CUDA debug run 的 gradient norm 曲線，數值取 clipping 前的總 norm](https://github.com/Tommyweige/breakout-rl-engineering/blob/39ae567c4ee01e11b4a9405ba1dd1c1e4af5a6d5/assets/day13/gradient-norm.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/39ae567c4ee01e11b4a9405ba1dd1c1e4af5a6d5/assets/day13/gradient-norm.png)
 
 它出現尖峰的原因和 loss 有關，但兩者不是完全同一個東西。當某一批資料的 Q-value 和 target 差得比較多時，反向傳播通常會產生更強的修正訊號，因此 gradient norm 也容易突然變大。Target Network 同步後如果參考值產生變化，或 mini-batch 剛好抽到 reward / 高 TD error 的 transition，也可能讓某一次 gradient 明顯高於前後更新。
 
@@ -208,7 +208,7 @@ Replay Buffer 也需要一起看。這次容量是 10,000，跑完時也存滿 1
 
 前面幾關都沒有看到明顯的 correctness 問題之後，才比較有意義去看 return，也就是每一局累積的原始遊戲分數。
 
-[![10K-step CUDA debug run 的 raw episode return 曲線](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/39ae567c4ee01e11b4a9405ba1dd1c1e4af5a6d5/assets/day13/return-curve.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/39ae567c4ee01e11b4a9405ba1dd1c1e4af5a6d5/assets/day13/return-curve.png)
+[![10K-step CUDA debug run 的 raw episode return 曲線](https://github.com/Tommyweige/breakout-rl-engineering/blob/39ae567c4ee01e11b4a9405ba1dd1c1e4af5a6d5/assets/day13/return-curve.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/39ae567c4ee01e11b4a9405ba1dd1c1e4af5a6d5/assets/day13/return-curve.png)
 
 這次 48 個 episode 的 return 介於 `0` 到 `5`，平均只有 `1.40`；第一局是 `2`，最後一局是 `1`。
 

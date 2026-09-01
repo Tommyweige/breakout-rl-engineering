@@ -66,7 +66,7 @@ max(Q1, Q2, Q3, Q4)
 
 可以看到，原本所有估計混在一起時幾乎就是 0；但只要每次都挑最大的那個，平均值就開始往上飄，而且誤差越大，偏得越明顯。
 
-[![四個 action 的估計加入不同 noise 後，max selection 的平均值偏離真實值](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/1464032ac877d0de02481d6d8490be6534ead2ff/assets/day17/overestimation-bias.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/1464032ac877d0de02481d6d8490be6534ead2ff/assets/day17/overestimation-bias.png)
+[![四個 action 的估計加入不同 noise 後，max selection 的平均值偏離真實值](https://github.com/Tommyweige/breakout-rl-engineering/blob/1464032ac877d0de02481d6d8490be6534ead2ff/assets/day17/overestimation-bias.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/1464032ac877d0de02481d6d8490be6534ead2ff/assets/day17/overestimation-bias.png)
 
 這就是 **overestimation bias（高估偏差）**。
 
@@ -174,7 +174,7 @@ Double DQN 沒有把 action space 改掉，也沒有改 observation，更沒有�
 
 它只是重新分配這兩個網路在 `next_state` 上的工作。
 
-[![DQN 與 Double DQN 的核心差異：DQN 直接對 Target Network 取 max；Double DQN 由 Online Network 選 action、Target Network 評估](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/916f05fc17cb0d80e29af16008829d1d346d92c3/assets/day17/dqn-vs-double-dqn-core.svg?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/916f05fc17cb0d80e29af16008829d1d346d92c3/assets/day17/dqn-vs-double-dqn-core.svg)
+[![DQN 與 Double DQN 的核心差異：DQN 直接對 Target Network 取 max；Double DQN 由 Online Network 選 action、Target Network 評估](https://github.com/Tommyweige/breakout-rl-engineering/blob/916f05fc17cb0d80e29af16008829d1d346d92c3/assets/day17/dqn-vs-double-dqn-core.svg?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/916f05fc17cb0d80e29af16008829d1d346d92c3/assets/day17/dqn-vs-double-dqn-core.svg)
 
 這張圖可以直接左右對照著看。
 
@@ -237,7 +237,7 @@ Q_target(index 1) = 3
 1 + 0.5 × 3 = 2.5
 ```
 
-[![同一組 next-state Q-values 下 Vanilla 與 Double DQN 的 target 差異](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/1464032ac877d0de02481d6d8490be6534ead2ff/assets/day17/dqn-vs-double-targets.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/1464032ac877d0de02481d6d8490be6534ead2ff/assets/day17/dqn-vs-double-targets.png)
+[![同一組 next-state Q-values 下 Vanilla 與 Double DQN 的 target 差異](https://github.com/Tommyweige/breakout-rl-engineering/blob/1464032ac877d0de02481d6d8490be6534ead2ff/assets/day17/dqn-vs-double-targets.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/1464032ac877d0de02481d6d8490be6534ead2ff/assets/day17/dqn-vs-double-targets.png)
 
 這個例子不代表 Double DQN 的 target 永遠比較小，也不代表越小越正確。
 
@@ -275,7 +275,7 @@ LEFT  = 1
 NOOP  = 0
 ```
 
-[![Day 17 smoke checkpoint 在固定 Breakout states 上的 Q-value 分布與 greedy action](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/1464032ac877d0de02481d6d8490be6534ead2ff/assets/day17/q-probe-summary.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/1464032ac877d0de02481d6d8490be6534ead2ff/assets/day17/q-probe-summary.png)
+[![Day 17 smoke checkpoint 在固定 Breakout states 上的 Q-value 分布與 greedy action](https://github.com/Tommyweige/breakout-rl-engineering/blob/1464032ac877d0de02481d6d8490be6534ead2ff/assets/day17/q-probe-summary.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/1464032ac877d0de02481d6d8490be6534ead2ff/assets/day17/q-probe-summary.png)
 
 這張圖能回答的是：
 
@@ -322,7 +322,7 @@ Vanilla DQN 則主要只需要 target network 的 next-state forward。
 | next-state target forward GPU time | 2.48 s | 4.25 s |
 | peak VRAM | 639 MB | 639 MB |
 
-[![相同訓練條件下 Vanilla DQN 與 Double DQN 的短程執行成本](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/1464032ac877d0de02481d6d8490be6534ead2ff/assets/day17/smoke-performance.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/1464032ac877d0de02481d6d8490be6534ead2ff/assets/day17/smoke-performance.png)
+[![相同訓練條件下 Vanilla DQN 與 Double DQN 的短程執行成本](https://github.com/Tommyweige/breakout-rl-engineering/blob/1464032ac877d0de02481d6d8490be6534ead2ff/assets/day17/smoke-performance.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/1464032ac877d0de02481d6d8490be6534ead2ff/assets/day17/smoke-performance.png)
 
 Double DQN 的整體吞吐大約低 4.4%。這和它多做一次 next-state online forward 的預期一致。
 

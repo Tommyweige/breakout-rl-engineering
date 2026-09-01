@@ -47,7 +47,7 @@ DQN 的做法是準備兩個彼此獨立的 network：
 
 下面這張圖把兩個 network 在 DQN 裡的角色放在一起看：
 
-[![Online Network 與 Target Network 在 Vanilla DQN target 計算中的角色分工](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/d8ddf24e9d5ad5d4dacccc4f85eb659c413b6867/assets/day11/target-network-flow.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/d8ddf24e9d5ad5d4dacccc4f85eb659c413b6867/assets/day11/target-network-flow.png)
+[![Online Network 與 Target Network 在 Vanilla DQN target 計算中的角色分工](https://github.com/Tommyweige/breakout-rl-engineering/blob/d8ddf24e9d5ad5d4dacccc4f85eb659c413b6867/assets/day11/target-network-flow.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/d8ddf24e9d5ad5d4dacccc4f85eb659c413b6867/assets/day11/target-network-flow.png)
 
 Online Network 負責產生目前 state 的 Q-value；Target Network 則負責看下一個 state，提供計算學習目標需要的 Q-value。虛線箭頭表示參數同步的方向是 **Online → Target**。
 
@@ -127,7 +127,7 @@ Online 更新後     0.00746517
 再次 Hard Update  0.00000000
 ```
 
-[![Online Network 更新後與 Target Network 分歧，再經 Hard Update 重新一致的真實 DQN 輸出](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/d8ddf24e9d5ad5d4dacccc4f85eb659c413b6867/assets/day11/target-network-sync.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/d8ddf24e9d5ad5d4dacccc4f85eb659c413b6867/assets/day11/target-network-sync.png)
+[![Online Network 更新後與 Target Network 分歧，再經 Hard Update 重新一致的真實 DQN 輸出](https://github.com/Tommyweige/breakout-rl-engineering/blob/d8ddf24e9d5ad5d4dacccc4f85eb659c413b6867/assets/day11/target-network-sync.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/d8ddf24e9d5ad5d4dacccc4f85eb659c413b6867/assets/day11/target-network-sync.png)
 
 圖的上半部顯示同一筆輸入下四個 action 的 Q-values。初始同步時 Online 和 Target 重疊；只更新 Online 後，Online 的輸出改變，但 Target 仍停留在原本的位置；再次同步後，Target 才追上 Online。
 

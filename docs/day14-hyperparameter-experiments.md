@@ -47,7 +47,7 @@ Breakout 的獎勵不是每一步都有，而且每一局長度不同。假設�
 
 100K 也不是「一定能學會 Breakout」的門檻。它只是把觀察時間拉長，讓少數幾局的運氣比較不容易主導結論。
 
-[![從 Day 13 的 10K 診斷、Day 14 的 10K 短跑檢查到 100K 主要比較](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/25fee37/assets/day14/budget-stages.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/25fee37/assets/day14/budget-stages.png)
+[![從 Day 13 的 10K 診斷、Day 14 的 10K 短跑檢查到 100K 主要比較](https://github.com/Tommyweige/breakout-rl-engineering/blob/25fee37/assets/day14/budget-stages.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/25fee37/assets/day14/budget-stages.png)
 
 這張圖最重要的地方不是「100K 一定要選出勝者」，而是反過來：**如果 100K 仍然沒有可靠差異，「目前無法分辨」本身就是合理的實驗結果。**
 
@@ -169,7 +169,7 @@ Replay 的比較沒有直接帶來加速，但測量過程讓另一件事變得�
 
 更重要的是，批次大小本身也會改變模型怎麼學，所以不能只因為 GPU 看起來比較忙，就把較大的批次當成更好的 DQN 設定。
 
-[![批次大小 32、64、128 的完整訓練速度、GPU 使用率與記憶體比較](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/batch-size-efficiency.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/batch-size-efficiency.png)
+[![批次大小 32、64、128 的完整訓練速度、GPU 使用率與記憶體比較](https://github.com/Tommyweige/breakout-rl-engineering/blob/27b7e07/assets/day14/batch-size-efficiency.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/27b7e07/assets/day14/batch-size-efficiency.png)
 
 這裡真正得到的結論只有一句：
 
@@ -229,7 +229,7 @@ Replay 的比較沒有直接帶來加速，但測量過程讓另一件事變得�
 
 它還不能被叫作「最佳學習率」，因為現在只有一個訓練隨機種子。
 
-[![100K 期間三種學習率的每局回報與 20 回合移動平均](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/experiment-return-comparison.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/experiment-return-comparison.png)
+[![100K 期間三種學習率的每局回報與 20 回合移動平均](https://github.com/Tommyweige/breakout-rl-engineering/blob/27b7e07/assets/day14/experiment-return-comparison.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/27b7e07/assets/day14/experiment-return-comparison.png)
 
 圖中的淡色點是每一局實際得到的回報，粗線則是 20 回合移動平均。
 
@@ -270,7 +270,7 @@ DQN 內部還有幾個重要數值：
 
 因此目前比較合理的判讀是：**`2e-4` 讓價值估計變化得更快，值得繼續監看，但現在還沒有足夠證據說它已經數值不穩定。**
 
-[![100K 期間的損失值、Q-value、目標值、梯度、探索比例與訓練速度](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/experiment-diagnostics-comparison.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/experiment-diagnostics-comparison.png)
+[![100K 期間的損失值、Q-value、目標值、梯度、探索比例與訓練速度](https://github.com/Tommyweige/breakout-rl-engineering/blob/27b7e07/assets/day14/experiment-diagnostics-comparison.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/27b7e07/assets/day14/experiment-diagnostics-comparison.png)
 
 另外，這組設定的 epsilon 在前 10K 就下降到 `0.05`，後面 90K 大多維持低探索比例。這不是這次比較的變因；如果之後要研究探索速度，應該另外做只改 epsilon 下降速度的實驗。
 
@@ -300,19 +300,19 @@ DQN 內部還有幾個重要數值：
 
 ### 1K steps
 
-[![1K 模型實際執行 Breakout](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/gameplay-step-001k.gif?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/gameplay-step-001k.gif)
+[![1K 模型實際執行 Breakout](https://github.com/Tommyweige/breakout-rl-engineering/blob/27b7e07/assets/day14/gameplay-step-001k.gif?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/27b7e07/assets/day14/gameplay-step-001k.gif)
 
 ### 10K steps
 
-[![10K 模型實際執行 Breakout](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/gameplay-step-010k.gif?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/gameplay-step-010k.gif)
+[![10K 模型實際執行 Breakout](https://github.com/Tommyweige/breakout-rl-engineering/blob/27b7e07/assets/day14/gameplay-step-010k.gif?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/27b7e07/assets/day14/gameplay-step-010k.gif)
 
 ### 50K steps
 
-[![50K 模型實際執行 Breakout](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/gameplay-step-050k.gif?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/gameplay-step-050k.gif)
+[![50K 模型實際執行 Breakout](https://github.com/Tommyweige/breakout-rl-engineering/blob/27b7e07/assets/day14/gameplay-step-050k.gif?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/27b7e07/assets/day14/gameplay-step-050k.gif)
 
 ### 100K steps
 
-[![100K 模型實際執行 Breakout](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/gameplay-step-100k.gif?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/27b7e07/assets/day14/gameplay-step-100k.gif)
+[![100K 模型實際執行 Breakout](https://github.com/Tommyweige/breakout-rl-engineering/blob/27b7e07/assets/day14/gameplay-step-100k.gif?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/27b7e07/assets/day14/gameplay-step-100k.gif)
 
 1K 與 10K 還看不到穩定得分；50K 已經可以看到磚塊出現缺口；100K 則清掉更多磚塊，並在 363 個評估步數後結束。
 

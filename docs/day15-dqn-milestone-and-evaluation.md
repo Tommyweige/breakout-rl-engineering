@@ -31,7 +31,7 @@ DQN 每一步只做一件事：把目前看到的四張連續畫面送進網路�
 
 DQN 的平均分數比 Random 高了 3.20 分，中位數也從 1 提高到 5。從回報分布來看，100K checkpoint 顯然已經不只是完全隨機的行為。
 
-[![Random 與 100K DQN 的每局 raw return 分布](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/3f599ba/assets/day15/random-vs-dqn-returns.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/3f599ba/assets/day15/random-vs-dqn-returns.png)
+[![Random 與 100K DQN 的每局 raw return 分布](https://github.com/Tommyweige/breakout-rl-engineering/blob/3f599ba/assets/day15/random-vs-dqn-returns.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/3f599ba/assets/day15/random-vs-dqn-returns.png)
 
 如果只看到這裡，我很可能會直接寫下「DQN 已經明顯贏過 Random」。
 
@@ -118,7 +118,7 @@ Day 14 訓練後期的 epsilon 不是 0，而是 `0.05`。
 | FIRE assist | 0.00 | 是 | 8.80 | 15/15 | 0/15 | 430 |
 | 保留探索 | 0.05 | 否 | 9.20 | 15/15 | 0/15 | 509 |
 
-[![FIRE、TimeLimit 與兩個對照實驗的真實結果](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/13a99f0/assets/day15/fire-time-limit-diagnostics.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/13a99f0/assets/day15/fire-time-limit-diagnostics.png)
+[![FIRE、TimeLimit 與兩個對照實驗的真實結果](https://github.com/Tommyweige/breakout-rl-engineering/blob/13a99f0/assets/day15/fire-time-limit-diagnostics.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/13a99f0/assets/day15/fire-time-limit-diagnostics.png)
 
 FIRE assist 最直接：15 局全部正常結束，TimeLimit 從 10 局降到 0，而且掉命後大約下一步就能重新發球。
 

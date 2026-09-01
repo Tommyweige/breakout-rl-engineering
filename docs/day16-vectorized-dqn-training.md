@@ -43,7 +43,7 @@ Replay Buffer 也用同一個思路：不再每產生一筆 transition 就做一
 
 整個資料流可以簡化成下面這張圖：
 
-[![Day 16 向量化 DQN Trainer 資料流](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/bfa50d87e4d51c5cf450ec89e023144ebe46ab64/assets/day16/vectorized-pipeline-reader.svg?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/bfa50d87e4d51c5cf450ec89e023144ebe46ab64/assets/day16/vectorized-pipeline-reader.svg)
+[![Day 16 向量化 DQN Trainer 資料流](https://github.com/Tommyweige/breakout-rl-engineering/blob/bfa50d87e4d51c5cf450ec89e023144ebe46ab64/assets/day16/vectorized-pipeline-reader.svg?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/bfa50d87e4d51c5cf450ec89e023144ebe46ab64/assets/day16/vectorized-pipeline-reader.svg)
 
 這張圖真正想表達的只有一件事：**多個環境一起產生資料，讓 GPU 一次吃一批，而不是一直處理 batch=1 的零碎工作。**
 
@@ -81,7 +81,7 @@ vector loop 跑一次
 | N=4 | 456.63 transitions/s |
 | N=8 | 483.30 transitions/s |
 
-[![1、2、4、8 個環境在相同 10K transition budget 下的吞吐與 wall-clock](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/0e345d1d053297fd77865fdc5ef8a9f850fe5b98/assets/day16/vectorized-throughput.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/0e345d1d053297fd77865fdc5ef8a9f850fe5b98/assets/day16/vectorized-throughput.png)
+[![1、2、4、8 個環境在相同 10K transition budget 下的吞吐與 wall-clock](https://github.com/Tommyweige/breakout-rl-engineering/blob/0e345d1d053297fd77865fdc5ef8a9f850fe5b98/assets/day16/vectorized-throughput.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/0e345d1d053297fd77865fdc5ef8a9f850fe5b98/assets/day16/vectorized-throughput.png)
 
 結果很明顯：從 N=1 增加到 N=4，完整 trainer 的 throughput 提升非常明顯；但從 N=4 再翻倍到 N=8，收益已經開始變小。
 
@@ -110,7 +110,7 @@ GPU 還是做同一個 DQN，但每次處理的 observation 更多，所以不�
 
 Replay insertion 也有相同現象。獨立量測時，一次寫入越多 transition，每筆資料平均分攤到的固定成本越低。
 
-[![batch size 1、2、4、8、16 的 GPU Replay insertion microbenchmark](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/0e345d1d053297fd77865fdc5ef8a9f850fe5b98/assets/day16/replay-insertion.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/0e345d1d053297fd77865fdc5ef8a9f850fe5b98/assets/day16/replay-insertion.png)
+[![batch size 1、2、4、8、16 的 GPU Replay insertion microbenchmark](https://github.com/Tommyweige/breakout-rl-engineering/blob/0e345d1d053297fd77865fdc5ef8a9f850fe5b98/assets/day16/replay-insertion.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/0e345d1d053297fd77865fdc5ef8a9f850fe5b98/assets/day16/replay-insertion.png)
 
 這裡也再次驗證 Day 14 的教訓：**microbenchmark 很快，不代表完整 trainer 一定同比例變快。**
 
@@ -130,7 +130,7 @@ Replay insertion 也有相同現象。獨立量測時，一次寫入越多 trans
 
 N=2 相對 N=1 約快 **1.60 倍**，而且這次甚至比 N=4 稍快。
 
-[![100K vectorized training throughput 與 wall-clock](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/0e345d1d053297fd77865fdc5ef8a9f850fe5b98/assets/day16/vectorized-100k-vectorized-throughput.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/0e345d1d053297fd77865fdc5ef8a9f850fe5b98/assets/day16/vectorized-100k-vectorized-throughput.png)
+[![100K vectorized training throughput 與 wall-clock](https://github.com/Tommyweige/breakout-rl-engineering/blob/0e345d1d053297fd77865fdc5ef8a9f850fe5b98/assets/day16/vectorized-100k-vectorized-throughput.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/0e345d1d053297fd77865fdc5ef8a9f850fe5b98/assets/day16/vectorized-100k-vectorized-throughput.png)
 
 這個結果很值得注意，因為它提醒我們：**10K 最快的設定，不一定就是 100K 最適合的設定。**
 
