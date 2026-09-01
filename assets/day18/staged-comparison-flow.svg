@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="900" viewBox="0 0 860 900" role="img" aria-labelledby="title desc">
+  <title id="title">Day 18：DQN 與 Double DQN 怎麼公平比較</title>
+  <desc id="desc">固定相同 Breakout 與 CUDA 條件後，先用 100K 確認兩個模型都開始學，再延長到 250K，最後在 500K 用 seeds 11、22、33 做正式比較。每個 checkpoint 固定測試 15 局，三組 seed 的平均分都由 Double DQN 較高。</desc>
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0,0 L12,6 L0,12 Z" fill="#475569"/>
+    </marker>
+    <style>
+      .title { font: 700 30px Arial, 'Microsoft JhengHei', sans-serif; fill: #0f172a; }
+      .subtitle { font: 400 17px Arial, 'Microsoft JhengHei', sans-serif; fill: #475569; }
+      .head { font: 700 21px Arial, 'Microsoft JhengHei', sans-serif; fill: #0f172a; }
+      .body { font: 400 17px Arial, 'Microsoft JhengHei', sans-serif; fill: #334155; }
+      .small { font: 400 15px Arial, 'Microsoft JhengHei', sans-serif; fill: #64748b; }
+      .arrow { stroke: #475569; stroke-width: 3; marker-end: url(#arrow); }
+    </style>
+  </defs>
+
+  <rect width="860" height="900" fill="#ffffff"/>
+  <text x="430" y="48" text-anchor="middle" class="title">Day 18｜DQN 和 Double DQN 怎麼公平比較？</text>
+  <text x="430" y="78" text-anchor="middle" class="subtitle">先確認「有沒有學」，再用多個 seed 回答「誰比較好」</text>
+
+  <rect x="110" y="110" width="640" height="105" rx="18" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+  <text x="430" y="145" text-anchor="middle" class="head">① 固定比較條件</text>
+  <text x="430" y="177" text-anchor="middle" class="body">同一個 Breakout Contract v2 · 同一套 CUDA 訓練設定</text>
+  <text x="430" y="202" text-anchor="middle" class="small">主要差別只保留：DQN vs Double DQN 的 target 計算方式</text>
+
+  <line x1="430" y1="215" x2="430" y2="252" class="arrow"/>
+
+  <rect x="110" y="267" width="640" height="105" rx="18" fill="#eff6ff" stroke="#93c5fd" stroke-width="2"/>
+  <text x="430" y="302" text-anchor="middle" class="head">② 100K：先看兩邊有沒有開始學</text>
+  <text x="430" y="334" text-anchor="middle" class="body">確認 learning signal、數值和訓練流程正常</text>
+  <text x="430" y="359" text-anchor="middle" class="small">這一階段不選 winner</text>
+
+  <line x1="430" y1="372" x2="430" y2="409" class="arrow"/>
+
+  <rect x="110" y="424" width="640" height="105" rx="18" fill="#fff7ed" stroke="#fdba74" stroke-width="2"/>
+  <text x="430" y="459" text-anchor="middle" class="head">③ 250K：把訓練拉長</text>
+  <text x="430" y="491" text-anchor="middle" class="body">觀察 100K 的差距是不是只是早期波動</text>
+  <text x="430" y="516" text-anchor="middle" class="small">仍然不靠單次結果下結論</text>
+
+  <line x1="430" y1="529" x2="430" y2="566" class="arrow"/>
+
+  <rect x="110" y="581" width="640" height="120" rx="18" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+  <text x="430" y="616" text-anchor="middle" class="head">④ 500K：正式 multi-seed 比較</text>
+  <text x="430" y="648" text-anchor="middle" class="body">training seeds 11 / 22 / 33</text>
+  <text x="430" y="678" text-anchor="middle" class="body">3 個 DQN　vs　3 個 Double DQN</text>
+
+  <line x1="430" y1="701" x2="430" y2="738" class="arrow"/>
+
+  <rect x="110" y="753" width="640" height="120" rx="18" fill="#ecfdf5" stroke="#86efac" stroke-width="2"/>
+  <text x="430" y="788" text-anchor="middle" class="head">⑤ 固定測試 15 局，再看三組 seed</text>
+  <text x="430" y="820" text-anchor="middle" class="body">seed 11：17.00 &gt; 14.27　·　seed 22：16.27 &gt; 13.00</text>
+  <text x="430" y="850" text-anchor="middle" class="body">seed 33：21.20 &gt; 20.27　→　三組都是 Double DQN 較高</text>
+</svg>

@@ -1,16 +1,8 @@
-flowchart LR
-    A[Contract v2<br/>+ Day 16 backend] --> B[paired manifest]
-    B --> C[100K screening<br/>DQN + Double DQN]
-    C --> D[250K pilot<br/>seed 11 pair]
-    D --> E{pilot gate<br/>correctness / stability / performance}
-    E -- fail --> X[保留 incomplete<br/>禁止 ranking]
-    E -- pass --> F[500K main<br/>seeds 11 / 22 / 33<br/>sequential]
-    F --> G[training metrics<br/>+ CUDA runtime metadata]
-    F --> H[Contract v2 evaluation<br/>epsilon 0 + raw reward]
-    F --> I[fixed probe states<br/>Q / max-Q diagnostics]
-    G --> J[只聚合 completed runs<br/>actual transitions = target]
-    H --> J
-    I --> J
-    J --> K{paired seed<br/>方向一致?}
-    K -- yes --> L[A / B<br/>evidence-supported direction]
-    K -- no --> M[C / D<br/>variance 或 500K 仍不足]
+flowchart TB
+    A["① 固定比較條件<br/>同一個 Breakout Contract v2<br/>同一套 CUDA 訓練設定"]
+    B["② 100K：先看有沒有學<br/>只確認 DQN / Double DQN 都出現 learning signal<br/>不在這裡選 winner"]
+    C["③ 250K：把訓練拉長<br/>觀察早期差距是否還存在<br/>仍然不急著下結論"]
+    D["④ 500K：正式 multi-seed 比較<br/>training seeds 11 / 22 / 33<br/>3 個 DQN vs 3 個 Double DQN"]
+    E["⑤ 每個 checkpoint 固定測 15 局<br/>同一套 evaluation 規則<br/>三組 seed 都是 Double DQN 平均分較高"]
+
+    A --> B --> C --> D --> E
