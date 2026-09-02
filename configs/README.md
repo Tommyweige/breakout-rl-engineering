@@ -23,9 +23,10 @@ This freezes the selected systems path for Day 17+: N=2 vectorized training, str
 ```text
 configs/dqn_baseline.json
 configs/double_dqn_baseline.json
+configs/dueling_double_dqn_baseline.json
 ```
 
-These are algorithm-facing baseline configs. Formal comparisons must keep the task/backend fixed and change only the intended algorithm or architecture variable.
+These are algorithm/architecture-facing baseline configs. `algorithm` selects the Bellman target rule (`dqn` or `double_dqn`), while `architecture` selects the Q-network representation (`standard` or `dueling`). Formal comparisons must keep the task/backend fixed and change only the intended variable.
 
 ## Experiment groups
 
@@ -36,13 +37,6 @@ These are algorithm-facing baseline configs. Formal comparisons must keep the ta
 - `final/` — frozen handoff/final-stage configs from completed experiments.
 - `eval/` — evaluation protocol and environment contract.
 - `training/` — canonical training-system manifests.
-
-## Day 18 paired comparison
-
-`experiments/day18-dqn-vs-double.json` freezes the Day 18 staged protocol:
-100K screening, a seed-11 250K pilot, and a three-seed 500K main comparison.
-The runner derives every stage config from the Day 16 backend manifest, so the
-algorithm is the only within-pair DQN config variable.
 
 ## Day 14 controlled batches
 

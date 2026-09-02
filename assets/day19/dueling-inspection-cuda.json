@@ -1,0 +1,137 @@
+{
+  "schema_version": 1,
+  "seed": 42,
+  "device": "cuda:0",
+  "observation_source": "seeded real Breakout observation under Contract v2",
+  "contract": {
+    "schema_version": 2,
+    "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+    "environment_id": "ALE/Breakout-v5",
+    "frame_skip": 4,
+    "frame_stack": 4,
+    "sticky_action_probability": 0.25,
+    "fire_reset": true,
+    "fire_reset_confirmation": {
+      "max_fire_attempts": 8,
+      "confirmation_steps": 2,
+      "min_observation_change_fraction": 0.0001,
+      "confirmation_operator": "any",
+      "confirmation_signals": [
+        "raw_reward",
+        "observation_activity_streak"
+      ]
+    },
+    "terminal_on_life_loss": false,
+    "time_limit_semantics": {
+      "source": "ale.game_truncated",
+      "max_num_frames_per_episode": 108000,
+      "agent_step_limit": 27000,
+      "truncated_is_finished": true,
+      "external_time_limit_wrapper": false
+    },
+    "concrete_episode_seeds": [
+      101,
+      102,
+      103,
+      104,
+      105,
+      202,
+      203,
+      204,
+      205,
+      206,
+      303,
+      304,
+      305,
+      306,
+      307
+    ],
+    "evaluation_epsilon": 0.0,
+    "raw_reward_rule": "sum environment rewards without clipping"
+  },
+  "checkpoint": "runs/day19-architecture-smoke-20260831d/dueling-seed42/checkpoints/step-00005000.pt",
+  "checkpoint_metadata": {
+    "path": "runs/day19-architecture-smoke-20260831d/dueling-seed42/checkpoints/step-00005000.pt",
+    "step": 5000,
+    "algorithm": "double_dqn",
+    "architecture": "dueling",
+    "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+    "contract_path": "configs/eval/breakout_contract_v2.json"
+  },
+  "model_config": {
+    "algorithm": "double_dqn",
+    "architecture": "dueling",
+    "num_actions": 4,
+    "input_shape": [
+      4,
+      84,
+      84
+    ],
+    "feature_shape": [
+      1,
+      3136
+    ],
+    "hidden_dim": 512,
+    "parameter_count": 3292837
+  },
+  "observation_shape": [
+    4,
+    84,
+    84
+  ],
+  "observation_dtype": "uint8",
+  "model_input_shape": [
+    1,
+    4,
+    84,
+    84
+  ],
+  "feature_shape": [
+    1,
+    3136
+  ],
+  "value_shape": [
+    1,
+    1
+  ],
+  "advantage_shape": [
+    1,
+    4
+  ],
+  "q_shape": [
+    1,
+    4
+  ],
+  "action_meanings": [
+    "NOOP",
+    "FIRE",
+    "RIGHT",
+    "LEFT"
+  ],
+  "value": 0.10537302494049072,
+  "raw_advantage": [
+    0.027566581964492798,
+    0.02792942523956299,
+    0.028718719258904457,
+    0.027928410097956657
+  ],
+  "mean_advantage": 0.028035784140229225,
+  "centered_advantage": [
+    -0.0004692021757364273,
+    -0.00010635890066623688,
+    0.0006829351186752319,
+    -0.00010737404227256775
+  ],
+  "q_values": [
+    0.10490382462739944,
+    0.10526666790246964,
+    0.10605596750974655,
+    0.10526565462350845
+  ],
+  "reconstruction_max_abs_error": 7.450580596923828e-09,
+  "argmax_action_index": 2,
+  "argmax_action_meaning": "RIGHT",
+  "trained_policy_claim": "checkpoint output is an infrastructure/representation smoke result; it is not a model-quality claim",
+  "generation_command": "python -m scripts.analysis.inspect_dueling_network --device cuda --seed 42 --contract configs/eval/breakout_contract_v2.json --checkpoint runs/day19-architecture-smoke-20260831d/dueling-seed42/checkpoints/step-00005000.pt",
+  "source_script": "scripts/analysis/inspect_dueling_network.py"
+}

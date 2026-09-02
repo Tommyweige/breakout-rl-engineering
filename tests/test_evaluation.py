@@ -25,7 +25,7 @@ from breakout_rl.evaluation import (
     summarize_returns,
     write_evaluation_artifacts,
 )
-from breakout_rl.models import DQNNetwork
+from breakout_rl.models import DQNNetwork, DuelingDQNNetwork
 from breakout_rl.evaluation_artifacts import validate_episode_rows
 from breakout_rl.evaluation_artifacts import read_evaluation_results
 from breakout_rl.training.config import DQNConfig
@@ -474,6 +474,7 @@ class EvaluationTests(unittest.TestCase):
             torch.save(
                 {
                     "format_version": 1,
+                    "trainer": "dqn",
                     "online_network": model.state_dict(),
                     "config": DQNConfig(
                         total_steps=100_000,
@@ -495,6 +496,56 @@ class EvaluationTests(unittest.TestCase):
         self.assertEqual(loaded.model_id, "day14-run@step-00100000")
         self.assertEqual(loaded.checkpoint_metadata["step"], 100_000)
         self.assertEqual(loaded.training_metadata["training_seed"], 42)
+        self.assertEqual(loaded.checkpoint_metadata["architecture"], "standard")
+
+    def test_dueling_checkpoint_loader_uses_recorded_architecture(self) -> None:
+        model = DuelingDQNNetwork(num_actions=4).cpu()
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            checkpoint_path = (
+                Path(temporary_directory)
+                / "dueling-run"
+                / "checkpoints"
+                / "step-00000008.pt"
+            )
+            checkpoint_path.parent.mkdir(parents=True)
+            torch.save(
+                {
+                    "format_version": 2,
+                    "algorithm": "double_dqn",
+                    "architecture": "dueling",
+                    "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+                    "contract_path": "configs/eval/breakout_contract_v2.json",
+                    "model_config": {
+                        "architecture": "dueling",
+                        "num_actions": 4,
+                        "input_shape": [4, 84, 84],
+                        "hidden_dim": 512,
+                    },
+                    "online_network": model.state_dict(),
+                    "config": DQNConfig(
+                        total_steps=8,
+                        algorithm="double_dqn",
+                        architecture="dueling",
+                        device="cpu",
+                    ).to_dict(),
+                    "global_step": 8,
+                },
+                checkpoint_path,
+            )
+
+            loaded = load_dqn_checkpoint(
+                checkpoint_path,
+                device="cpu",
+                env_factory=ScriptedEvaluationEnv,
+            )
+
+        self.assertIsInstance(loaded.model, DuelingDQNNetwork)
+        self.assertEqual(loaded.training_metadata["algorithm"], "double_dqn")
+        self.assertEqual(loaded.training_metadata["architecture"], "dueling")
+        self.assertEqual(
+            loaded.training_metadata["contract_id"],
+            "day15-breakout-evaluation-v2-fire-reset",
+        )
 
     def test_report_recomputes_statistics_and_visualization_uses_artifacts(self) -> None:
         random_result = evaluate_policy(

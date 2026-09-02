@@ -24,7 +24,7 @@ import torch
 from torch import nn
 
 from breakout_env import ENVIRONMENT_ID, make_breakout_env
-from breakout_rl.models.dqn import DQNNetwork
+from breakout_rl.models.factory import build_q_network, checkpoint_architecture
 from breakout_rl.tensors import observation_to_tensor
 from breakout_rl.experiments import load_experiment_config
 from breakout_rl.evaluation_artifacts import (
@@ -953,16 +953,9 @@ def load_dqn_checkpoint(
     if not isinstance(state_dict, Mapping):
         raise ValueError("checkpoint does not contain an online_network state_dict")
     saved_config = payload.get("config", {})
-    if not isinstance(saved_config, dict):
+    if not isinstance(saved_config, Mapping):
         raise ValueError("checkpoint config must be a mapping")
-    saved_environment_contract = payload.get("environment_contract")
-    if saved_environment_contract is None and isinstance(payload.get("metadata"), Mapping):
-        saved_environment_contract = payload["metadata"].get("environment_contract")
-    if saved_environment_contract is not None and not isinstance(
-        saved_environment_contract,
-        Mapping,
-    ):
-        raise ValueError("checkpoint environment_contract must be a mapping")
+    saved_config = dict(saved_config)
 
     env = env_factory()
     try:
@@ -976,11 +969,45 @@ def load_dqn_checkpoint(
     model_config = payload.get("model_config", {})
     if not isinstance(model_config, Mapping):
         model_config = {}
-    hidden_dim = _integer(model_config.get("hidden_dim", 512), name="model hidden_dim", minimum=1)
+
+    saved_action_count = model_config.get("num_actions")
+    if saved_action_count is not None:
+        saved_action_count = _integer(
+            saved_action_count,
+            name="model num_actions",
+            minimum=1,
+        )
+        if saved_action_count != action_count:
+            raise ValueError(
+                "checkpoint model action count does not match the evaluation environment"
+            )
+
+    raw_input_shape = model_config.get("input_shape", observation_shape)
+    if isinstance(raw_input_shape, (str, bytes)) or not isinstance(raw_input_shape, Sequence):
+        raise ValueError("checkpoint model input_shape must be a sequence")
     try:
-        model = DQNNetwork(
-            action_count,
-            input_shape=observation_shape,  # type: ignore[arg-type]
+        saved_input_shape = tuple(
+            _integer(value, name="model input dimension", minimum=1)
+            for value in raw_input_shape
+        )
+    except (TypeError, ValueError) as error:
+        raise ValueError("checkpoint model input_shape is invalid") from error
+    if saved_input_shape != observation_shape:
+        raise ValueError(
+            "checkpoint model input shape does not match the evaluation environment"
+        )
+
+    hidden_dim = _integer(
+        512 if model_config.get("hidden_dim") is None else model_config.get("hidden_dim"),
+        name="model hidden_dim",
+        minimum=1,
+    )
+    architecture = checkpoint_architecture(payload)
+    try:
+        model = build_q_network(
+            architecture,
+            num_actions=action_count,
+            input_shape=saved_input_shape,  # type: ignore[arg-type]
             hidden_dim=hidden_dim,
         ).to(resolved_device)
         model.load_state_dict(state_dict, strict=True)
@@ -997,13 +1024,13 @@ def load_dqn_checkpoint(
         if source_day14_manifest is not None
         else None
     )
+    runtime_payload = payload.get("runtime", {})
+    if not isinstance(runtime_payload, Mapping):
+        runtime_payload = {}
     training_metadata: dict[str, Any] = {
         "source_day14_run_id": source_run_id,
         "algorithm": payload.get("algorithm", saved_config.get("algorithm", "dqn")),
-        "architecture": payload.get(
-            "architecture",
-            model_config.get("architecture", "standard"),
-        ),
+        "architecture": architecture,
         "num_envs": payload.get("num_envs", saved_config.get("num_envs", 1)),
         "training_seed": saved_config.get("seed"),
         "training_budget": saved_config.get("total_steps"),
@@ -1015,15 +1042,13 @@ def load_dqn_checkpoint(
             saved_config.get("replay_backend", "cpu"),
         ),
         "training_device": saved_config.get("device"),
+        "device": payload.get("device", runtime_payload.get("device")),
         "training_precision": saved_config.get("precision"),
         "training_config": dict(saved_config),
-        "config_reference": None,
+        "config_reference": payload.get("contract_path", saved_config.get("contract_path")),
+        "contract_id": payload.get("contract_id", saved_config.get("contract_id")),
+        "contract_path": payload.get("contract_path", saved_config.get("contract_path")),
         "source_day14_manifest": manifest_value,
-        "environment_contract": (
-            dict(saved_environment_contract)
-            if isinstance(saved_environment_contract, Mapping)
-            else None
-        ),
     }
     checkpoint_metadata: dict[str, Any] = {
         "path": _repository_path(checkpoint_path),
@@ -1033,10 +1058,9 @@ def load_dqn_checkpoint(
         "source_day14_manifest": manifest_value,
         "format_version": payload.get("format_version"),
         "algorithm": payload.get("algorithm", saved_config.get("algorithm", "dqn")),
-        "architecture": payload.get(
-            "architecture",
-            model_config.get("architecture", "standard"),
-        ),
+        "architecture": architecture,
+        "contract_id": payload.get("contract_id", saved_config.get("contract_id")),
+        "contract_path": payload.get("contract_path", saved_config.get("contract_path")),
         "num_envs": payload.get("num_envs", saved_config.get("num_envs", 1)),
         "replay_backend": payload.get(
             "replay_backend",
@@ -1045,16 +1069,14 @@ def load_dqn_checkpoint(
         "training_steps": payload.get("training_steps", payload.get("global_step")),
         "model_config": {
             "num_actions": action_count,
-            "input_shape": list(observation_shape),
+            "input_shape": list(saved_input_shape),
             "hidden_dim": hidden_dim,
+            "architecture": architecture,
+            "parameter_count": sum(parameter.numel() for parameter in model.parameters()),
         },
         "requested_device": requested_device,
+        "device": payload.get("device", str(resolved_device)),
         "resolved_device": str(resolved_device),
-        "environment_contract": (
-            dict(saved_environment_contract)
-            if isinstance(saved_environment_contract, Mapping)
-            else None
-        ),
     }
     return LoadedDQNCheckpoint(
         model=model,

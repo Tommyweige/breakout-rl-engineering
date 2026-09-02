@@ -490,44 +490,40 @@ def _git_commit_sha(path: Path) -> str:
     return value or "unavailable"
 
 
-def _git_worktree_metadata(path: Path) -> dict[str, Any]:
-    """Return best-effort tracked worktree provenance for a run directory."""
+def _git_worktree_provenance(path: Path) -> tuple[bool | None, str | None]:
+    """Return tracked-worktree dirtiness and a reproducible diff digest."""
 
-    unavailable = {
-        "git_dirty": None,
-        "git_diff_sha256": None,
-        "git_diff_scope": "tracked files changed relative to HEAD; untracked files excluded",
-    }
     try:
-        status = subprocess.run(
-            [
-                "git",
-                "-C",
-                str(path),
-                "status",
-                "--porcelain=v1",
-                "--untracked-files=all",
-            ],
+        root_result = subprocess.run(
+            ["git", "-C", str(path), "rev-parse", "--show-toplevel"],
             check=False,
             capture_output=True,
             text=True,
             timeout=2,
         )
-        diff = subprocess.run(
-            ["git", "-C", str(path), "diff", "--binary", "HEAD", "--"],
+        if root_result.returncode != 0:
+            return None, None
+        root = root_result.stdout.strip()
+        if not root:
+            return None, None
+        status_result = subprocess.run(
+            ["git", "-C", root, "status", "--porcelain", "--untracked-files=all"],
             check=False,
             capture_output=True,
+            text=True,
             timeout=2,
         )
+        diff_result = subprocess.run(
+            ["git", "-C", root, "diff", "--binary", "HEAD"],
+            check=False,
+            capture_output=True,
+            timeout=5,
+        )
     except (OSError, subprocess.SubprocessError):
-        return unavailable
-    if status.returncode != 0 or diff.returncode != 0:
-        return unavailable
-    return {
-        "git_dirty": bool(status.stdout.strip()),
-        "git_diff_sha256": hashlib.sha256(diff.stdout).hexdigest(),
-        "git_diff_scope": "tracked files changed relative to HEAD; untracked files excluded",
-    }
+        return None, None
+    if status_result.returncode != 0 or diff_result.returncode != 0:
+        return None, None
+    return bool(status_result.stdout), hashlib.sha256(diff_result.stdout).hexdigest()
 
 
 def _nvidia_smi_sample(device_index: int | None) -> dict[str, Any]:
@@ -630,6 +626,7 @@ def collect_runtime_metadata(
             cuda_peak_reserved_bytes = None
 
     gpu_sample = _nvidia_smi_sample(cuda_device_index if cuda_available else None)
+    git_dirty, git_diff_sha256 = _git_worktree_provenance(Path(run_dir))
     try:
         cpu_thread_count = int(torch.get_num_threads())
     except Exception:
@@ -667,7 +664,8 @@ def collect_runtime_metadata(
         "steps_per_second": None,
         "seed": int(seed),
         "git_commit_sha": _git_commit_sha(Path(run_dir)),
-        **_git_worktree_metadata(Path(run_dir)),
+        "git_dirty": git_dirty,
+        "git_diff_sha256": git_diff_sha256,
     }
     if extra:
         metadata.update(dict(extra))

@@ -6,10 +6,7 @@ import argparse
 import csv
 import json
 import math
-import multiprocessing
 from pathlib import Path
-import queue
-import sys
 from typing import Any, Iterable, Mapping, Sequence
 
 from breakout_rl.training.diagnostics import (
@@ -58,38 +55,87 @@ def _plot_metric(
     ylabel: str,
     output_path: Path,
 ) -> None:
-    import matplotlib
+    from PIL import Image, ImageDraw, ImageFont
 
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
+    def font(size: int) -> ImageFont.ImageFont:
+        for candidate in (
+            Path("C:/Windows/Fonts/segoeui.ttf"),
+            Path("C:/Windows/Fonts/arial.ttf"),
+            Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
+        ):
+            if candidate.exists():
+                return ImageFont.truetype(str(candidate), size=size)
+        return ImageFont.load_default()
 
-    figure, axis = plt.subplots(figsize=(8, 4.5), dpi=150)
-    plotted = False
+    canvas = Image.new("RGB", (1200, 675), (255, 255, 255))
+    draw = ImageDraw.Draw(canvas)
+    title_font = font(24)
+    label_font = font(15)
+    small_font = font(12)
+    plot_left, plot_top, plot_right, plot_bottom = 95, 72, 1160, 585
+    series: list[tuple[str, list[float], list[float]]] = []
     for field, label in fields:
         x_values, y_values = _paired_series(rows, "global_step", field)
-        if not y_values:
-            continue
-        axis.plot(x_values, y_values, linewidth=1.2, label=label)
-        plotted = True
+        if y_values:
+            series.append((label, x_values, y_values))
 
-    axis.set_title(title)
-    axis.set_xlabel("Environment step")
-    axis.set_ylabel(ylabel)
-    axis.grid(True, alpha=0.25)
-    if plotted and len(fields) > 1:
-        axis.legend()
-    if not plotted:
-        axis.text(
-            0.5,
-            0.5,
-            "No finite samples in metrics.csv",
-            ha="center",
-            va="center",
-            transform=axis.transAxes,
+    draw.text((plot_left, 22), title, font=title_font, fill=(17, 24, 39))
+    draw.text((plot_left, plot_bottom + 38), "Environment step", font=label_font, fill=(55, 65, 81))
+    draw.text((18, plot_top), ylabel, font=label_font, fill=(55, 65, 81))
+    if not series:
+        draw.rectangle((plot_left, plot_top, plot_right, plot_bottom), outline=(156, 163, 175), width=2)
+        message = "No finite samples in metrics.csv"
+        bbox = draw.textbbox((0, 0), message, font=label_font)
+        draw.text(
+            ((plot_left + plot_right - bbox[2]) // 2, (plot_top + plot_bottom - bbox[3]) // 2),
+            message,
+            font=label_font,
+            fill=(75, 85, 99),
         )
-    figure.tight_layout()
-    figure.savefig(output_path, format="png")
-    plt.close(figure)
+        canvas.save(output_path, format="PNG", optimize=True)
+        return
+
+    all_x = [value for _label, x_values, _y_values in series for value in x_values]
+    all_y = [value for _label, _x_values, y_values in series for value in y_values]
+    x_min, x_max = min(all_x), max(all_x)
+    y_min, y_max = min(all_y), max(all_y)
+    if x_min == x_max:
+        x_min -= 1.0
+        x_max += 1.0
+    y_padding = max((y_max - y_min) * 0.08, 1e-6)
+    y_min -= y_padding
+    y_max += y_padding
+    if y_min <= 0.0 <= y_max:
+        zero_y = plot_bottom - (0.0 - y_min) / (y_max - y_min) * (plot_bottom - plot_top)
+    else:
+        zero_y = None
+    for index in range(6):
+        fraction = index / 5
+        y = int(plot_top + fraction * (plot_bottom - plot_top))
+        draw.line((plot_left, y, plot_right, y), fill=(229, 231, 235), width=1)
+        tick = y_max - fraction * (y_max - y_min)
+        draw.text((plot_left - 75, y - 8), f"{tick:.2g}", font=small_font, fill=(107, 114, 128))
+    draw.rectangle((plot_left, plot_top, plot_right, plot_bottom), outline=(107, 114, 128), width=2)
+    if zero_y is not None:
+        draw.line((plot_left, int(zero_y), plot_right, int(zero_y)), fill=(156, 163, 175), width=1)
+    colors = ((37, 99, 235), (220, 38, 38), (22, 163, 74), (124, 58, 237), (234, 88, 12))
+    for series_index, (label, x_values, y_values) in enumerate(series):
+        points = []
+        for x_value, y_value in zip(x_values, y_values):
+            x = plot_left + (x_value - x_min) / (x_max - x_min) * (plot_right - plot_left)
+            y = plot_bottom - (y_value - y_min) / (y_max - y_min) * (plot_bottom - plot_top)
+            points.append((int(x), int(y)))
+        if len(points) == 1:
+            x, y = points[0]
+            draw.ellipse((x - 4, y - 4, x + 4, y + 4), fill=colors[series_index % len(colors)])
+        else:
+            draw.line(points, fill=colors[series_index % len(colors)], width=2, joint="curve")
+        legend_x = plot_left + series_index * 180
+        draw.rectangle((legend_x, plot_top - 35, legend_x + 14, plot_top - 21), fill=colors[series_index % len(colors)])
+        draw.text((legend_x + 20, plot_top - 38), label, font=small_font, fill=(55, 65, 81))
+    draw.text((plot_left - 5, plot_bottom + 8), f"{x_min:.0f}", font=small_font, fill=(107, 114, 128))
+    draw.text((plot_right - 35, plot_bottom + 8), f"{x_max:.0f}", font=small_font, fill=(107, 114, 128))
+    canvas.save(output_path, format="PNG", optimize=True)
 
 
 def _write_plots_local(
@@ -153,45 +199,14 @@ def _write_plots_local(
     return paths
 
 
-def _plot_worker(
-    rows: list[dict[str, Any]],
-    output_dir: str,
-    result_queue: Any,
-) -> None:
-    try:
-        result_queue.put({"paths": _write_plots_local(rows, output_dir)})
-    except Exception as error:  # pragma: no cover - exercised in child process
-        result_queue.put({"error": f"{type(error).__name__}: {error}"})
-
-
 def write_plots(
     rows: Iterable[Mapping[str, Any]],
     output_dir: str | Path,
 ) -> dict[str, str]:
-    """Render plots, isolating Matplotlib from an already-loaded PyTorch DLL."""
+    """Render evidence plots without importing a second numerical runtime."""
 
     materialized = [dict(row) for row in rows]
-    destination = str(Path(output_dir))
-    if "torch" not in sys.modules:
-        return _write_plots_local(materialized, destination)
-
-    context = multiprocessing.get_context("spawn")
-    result_queue = context.Queue()
-    process = context.Process(
-        target=_plot_worker,
-        args=(materialized, destination, result_queue),
-    )
-    process.start()
-    process.join()
-    try:
-        result = result_queue.get(timeout=5)
-    except queue.Empty:
-        result = None
-    result_queue.close()
-    if process.exitcode != 0 or not isinstance(result, dict) or "error" in result:
-        error = result.get("error") if isinstance(result, dict) else "unknown plotting error"
-        raise RuntimeError(f"plot worker failed: {error}")
-    return result["paths"]
+    return _write_plots_local(materialized, Path(output_dir))
 
 
 def analyze_run(

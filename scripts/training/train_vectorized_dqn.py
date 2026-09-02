@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 from datetime import datetime, timezone
 from pathlib import Path
@@ -29,6 +28,12 @@ def build_parser() -> argparse.ArgumentParser:
         choices=("dqn", "double_dqn"),
         default=None,
         help="target rule to train (default: dqn)",
+    )
+    parser.add_argument(
+        "--architecture",
+        choices=("standard", "dueling"),
+        default=None,
+        help="Q-network representation (default: standard)",
     )
     parser.add_argument(
         "--config",
@@ -99,23 +104,32 @@ def _config_from_args(args: argparse.Namespace) -> DQNConfig:
         raw_config = loaded.get("training_config", loaded)
         if not isinstance(raw_config, Mapping):
             raise ValueError("training_config must be a JSON object")
+        raw_config = dict(raw_config)
+        if "architecture" not in raw_config and "architecture" in loaded:
+            raw_config["architecture"] = loaded["architecture"]
         base = DQNConfig.from_dict(raw_config)
     elif use_day17_smoke_preset:
-        base = DQNConfig.day17_smoke(device=args.device or "cuda")
+        base = DQNConfig.day17_smoke(
+            device=args.device or "cuda",
+            architecture=args.architecture or "standard",
+        )
     elif args.preset == "debug":
         base = DQNConfig.debug(
             device=args.device or "cuda",
             algorithm=args.algorithm or "dqn",
+            architecture=args.architecture or "standard",
         )
     elif args.preset == "smoke":
         base = DQNConfig.smoke(
             device=args.device or "cpu",
             algorithm=args.algorithm or "dqn",
+            architecture=args.architecture or "standard",
         )
     else:
         base = DQNConfig(
             device=args.device or "cpu",
             algorithm=args.algorithm or "dqn",
+            architecture=args.architecture or "standard",
             num_envs=4,
         )
 
@@ -128,6 +142,7 @@ def _config_from_args(args: argparse.Namespace) -> DQNConfig:
         "total_steps",
         "seed",
         "device",
+        "architecture",
         "replay_backend",
         "batch_size",
         "replay_capacity",
@@ -148,6 +163,8 @@ def _config_from_args(args: argparse.Namespace) -> DQNConfig:
         overrides["strict_action_selection_parity"] = True
     if args.algorithm is not None:
         overrides["algorithm"] = args.algorithm
+    if args.config is not None:
+        overrides["contract_path"] = _config_contract_path(args).as_posix()
     return base.with_overrides(**overrides)
 
 
@@ -170,7 +187,10 @@ def _run_path(args: argparse.Namespace, config: DQNConfig) -> Path:
     if args.run_id is None:
         timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
         preset_name = args.preset or "development"
-        day_prefix = "day17" if config.algorithm == "double_dqn" else "day16"
+        if config.architecture == "dueling":
+            day_prefix = "day19"
+        else:
+            day_prefix = "day17" if config.algorithm == "double_dqn" else "day16"
         run_id = (
             f"{day_prefix}-{preset_name}-envs{config.num_envs}-seed{config.seed}-"
             f"{timestamp}"
@@ -182,28 +202,18 @@ def _run_path(args: argparse.Namespace, config: DQNConfig) -> Path:
     return root / run_id
 
 
-def _contract_provenance(
-    contract_path: Path,
-    contract: BreakoutEvaluationContractV2,
-) -> dict[str, Any]:
-    """Return the contract identity and full semantics stored in run artifacts."""
-
-    return {
-        "contract_id": contract.contract_id,
-        "contract_path": contract_path.as_posix(),
-        "contract_sha256": hashlib.sha256(contract_path.read_bytes()).hexdigest(),
-        "semantics": contract.to_dict(),
-    }
-
-
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
         config = _config_from_args(args)
-        run_path = _run_path(args, config)
         contract_path = _config_contract_path(args)
         contract: BreakoutEvaluationContractV2 | None = load_evaluation_contract(contract_path)
         validate_breakout_runtime_contract(contract)
+        config = config.with_overrides(
+            contract_id=contract.contract_id,
+            contract_path=contract_path.as_posix(),
+        )
+        run_path = _run_path(args, config)
     except (TypeError, ValueError, FileNotFoundError) as error:
         print(f"Invalid vectorized training configuration: {error}")
         return 2
@@ -213,12 +223,7 @@ def main(argv: list[str] | None = None) -> int:
         **breakout_environment_kwargs(contract),
     )
     try:
-        trainer = VectorizedDQNTrainer(
-            env,
-            config,
-            run_dir=run_path,
-            environment_contract=_contract_provenance(contract_path, contract),
-        )
+        trainer = VectorizedDQNTrainer(env, config, run_dir=run_path)
         summary = trainer.train()
     except (RuntimeError, ValueError) as error:
         print(f"Vectorized training could not start or was stopped: {error}")

@@ -13,6 +13,7 @@ import torch
 from torch import nn
 
 from breakout_rl.replay_gpu import GPUReplayBuffer
+from breakout_rl.models import DuelingDQNNetwork
 from breakout_rl.training.config import DQNConfig
 from breakout_rl.training.dqn_trainer import DQNTrainer, TrainingStepSnapshot
 
@@ -412,6 +413,45 @@ class DQNTrainerTests(unittest.TestCase):
         self.assertEqual(payload["num_envs"], 1)
         self.assertEqual(payload["replay_backend"], "cpu")
         self.assertEqual(saved_config["algorithm"], "double_dqn")
+
+    def test_dueling_network_is_selected_and_checkpoint_metadata_is_reconstructable(self) -> None:
+        config = DQNConfig(
+            algorithm="double_dqn",
+            architecture="dueling",
+            total_steps=4,
+            batch_size=2,
+            replay_capacity=8,
+            learning_starts=2,
+            train_frequency=2,
+            target_update_interval=4,
+            checkpoint_interval=4,
+            device="cpu",
+            contract_id="day15-breakout-evaluation-v2-fire-reset",
+            contract_path="configs/eval/breakout_contract_v2.json",
+        )
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            run_dir = Path(temporary_directory) / "dueling-dqn"
+            trainer = DQNTrainer(
+                ShortEpisodeEnv(),
+                config,
+                run_dir=run_dir,
+            )
+            summary = trainer.train()
+            checkpoint = next((run_dir / "checkpoints").glob("*.pt"))
+            payload = torch.load(checkpoint, map_location="cpu", weights_only=False)
+            saved_config = json.loads((run_dir / "config.json").read_text(encoding="utf-8"))
+
+        self.assertIsInstance(trainer.online_network, DuelingDQNNetwork)
+        self.assertEqual(summary["algorithm"], "double_dqn")
+        self.assertEqual(summary["architecture"], "dueling")
+        self.assertEqual(summary["model_config"]["num_actions"], 2)
+        self.assertEqual(summary["model_config"]["input_shape"], [4, 84, 84])
+        self.assertEqual(payload["architecture"], "dueling")
+        self.assertEqual(payload["model_config"]["architecture"], "dueling")
+        self.assertEqual(payload["contract_id"], config.contract_id)
+        self.assertEqual(payload["contract_path"], config.contract_path)
+        self.assertEqual(saved_config["architecture"], "dueling")
 
     def test_single_trainer_preserves_requested_and_executed_fire_actions(self) -> None:
         class FireOverrideEnv(ShortEpisodeEnv):

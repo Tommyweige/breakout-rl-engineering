@@ -406,7 +406,7 @@ Day 16～20 會先改善訓練系統，再比較 DQN 變體：
 
 * Vectorized DQN Training
 * Double DQN
-* Dueling Network
+* [Dueling Network](docs/day19-dueling-network-architecture.md)
 * 不同 DQN 的實驗比較
 
 看看修改演算法之後，實際結果到底差多少。

@@ -398,7 +398,7 @@ Backend
 * Day 16 — [Vectorized DQN Training：多環境、批次 action inference 與批次 GPU Replay](docs/day16-vectorized-dqn-training.md)
 * Day 17 — [Q-value overestimation 與 Double DQN](docs/day17-q-overestimation-and-double-dqn.md)
 * Day 18 — DQN vs. Double DQN
-* Day 19 — Dueling Network Architecture
+* Day 19 — [Dueling Network Architecture：把 State Value 與 Action Advantage 分開學](docs/day19-dueling-network-architecture.md)
 * Day 20 — 完整 DQN family comparison
 
 ### Phase 4 — AI Engineering

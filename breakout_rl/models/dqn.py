@@ -15,6 +15,8 @@ DEFAULT_HIDDEN_DIM: Final[int] = 512
 class DQNNetwork(nn.Module):
     """Map normalized stacked Atari frames to one raw Q-value per action."""
 
+    architecture = "standard"
+
     def __init__(
         self,
         num_actions: int,

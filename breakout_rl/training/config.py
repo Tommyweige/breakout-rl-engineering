@@ -8,6 +8,8 @@ from dataclasses import asdict, dataclass, fields, replace
 from numbers import Integral, Real
 from typing import Any, Mapping
 
+from breakout_rl.models.factory import SUPPORTED_ARCHITECTURES, normalize_architecture
+
 
 SUPPORTED_ALGORITHMS = ("dqn", "double_dqn")
 
@@ -112,6 +114,7 @@ class DQNConfig:
     total_steps: int = 10_000
     seed: int = 42
     algorithm: str = "dqn"
+    architecture: str = "standard"
     gamma: float = 0.99
     learning_rate: float = 1e-4
     batch_size: int = 32
@@ -135,6 +138,8 @@ class DQNConfig:
     profile_stages: bool = False
     num_envs: int = 1
     strict_action_selection_parity: bool = False
+    contract_id: str | None = None
+    contract_path: str | None = None
 
     def __post_init__(self) -> None:
         _validated_int(self.total_steps, name="total_steps", minimum=1)
@@ -143,6 +148,11 @@ class DQNConfig:
             self,
             "algorithm",
             normalize_algorithm(self.algorithm),
+        )
+        object.__setattr__(
+            self,
+            "architecture",
+            normalize_architecture(self.architecture),
         )
 
         _probability(self.gamma, name="gamma")
@@ -211,6 +221,10 @@ class DQNConfig:
         _validated_int(self.num_envs, name="num_envs", minimum=1)
         if not isinstance(self.strict_action_selection_parity, bool):
             raise TypeError("strict_action_selection_parity must be a boolean")
+        for name in ("contract_id", "contract_path"):
+            value = getattr(self, name)
+            if value is not None and (not isinstance(value, str) or not value.strip()):
+                raise ValueError(f"{name} must be a non-empty string or None")
         object.__setattr__(
             self,
             "replay_transfer",
@@ -236,12 +250,14 @@ class DQNConfig:
         total_steps: int = 1_000,
         device: str = "cpu",
         algorithm: str = "dqn",
+        architecture: str = "standard",
     ) -> "DQNConfig":
         """Return a small preset that still executes the real update order."""
 
         return cls(
             total_steps=total_steps,
             algorithm=algorithm,
+            architecture=architecture,
             batch_size=8,
             replay_capacity=256,
             learning_starts=32,
@@ -259,6 +275,7 @@ class DQNConfig:
         total_steps: int = 10_000,
         device: str = "cuda",
         algorithm: str = "dqn",
+        architecture: str = "standard",
     ) -> "DQNConfig":
         """Return the CUDA-first diagnostic run with frequent checkpoints.
 
@@ -269,6 +286,7 @@ class DQNConfig:
         return cls(
             total_steps=total_steps,
             algorithm=algorithm,
+            architecture=architecture,
             batch_size=32,
             replay_capacity=10_000,
             learning_starts=1_000,
@@ -286,6 +304,7 @@ class DQNConfig:
         total_steps: int = 10_000,
         device: str = "cuda",
         algorithm: str = "double_dqn",
+        architecture: str = "standard",
     ) -> "DQNConfig":
         """Return the Day 17 canonical N=2 CUDA/GPU-Replay smoke config."""
 
@@ -293,6 +312,7 @@ class DQNConfig:
             total_steps=total_steps,
             seed=42,
             algorithm=algorithm,
+            architecture=architecture,
             gamma=0.99,
             learning_rate=1e-4,
             batch_size=32,
@@ -344,4 +364,10 @@ class DQNConfig:
         return replace(self, **overrides)
 
 
-__all__ = ["DQNConfig", "SUPPORTED_ALGORITHMS", "normalize_algorithm"]
+__all__ = [
+    "DQNConfig",
+    "SUPPORTED_ALGORITHMS",
+    "SUPPORTED_ARCHITECTURES",
+    "normalize_algorithm",
+    "normalize_architecture",
+]

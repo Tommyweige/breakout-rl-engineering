@@ -71,6 +71,17 @@ class DQNConfigTests(unittest.TestCase):
 
         self.assertEqual(config.algorithm, "double_dqn")
 
+    def test_cli_can_select_dueling_architecture_independently(self) -> None:
+        args = build_parser().parse_args(
+            ["--algorithm", "double_dqn", "--architecture", "dueling", "--device", "cpu"]
+        )
+
+        config = _config_from_args(args)
+
+        self.assertEqual(config.algorithm, "double_dqn")
+        self.assertEqual(config.architecture, "dueling")
+        self.assertEqual(config.contract_path, "configs/eval/breakout_contract_v2.json")
+
     def test_day17_vectorized_smoke_preset_uses_canonical_backend(self) -> None:
         args = build_vectorized_parser().parse_args(
             ["--preset", "smoke", "--algorithm", "double_dqn", "--device", "cuda"]

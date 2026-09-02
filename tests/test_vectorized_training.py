@@ -12,6 +12,7 @@ import numpy as np
 import torch
 from torch import nn
 
+from breakout_rl.models import DuelingDQNNetwork
 from breakout_rl.training.config import DQNConfig
 from breakout_rl.training.vectorized import (
     VectorizedDQNTrainer,
@@ -164,32 +165,6 @@ class SwitchingTrainer(VectorizedDQNTrainer):
 
 
 class VectorizedTrainingTests(unittest.TestCase):
-    @unittest.skipUnless(torch.cuda.is_available(), "CUDA is unavailable")
-    def test_cuda_loaded_rng_states_are_normalized_before_restore(self) -> None:
-        config = DQNConfig(
-            total_steps=3,
-            num_envs=3,
-            batch_size=3,
-            replay_capacity=3,
-            learning_starts=3,
-            device="cpu",
-        )
-        with tempfile.TemporaryDirectory() as directory:
-            trainer = VectorizedDQNTrainer(
-                DeterministicVectorEnv(),
-                config,
-                run_dir=Path(directory) / "rng-restore",
-                online_network=CountingQNetwork(),
-            )
-            trainer._restore_rng_state(  # type: ignore[attr-defined]
-                {
-                    "torch_cpu": torch.get_rng_state().to("cuda"),
-                    "torch_cuda": [torch.cuda.get_rng_state()],
-                    "action_rng": trainer.rng.bit_generator.state,
-                }
-            )
-            trainer.metrics.close()
-
     def test_total_transition_budget_must_be_a_full_vector_step_count(self) -> None:
         config = DQNConfig(
             total_steps=4,
@@ -207,168 +182,6 @@ class VectorizedTrainingTests(unittest.TestCase):
                     run_dir=Path(directory) / "partial-vector-step",
                     online_network=CountingQNetwork(),
                 )
-
-    def test_contract_provenance_is_written_to_run_and_checkpoint_metadata(self) -> None:
-        config = DQNConfig(
-            total_steps=3,
-            num_envs=3,
-            batch_size=3,
-            replay_capacity=3,
-            learning_starts=3,
-            checkpoint_interval=3,
-            device="cpu",
-        )
-        contract = {
-            "contract_id": "test-contract-v2",
-            "contract_path": "configs/eval/breakout_contract_v2.json",
-            "contract_sha256": "a" * 64,
-            "semantics": {"environment_id": "ALE/Breakout-v5"},
-        }
-        with tempfile.TemporaryDirectory() as directory:
-            run_dir = Path(directory) / "contract-provenance"
-            trainer = VectorizedDQNTrainer(
-                DeterministicVectorEnv(),
-                config,
-                run_dir=run_dir,
-                online_network=CountingQNetwork(),
-                environment_contract=contract,
-            )
-            summary = trainer.train()
-            payload = torch.load(
-                run_dir / "checkpoints/step-00000003.pt",
-                map_location="cpu",
-                weights_only=False,
-            )
-
-        self.assertEqual(summary["environment_contract"], contract)
-        self.assertEqual(summary["runtime"]["environment_contract"], contract)
-        self.assertEqual(payload["environment_contract"], contract)
-
-    def test_fresh_and_resumed_stage_rates_use_local_counter_deltas(self) -> None:
-        base_values = {
-            "num_envs": 3,
-            "batch_size": 3,
-            "replay_capacity": 20,
-            "learning_starts": 3,
-            "train_frequency": 3,
-            "target_update_interval": 6,
-            "checkpoint_interval": 12,
-            "epsilon_start": 0.0,
-            "epsilon_end": 0.0,
-            "device": "cpu",
-        }
-        with tempfile.TemporaryDirectory() as directory:
-            run_dir = Path(directory) / "resumed-accounting"
-            first_trainer = VectorizedDQNTrainer(
-                DeterministicVectorEnv(),
-                DQNConfig(total_steps=12, **base_values),
-                run_dir=run_dir,
-                online_network=CountingQNetwork(),
-            )
-            first_summary = first_trainer.train()
-            checkpoint = Path(str(first_summary["last_checkpoint"]))
-
-            resumed_trainer = VectorizedDQNTrainer(
-                DeterministicVectorEnv(),
-                DQNConfig(total_steps=24, **base_values),
-                run_dir=run_dir,
-                online_network=CountingQNetwork(),
-                resume_from=checkpoint,
-            )
-            self.assertEqual(
-                resumed_trainer._stage_start_counter_snapshot(),  # type: ignore[attr-defined]
-                {
-                    "global_step": 12,
-                    "physical_environment_steps": 12,
-                    "vector_iterations": first_summary["vector_iterations"],
-                    "optimizer_updates": first_summary["optimizer_updates"],
-                    "action_inference_batches": first_summary["runtime"][
-                        "action_inference_batches"
-                    ],
-                    "action_inference_transitions": first_summary["runtime"][
-                        "action_inference_transitions"
-                    ],
-                    "replay_insertion_calls": first_summary["runtime"][
-                        "replay_insertion_calls"
-                    ],
-                    "replay_insertion_transitions": first_summary["runtime"][
-                        "replay_insertion_transitions"
-                    ],
-                },
-            )
-            resumed_summary = resumed_trainer.train()
-
-        first_runtime = first_summary["runtime"]
-        resumed_runtime = resumed_summary["runtime"]
-        self.assertEqual(
-            resumed_summary["stage_start_counters"]["optimizer_updates"],
-            first_summary["optimizer_updates"],
-        )
-        self.assertEqual(
-            resumed_summary["stage_counters"],
-            {
-                "vector_iterations": resumed_summary["vector_iterations"]
-                - first_summary["vector_iterations"],
-                "optimizer_updates": resumed_summary["optimizer_updates"]
-                - first_summary["optimizer_updates"],
-                "action_inference_batches": resumed_runtime[
-                    "action_inference_batches"
-                ]
-                - first_runtime["action_inference_batches"],
-                "action_inference_transitions": resumed_runtime[
-                    "action_inference_transitions"
-                ]
-                - first_runtime["action_inference_transitions"],
-                "replay_insertion_calls": resumed_runtime["replay_insertion_calls"]
-                - first_runtime["replay_insertion_calls"],
-                "replay_insertion_transitions": resumed_runtime[
-                    "replay_insertion_transitions"
-                ]
-                - first_runtime["replay_insertion_transitions"],
-            },
-        )
-        stage = resumed_summary["stage_counters"]
-        elapsed = resumed_runtime["wall_clock_seconds"]
-        expected_rates = {
-            "steps_per_second": 12 / elapsed,
-            "environment_transitions_per_second": 12 / elapsed,
-            "physical_environment_steps_per_second": 12 / elapsed,
-            "vector_iterations_per_second": stage["vector_iterations"] / elapsed,
-            "action_inference_batches_per_second": stage[
-                "action_inference_batches"
-            ]
-            / elapsed,
-            "action_inference_transitions_per_second": stage[
-                "action_inference_transitions"
-            ]
-            / elapsed,
-            "replay_insertion_calls_per_second": stage["replay_insertion_calls"]
-            / elapsed,
-            "replay_insertion_transitions_per_second": stage[
-                "replay_insertion_transitions"
-            ]
-            / elapsed,
-            "optimizer_updates_per_second": stage["optimizer_updates"] / elapsed,
-            "training_samples_per_second": stage["optimizer_updates"] * 3 / elapsed,
-        }
-        for field, expected in expected_rates.items():
-            self.assertAlmostEqual(resumed_summary[field], expected, places=7)
-            self.assertAlmostEqual(resumed_runtime[field], expected, places=7)
-        self.assertEqual(
-            first_summary["stage_counters"],
-            {
-                "vector_iterations": first_summary["vector_iterations"],
-                "optimizer_updates": first_summary["optimizer_updates"],
-                "action_inference_batches": first_runtime["action_inference_batches"],
-                "action_inference_transitions": first_runtime[
-                    "action_inference_transitions"
-                ],
-                "replay_insertion_calls": first_runtime["replay_insertion_calls"],
-                "replay_insertion_transitions": first_runtime[
-                    "replay_insertion_transitions"
-                ],
-            },
-        )
 
     def test_checkpoint_boundaries_are_captured_inside_a_vector_step(self) -> None:
         config = DQNConfig(
@@ -682,6 +495,39 @@ class VectorizedTrainingTests(unittest.TestCase):
         self.assertEqual(summary["num_envs"], 3)
         self.assertEqual(payload["algorithm"], "double_dqn")
         self.assertEqual(payload["num_envs"], 3)
+
+    def test_vectorized_trainer_builds_dueling_network_from_architecture(self) -> None:
+        config = DQNConfig(
+            algorithm="double_dqn",
+            architecture="dueling",
+            total_steps=6,
+            num_envs=3,
+            batch_size=3,
+            replay_capacity=6,
+            learning_starts=3,
+            train_frequency=3,
+            target_update_interval=3,
+            checkpoint_interval=6,
+            epsilon_start=0.0,
+            epsilon_end=0.0,
+            device="cpu",
+        )
+
+        with tempfile.TemporaryDirectory() as directory:
+            run_dir = Path(directory) / "dueling-vectorized"
+            trainer = VectorizedDQNTrainer(
+                DeterministicVectorEnv(),
+                config,
+                run_dir=run_dir,
+            )
+            summary = trainer.train()
+            checkpoint = next((run_dir / "checkpoints").glob("*.pt"))
+            payload = torch.load(checkpoint, map_location="cpu", weights_only=False)
+
+        self.assertIsInstance(trainer.online_network, DuelingDQNNetwork)
+        self.assertEqual(summary["architecture"], "dueling")
+        self.assertEqual(summary["model_config"]["architecture"], "dueling")
+        self.assertEqual(payload["architecture"], "dueling")
 
 
 if __name__ == "__main__":

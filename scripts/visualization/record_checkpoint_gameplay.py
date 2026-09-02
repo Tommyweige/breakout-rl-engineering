@@ -15,7 +15,12 @@ import torch
 from PIL import Image, ImageDraw, ImageFont
 
 from breakout_env import ENVIRONMENT_ID, make_breakout_env
-from breakout_rl.models.dqn import DQNNetwork
+from breakout_rl.evaluation_contract import (
+    breakout_environment_kwargs,
+    load_evaluation_contract,
+    validate_breakout_runtime_contract,
+)
+from breakout_rl.models.factory import build_q_network, checkpoint_architecture
 from breakout_rl.tensors import observation_to_tensor
 from breakout_rl.training.config import DQNConfig
 from breakout_rl.training.dqn_trainer import resolve_device
@@ -167,6 +172,7 @@ def record_checkpoint(
     record_every: int,
     fps: int,
     max_width: int,
+    contract_path: str | Path = "configs/eval/breakout_contract_v2.json",
 ) -> dict[str, Any]:
     checkpoint_path = Path(checkpoint).resolve()
     if not checkpoint_path.is_file():
@@ -194,10 +200,31 @@ def record_checkpoint(
     config = DQNConfig.from_dict(saved_config)
     actual_step = checkpoint_step(payload, checkpoint_path)
 
-    env = make_breakout_env(render_mode="rgb_array")
-    model = DQNNetwork(
-        int(env.action_space.n),
+    contract = load_evaluation_contract(contract_path)
+    validate_breakout_runtime_contract(contract)
+    checkpoint_contract_id = payload.get("contract_id", saved_config.get("contract_id"))
+    if (
+        checkpoint_contract_id is not None
+        and checkpoint_contract_id != contract.contract_id
+    ):
+        raise ValueError(
+            "checkpoint Contract v2 id does not match the supplied contract"
+        )
+    env = make_breakout_env(
+        render_mode="rgb_array",
+        **breakout_environment_kwargs(contract),
+    )
+    model_config = payload.get("model_config", {})
+    if not isinstance(model_config, dict):
+        model_config = {}
+    architecture = checkpoint_architecture(payload)
+    hidden_dim_value = model_config.get("hidden_dim")
+    hidden_dim = 512 if hidden_dim_value is None else int(hidden_dim_value)
+    model = build_q_network(
+        architecture,
+        num_actions=int(env.action_space.n),
         input_shape=tuple(int(value) for value in env.observation_space.shape),
+        hidden_dim=hidden_dim,
     ).to(resolved_device)
     model.load_state_dict(payload["online_network"])
     model.eval()
@@ -258,14 +285,22 @@ def record_checkpoint(
         "checkpoint_step": actual_step,
         "training_run_id": checkpoint_path.parent.parent.name,
         "training_seed": saved_config.get("seed"),
+        "algorithm": payload.get("algorithm", saved_config.get("algorithm", "dqn")),
+        "architecture": architecture,
+        "checkpoint_contract_id": checkpoint_contract_id,
         "replay_backend": saved_config.get("replay_backend", "cpu"),
         "training_config": saved_config,
         "model_config": {
             "num_actions": int(env.action_space.n),
             "input_shape": [int(value) for value in env.observation_space.shape],
             "hidden_dim": int(model.hidden_dim),
+            "architecture": architecture,
+            "parameter_count": sum(parameter.numel() for parameter in model.parameters()),
         },
         "environment": ENVIRONMENT_ID,
+        "contract_id": contract.contract_id,
+        "contract_path": Path(contract_path).as_posix(),
+        "contract": contract.to_dict(),
         "evaluation_seed": evaluation_seed,
         "evaluation_epsilon": 0.0,
         "device": str(resolved_device),
@@ -275,11 +310,14 @@ def record_checkpoint(
         "episode_returns": episode_returns,
         "record_every": record_every,
         "source_script": "record_checkpoint_gameplay.py",
-        "render_source": "make_breakout_env(render_mode='rgb_array').render()",
+        "render_source": (
+            "make_breakout_env(render_mode='rgb_array', **breakout_environment_kwargs(contract)).render()"
+        ),
         "reproduction_command": (
-            "python record_checkpoint_gameplay.py "
+            "python -m scripts.visualization.record_checkpoint_gameplay "
             f"--checkpoint {checkpoint_artifact_path} --output {output_artifact_path} "
             f"--metadata {metadata_artifact_path} --device {device} "
+            f"--contract {Path(contract_path).as_posix()} "
             f"--evaluation-seed {evaluation_seed} --episodes {episodes} "
             f"--max-steps {max_steps} --record-every {record_every} --fps {fps} "
             f"--max-width {max_width}"
@@ -306,6 +344,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--record-every", type=int, default=4)
     parser.add_argument("--fps", type=int, default=10)
     parser.add_argument("--max-width", type=int, default=240)
+    parser.add_argument(
+        "--contract",
+        type=Path,
+        default=Path("configs/eval/breakout_contract_v2.json"),
+    )
     return parser
 
 
@@ -322,6 +365,7 @@ def main(argv: list[str] | None = None) -> int:
         record_every=args.record_every,
         fps=args.fps,
         max_width=args.max_width,
+        contract_path=args.contract,
     )
     print(json.dumps(metadata, indent=2, ensure_ascii=False))
     return 0

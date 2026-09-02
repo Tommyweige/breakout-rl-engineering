@@ -14,7 +14,7 @@ from breakout_rl.analysis.q_values import (
     analyze_q_values as analyze_model_q_values,
     load_probe_states,
 )
-from breakout_rl.models.dqn import DQNNetwork
+from breakout_rl.models.factory import build_q_network, checkpoint_architecture
 
 
 def _sha256(path: Path) -> str:
@@ -40,7 +40,7 @@ def load_checkpoint_model(
     *,
     device: torch.device | str,
 ) -> tuple[torch.nn.Module, dict[str, Any]]:
-    """Load a standard DQN checkpoint without changing its training state."""
+    """Load any supported DQN-family checkpoint without changing its state."""
 
     source = Path(path)
     if not source.is_file():
@@ -56,25 +56,33 @@ def load_checkpoint_model(
     if not isinstance(model_config, Mapping):
         model_config = {}
     raw_shape = model_config.get("input_shape", (4, 84, 84))
+    if isinstance(raw_shape, (str, bytes)):
+        raise ValueError("checkpoint input_shape must be a sequence")
     input_shape = tuple(int(value) for value in raw_shape)
     num_actions = int(model_config.get("num_actions", 4))
     hidden_dim_value = model_config.get("hidden_dim", 512)
     hidden_dim = 512 if hidden_dim_value is None else int(hidden_dim_value)
-    model = DQNNetwork(
-        num_actions,
+    architecture = checkpoint_architecture(payload)
+    model = build_q_network(
+        architecture,
+        num_actions=num_actions,
         input_shape=input_shape,  # type: ignore[arg-type]
         hidden_dim=hidden_dim,
     ).to(device)
     try:
         model.load_state_dict(state_dict, strict=True)
     except RuntimeError as error:
-        raise ValueError("checkpoint does not match the standard DQN architecture") from error
+        raise ValueError(
+            "checkpoint does not match the recorded DQN architecture"
+        ) from error
     model.eval()
     metadata = {
         "path": source.as_posix(),
         "sha256": _sha256(source),
         "algorithm": payload.get("algorithm", config.get("algorithm", "dqn")),
-        "architecture": payload.get("architecture", model_config.get("architecture", "standard")),
+        "architecture": architecture,
+        "contract_id": payload.get("contract_id", config.get("contract_id")),
+        "contract_path": payload.get("contract_path", config.get("contract_path")),
         "num_envs": payload.get("num_envs", config.get("num_envs", 1)),
         "replay_backend": payload.get("replay_backend", config.get("replay_backend", "cpu")),
         "training_steps": payload.get("training_steps", payload.get("global_step")),
@@ -82,17 +90,9 @@ def load_checkpoint_model(
             "num_actions": num_actions,
             "input_shape": list(input_shape),
             "hidden_dim": hidden_dim,
+            "architecture": architecture,
+            "parameter_count": sum(parameter.numel() for parameter in model.parameters()),
         },
-        "environment_contract": (
-            dict(payload["environment_contract"])
-            if isinstance(payload.get("environment_contract"), Mapping)
-            else (
-                dict(payload["metadata"]["environment_contract"])
-                if isinstance(payload.get("metadata"), Mapping)
-                and isinstance(payload["metadata"].get("environment_contract"), Mapping)
-                else None
-            )
-        ),
     }
     return model, metadata
 

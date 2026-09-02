@@ -86,8 +86,8 @@ def build_parser() -> argparse.ArgumentParser:
         "--evaluation-contract",
         dest="contract",
         type=Path,
-        default=None,
-        help="load a machine-readable environment contract (v2 uses environment-side FIRE)",
+        default=Path("configs/eval/breakout_contract_v2.json"),
+        help="load the machine-readable Contract v2 environment semantics",
     )
     return parser
 
@@ -227,6 +227,10 @@ def run_evaluation(args: argparse.Namespace) -> tuple[Path, Path, dict[str, Any]
     evaluation_config = load_evaluation_config(args.config)
     contract_path = getattr(args, "contract", None)
     contract = load_evaluation_contract(contract_path) if contract_path is not None else None
+    if contract is None:
+        raise ValueError(
+            "evaluation requires configs/eval/breakout_contract_v2.json"
+        )
     if contract is not None:
         _validate_contract_for_config(contract, evaluation_config)
     output_dir, evaluation_id = _output_destination(
@@ -273,6 +277,15 @@ def run_evaluation(args: argparse.Namespace) -> tuple[Path, Path, dict[str, Any]
             device=requested_device,
             source_day14_manifest=manifest_path,
         )
+        if contract is not None:
+            checkpoint_contract_id = loaded.training_metadata.get("contract_id")
+            if (
+                checkpoint_contract_id is not None
+                and checkpoint_contract_id != contract.contract_id
+            ):
+                raise ValueError(
+                    "checkpoint Contract v2 id does not match the evaluation contract"
+                )
         validate_checkpoint_provenance(
             loaded.checkpoint_metadata,
             loaded.training_metadata,

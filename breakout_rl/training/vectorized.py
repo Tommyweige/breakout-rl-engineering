@@ -9,7 +9,6 @@ iterations.
 from __future__ import annotations
 
 import copy
-import hashlib
 import operator
 import os
 import random
@@ -27,7 +26,7 @@ from breakout_rl.exploration import (
     LinearEpsilonSchedule,
     select_epsilon_greedy_actions,
 )
-from breakout_rl.models.dqn import DQNNetwork
+from breakout_rl.models.factory import build_q_network, checkpoint_architecture
 from breakout_rl.replay import ReplayBuffer
 from breakout_rl.replay_gpu import GPUReplayBuffer
 from breakout_rl.replay_tensors import (
@@ -45,7 +44,6 @@ from breakout_rl.training.diagnostics import (
 )
 from breakout_rl.training.dqn_trainer import (
     DQNTrainingStepResult,
-    MODEL_ARCHITECTURE,
     NonFiniteTrainingError,
     _StageProfiler,
     _ensure_optimizer_excludes_target,
@@ -73,22 +71,6 @@ STRICT_ACTION_SELECTION_PARITY_RULE = (
     "strict parity requires num_envs <= train_frequency and "
     "train_frequency % num_envs == 0"
 )
-STAGE_COUNTER_NAMES: tuple[str, ...] = (
-    "vector_iterations",
-    "optimizer_updates",
-    "action_inference_batches",
-    "action_inference_transitions",
-    "replay_insertion_calls",
-    "replay_insertion_transitions",
-)
-
-
-def _sha256_file(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as stream:
-        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
 
 
 @dataclass(frozen=True)
@@ -361,36 +343,16 @@ class VectorizedDQNTrainer:
         target_network: nn.Module | None = None,
         optimizer: torch.optim.Optimizer | None = None,
         resume_from: str | Path | None = None,
-        metadata: Mapping[str, Any] | None = None,
-        environment_contract: Mapping[str, Any] | None = None,
         on_step: VectorizedTrainingStepCallback | None = None,
     ) -> None:
         if not isinstance(config, DQNConfig):
             raise TypeError("config must be a DQNConfig")
         if on_step is not None and not callable(on_step):
             raise TypeError("on_step must be callable or None")
-        if metadata is not None and not isinstance(metadata, Mapping):
-            raise TypeError("metadata must be a mapping or None")
-        if environment_contract is not None and not isinstance(
-            environment_contract,
-            Mapping,
-        ):
-            raise TypeError("environment_contract must be a mapping or None")
 
         self.env = env
         self.config = config
         self.on_step = on_step
-        self.metadata = dict(metadata or {})
-        self.environment_contract = (
-            dict(environment_contract) if environment_contract is not None else None
-        )
-        if self.environment_contract is not None:
-            existing_contract = self.metadata.get("environment_contract")
-            if existing_contract is not None and existing_contract != self.environment_contract:
-                raise ValueError(
-                    "metadata.environment_contract does not match environment_contract"
-                )
-            self.metadata["environment_contract"] = dict(self.environment_contract)
         self.num_envs = _vector_num_envs(env)
         if config.num_envs != self.num_envs:
             raise ValueError(
@@ -475,8 +437,9 @@ class VectorizedDQNTrainer:
         if online_network is None:
             if len(self.observation_shape) != 3:
                 raise ValueError("default DQNNetwork requires a three-dimensional observation")
-            online_network = DQNNetwork(
-                self.action_count,
+            online_network = build_q_network(
+                self.config.architecture,
+                num_actions=self.action_count,
                 input_shape=self.observation_shape,  # type: ignore[arg-type]
             )
         self.online_network = online_network.to(self.device)
@@ -485,6 +448,10 @@ class VectorizedDQNTrainer:
         self.target_network = target_network.to(self.device)
         hard_update(self.target_network, self.online_network)
         self.target_network.eval()
+        self.parameter_count = sum(
+            parameter.numel() for parameter in self.online_network.parameters()
+        )
+        self.hidden_dim = getattr(self.online_network, "hidden_dim", None)
         self.optimizer = optimizer or torch.optim.Adam(
             self.online_network.parameters(),
             lr=config.learning_rate,
@@ -541,15 +508,6 @@ class VectorizedDQNTrainer:
         self.replay_insertion_calls = 0
         self.replay_insertion_transitions = 0
         self._started_at = time.perf_counter()
-        self._stage_start_step = 0
-        self._stage_start_physical_environment_steps = 0
-        self._stage_start_vector_iterations = 0
-        self._stage_start_optimizer_updates = 0
-        self._stage_start_action_inference_batches = 0
-        self._stage_start_action_inference_transitions = 0
-        self._stage_start_replay_insertion_calls = 0
-        self._stage_start_replay_insertion_transitions = 0
-        self._resume_provenance: dict[str, Any] | None = None
 
         environment_spec = getattr(env, "spec", None)
         if environment_spec is None:
@@ -563,11 +521,15 @@ class VectorizedDQNTrainer:
             metadata={
                 "environment_id": self._environment_id,
                 "algorithm": self.config.algorithm,
-                "architecture": MODEL_ARCHITECTURE,
+                "architecture": self.config.architecture,
                 "vectorized": True,
                 "num_envs": self.num_envs,
                 "observation_shape": list(self.observation_shape),
                 "action_count": self.action_count,
+                "hidden_dim": self.hidden_dim,
+                "parameter_count": self.parameter_count,
+                "contract_id": self.config.contract_id,
+                "contract_path": self.config.contract_path,
                 "requested_device": self.requested_device,
                 "resolved_device": self._resolved_device_name(),
                 "precision": self.config.precision,
@@ -594,7 +556,6 @@ class VectorizedDQNTrainer:
                 if self.config.replay_backend == "gpu"
                 else "cpu",
                 "replay_bytes": int(self.replay.allocated_bytes),
-                **self.metadata,
             },
         )
 
@@ -606,105 +567,6 @@ class VectorizedDQNTrainer:
             return str(self.device)
         index = 0 if self.device.index is None else self.device.index
         return f"cuda:{index}"
-
-    def _cumulative_counter_snapshot(self) -> dict[str, int]:
-        return {
-            "vector_iterations": int(self.vector_iterations),
-            "optimizer_updates": int(self.optimizer_updates),
-            "action_inference_batches": int(self.action_inference_batches),
-            "action_inference_transitions": int(self.action_inference_transitions),
-            "replay_insertion_calls": int(self.replay_insertion_calls),
-            "replay_insertion_transitions": int(self.replay_insertion_transitions),
-        }
-
-    def _stage_start_counter_snapshot(self) -> dict[str, int]:
-        return {
-            "global_step": int(self._stage_start_step),
-            "physical_environment_steps": int(
-                self._stage_start_physical_environment_steps
-            ),
-            "vector_iterations": int(self._stage_start_vector_iterations),
-            "optimizer_updates": int(self._stage_start_optimizer_updates),
-            "action_inference_batches": int(
-                self._stage_start_action_inference_batches
-            ),
-            "action_inference_transitions": int(
-                self._stage_start_action_inference_transitions
-            ),
-            "replay_insertion_calls": int(self._stage_start_replay_insertion_calls),
-            "replay_insertion_transitions": int(
-                self._stage_start_replay_insertion_transitions
-            ),
-        }
-
-    def _set_stage_start_counter_snapshot(self) -> None:
-        self._stage_start_vector_iterations = int(self.vector_iterations)
-        self._stage_start_optimizer_updates = int(self.optimizer_updates)
-        self._stage_start_action_inference_batches = int(
-            self.action_inference_batches
-        )
-        self._stage_start_action_inference_transitions = int(
-            self.action_inference_transitions
-        )
-        self._stage_start_replay_insertion_calls = int(self.replay_insertion_calls)
-        self._stage_start_replay_insertion_transitions = int(
-            self.replay_insertion_transitions
-        )
-
-    def _stage_counter_deltas(self) -> dict[str, int]:
-        cumulative = self._cumulative_counter_snapshot()
-        stage_start = self._stage_start_counter_snapshot()
-        return {
-            name: max(0, cumulative[name] - stage_start[name])
-            for name in STAGE_COUNTER_NAMES
-        }
-
-    def _stage_accounting(self, elapsed: float) -> dict[str, Any]:
-        safe_elapsed = max(float(elapsed), 1e-9)
-        stage_steps = max(0, self.global_step - self._stage_start_step)
-        stage_physical_steps = max(
-            0,
-            self.physical_environment_steps
-            - self._stage_start_physical_environment_steps,
-        )
-        stage_counters = self._stage_counter_deltas()
-        stage_rates = {
-            "steps_per_second": float(stage_steps / safe_elapsed),
-            "environment_transitions_per_second": float(stage_steps / safe_elapsed),
-            "physical_environment_steps_per_second": float(
-                stage_physical_steps / safe_elapsed
-            ),
-            "vector_iterations_per_second": float(
-                stage_counters["vector_iterations"] / safe_elapsed
-            ),
-            "action_inference_batches_per_second": float(
-                stage_counters["action_inference_batches"] / safe_elapsed
-            ),
-            "action_inference_transitions_per_second": float(
-                stage_counters["action_inference_transitions"] / safe_elapsed
-            ),
-            "replay_insertion_calls_per_second": float(
-                stage_counters["replay_insertion_calls"] / safe_elapsed
-            ),
-            "replay_insertion_transitions_per_second": float(
-                stage_counters["replay_insertion_transitions"] / safe_elapsed
-            ),
-            "optimizer_updates_per_second": float(
-                stage_counters["optimizer_updates"] / safe_elapsed
-            ),
-            "training_samples_per_second": float(
-                stage_counters["optimizer_updates"]
-                * self.config.batch_size
-                / safe_elapsed
-            ),
-        }
-        return {
-            "stage_start_counters": self._stage_start_counter_snapshot(),
-            "stage_counters": stage_counters,
-            "stage_rates": stage_rates,
-            "stage_training_steps": int(stage_steps),
-            "stage_physical_environment_steps": int(stage_physical_steps),
-        }
 
     def _reset_result_observation(self, result: Any) -> np.ndarray:
         if isinstance(result, tuple) and len(result) == 2:
@@ -912,13 +774,12 @@ class VectorizedDQNTrainer:
         result: DQNTrainingStepResult | None,
     ) -> dict[str, Any]:
         elapsed = max(time.perf_counter() - self._started_at, 1e-9)
-        accounting = self._stage_accounting(elapsed)
-        rates = accounting["stage_rates"]
-        environment_sps = rates["environment_transitions_per_second"]
-        vector_sps = rates["vector_iterations_per_second"]
+        environment_sps = float(self.global_step / elapsed)
+        vector_sps = float(self.vector_iterations / elapsed)
         return {
             "global_step": global_step,
             "algorithm": self.config.algorithm,
+            "architecture": self.config.architecture,
             "episode": self.episode,
             "raw_episode_return": completed_return,
             "episode_length": completed_length,
@@ -984,20 +845,6 @@ class VectorizedDQNTrainer:
             "vector_iterations_per_second": vector_sps,
             "action_inference_batch_size": action_inference_batch_size,
             "replay_insert_batch_size": transition_batch_size,
-            "action_inference_batches_per_second": rates[
-                "action_inference_batches_per_second"
-            ],
-            "action_inference_transitions_per_second": rates[
-                "action_inference_transitions_per_second"
-            ],
-            "replay_insertion_calls_per_second": rates[
-                "replay_insertion_calls_per_second"
-            ],
-            "replay_insertion_transitions_per_second": rates[
-                "replay_insertion_transitions_per_second"
-            ],
-            "optimizer_updates_per_second": rates["optimizer_updates_per_second"],
-            "training_samples_per_second": rates["training_samples_per_second"],
         }
 
     def _runtime_metadata(self, elapsed: float) -> dict[str, Any]:
@@ -1015,9 +862,7 @@ class VectorizedDQNTrainer:
                     gpu_seconds=float(timing.get("gpu_seconds", 0.0)),
                 )
             self._transfer_timing_merged = True
-        accounting = self._stage_accounting(elapsed)
-        rates = accounting["stage_rates"]
-        runtime = collect_runtime_metadata(
+        return collect_runtime_metadata(
             seed=self.config.seed,
             device=self._resolved_device_name(),
             requested_device=self.requested_device,
@@ -1026,28 +871,47 @@ class VectorizedDQNTrainer:
             extra={
                 "environment_id": self._environment_id,
                 "algorithm": self.config.algorithm,
-                "architecture": MODEL_ARCHITECTURE,
+                "architecture": self.config.architecture,
                 "training_steps": self.global_step,
                 "vectorized": True,
                 "num_envs": self.num_envs,
                 "observation_shape": list(self.observation_shape),
                 "action_count": self.action_count,
+                "hidden_dim": self.hidden_dim,
+                "parameter_count": self.parameter_count,
+                "contract_id": self.config.contract_id,
+                "contract_path": self.config.contract_path,
                 "wall_clock_seconds": float(elapsed),
-                **rates,
-                "stage_start_step": self._stage_start_step,
-                "stage_start_counters": accounting["stage_start_counters"],
-                "stage_counters": accounting["stage_counters"],
-                "stage_rates": rates,
-                "stage_training_steps": accounting["stage_training_steps"],
+                "steps_per_second": float(self.global_step / elapsed),
+                "environment_transitions_per_second": float(self.global_step / elapsed),
                 "physical_environment_steps": self.physical_environment_steps,
-                "stage_physical_environment_steps": accounting[
-                    "stage_physical_environment_steps"
-                ],
+                "physical_environment_steps_per_second": float(
+                    self.physical_environment_steps / elapsed
+                ),
                 "vector_iterations": self.vector_iterations,
+                "vector_iterations_per_second": float(self.vector_iterations / elapsed),
                 "action_inference_batches": self.action_inference_batches,
                 "action_inference_transitions": self.action_inference_transitions,
+                "action_inference_transitions_per_second": float(
+                    self.action_inference_transitions / elapsed
+                ),
+                "action_inference_batches_per_second": float(
+                    self.action_inference_batches / elapsed
+                ),
                 "replay_insertion_calls": self.replay_insertion_calls,
                 "replay_insertion_transitions": self.replay_insertion_transitions,
+                "replay_insertion_transitions_per_second": float(
+                    self.replay_insertion_transitions / elapsed
+                ),
+                "replay_insertion_calls_per_second": float(
+                    self.replay_insertion_calls / elapsed
+                ),
+                "optimizer_updates_per_second": float(
+                    self.optimizer_updates / elapsed
+                ),
+                "training_samples_per_second": float(
+                    self.optimizer_updates * self.config.batch_size / elapsed
+                ),
                 "diagnostics_interval": self.config.diagnostics_interval,
                 "metrics_flush_interval": self.config.metrics_flush_interval,
                 "metrics_row_cadence": 1,
@@ -1073,19 +937,14 @@ class VectorizedDQNTrainer:
                 else "cpu",
                 "replay_bytes": int(self.replay.allocated_bytes),
                 "replay_rewarm_steps_remaining": self._resume_rewarm_steps_remaining,
-                "resume_provenance": self._resume_provenance,
                 "stage_timings": self._stage_profiler.summary(),
-                **self.metadata,
             },
         )
-        return runtime
 
     def _summary(self, *, status: str = "completed", **extra: Any) -> dict[str, Any]:
         if self.device.type == "cuda":
             torch.cuda.synchronize(self.device)
         elapsed = max(time.perf_counter() - self._started_at, 1e-9)
-        accounting = self._stage_accounting(elapsed)
-        rates = accounting["stage_rates"]
         summary: dict[str, Any] = {
             "status": status,
             "trainer": "vectorized_dqn",
@@ -1093,8 +952,17 @@ class VectorizedDQNTrainer:
             "run_dir": str(self.run_dir),
             "seed": self.config.seed,
             "algorithm": self.config.algorithm,
-            "architecture": MODEL_ARCHITECTURE,
+            "architecture": self.config.architecture,
             "num_envs": self.num_envs,
+            "model_config": {
+                "architecture": self.config.architecture,
+                "num_actions": self.action_count,
+                "input_shape": list(self.observation_shape),
+                "hidden_dim": self.hidden_dim,
+                "parameter_count": self.parameter_count,
+            },
+            "contract_id": self.config.contract_id,
+            "contract_path": self.config.contract_path,
             "total_steps": self.global_step,
             "total_transitions": self.global_step,
             "training_steps": self.global_step,
@@ -1114,19 +982,32 @@ class VectorizedDQNTrainer:
                 len(self.replay),
                 self.config.replay_capacity,
             ),
-            **rates,
-            "stage_start_step": self._stage_start_step,
-            "stage_start_counters": accounting["stage_start_counters"],
-            "stage_counters": accounting["stage_counters"],
-            "stage_rates": rates,
-            "stage_training_steps": accounting["stage_training_steps"],
-            "stage_physical_environment_steps": accounting[
-                "stage_physical_environment_steps"
-            ],
+            "steps_per_second": float(self.global_step / elapsed),
+            "environment_transitions_per_second": float(self.global_step / elapsed),
+            "physical_environment_steps_per_second": float(
+                self.physical_environment_steps / elapsed
+            ),
+            "vector_iterations_per_second": float(self.vector_iterations / elapsed),
             "action_inference_batches": self.action_inference_batches,
             "action_inference_transitions": self.action_inference_transitions,
+            "action_inference_transitions_per_second": float(
+                self.action_inference_transitions / elapsed
+            ),
+            "action_inference_batches_per_second": float(
+                self.action_inference_batches / elapsed
+            ),
             "replay_insertion_calls": self.replay_insertion_calls,
             "replay_insertion_transitions": self.replay_insertion_transitions,
+            "replay_insertion_transitions_per_second": float(
+                self.replay_insertion_transitions / elapsed
+            ),
+            "replay_insertion_calls_per_second": float(
+                self.replay_insertion_calls / elapsed
+            ),
+            "optimizer_updates_per_second": float(self.optimizer_updates / elapsed),
+            "training_samples_per_second": float(
+                self.optimizer_updates * self.config.batch_size / elapsed
+            ),
             "runtime": self._runtime_metadata(elapsed),
             "last_loss": None if self._last_result is None else self._last_result.loss,
             "last_q_mean": None if self._last_result is None else self._last_result.q_mean,
@@ -1144,9 +1025,6 @@ class VectorizedDQNTrainer:
             "last_td_error_max_abs": None
             if self._last_result is None
             else self._last_result.td_error_max_abs,
-            "last_gradient_norm": None
-            if self._last_result is None
-            else self._last_result.gradient_norm,
             "action_distribution": {
                 ATARI_ACTION_NAMES.get(index, f"ACTION_{index}"): count
                 for index, count in enumerate(self._action_counts)
@@ -1173,11 +1051,7 @@ class VectorizedDQNTrainer:
                 if self.strict_action_selection_parity_satisfied
                 else "later transitions in a vector batch can use pre-update online-network weights"
             ),
-            "resume_provenance": self._resume_provenance,
-            "metadata": dict(self.metadata),
         }
-        if self.environment_contract is not None:
-            summary["environment_contract"] = dict(self.environment_contract)
         summary.update(extra)
         return summary
 
@@ -1198,26 +1072,18 @@ class VectorizedDQNTrainer:
         if "numpy_global" in state:
             np.random.set_state(state["numpy_global"])
         if "torch_cpu" in state:
-            cpu_state = state["torch_cpu"]
-            if not isinstance(cpu_state, torch.Tensor):
-                raise ValueError("checkpoint torch_cpu RNG state must be a tensor")
-            # ``torch.load(map_location=self.device)`` can place every tensor
-            # on CUDA, including the CPU generator state. The CPU generator
-            # only accepts a CPU uint8 tensor.
-            torch.set_rng_state(cpu_state.detach().to(device="cpu", dtype=torch.uint8))
+            torch_cpu_state = state["torch_cpu"]
+            if isinstance(torch_cpu_state, torch.Tensor):
+                torch_cpu_state = torch_cpu_state.detach().cpu()
+            torch.set_rng_state(torch_cpu_state)
         if torch.cuda.is_available() and state.get("torch_cuda") is not None:
-            raw_cuda_states = state["torch_cuda"]
-            if not isinstance(raw_cuda_states, (list, tuple)):
-                raise ValueError("checkpoint torch_cuda RNG state must be a sequence")
-            cuda_states = [
-                value.detach().to(device="cpu", dtype=torch.uint8)
-                if isinstance(value, torch.Tensor)
-                else value
-                for value in raw_cuda_states
-            ]
-            if not all(isinstance(value, torch.Tensor) for value in cuda_states):
-                raise ValueError("checkpoint torch_cuda RNG state must contain tensors")
-            torch.cuda.set_rng_state_all(cuda_states)
+            torch_cuda_states = state["torch_cuda"]
+            if isinstance(torch_cuda_states, (list, tuple)):
+                torch_cuda_states = [
+                    value.detach().cpu() if isinstance(value, torch.Tensor) else value
+                    for value in torch_cuda_states
+                ]
+            torch.cuda.set_rng_state_all(torch_cuda_states)
         if "action_rng" in state:
             self.rng.bit_generator.state = state["action_rng"]
 
@@ -1232,26 +1098,25 @@ class VectorizedDQNTrainer:
         path = self.checkpoint_dir / f"{filename}.pt"
         temporary_path = path.with_suffix(".tmp")
         payload = {
-            "format_version": 1,
+            "format_version": 2,
             "trainer": "vectorized_dqn",
             "run_id": self.run_dir.name,
             "algorithm": self.config.algorithm,
-            "architecture": MODEL_ARCHITECTURE,
+            "architecture": self.config.architecture,
+            "device": self._resolved_device_name(),
+            "requested_device": self.requested_device,
+            "contract_id": self.config.contract_id,
+            "contract_path": self.config.contract_path,
             "num_envs": self.num_envs,
             "replay_backend": self.config.replay_backend,
             "training_steps": self.global_step,
             "runtime": self._runtime_metadata(elapsed),
-            "metadata": dict(self.metadata),
-            "environment_contract": (
-                None
-                if self.environment_contract is None
-                else dict(self.environment_contract)
-            ),
             "model_config": {
-                "architecture": MODEL_ARCHITECTURE,
+                "architecture": self.config.architecture,
                 "num_actions": self.action_count,
                 "input_shape": list(self.observation_shape),
-                "hidden_dim": getattr(self.online_network, "hidden_dim", None),
+                "hidden_dim": self.hidden_dim,
+                "parameter_count": self.parameter_count,
             },
             "online_network": self.online_network.state_dict(),
             "target_network": self.target_network.state_dict(),
@@ -1278,7 +1143,6 @@ class VectorizedDQNTrainer:
             "rng_state": self._rng_state(),
             "replay_saved": False,
             "replay_rewarm_steps_remaining": self._resume_rewarm_steps_remaining,
-            "resume_provenance": self._resume_provenance,
         }
         torch.save(payload, temporary_path)
         os.replace(temporary_path, path)
@@ -1313,26 +1177,18 @@ class VectorizedDQNTrainer:
                 "checkpoint algorithm does not match trainer config: "
                 f"checkpoint={saved_algorithm!r}, config={self.config.algorithm!r}"
             )
+
+        saved_architecture = checkpoint_architecture(payload)
+        if saved_architecture != self.config.architecture:
+            raise ValueError(
+                "checkpoint architecture does not match trainer config: "
+                f"checkpoint={saved_architecture!r}, config={self.config.architecture!r}"
+            )
         saved_num_envs = payload.get("num_envs")
         if saved_num_envs is None and isinstance(config_payload, Mapping):
             saved_num_envs = config_payload.get("num_envs")
         if saved_num_envs is not None and int(saved_num_envs) != self.num_envs:
             raise ValueError("checkpoint num_envs does not match vector environment")
-
-        saved_contract = payload.get("environment_contract")
-        if saved_contract is None and isinstance(payload.get("metadata"), Mapping):
-            saved_contract = payload["metadata"].get("environment_contract")
-        if self.environment_contract is not None:
-            if not isinstance(saved_contract, Mapping):
-                raise ValueError(
-                    "checkpoint is missing environment contract provenance"
-                )
-            for field in ("contract_id", "contract_path", "contract_sha256"):
-                if saved_contract.get(field) != self.environment_contract.get(field):
-                    raise ValueError(
-                        "checkpoint environment contract does not match trainer: "
-                        f"field={field}"
-                    )
 
         self.online_network.load_state_dict(payload["online_network"])
         self.target_network.load_state_dict(payload["target_network"])
@@ -1381,23 +1237,6 @@ class VectorizedDQNTrainer:
         if isinstance(rng_state, Mapping):
             self._restore_rng_state(rng_state)
         self._last_checkpoint = checkpoint_path
-        self._stage_start_step = self.global_step
-        self._stage_start_physical_environment_steps = self.physical_environment_steps
-        self._set_stage_start_counter_snapshot()
-        self._started_at = time.perf_counter()
-        saved_resume = payload.get("resume_provenance")
-        self._resume_provenance = {
-            "source_checkpoint": str(checkpoint_path),
-            "source_checkpoint_sha256": _sha256_file(checkpoint_path),
-            "source_step": self.global_step,
-            "replay_saved": bool(payload.get("replay_saved", False)),
-            "replay_resume_semantics": (
-                "exact_replay_restore"
-                if bool(payload.get("replay_saved", False))
-                else "fresh_replay_with_learning_starts_rewarm"
-            ),
-            "source_resume_provenance": saved_resume,
-        }
 
     def _insert_and_schedule(
         self,

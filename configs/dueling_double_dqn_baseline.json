@@ -1,15 +1,15 @@
 {
   "schema_version": 1,
-  "day": 17,
+  "day": 19,
   "algorithm": "double_dqn",
-  "architecture": "standard",
+  "architecture": "dueling",
   "trainer": "vectorized_dqn",
   "contract": "configs/eval/breakout_contract_v2.json",
   "training_config": {
     "total_steps": 10000,
     "seed": 42,
     "algorithm": "double_dqn",
-    "architecture": "standard",
+    "architecture": "dueling",
     "gamma": 0.99,
     "learning_rate": 0.0001,
     "batch_size": 32,

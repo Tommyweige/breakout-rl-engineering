@@ -62,6 +62,14 @@ def run_evaluation(args: argparse.Namespace) -> tuple[Path, Path, dict[str, Any]
         device=args.device,
         env_factory=env_factory,
     )
+    checkpoint_contract_id = loaded.training_metadata.get("contract_id")
+    if (
+        checkpoint_contract_id is not None
+        and checkpoint_contract_id != contract.contract_id
+    ):
+        raise ValueError(
+            "checkpoint Contract v2 id does not match the evaluation contract"
+        )
     vectorized_run_id = Path(args.checkpoint).resolve().parent.parent.name
     metadata = {
         "evaluation_config_path": args.config.as_posix(),

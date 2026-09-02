@@ -16,6 +16,7 @@ from breakout_rl.training.diagnostics import collect_runtime_metadata
 METRIC_FIELDS: tuple[str, ...] = (
     "global_step",
     "algorithm",
+    "architecture",
     "episode",
     "raw_episode_return",
     "episode_length",
@@ -61,11 +62,7 @@ METRIC_FIELDS: tuple[str, ...] = (
     "action_inference_batch_size",
     "replay_insert_batch_size",
     "action_inference_batches_per_second",
-    "action_inference_transitions_per_second",
     "replay_insertion_calls_per_second",
-    "replay_insertion_transitions_per_second",
-    "optimizer_updates_per_second",
-    "training_samples_per_second",
     "requested_action",
     "requested_action_name",
     "action_overridden",
@@ -122,19 +119,10 @@ class MetricsLogger:
             )
 
         is_empty = not self.metrics_path.exists() or self.metrics_path.stat().st_size == 0
-        self._file = self.metrics_path.open("a+", newline="", encoding="utf-8")
-        fieldnames = list(METRIC_FIELDS)
-        if not is_empty:
-            self._file.seek(0)
-            existing_fields = next(csv.reader(self._file), None)
-            self._file.seek(0, 2)
-            if existing_fields:
-                # Keep appending compatible with historical CSV headers that
-                # predate the expanded stage-local throughput fields.
-                fieldnames = existing_fields
+        self._file = self.metrics_path.open("a", newline="", encoding="utf-8")
         self._writer = csv.DictWriter(
             self._file,
-            fieldnames=fieldnames,
+            fieldnames=list(METRIC_FIELDS),
             extrasaction="ignore",
         )
         if is_empty:

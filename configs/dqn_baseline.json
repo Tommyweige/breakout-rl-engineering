@@ -3,6 +3,8 @@
   "description": "Day 14 main CUDA comparison baseline; 100K development horizon.",
   "budget_level": "main_day14",
   "stage": "main",
+  "algorithm": "dqn",
+  "architecture": "standard",
   "total_steps": 100000,
   "seed": 42,
   "gamma": 0.99,

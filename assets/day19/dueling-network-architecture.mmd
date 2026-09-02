@@ -1,0 +1,23 @@
+%% Structural diagram verified against DuelingDQNNetwork.forward_components.
+%% The public forward contract remains one Q-value per action.
+flowchart LR
+    O["Contract v2 observation<br/>(B, 4, 84, 84)"] --> C["shared AtariFeatureExtractor<br/>(B, 3136)"]
+    C --> VHead["Value stream<br/>Linear 3136 → 512 → ReLU → Linear 512 → 1"]
+    C --> AHead["Advantage stream<br/>Linear 3136 → 512 → ReLU → Linear 512 → 4"]
+    VHead --> V["V(s)<br/>(B, 1)"]
+    AHead --> A["raw A(s,a)<br/>(B, 4)"]
+    A --> Mean["mean over actions<br/>mean(A, dim=1)"]
+    Mean --> Center
+    A --> Center["centered A(s,a)<br/>A − mean(A)"]
+    V --> Combine["Q(s,a) = V(s) + centered A(s,a)"]
+    Center --> Combine
+    Combine --> Public["forward() output<br/>(B, 4)<br/>NOOP / FIRE / RIGHT / LEFT"]
+
+    classDef input fill:#e0f2fe,stroke:#0369a1,color:#0c4a6e;
+    classDef stream fill:#fef3c7,stroke:#b45309,color:#78350f;
+    classDef value fill:#ede9fe,stroke:#7c3aed,color:#4c1d95;
+    classDef output fill:#dcfce7,stroke:#15803d,color:#14532d;
+    class O,C input;
+    class VHead,AHead,A,Mean,Center stream;
+    class V,Combine value;
+    class Public output;

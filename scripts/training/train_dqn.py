@@ -32,6 +32,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="target rule to train (default: dqn)",
     )
     parser.add_argument(
+        "--architecture",
+        choices=("standard", "dueling"),
+        default=None,
+        help="Q-network representation (default: standard)",
+    )
+    parser.add_argument(
         "--preset",
         choices=("development", "smoke", "debug"),
         default=None,
@@ -92,16 +98,21 @@ def _config_from_args(args: argparse.Namespace) -> DQNConfig:
     if args.resume is not None:
         base = _load_checkpoint_config(args.resume)
     elif args.preset == "debug":
-        base = DQNConfig.debug(device=args.device or "cuda")
+        base = DQNConfig.debug(
+            device=args.device or "cuda",
+            architecture=args.architecture or "standard",
+        )
     elif args.preset == "smoke":
         base = DQNConfig.smoke(
             device=args.device or "cpu",
             algorithm=args.algorithm or "dqn",
+            architecture=args.architecture or "standard",
         )
     else:
         base = DQNConfig(
             device=args.device or "cpu",
             algorithm=args.algorithm or "dqn",
+            architecture=args.architecture or "standard",
         )
 
     overrides: dict[str, Any] = {}
@@ -109,6 +120,7 @@ def _config_from_args(args: argparse.Namespace) -> DQNConfig:
         "total_steps",
         "seed",
         "device",
+        "architecture",
         "batch_size",
         "replay_capacity",
         "learning_starts",
@@ -124,6 +136,8 @@ def _config_from_args(args: argparse.Namespace) -> DQNConfig:
         overrides["reward_clip"] = False
     if args.algorithm is not None:
         overrides["algorithm"] = args.algorithm
+    if args.contract is not None:
+        overrides["contract_path"] = args.contract.as_posix()
     return base.with_overrides(**overrides)
 
 
@@ -136,7 +150,9 @@ def _run_path(args: argparse.Namespace, config: DQNConfig) -> Path:
     if run_id is None:
         timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
         preset_name = args.preset or "development"
-        if config.algorithm == "double_dqn":
+        if config.architecture == "dueling":
+            day_prefix = "day19"
+        elif config.algorithm == "double_dqn":
             day_prefix = "day17"
         else:
             day_prefix = "day13" if preset_name == "debug" else "day12"
@@ -150,7 +166,6 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
         config = _config_from_args(args)
-        run_path = _run_path(args, config)
         contract_path = args.contract
         contract: BreakoutEvaluationContractV2 | None = (
             load_evaluation_contract(contract_path)
@@ -159,8 +174,13 @@ def main(argv: list[str] | None = None) -> int:
         )
         if contract is not None:
             validate_breakout_runtime_contract(contract)
+            config = config.with_overrides(
+                contract_id=contract.contract_id,
+                contract_path=contract_path.as_posix(),
+            )
             if args.fire_reset and not contract.fire_reset:
                 raise ValueError("--fire-reset conflicts with contract fire_reset=false")
+        run_path = _run_path(args, config)
     except (FileNotFoundError, TypeError, ValueError) as error:
         print(f"Invalid training configuration: {error}")
         return 2

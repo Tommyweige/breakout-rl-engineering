@@ -17,7 +17,7 @@ import torch
 from torch import nn
 
 from breakout_rl.exploration import LinearEpsilonSchedule, select_epsilon_greedy_action
-from breakout_rl.models.dqn import DQNNetwork
+from breakout_rl.models.factory import build_q_network, checkpoint_architecture
 from breakout_rl.replay import ReplayBuffer
 from breakout_rl.replay_gpu import GPUReplayBuffer
 from breakout_rl.replay_tensors import (
@@ -43,9 +43,6 @@ from breakout_rl.training.metrics import MetricsLogger
 
 class NonFiniteTrainingError(RuntimeError):
     """Raised when a training value becomes NaN or infinity."""
-
-
-MODEL_ARCHITECTURE = "standard"
 
 
 class _StageProfiler:
@@ -584,8 +581,9 @@ class DQNTrainer:
         if online_network is None:
             if len(self.observation_shape) != 3:
                 raise ValueError("default DQNNetwork requires a three-dimensional observation")
-            online_network = DQNNetwork(
-                self.action_count,
+            online_network = build_q_network(
+                self.config.architecture,
+                num_actions=self.action_count,
                 input_shape=self.observation_shape,  # type: ignore[arg-type]
             )
         self.online_network = online_network.to(self.device)
@@ -595,6 +593,10 @@ class DQNTrainer:
         self.target_network = target_network.to(self.device)
         hard_update(self.target_network, self.online_network)
         self.target_network.eval()
+        self.parameter_count = sum(
+            parameter.numel() for parameter in self.online_network.parameters()
+        )
+        self.hidden_dim = getattr(self.online_network, "hidden_dim", None)
 
         self.optimizer = optimizer or torch.optim.Adam(
             self.online_network.parameters(),
@@ -661,10 +663,14 @@ class DQNTrainer:
             metadata={
                 "environment_id": self._environment_id,
                 "algorithm": self.config.algorithm,
-                "architecture": MODEL_ARCHITECTURE,
+                "architecture": self.config.architecture,
                 "num_envs": 1,
                 "observation_shape": list(self.observation_shape),
                 "action_count": self.action_count,
+                "hidden_dim": self.hidden_dim,
+                "parameter_count": self.parameter_count,
+                "contract_id": self.config.contract_id,
+                "contract_path": self.config.contract_path,
                 "requested_device": self.requested_device,
                 "resolved_device": self._resolved_device_name(),
                 "precision": self.config.precision,
@@ -837,6 +843,7 @@ class DQNTrainer:
         return {
             "global_step": self.global_step,
             "algorithm": self.config.algorithm,
+            "architecture": self.config.architecture,
             "episode": self.episode,
             "raw_episode_return": completed_return,
             "episode_length": completed_length,
@@ -927,11 +934,15 @@ class DQNTrainer:
             extra={
                 "environment_id": self._environment_id,
                 "algorithm": self.config.algorithm,
-                "architecture": MODEL_ARCHITECTURE,
+                "architecture": self.config.architecture,
                 "num_envs": 1,
                 "training_steps": self.global_step,
                 "observation_shape": list(self.observation_shape),
                 "action_count": self.action_count,
+                "hidden_dim": self.hidden_dim,
+                "parameter_count": self.parameter_count,
+                "contract_id": self.config.contract_id,
+                "contract_path": self.config.contract_path,
                 "wall_clock_seconds": float(elapsed),
                 "steps_per_second": float(self.global_step / elapsed),
                 "diagnostics_interval": self.config.diagnostics_interval,
@@ -962,8 +973,17 @@ class DQNTrainer:
             "run_dir": str(self.run_dir),
             "seed": self.config.seed,
             "algorithm": self.config.algorithm,
-            "architecture": MODEL_ARCHITECTURE,
+            "architecture": self.config.architecture,
             "num_envs": 1,
+            "model_config": {
+                "architecture": self.config.architecture,
+                "num_actions": self.action_count,
+                "input_shape": list(self.observation_shape),
+                "hidden_dim": self.hidden_dim,
+                "parameter_count": self.parameter_count,
+            },
+            "contract_id": self.config.contract_id,
+            "contract_path": self.config.contract_path,
             "total_steps": self.global_step,
             "training_steps": self.global_step,
             "episodes": self.episode,
@@ -1037,23 +1057,18 @@ class DQNTrainer:
         if "numpy_global" in state:
             np.random.set_state(state["numpy_global"])
         if "torch_cpu" in state:
-            cpu_state = state["torch_cpu"]
-            if not isinstance(cpu_state, torch.Tensor):
-                raise ValueError("checkpoint torch_cpu RNG state must be a tensor")
-            torch.set_rng_state(cpu_state.detach().to(device="cpu", dtype=torch.uint8))
+            torch_cpu_state = state["torch_cpu"]
+            if isinstance(torch_cpu_state, torch.Tensor):
+                torch_cpu_state = torch_cpu_state.detach().cpu()
+            torch.set_rng_state(torch_cpu_state)
         if torch.cuda.is_available() and state.get("torch_cuda") is not None:
-            raw_cuda_states = state["torch_cuda"]
-            if not isinstance(raw_cuda_states, (list, tuple)):
-                raise ValueError("checkpoint torch_cuda RNG state must be a sequence")
-            cuda_states = [
-                value.detach().to(device="cpu", dtype=torch.uint8)
-                if isinstance(value, torch.Tensor)
-                else value
-                for value in raw_cuda_states
-            ]
-            if not all(isinstance(value, torch.Tensor) for value in cuda_states):
-                raise ValueError("checkpoint torch_cuda RNG state must contain tensors")
-            torch.cuda.set_rng_state_all(cuda_states)
+            torch_cuda_states = state["torch_cuda"]
+            if isinstance(torch_cuda_states, (list, tuple)):
+                torch_cuda_states = [
+                    value.detach().cpu() if isinstance(value, torch.Tensor) else value
+                    for value in torch_cuda_states
+                ]
+            torch.cuda.set_rng_state_all(torch_cuda_states)
         if "action_rng" in state:
             self.rng.bit_generator.state = state["action_rng"]
 
@@ -1068,19 +1083,25 @@ class DQNTrainer:
         path = self.checkpoint_dir / f"{filename}.pt"
         temporary_path = path.with_suffix(".tmp")
         payload = {
-            "format_version": 1,
+            "format_version": 2,
             "trainer": "dqn",
+            "run_id": self.run_dir.name,
             "algorithm": self.config.algorithm,
-            "architecture": MODEL_ARCHITECTURE,
+            "architecture": self.config.architecture,
+            "device": self._resolved_device_name(),
+            "requested_device": self.requested_device,
+            "contract_id": self.config.contract_id,
+            "contract_path": self.config.contract_path,
             "num_envs": 1,
             "replay_backend": self.config.replay_backend,
             "training_steps": self.global_step,
             "runtime": self._runtime_metadata(elapsed),
             "model_config": {
-                "architecture": MODEL_ARCHITECTURE,
+                "architecture": self.config.architecture,
                 "num_actions": self.action_count,
                 "input_shape": list(self.observation_shape),
-                "hidden_dim": getattr(self.online_network, "hidden_dim", None),
+                "hidden_dim": self.hidden_dim,
+                "parameter_count": self.parameter_count,
             },
             "online_network": self.online_network.state_dict(),
             "target_network": self.target_network.state_dict(),
@@ -1133,6 +1154,13 @@ class DQNTrainer:
             raise ValueError(
                 "checkpoint algorithm does not match trainer config: "
                 f"checkpoint={saved_algorithm!r}, config={self.config.algorithm!r}"
+            )
+
+        saved_architecture = checkpoint_architecture(payload)
+        if saved_architecture != self.config.architecture:
+            raise ValueError(
+                "checkpoint architecture does not match trainer config: "
+                f"checkpoint={saved_architecture!r}, config={self.config.architecture!r}"
             )
 
         self.online_network.load_state_dict(payload["online_network"])

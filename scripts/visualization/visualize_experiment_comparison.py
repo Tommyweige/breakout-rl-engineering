@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import argparse
 import math
-import multiprocessing
-import queue
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -111,24 +109,47 @@ def _render_local(
     metadata_destination: Path,
     manifest_path: str | Path,
 ) -> None:
-    import matplotlib
+    from PIL import Image, ImageDraw, ImageFont
 
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
+    def font(size: int) -> ImageFont.ImageFont:
+        for candidate in (
+            Path("C:/Windows/Fonts/segoeui.ttf"),
+            Path("C:/Windows/Fonts/arial.ttf"),
+            Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
+        ):
+            if candidate.exists():
+                return ImageFont.truetype(str(candidate), size=size)
+        return ImageFont.load_default()
 
-    figure, axes = plt.subplots(
-        len(selected),
-        1,
-        figsize=(8.5, max(4.2, 3.2 * len(selected))),
-        dpi=160,
-        squeeze=False,
+    title_font = font(22)
+    panel_font = font(18)
+    label_font = font(13)
+    small_font = font(11)
+    panel_height = 275
+    canvas = Image.new(
+        "RGB",
+        (1280, 150 + panel_height * len(selected)),
+        (255, 255, 255),
     )
-    axes_list = [axis for row in axes for axis in row]
-    plotted_labels: list[str] = []
+    draw = ImageDraw.Draw(canvas)
+    draw.text((45, 24), "Day 14 controlled experiment comparison", font=title_font, fill=(17, 24, 39))
     rows_by_run = [(entry, run_dir, read_metrics(run_dir)) for entry, run_dir in entries]
-    for axis, metric in zip(axes_list, selected):
+    colors = ((37, 99, 235), (220, 38, 38), (22, 163, 74), (124, 58, 237), (234, 88, 12))
+    for metric_index, metric in enumerate(selected):
         field, title, ylabel = METRIC_SPECS[metric]
-        plotted = False
+        panel_left, panel_top = 35, 95 + metric_index * panel_height
+        panel_right, panel_bottom = 1245, panel_top + panel_height - 25
+        draw.rounded_rectangle(
+            (panel_left, panel_top, panel_right, panel_bottom),
+            radius=10,
+            fill=(250, 250, 249),
+            outline=(203, 213, 225),
+            width=2,
+        )
+        draw.text((panel_left + 18, panel_top + 14), f"{title} — {ylabel}", font=panel_font, fill=(17, 24, 39))
+        plot_left, plot_top = panel_left + 85, panel_top + 58
+        plot_right, plot_bottom = panel_right - 22, panel_bottom - 45
+        series: list[tuple[str, list[float], list[float], tuple[int, int, int]]] = []
         for entry, run_dir, rows in rows_by_run:
             x_values, y_values = _paired_series(rows, field)
             label = str(entry.get("label", run_dir.name))
@@ -138,60 +159,58 @@ def _render_local(
             )
             label = f"{label} (seed {seed}, {resolved_device})"
             if y_values and metric == "return":
-                line, = axis.plot(
-                    x_values,
-                    y_values,
-                    linewidth=0.9,
-                    marker="o",
-                    markersize=1.8,
-                    alpha=0.3,
-                    label=f"{label} raw",
-                )
+                color = colors[len(series) % len(colors)]
+                series.append((f"{label} raw", x_values, y_values, tuple(min(255, value + 100) for value in color)))
                 rolling_x, rolling_y = _rolling_return_series(rows)
                 if rolling_y:
-                    axis.plot(
-                        rolling_x,
-                        rolling_y,
-                        linewidth=2.0,
-                        color=line.get_color(),
-                        label=f"{label} rolling20",
-                    )
-                plotted = True
-                plotted_labels.append(f"{label} rolling20")
+                    series.append((f"{label} rolling20", rolling_x, rolling_y, color))
             elif y_values:
-                axis.plot(
-                    x_values,
-                    y_values,
-                    linewidth=1.2,
-                    marker=None,
-                    markersize=2.5,
-                    alpha=0.9,
-                    label=label,
-                )
-                plotted = True
-                if label not in plotted_labels:
-                    plotted_labels.append(label)
-        axis.set_title(title)
-        axis.set_xlabel("Environment step")
-        axis.set_ylabel(ylabel)
-        axis.grid(True, alpha=0.25)
-        if not plotted:
-            axis.text(
-                0.5,
-                0.5,
-                "No finite samples in the selected run artifacts",
-                ha="center",
-                va="center",
-                transform=axis.transAxes,
-            )
+                series.append((label, x_values, y_values, colors[len(series) % len(colors)]))
 
-    if plotted_labels:
-        axes_list[0].legend(loc="best", fontsize=8)
-    figure.suptitle("Day 14 controlled experiment comparison", y=0.995)
-    figure.tight_layout()
+        draw.text((plot_left, panel_bottom + 8), "Environment step", font=label_font, fill=(55, 65, 81))
+        draw.text((panel_left + 10, plot_top), ylabel, font=label_font, fill=(55, 65, 81))
+        if not series:
+            draw.rectangle((plot_left, plot_top, plot_right, plot_bottom), outline=(156, 163, 175), width=2)
+            draw.text((plot_left + 240, plot_top + 70), "No finite samples in the selected run artifacts", font=label_font, fill=(75, 85, 99))
+            continue
+        all_x = [value for _label, x_values, _y_values, _color in series for value in x_values]
+        all_y = [value for _label, _x_values, y_values, _color in series for value in y_values]
+        x_min, x_max = min(all_x), max(all_x)
+        y_min, y_max = min(all_y), max(all_y)
+        if x_min == x_max:
+            x_min -= 1.0
+            x_max += 1.0
+        y_padding = max((y_max - y_min) * 0.08, 1e-6)
+        y_min -= y_padding
+        y_max += y_padding
+        for tick_index in range(6):
+            fraction = tick_index / 5
+            y = int(plot_top + fraction * (plot_bottom - plot_top))
+            draw.line((plot_left, y, plot_right, y), fill=(229, 231, 235), width=1)
+            tick = y_max - fraction * (y_max - y_min)
+            draw.text((plot_left - 62, y - 7), f"{tick:.2g}", font=small_font, fill=(107, 114, 128))
+        draw.rectangle((plot_left, plot_top, plot_right, plot_bottom), outline=(107, 114, 128), width=2)
+        for series_index, (label, x_values, y_values, color) in enumerate(series):
+            points = [
+                (
+                    int(plot_left + (x_value - x_min) / (x_max - x_min) * (plot_right - plot_left)),
+                    int(plot_bottom - (y_value - y_min) / (y_max - y_min) * (plot_bottom - plot_top)),
+                )
+                for x_value, y_value in zip(x_values, y_values)
+            ]
+            if len(points) == 1:
+                x, y = points[0]
+                draw.ellipse((x - 3, y - 3, x + 3, y + 3), fill=color)
+            else:
+                draw.line(points, fill=color, width=2, joint="curve")
+            legend_x = plot_left + (series_index % 4) * 270
+            legend_y = panel_top + 18 + (series_index // 4) * 18
+            draw.rectangle((legend_x, legend_y + 3, legend_x + 12, legend_y + 15), fill=color)
+            draw.text((legend_x + 17, legend_y), label[:38], font=small_font, fill=(55, 65, 81))
+        draw.text((plot_left - 4, plot_bottom + 6), f"{x_min:.0f}", font=small_font, fill=(107, 114, 128))
+        draw.text((plot_right - 32, plot_bottom + 6), f"{x_max:.0f}", font=small_font, fill=(107, 114, 128))
     destination.parent.mkdir(parents=True, exist_ok=True)
-    figure.savefig(destination, format="png")
-    plt.close(figure)
+    canvas.save(destination, format="PNG", optimize=True)
     metadata_destination.parent.mkdir(parents=True, exist_ok=True)
     write_json_object(
         metadata_destination,
@@ -203,28 +222,6 @@ def _render_local(
             entries,
         ),
     )
-
-
-def _render_worker(
-    serialized_entries: Sequence[tuple[dict[str, Any], str]],
-    destination: str,
-    selected: Sequence[str],
-    metadata_destination: str,
-    manifest_path: str,
-    result_queue: Any,
-) -> None:
-    try:
-        entries = [(entry, Path(run_dir)) for entry, run_dir in serialized_entries]
-        _render_local(
-            entries,
-            Path(destination),
-            selected=selected,
-            metadata_destination=Path(metadata_destination),
-            manifest_path=manifest_path,
-        )
-        result_queue.put({"ok": True})
-    except Exception as error:  # pragma: no cover - exercised in child process
-        result_queue.put({"ok": False, "error": f"{type(error).__name__}: {error}"})
 
 
 def render_comparison(
@@ -247,39 +244,13 @@ def render_comparison(
         if metadata_path is not None
         else destination.with_suffix(".json")
     )
-    if "torch" not in sys.modules:
-        _render_local(
-            entries,
-            destination,
-            selected=selected,
-            metadata_destination=metadata_destination,
-            manifest_path=manifest_path,
-        )
-        return destination
-
-    context = multiprocessing.get_context("spawn")
-    result_queue = context.Queue()
-    process = context.Process(
-        target=_render_worker,
-        args=(
-            [(dict(entry), str(run_dir)) for entry, run_dir in entries],
-            str(destination),
-            selected,
-            str(metadata_destination),
-            str(Path(manifest_path).resolve()),
-            result_queue,
-        ),
+    _render_local(
+        entries,
+        destination,
+        selected=selected,
+        metadata_destination=metadata_destination,
+        manifest_path=manifest_path,
     )
-    process.start()
-    process.join()
-    try:
-        result = result_queue.get(timeout=5)
-    except queue.Empty:
-        result = None
-    result_queue.close()
-    if process.exitcode != 0 or not isinstance(result, dict) or not result.get("ok"):
-        error = result.get("error") if isinstance(result, dict) else "unknown plotting error"
-        raise RuntimeError(f"plot worker failed: {error}")
     return destination
 
 
