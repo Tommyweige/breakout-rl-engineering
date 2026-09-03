@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import unittest
 
-from bellman_demo import bellman_target, discounted_return
+from scripts.demos.bellman_demo import bellman_target, discounted_return
 
 
 class DiscountedReturnTests(unittest.TestCase):

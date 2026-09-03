@@ -7,7 +7,7 @@ import unittest
 import numpy as np
 import torch
 
-from inspect_dqn_network import collect_dqn_inspection
+from scripts.analysis.inspect_dqn_network import collect_dqn_inspection
 
 
 class DQNInspectionTests(unittest.TestCase):

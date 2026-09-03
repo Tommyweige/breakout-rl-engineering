@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import multiprocessing
+import os
 import queue
 import sys
 from collections import defaultdict
@@ -285,6 +286,11 @@ def _render_training_worker(
     result_queue: Any,
 ) -> None:
     try:
+        # PyTorch and Matplotlib can load separate OpenMP runtimes on Windows.
+        # The worker is isolated specifically to keep those DLLs out of the
+        # training process; allow the plotting-only child to continue when
+        # both runtimes are already present.
+        os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
         outputs = _render_training_local(
             Path(manifest_path),
             Path(output_dir),

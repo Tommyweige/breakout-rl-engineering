@@ -7,7 +7,7 @@ import unittest
 import numpy as np
 import torch
 
-from inspect_cnn_dimensions import collect_cnn_inspection, resolve_device
+from scripts.analysis.inspect_cnn_dimensions import collect_cnn_inspection, resolve_device
 
 
 class CnnInspectionTests(unittest.TestCase):

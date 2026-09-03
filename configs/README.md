@@ -38,6 +38,21 @@ These are algorithm/architecture-facing baseline configs. `algorithm` selects th
 - `eval/` — evaluation protocol and environment contract.
 - `training/` — canonical training-system manifests.
 
+## Day 18 paired comparison
+
+`experiments/day18-dqn-vs-double.json` freezes the Day 18 staged protocol:
+100K screening, a seed-11 250K pilot, and a three-seed 500K main comparison.
+The runner derives every stage config from the Day 16 backend manifest, so the
+algorithm is the only within-pair DQN config variable.
+
+## Day 20 DQN family comparison
+
+`comparisons/dqn-family/manifest.json` freezes the three-family Day 20
+comparison: DQN, Double DQN, and Dueling Double DQN share the Day 16 CUDA
+backend, Contract v2, paired seeds, and staged 100K/250K/500K transition
+milestones. The runner audits compatible Day 18 evidence before adding only
+the missing family runs and can extend the aggregate-selected top two to 1M.
+
 ## Day 14 controlled batches
 
 The Day 14 runner resolves each experiment file to a full `DQNConfig`, records the resolved values, and computes the changed-field diff against the baseline.

@@ -9,7 +9,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from q_learning_demo import (
+from scripts.demos.q_learning_demo import (
     TrainingStep,
     epsilon_greedy_action,
     q_learning_update,

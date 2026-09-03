@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "day": 20,
+  "experiment_id": "day20-dqn-family",
+  "description": "Contract v2 CUDA comparison of DQN, Double DQN, and Dueling Double DQN.",
+  "backend_manifest": "configs/training/day16-canonical-backend.json",
+  "contract": "configs/eval/breakout_contract_v2.json",
+  "evaluation_config": "configs/eval/breakout_eval.json",
+  "probe_states": "assets/day17/probe_states.npz",
+  "families": [
+    {
+      "family_id": "dqn",
+      "label": "DQN",
+      "algorithm": "dqn",
+      "architecture": "standard"
+    },
+    {
+      "family_id": "double_dqn",
+      "label": "Double DQN",
+      "algorithm": "double_dqn",
+      "architecture": "standard"
+    },
+    {
+      "family_id": "dueling_double_dqn",
+      "label": "Dueling Double DQN",
+      "algorithm": "double_dqn",
+      "architecture": "dueling"
+    }
+  ],
+  "training_seeds": [11, 22, 33],
+  "milestones": {
+    "screening": 100000,
+    "pilot": 250000,
+    "main": 500000
+  },
+  "formal_quality_horizon": "main",
+  "execution": {
+    "sequential": true,
+    "require_cuda": true,
+    "requested_device": "cuda",
+    "precision": "float32",
+    "cuda_headroom_bytes": 1073741824
+  },
+  "evidence_reuse": {
+    "enabled": true,
+    "source_manifest": "assets/day18/evidence-manifest.json",
+    "families": ["dqn", "double_dqn"],
+    "rule": "Reuse only after all non-family protocol, config, contract, evaluation, runtime, and Q-probe checks pass."
+  },
+  "optional_1m_extension": {
+    "enabled": true,
+    "target_transitions": 1000000,
+    "max_families": 2,
+    "trigger": "Extend aggregate-selected top two only when 500K quality distributions overlap, paired direction is inconsistent, or healthy curves still show unresolved growth."
+  },
+  "selection": {
+    "primary_metric": "multi_seed_fixed_evaluation_mean",
+    "priority": [
+      "multi-seed fixed evaluation performance",
+      "seed-to-seed robustness",
+      "correctness and training stability",
+      "healthy learning curve",
+      "engineering cost as tie-breaker"
+    ],
+    "forbidden_shortcuts": [
+      "best single episode",
+      "best single seed",
+      "training return peak",
+      "100K score",
+      "GIF appearance"
+    ],
+    "random_baseline": "Contract v2 Random baseline from evaluations/day16-contract-v2-random/results.json"
+  }
+}

@@ -1,0 +1,1411 @@
+{
+  "schema_version": 1,
+  "status": "compatible",
+  "reuse_allowed": true,
+  "source_manifest": "C:/Users/tommy/.codex/worktrees/7bab/breakout-rl-engineering/assets/day18/evidence-manifest.json",
+  "source_manifest_sha256": "0c600d0c4bc4e3c106749a895d00f7ccd87bb1341ff89d589b69924981f3d3d5",
+  "historical_source_note": "Day 18 implementation hashes are retained as provenance; fairness is decided by the shared Contract/backend/config/runtime checks above.",
+  "checks": [
+    {
+      "name": "source status completed",
+      "passed": true,
+      "expected": "completed",
+      "observed": "completed"
+    },
+    {
+      "name": "protocol.training_seeds",
+      "passed": true,
+      "expected": [
+        11,
+        22,
+        33
+      ],
+      "observed": [
+        11,
+        22,
+        33
+      ]
+    },
+    {
+      "name": "protocol.milestones",
+      "passed": true,
+      "expected": {
+        "screening": 100000,
+        "pilot": 250000,
+        "main": 500000
+      },
+      "observed": {
+        "screening": 100000,
+        "pilot": 250000,
+        "main": 500000
+      }
+    },
+    {
+      "name": "protocol.formal_quality_horizon",
+      "passed": true,
+      "expected": "main",
+      "observed": "main"
+    },
+    {
+      "name": "protocol.formal_quality_transitions",
+      "passed": true,
+      "expected": 500000,
+      "observed": 500000
+    },
+    {
+      "name": "protocol.evaluation_seeds",
+      "passed": true,
+      "expected": [
+        101,
+        202,
+        303
+      ],
+      "observed": [
+        101,
+        202,
+        303
+      ]
+    },
+    {
+      "name": "protocol.episodes_per_evaluation_seed",
+      "passed": true,
+      "expected": 5,
+      "observed": 5
+    },
+    {
+      "name": "protocol.evaluation_epsilon",
+      "passed": true,
+      "expected": 0.0,
+      "observed": 0.0
+    },
+    {
+      "name": "protocol.raw_reward",
+      "passed": true,
+      "expected": true,
+      "observed": true
+    },
+    {
+      "name": "protocol.requires_cuda",
+      "passed": true,
+      "expected": true,
+      "observed": true
+    },
+    {
+      "name": "protocol.sequential",
+      "passed": true,
+      "expected": true,
+      "observed": true
+    },
+    {
+      "name": "backend manifest hash",
+      "passed": true,
+      "expected": "519d0a9c0fae2bf1206abe6d10f330dbf4fce4433868e46dcb09f6f27736c5c6",
+      "observed": "519d0a9c0fae2bf1206abe6d10f330dbf4fce4433868e46dcb09f6f27736c5c6"
+    },
+    {
+      "name": "Contract v2 hash",
+      "passed": true,
+      "expected": "e9947fc3a1235100aa92f75a79cf33668b36b4f325f22a0bc8b9546a356b85ba",
+      "observed": "e9947fc3a1235100aa92f75a79cf33668b36b4f325f22a0bc8b9546a356b85ba"
+    },
+    {
+      "name": "evaluation config hash",
+      "passed": true,
+      "expected": "4db7c72c44b74d00c0ab933d3b2ebc25d67e92f82b90f24e53525d33f795a6b2",
+      "observed": "4db7c72c44b74d00c0ab933d3b2ebc25d67e92f82b90f24e53525d33f795a6b2"
+    },
+    {
+      "name": "probe states hash",
+      "passed": true,
+      "expected": "c14c780c89a3b7d71584fcf1283e9e180a4d85e357fbdd8a50ff6bc8bf965a9f",
+      "observed": "c14c780c89a3b7d71584fcf1283e9e180a4d85e357fbdd8a50ff6bc8bf965a9f"
+    },
+    {
+      "name": "Day 16 backend control values",
+      "passed": true,
+      "expected": {
+        "gamma": 0.99,
+        "learning_rate": 0.0001,
+        "batch_size": 32,
+        "replay_capacity": 10000,
+        "learning_starts": 1000,
+        "train_frequency": 4,
+        "target_update_interval": 500,
+        "epsilon_start": 0.9,
+        "epsilon_end": 0.05,
+        "epsilon_decay_steps": 10000,
+        "gradient_clip_norm": 10.0,
+        "reward_clip": true,
+        "device": "cuda",
+        "precision": "float32",
+        "cpu_threads": 2,
+        "replay_transfer": "direct",
+        "replay_backend": "gpu",
+        "profile_stages": true,
+        "num_envs": 2,
+        "strict_action_selection_parity": true,
+        "diagnostics_interval": 100,
+        "metrics_flush_interval": 500
+      },
+      "observed": {
+        "gamma": 0.99,
+        "learning_rate": 0.0001,
+        "batch_size": 32,
+        "replay_capacity": 10000,
+        "learning_starts": 1000,
+        "train_frequency": 4,
+        "target_update_interval": 500,
+        "epsilon_start": 0.9,
+        "epsilon_end": 0.05,
+        "epsilon_decay_steps": 10000,
+        "gradient_clip_norm": 10.0,
+        "reward_clip": true,
+        "device": "cuda",
+        "precision": "float32",
+        "cpu_threads": 2,
+        "replay_transfer": "direct",
+        "replay_backend": "gpu",
+        "profile_stages": true,
+        "num_envs": 2,
+        "strict_action_selection_parity": true,
+        "diagnostics_interval": 100,
+        "metrics_flush_interval": 500
+      }
+    },
+    {
+      "name": "all Day 18 family/seed/stage entries exist",
+      "passed": true,
+      "expected": 18,
+      "observed": 18
+    },
+    {
+      "name": "run double_dqn/seed11/main common config",
+      "passed": true,
+      "observed": "match"
+    },
+    {
+      "name": "run double_dqn/seed11/main required training metrics",
+      "passed": true,
+      "expected": [
+        "loss",
+        "q_mean",
+        "q_max",
+        "target_mean",
+        "td_error_mean_abs",
+        "gradient_norm",
+        "sps"
+      ]
+    },
+    {
+      "name": "run double_dqn/seed11/main completed exact budget",
+      "passed": true,
+      "expected": 500000,
+      "observed": {
+        "status": "completed",
+        "total_transitions": 500000
+      }
+    },
+    {
+      "name": "run double_dqn/seed11/main formal CUDA runtime",
+      "passed": true,
+      "expected": {
+        "requested_device": "cuda",
+        "precision": "float32",
+        "cuda_available": true
+      },
+      "observed": {
+        "requested_device": "cuda",
+        "resolved_device": "cuda:0",
+        "precision": "float32",
+        "cuda_available": true
+      }
+    },
+    {
+      "name": "run double_dqn/seed11/main Contract v2",
+      "passed": true
+    },
+    {
+      "name": "run double_dqn/seed11/main evaluation",
+      "passed": true
+    },
+    {
+      "name": "run double_dqn/seed11/main Q probe",
+      "passed": true
+    },
+    {
+      "name": "run double_dqn/seed11/main raw artifacts",
+      "passed": true,
+      "observed": "match"
+    },
+    {
+      "name": "run dqn/seed11/main common config",
+      "passed": true,
+      "observed": "match"
+    },
+    {
+      "name": "run dqn/seed11/main required training metrics",
+      "passed": true,
+      "expected": [
+        "loss",
+        "q_mean",
+        "q_max",
+        "target_mean",
+        "td_error_mean_abs",
+        "gradient_norm",
+        "sps"
+      ]
+    },
+    {
+      "name": "run dqn/seed11/main completed exact budget",
+      "passed": true,
+      "expected": 500000,
+      "observed": {
+        "status": "completed",
+        "total_transitions": 500000
+      }
+    },
+    {
+      "name": "run dqn/seed11/main formal CUDA runtime",
+      "passed": true,
+      "expected": {
+        "requested_device": "cuda",
+        "precision": "float32",
+        "cuda_available": true
+      },
+      "observed": {
+        "requested_device": "cuda",
+        "resolved_device": "cuda:0",
+        "precision": "float32",
+        "cuda_available": true
+      }
+    },
+    {
+      "name": "run dqn/seed11/main Contract v2",
+      "passed": true
+    },
+    {
+      "name": "run dqn/seed11/main evaluation",
+      "passed": true
+    },
+    {
+      "name": "run dqn/seed11/main Q probe",
+      "passed": true
+    },
+    {
+      "name": "run dqn/seed11/main raw artifacts",
+      "passed": true,
+      "observed": "match"
+    },
+    {
+      "name": "run double_dqn/seed22/main common config",
+      "passed": true,
+      "observed": "match"
+    },
+    {
+      "name": "run double_dqn/seed22/main required training metrics",
+      "passed": true,
+      "expected": [
+        "loss",
+        "q_mean",
+        "q_max",
+        "target_mean",
+        "td_error_mean_abs",
+        "gradient_norm",
+        "sps"
+      ]
+    },
+    {
+      "name": "run double_dqn/seed22/main completed exact budget",
+      "passed": true,
+      "expected": 500000,
+      "observed": {
+        "status": "completed",
+        "total_transitions": 500000
+      }
+    },
+    {
+      "name": "run double_dqn/seed22/main formal CUDA runtime",
+      "passed": true,
+      "expected": {
+        "requested_device": "cuda",
+        "precision": "float32",
+        "cuda_available": true
+      },
+      "observed": {
+        "requested_device": "cuda",
+        "resolved_device": "cuda:0",
+        "precision": "float32",
+        "cuda_available": true
+      }
+    },
+    {
+      "name": "run double_dqn/seed22/main Contract v2",
+      "passed": true
+    },
+    {
+      "name": "run double_dqn/seed22/main evaluation",
+      "passed": true
+    },
+    {
+      "name": "run double_dqn/seed22/main Q probe",
+      "passed": true
+    },
+    {
+      "name": "run double_dqn/seed22/main raw artifacts",
+      "passed": true,
+      "observed": "match"
+    },
+    {
+      "name": "run dqn/seed22/main common config",
+      "passed": true,
+      "observed": "match"
+    },
+    {
+      "name": "run dqn/seed22/main required training metrics",
+      "passed": true,
+      "expected": [
+        "loss",
+        "q_mean",
+        "q_max",
+        "target_mean",
+        "td_error_mean_abs",
+        "gradient_norm",
+        "sps"
+      ]
+    },
+    {
+      "name": "run dqn/seed22/main completed exact budget",
+      "passed": true,
+      "expected": 500000,
+      "observed": {
+        "status": "completed",
+        "total_transitions": 500000
+      }
+    },
+    {
+      "name": "run dqn/seed22/main formal CUDA runtime",
+      "passed": true,
+      "expected": {
+        "requested_device": "cuda",
+        "precision": "float32",
+        "cuda_available": true
+      },
+      "observed": {
+        "requested_device": "cuda",
+        "resolved_device": "cuda:0",
+        "precision": "float32",
+        "cuda_available": true
+      }
+    },
+    {
+      "name": "run dqn/seed22/main Contract v2",
+      "passed": true
+    },
+    {
+      "name": "run dqn/seed22/main evaluation",
+      "passed": true
+    },
+    {
+      "name": "run dqn/seed22/main Q probe",
+      "passed": true
+    },
+    {
+      "name": "run dqn/seed22/main raw artifacts",
+      "passed": true,
+      "observed": "match"
+    },
+    {
+      "name": "run double_dqn/seed33/main common config",
+      "passed": true,
+      "observed": "match"
+    },
+    {
+      "name": "run double_dqn/seed33/main required training metrics",
+      "passed": true,
+      "expected": [
+        "loss",
+        "q_mean",
+        "q_max",
+        "target_mean",
+        "td_error_mean_abs",
+        "gradient_norm",
+        "sps"
+      ]
+    },
+    {
+      "name": "run double_dqn/seed33/main completed exact budget",
+      "passed": true,
+      "expected": 500000,
+      "observed": {
+        "status": "completed",
+        "total_transitions": 500000
+      }
+    },
+    {
+      "name": "run double_dqn/seed33/main formal CUDA runtime",
+      "passed": true,
+      "expected": {
+        "requested_device": "cuda",
+        "precision": "float32",
+        "cuda_available": true
+      },
+      "observed": {
+        "requested_device": "cuda",
+        "resolved_device": "cuda:0",
+        "precision": "float32",
+        "cuda_available": true
+      }
+    },
+    {
+      "name": "run double_dqn/seed33/main Contract v2",
+      "passed": true
+    },
+    {
+      "name": "run double_dqn/seed33/main evaluation",
+      "passed": true
+    },
+    {
+      "name": "run double_dqn/seed33/main Q probe",
+      "passed": true
+    },
+    {
+      "name": "run double_dqn/seed33/main raw artifacts",
+      "passed": true,
+      "observed": "match"
+    },
+    {
+      "name": "run dqn/seed33/main common config",
+      "passed": true,
+      "observed": "match"
+    },
+    {
+      "name": "run dqn/seed33/main required training metrics",
+      "passed": true,
+      "expected": [
+        "loss",
+        "q_mean",
+        "q_max",
+        "target_mean",
+        "td_error_mean_abs",
+        "gradient_norm",
+        "sps"
+      ]
+    },
+    {
+      "name": "run dqn/seed33/main completed exact budget",
+      "passed": true,
+      "expected": 500000,
+      "observed": {
+        "status": "completed",
+        "total_transitions": 500000
+      }
+    },
+    {
+      "name": "run dqn/seed33/main formal CUDA runtime",
+      "passed": true,
+      "expected": {
+        "requested_device": "cuda",
+        "precision": "float32",
+        "cuda_available": true
+      },
+      "observed": {
+        "requested_device": "cuda",
+        "resolved_device": "cuda:0",
+        "precision": "float32",
+        "cuda_available": true
+      }
+    },
+    {
+      "name": "run dqn/seed33/main Contract v2",
+      "passed": true
+    },
+    {
+      "name": "run dqn/seed33/main evaluation",
+      "passed": true
+    },
+    {
+      "name": "run dqn/seed33/main Q probe",
+      "passed": true
+    },
+    {
+      "name": "run dqn/seed33/main raw artifacts",
+      "passed": true,
+      "observed": "match"
+    },
+    {
+      "name": "run double_dqn/seed11/pilot common config",
+      "passed": true,
+      "observed": "match"
+    },
+    {
+      "name": "run double_dqn/seed11/pilot required training metrics",
+      "passed": true,
+      "expected": [
+        "loss",
+        "q_mean",
+        "q_max",
+        "target_mean",
+        "td_error_mean_abs",
+        "gradient_norm",
+        "sps"
+      ]
+    },
+    {
+      "name": "run double_dqn/seed11/pilot completed exact budget",
+      "passed": true,
+      "expected": 250000,
+      "observed": {
+        "status": "completed",
+        "total_transitions": 250000
+      }
+    },
+    {
+      "name": "run double_dqn/seed11/pilot formal CUDA runtime",
+      "passed": true,
+      "expected": {
+        "requested_device": "cuda",
+        "precision": "float32",
+        "cuda_available": true
+      },
+      "observed": {
+        "requested_device": "cuda",
+        "resolved_device": "cuda:0",
+        "precision": "float32",
+        "cuda_available": true
+      }
+    },
+    {
+      "name": "run double_dqn/seed11/pilot Contract v2",
+      "passed": true
+    },
+    {
+      "name": "run double_dqn/seed11/pilot evaluation",
+      "passed": true
+    },
+    {
+      "name": "run double_dqn/seed11/pilot Q probe",
+      "passed": true
+    },
+    {
+      "name": "run double_dqn/seed11/pilot raw artifacts",
+      "passed": true,
+      "observed": "match"
+    },
+    {
+      "name": "run dqn/seed11/pilot common config",
+      "passed": true,
+      "observed": "match"
+    },
+    {
+      "name": "run dqn/seed11/pilot required training metrics",
+      "passed": true,
+      "expected": [
+        "loss",
+        "q_mean",
+        "q_max",
+        "target_mean",
+        "td_error_mean_abs",
+        "gradient_norm",
+        "sps"
+      ]
+    },
+    {
+      "name": "run dqn/seed11/pilot completed exact budget",
+      "passed": true,
+      "expected": 250000,
+      "observed": {
+        "status": "completed",
+        "total_transitions": 250000
+      }
+    },
+    {
+      "name": "run dqn/seed11/pilot formal CUDA runtime",
+      "passed": true,
+      "expected": {
+        "requested_device": "cuda",
+        "precision": "float32",
+        "cuda_available": true
+      },
+      "observed": {
+        "requested_device": "cuda",
+        "resolved_device": "cuda:0",
+        "precision": "float32",
+        "cuda_available": true
+      }
+    },
+    {
+      "name": "run dqn/seed11/pilot Contract v2",
+      "passed": true
+    },
+    {
+      "name": "run dqn/seed11/pilot evaluation",
+      "passed": true
+    },
+    {
+      "name": "run dqn/seed11/pilot Q probe",
+      "passed": true
+    },
+    {
+      "name": "run dqn/seed11/pilot raw artifacts",
+      "passed": true,
+      "observed": "match"
+    },
+    {
+      "name": "run double_dqn/seed22/pilot common config",
+      "passed": true,
+      "observed": "match"
+    },
+    {
+      "name": "run double_dqn/seed22/pilot required training metrics",
+      "passed": true,
+      "expected": [
+        "loss",
+        "q_mean",
+        "q_max",
+        "target_mean",
+        "td_error_mean_abs",
+        "gradient_norm",
+        "sps"
+      ]
+    },
+    {
+      "name": "run double_dqn/seed22/pilot completed exact budget",
+      "passed": true,
+      "expected": 250000,
+      "observed": {
+        "status": "completed",
+        "total_transitions": 250000
+      }
+    },
+    {
+      "name": "run double_dqn/seed22/pilot formal CUDA runtime",
+      "passed": true,
+      "expected": {
+        "requested_device": "cuda",
+        "precision": "float32",
+        "cuda_available": true
+      },
+      "observed": {
+        "requested_device": "cuda",
+        "resolved_device": "cuda:0",
+        "precision": "float32",
+        "cuda_available": true
+      }
+    },
+    {
+      "name": "run double_dqn/seed22/pilot Contract v2",
+      "passed": true
+    },
+    {
+      "name": "run double_dqn/seed22/pilot evaluation",
+      "passed": true
+    },
+    {
+      "name": "run double_dqn/seed22/pilot Q probe",
+      "passed": true
+    },
+    {
+      "name": "run double_dqn/seed22/pilot raw artifacts",
+      "passed": true,
+      "observed": "match"
+    },
+    {
+      "name": "run dqn/seed22/pilot common config",
+      "passed": true,
+      "observed": "match"
+    },
+    {
+      "name": "run dqn/seed22/pilot required training metrics",
+      "passed": true,
+      "expected": [
+        "loss",
+        "q_mean",
+        "q_max",
+        "target_mean",
+        "td_error_mean_abs",
+        "gradient_norm",
+        "sps"
+      ]
+    },
+    {
+      "name": "run dqn/seed22/pilot completed exact budget",
+      "passed": true,
+      "expected": 250000,
+      "observed": {
+        "status": "completed",
+        "total_transitions": 250000
+      }
+    },
+    {
+      "name": "run dqn/seed22/pilot formal CUDA runtime",
+      "passed": true,
+      "expected": {
+        "requested_device": "cuda",
+        "precision": "float32",
+        "cuda_available": true
+      },
+      "observed": {
+        "requested_device": "cuda",
+        "resolved_device": "cuda:0",
+        "precision": "float32",
+        "cuda_available": true
+      }
+    },
+    {
+      "name": "run dqn/seed22/pilot Contract v2",
+      "passed": true
+    },
+    {
+      "name": "run dqn/seed22/pilot evaluation",
+      "passed": true
+    },
+    {
+      "name": "run dqn/seed22/pilot Q probe",
+      "passed": true
+    },
+    {
+      "name": "run dqn/seed22/pilot raw artifacts",
+      "passed": true,
+      "observed": "match"
+    },
+    {
+      "name": "run double_dqn/seed33/pilot common config",
+      "passed": true,
+      "observed": "match"
+    },
+    {
+      "name": "run double_dqn/seed33/pilot required training metrics",
+      "passed": true,
+      "expected": [
+        "loss",
+        "q_mean",
+        "q_max",
+        "target_mean",
+        "td_error_mean_abs",
+        "gradient_norm",
+        "sps"
+      ]
+    },
+    {
+      "name": "run double_dqn/seed33/pilot completed exact budget",
+      "passed": true,
+      "expected": 250000,
+      "observed": {
+        "status": "completed",
+        "total_transitions": 250000
+      }
+    },
+    {
+      "name": "run double_dqn/seed33/pilot formal CUDA runtime",
+      "passed": true,
+      "expected": {
+        "requested_device": "cuda",
+        "precision": "float32",
+        "cuda_available": true
+      },
+      "observed": {
+        "requested_device": "cuda",
+        "resolved_device": "cuda:0",
+        "precision": "float32",
+        "cuda_available": true
+      }
+    },
+    {
+      "name": "run double_dqn/seed33/pilot Contract v2",
+      "passed": true
+    },
+    {
+      "name": "run double_dqn/seed33/pilot evaluation",
+      "passed": true
+    },
+    {
+      "name": "run double_dqn/seed33/pilot Q probe",
+      "passed": true
+    },
+    {
+      "name": "run double_dqn/seed33/pilot raw artifacts",
+      "passed": true,
+      "observed": "match"
+    },
+    {
+      "name": "run dqn/seed33/pilot common config",
+      "passed": true,
+      "observed": "match"
+    },
+    {
+      "name": "run dqn/seed33/pilot required training metrics",
+      "passed": true,
+      "expected": [
+        "loss",
+        "q_mean",
+        "q_max",
+        "target_mean",
+        "td_error_mean_abs",
+        "gradient_norm",
+        "sps"
+      ]
+    },
+    {
+      "name": "run dqn/seed33/pilot completed exact budget",
+      "passed": true,
+      "expected": 250000,
+      "observed": {
+        "status": "completed",
+        "total_transitions": 250000
+      }
+    },
+    {
+      "name": "run dqn/seed33/pilot formal CUDA runtime",
+      "passed": true,
+      "expected": {
+        "requested_device": "cuda",
+        "precision": "float32",
+        "cuda_available": true
+      },
+      "observed": {
+        "requested_device": "cuda",
+        "resolved_device": "cuda:0",
+        "precision": "float32",
+        "cuda_available": true
+      }
+    },
+    {
+      "name": "run dqn/seed33/pilot Contract v2",
+      "passed": true
+    },
+    {
+      "name": "run dqn/seed33/pilot evaluation",
+      "passed": true
+    },
+    {
+      "name": "run dqn/seed33/pilot Q probe",
+      "passed": true
+    },
+    {
+      "name": "run dqn/seed33/pilot raw artifacts",
+      "passed": true,
+      "observed": "match"
+    },
+    {
+      "name": "run double_dqn/seed11/screening common config",
+      "passed": true,
+      "observed": "match"
+    },
+    {
+      "name": "run double_dqn/seed11/screening required training metrics",
+      "passed": true,
+      "expected": [
+        "loss",
+        "q_mean",
+        "q_max",
+        "target_mean",
+        "td_error_mean_abs",
+        "gradient_norm",
+        "sps"
+      ]
+    },
+    {
+      "name": "run double_dqn/seed11/screening completed exact budget",
+      "passed": true,
+      "expected": 100000,
+      "observed": {
+        "status": "completed",
+        "total_transitions": 100000
+      }
+    },
+    {
+      "name": "run double_dqn/seed11/screening formal CUDA runtime",
+      "passed": true,
+      "expected": {
+        "requested_device": "cuda",
+        "precision": "float32",
+        "cuda_available": true
+      },
+      "observed": {
+        "requested_device": "cuda",
+        "resolved_device": "cuda:0",
+        "precision": "float32",
+        "cuda_available": true
+      }
+    },
+    {
+      "name": "run double_dqn/seed11/screening Contract v2",
+      "passed": true
+    },
+    {
+      "name": "run double_dqn/seed11/screening evaluation",
+      "passed": true
+    },
+    {
+      "name": "run double_dqn/seed11/screening Q probe",
+      "passed": true
+    },
+    {
+      "name": "run double_dqn/seed11/screening raw artifacts",
+      "passed": true,
+      "observed": "match"
+    },
+    {
+      "name": "run dqn/seed11/screening common config",
+      "passed": true,
+      "observed": "match"
+    },
+    {
+      "name": "run dqn/seed11/screening required training metrics",
+      "passed": true,
+      "expected": [
+        "loss",
+        "q_mean",
+        "q_max",
+        "target_mean",
+        "td_error_mean_abs",
+        "gradient_norm",
+        "sps"
+      ]
+    },
+    {
+      "name": "run dqn/seed11/screening completed exact budget",
+      "passed": true,
+      "expected": 100000,
+      "observed": {
+        "status": "completed",
+        "total_transitions": 100000
+      }
+    },
+    {
+      "name": "run dqn/seed11/screening formal CUDA runtime",
+      "passed": true,
+      "expected": {
+        "requested_device": "cuda",
+        "precision": "float32",
+        "cuda_available": true
+      },
+      "observed": {
+        "requested_device": "cuda",
+        "resolved_device": "cuda:0",
+        "precision": "float32",
+        "cuda_available": true
+      }
+    },
+    {
+      "name": "run dqn/seed11/screening Contract v2",
+      "passed": true
+    },
+    {
+      "name": "run dqn/seed11/screening evaluation",
+      "passed": true
+    },
+    {
+      "name": "run dqn/seed11/screening Q probe",
+      "passed": true
+    },
+    {
+      "name": "run dqn/seed11/screening raw artifacts",
+      "passed": true,
+      "observed": "match"
+    },
+    {
+      "name": "run double_dqn/seed22/screening common config",
+      "passed": true,
+      "observed": "match"
+    },
+    {
+      "name": "run double_dqn/seed22/screening required training metrics",
+      "passed": true,
+      "expected": [
+        "loss",
+        "q_mean",
+        "q_max",
+        "target_mean",
+        "td_error_mean_abs",
+        "gradient_norm",
+        "sps"
+      ]
+    },
+    {
+      "name": "run double_dqn/seed22/screening completed exact budget",
+      "passed": true,
+      "expected": 100000,
+      "observed": {
+        "status": "completed",
+        "total_transitions": 100000
+      }
+    },
+    {
+      "name": "run double_dqn/seed22/screening formal CUDA runtime",
+      "passed": true,
+      "expected": {
+        "requested_device": "cuda",
+        "precision": "float32",
+        "cuda_available": true
+      },
+      "observed": {
+        "requested_device": "cuda",
+        "resolved_device": "cuda:0",
+        "precision": "float32",
+        "cuda_available": true
+      }
+    },
+    {
+      "name": "run double_dqn/seed22/screening Contract v2",
+      "passed": true
+    },
+    {
+      "name": "run double_dqn/seed22/screening evaluation",
+      "passed": true
+    },
+    {
+      "name": "run double_dqn/seed22/screening Q probe",
+      "passed": true
+    },
+    {
+      "name": "run double_dqn/seed22/screening raw artifacts",
+      "passed": true,
+      "observed": "match"
+    },
+    {
+      "name": "run dqn/seed22/screening common config",
+      "passed": true,
+      "observed": "match"
+    },
+    {
+      "name": "run dqn/seed22/screening required training metrics",
+      "passed": true,
+      "expected": [
+        "loss",
+        "q_mean",
+        "q_max",
+        "target_mean",
+        "td_error_mean_abs",
+        "gradient_norm",
+        "sps"
+      ]
+    },
+    {
+      "name": "run dqn/seed22/screening completed exact budget",
+      "passed": true,
+      "expected": 100000,
+      "observed": {
+        "status": "completed",
+        "total_transitions": 100000
+      }
+    },
+    {
+      "name": "run dqn/seed22/screening formal CUDA runtime",
+      "passed": true,
+      "expected": {
+        "requested_device": "cuda",
+        "precision": "float32",
+        "cuda_available": true
+      },
+      "observed": {
+        "requested_device": "cuda",
+        "resolved_device": "cuda:0",
+        "precision": "float32",
+        "cuda_available": true
+      }
+    },
+    {
+      "name": "run dqn/seed22/screening Contract v2",
+      "passed": true
+    },
+    {
+      "name": "run dqn/seed22/screening evaluation",
+      "passed": true
+    },
+    {
+      "name": "run dqn/seed22/screening Q probe",
+      "passed": true
+    },
+    {
+      "name": "run dqn/seed22/screening raw artifacts",
+      "passed": true,
+      "observed": "match"
+    },
+    {
+      "name": "run double_dqn/seed33/screening common config",
+      "passed": true,
+      "observed": "match"
+    },
+    {
+      "name": "run double_dqn/seed33/screening required training metrics",
+      "passed": true,
+      "expected": [
+        "loss",
+        "q_mean",
+        "q_max",
+        "target_mean",
+        "td_error_mean_abs",
+        "gradient_norm",
+        "sps"
+      ]
+    },
+    {
+      "name": "run double_dqn/seed33/screening completed exact budget",
+      "passed": true,
+      "expected": 100000,
+      "observed": {
+        "status": "completed",
+        "total_transitions": 100000
+      }
+    },
+    {
+      "name": "run double_dqn/seed33/screening formal CUDA runtime",
+      "passed": true,
+      "expected": {
+        "requested_device": "cuda",
+        "precision": "float32",
+        "cuda_available": true
+      },
+      "observed": {
+        "requested_device": "cuda",
+        "resolved_device": "cuda:0",
+        "precision": "float32",
+        "cuda_available": true
+      }
+    },
+    {
+      "name": "run double_dqn/seed33/screening Contract v2",
+      "passed": true
+    },
+    {
+      "name": "run double_dqn/seed33/screening evaluation",
+      "passed": true
+    },
+    {
+      "name": "run double_dqn/seed33/screening Q probe",
+      "passed": true
+    },
+    {
+      "name": "run double_dqn/seed33/screening raw artifacts",
+      "passed": true,
+      "observed": "match"
+    },
+    {
+      "name": "run dqn/seed33/screening common config",
+      "passed": true,
+      "observed": "match"
+    },
+    {
+      "name": "run dqn/seed33/screening required training metrics",
+      "passed": true,
+      "expected": [
+        "loss",
+        "q_mean",
+        "q_max",
+        "target_mean",
+        "td_error_mean_abs",
+        "gradient_norm",
+        "sps"
+      ]
+    },
+    {
+      "name": "run dqn/seed33/screening completed exact budget",
+      "passed": true,
+      "expected": 100000,
+      "observed": {
+        "status": "completed",
+        "total_transitions": 100000
+      }
+    },
+    {
+      "name": "run dqn/seed33/screening formal CUDA runtime",
+      "passed": true,
+      "expected": {
+        "requested_device": "cuda",
+        "precision": "float32",
+        "cuda_available": true
+      },
+      "observed": {
+        "requested_device": "cuda",
+        "resolved_device": "cuda:0",
+        "precision": "float32",
+        "cuda_available": true
+      }
+    },
+    {
+      "name": "run dqn/seed33/screening Contract v2",
+      "passed": true
+    },
+    {
+      "name": "run dqn/seed33/screening evaluation",
+      "passed": true
+    },
+    {
+      "name": "run dqn/seed33/screening Q probe",
+      "passed": true
+    },
+    {
+      "name": "run dqn/seed33/screening raw artifacts",
+      "passed": true,
+      "observed": "match"
+    },
+    {
+      "name": "Day 18 formal runtime identity is consistent",
+      "passed": true,
+      "observed": {
+        "cuda_device_name": [
+          "NVIDIA GeForce RTX 4060 Laptop GPU"
+        ],
+        "cuda_device_index": [
+          "0"
+        ],
+        "pytorch_version": [
+          "2.13.0+cu130"
+        ],
+        "torch_cuda_version": [
+          "13.0"
+        ]
+      }
+    }
+  ],
+  "incompatibilities": [],
+  "reusable_entries": [
+    {
+      "algorithm": "double_dqn",
+      "architecture": "standard",
+      "training_seed": 11,
+      "stage": "main",
+      "source_run_id": "day18-dqn-vs-double-double_dqn-seed11-main",
+      "source_run_dir": "evidence-runs/double_dqn-seed11-main"
+    },
+    {
+      "algorithm": "dqn",
+      "architecture": "standard",
+      "training_seed": 11,
+      "stage": "main",
+      "source_run_id": "day18-dqn-vs-double-dqn-seed11-main",
+      "source_run_dir": "evidence-runs/dqn-seed11-main"
+    },
+    {
+      "algorithm": "double_dqn",
+      "architecture": "standard",
+      "training_seed": 22,
+      "stage": "main",
+      "source_run_id": "day18-dqn-vs-double-double_dqn-seed22-main",
+      "source_run_dir": "evidence-runs/double_dqn-seed22-main"
+    },
+    {
+      "algorithm": "dqn",
+      "architecture": "standard",
+      "training_seed": 22,
+      "stage": "main",
+      "source_run_id": "day18-dqn-vs-double-dqn-seed22-main",
+      "source_run_dir": "evidence-runs/dqn-seed22-main"
+    },
+    {
+      "algorithm": "double_dqn",
+      "architecture": "standard",
+      "training_seed": 33,
+      "stage": "main",
+      "source_run_id": "day18-dqn-vs-double-double_dqn-seed33-main",
+      "source_run_dir": "evidence-runs/double_dqn-seed33-main"
+    },
+    {
+      "algorithm": "dqn",
+      "architecture": "standard",
+      "training_seed": 33,
+      "stage": "main",
+      "source_run_id": "day18-dqn-vs-double-dqn-seed33-main",
+      "source_run_dir": "evidence-runs/dqn-seed33-main"
+    },
+    {
+      "algorithm": "double_dqn",
+      "architecture": "standard",
+      "training_seed": 11,
+      "stage": "pilot",
+      "source_run_id": "day18-dqn-vs-double-double_dqn-seed11-pilot",
+      "source_run_dir": "evidence-runs/double_dqn-seed11-pilot"
+    },
+    {
+      "algorithm": "dqn",
+      "architecture": "standard",
+      "training_seed": 11,
+      "stage": "pilot",
+      "source_run_id": "day18-dqn-vs-double-dqn-seed11-pilot",
+      "source_run_dir": "evidence-runs/dqn-seed11-pilot"
+    },
+    {
+      "algorithm": "double_dqn",
+      "architecture": "standard",
+      "training_seed": 22,
+      "stage": "pilot",
+      "source_run_id": "day18-dqn-vs-double-double_dqn-seed22-pilot",
+      "source_run_dir": "evidence-runs/double_dqn-seed22-pilot"
+    },
+    {
+      "algorithm": "dqn",
+      "architecture": "standard",
+      "training_seed": 22,
+      "stage": "pilot",
+      "source_run_id": "day18-dqn-vs-double-dqn-seed22-pilot",
+      "source_run_dir": "evidence-runs/dqn-seed22-pilot"
+    },
+    {
+      "algorithm": "double_dqn",
+      "architecture": "standard",
+      "training_seed": 33,
+      "stage": "pilot",
+      "source_run_id": "day18-dqn-vs-double-double_dqn-seed33-pilot",
+      "source_run_dir": "evidence-runs/double_dqn-seed33-pilot"
+    },
+    {
+      "algorithm": "dqn",
+      "architecture": "standard",
+      "training_seed": 33,
+      "stage": "pilot",
+      "source_run_id": "day18-dqn-vs-double-dqn-seed33-pilot",
+      "source_run_dir": "evidence-runs/dqn-seed33-pilot"
+    },
+    {
+      "algorithm": "double_dqn",
+      "architecture": "standard",
+      "training_seed": 11,
+      "stage": "screening",
+      "source_run_id": "day18-dqn-vs-double-double_dqn-seed11-screening",
+      "source_run_dir": "evidence-runs/double_dqn-seed11-screening"
+    },
+    {
+      "algorithm": "dqn",
+      "architecture": "standard",
+      "training_seed": 11,
+      "stage": "screening",
+      "source_run_id": "day18-dqn-vs-double-dqn-seed11-screening",
+      "source_run_dir": "evidence-runs/dqn-seed11-screening"
+    },
+    {
+      "algorithm": "double_dqn",
+      "architecture": "standard",
+      "training_seed": 22,
+      "stage": "screening",
+      "source_run_id": "day18-dqn-vs-double-double_dqn-seed22-screening",
+      "source_run_dir": "evidence-runs/double_dqn-seed22-screening"
+    },
+    {
+      "algorithm": "dqn",
+      "architecture": "standard",
+      "training_seed": 22,
+      "stage": "screening",
+      "source_run_id": "day18-dqn-vs-double-dqn-seed22-screening",
+      "source_run_dir": "evidence-runs/dqn-seed22-screening"
+    },
+    {
+      "algorithm": "double_dqn",
+      "architecture": "standard",
+      "training_seed": 33,
+      "stage": "screening",
+      "source_run_id": "day18-dqn-vs-double-double_dqn-seed33-screening",
+      "source_run_dir": "evidence-runs/double_dqn-seed33-screening"
+    },
+    {
+      "algorithm": "dqn",
+      "architecture": "standard",
+      "training_seed": 33,
+      "stage": "screening",
+      "source_run_id": "day18-dqn-vs-double-dqn-seed33-screening",
+      "source_run_dir": "evidence-runs/dqn-seed33-screening"
+    }
+  ],
+  "reusable_entry_count": 18,
+  "expected_reusable_entry_count": 18
+}

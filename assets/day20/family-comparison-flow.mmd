@@ -1,0 +1,14 @@
+flowchart LR
+    A[Load Day 20 protocol] --> B[Audit Day 18 evidence]
+    B --> C{Shared conditions match?}
+    C -->|yes| D[Reuse DQN + Double DQN]
+    C -->|no| E[Fresh runs for all families]
+    D --> F[100K screening<br/>→ 250K progress<br/>→ 500K main]
+    E --> F
+    F --> G[Fixed evaluation<br/>and Q probes]
+    G --> H[Aggregate complete<br/>CUDA runs by family]
+    H --> I{Top two still<br/>unresolved?}
+    I -->|no| J[Select final-training family]
+    I -->|yes| K[Extend aggregate-selected<br/>top two to 1M]
+    K --> L[Complete evaluation<br/>and Q probes]
+    L --> J

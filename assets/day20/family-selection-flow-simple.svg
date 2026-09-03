@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="1020" viewBox="0 0 960 1020" role="img" aria-labelledby="title desc">
+  <title id="title">Day 20 模型選擇流程</title>
+  <desc id="desc">三個 DQN family 在相同規則與三個 seeds 下比較到 500K。Dueling 平均最高，但 seed 33 方向相反，所以只把 Double DQN 與 Dueling Double DQN 延長到 1M。1M 三組 paired seed 都由 Dueling 勝出，因此選為 Day 21 Final-Training family。</desc>
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L12,6 L0,12 Z" fill="#475569"/>
+    </marker>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="3" stdDeviation="5" flood-opacity="0.10"/>
+    </filter>
+  </defs>
+
+  <rect width="960" height="1020" fill="#ffffff"/>
+  <text x="480" y="55" text-anchor="middle" font-family="Arial, 'Microsoft JhengHei', sans-serif" font-size="30" font-weight="700" fill="#0f172a">Day 20｜我們怎麼選出 Dueling Double DQN？</text>
+  <text x="480" y="90" text-anchor="middle" font-family="Arial, 'Microsoft JhengHei', sans-serif" font-size="17" fill="#475569">重點不是誰在 500K 暫時第一，而是結果是否在不同 seed 上一致</text>
+
+  <g filter="url(#shadow)">
+    <rect x="145" y="125" width="670" height="110" rx="18" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+    <text x="480" y="162" text-anchor="middle" font-family="Arial, 'Microsoft JhengHei', sans-serif" font-size="22" font-weight="700" fill="#0f172a">① 先把比較條件固定</text>
+    <text x="480" y="195" text-anchor="middle" font-family="Arial, 'Microsoft JhengHei', sans-serif" font-size="18" fill="#334155">相同 Contract v2 · 相同 CUDA backend · seeds 11 / 22 / 33</text>
+    <text x="480" y="220" text-anchor="middle" font-family="Arial, 'Microsoft JhengHei', sans-serif" font-size="18" fill="#334155">DQN / Double DQN / Dueling Double DQN 都比較到 500K</text>
+  </g>
+
+  <line x1="480" y1="235" x2="480" y2="280" stroke="#475569" stroke-width="3" marker-end="url(#arrow)"/>
+
+  <g filter="url(#shadow)">
+    <rect x="145" y="295" width="670" height="135" rx="18" fill="#eff6ff" stroke="#93c5fd" stroke-width="2"/>
+    <text x="480" y="332" text-anchor="middle" font-family="Arial, 'Microsoft JhengHei', sans-serif" font-size="22" font-weight="700" fill="#1e3a8a">② 500K：Dueling 平均最高</text>
+    <text x="480" y="367" text-anchor="middle" font-family="Arial, 'Microsoft JhengHei', sans-serif" font-size="18" fill="#1e40af">DQN 15.844　·　Double 18.156　·　Dueling 20.178</text>
+    <text x="480" y="402" text-anchor="middle" font-family="Arial, 'Microsoft JhengHei', sans-serif" font-size="17" fill="#334155">但平均最高，不代表每個 seed 都贏</text>
+  </g>
+
+  <line x1="480" y1="430" x2="480" y2="475" stroke="#475569" stroke-width="3" marker-end="url(#arrow)"/>
+
+  <g filter="url(#shadow)">
+    <rect x="145" y="490" width="670" height="125" rx="18" fill="#fff7ed" stroke="#fdba74" stroke-width="2"/>
+    <text x="480" y="527" text-anchor="middle" font-family="Arial, 'Microsoft JhengHei', sans-serif" font-size="22" font-weight="700" fill="#9a3412">③ 發現一個反方向的 seed</text>
+    <text x="480" y="562" text-anchor="middle" font-family="Arial, 'Microsoft JhengHei', sans-serif" font-size="19" fill="#9a3412">seed 33：Double 21.200 &gt; Dueling 20.000</text>
+    <text x="480" y="592" text-anchor="middle" font-family="Arial, 'Microsoft JhengHei', sans-serif" font-size="17" fill="#334155">所以 500K 還不適合直接宣布 winner</text>
+  </g>
+
+  <line x1="480" y1="615" x2="480" y2="660" stroke="#475569" stroke-width="3" marker-end="url(#arrow)"/>
+
+  <g filter="url(#shadow)">
+    <rect x="145" y="675" width="670" height="110" rx="18" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+    <text x="480" y="712" text-anchor="middle" font-family="Arial, 'Microsoft JhengHei', sans-serif" font-size="22" font-weight="700" fill="#0f172a">④ 只延長前兩名到 1M</text>
+    <text x="480" y="748" text-anchor="middle" font-family="Arial, 'Microsoft JhengHei', sans-serif" font-size="19" fill="#334155">Double DQN + Dueling Double DQN → 1M</text>
+    <text x="480" y="773" text-anchor="middle" font-family="Arial, 'Microsoft JhengHei', sans-serif" font-size="16" fill="#64748b">DQN 停在 500K，因為它沒有進入 top-2 extension</text>
+  </g>
+
+  <line x1="480" y1="785" x2="480" y2="830" stroke="#475569" stroke-width="3" marker-end="url(#arrow)"/>
+
+  <g filter="url(#shadow)">
+    <rect x="145" y="845" width="670" height="120" rx="18" fill="#ecfdf5" stroke="#86efac" stroke-width="2"/>
+    <text x="480" y="882" text-anchor="middle" font-family="Arial, 'Microsoft JhengHei', sans-serif" font-size="22" font-weight="700" fill="#166534">⑤ 1M：三組 seed 都是 Dueling &gt; Double</text>
+    <text x="480" y="916" text-anchor="middle" font-family="Arial, 'Microsoft JhengHei', sans-serif" font-size="18" fill="#166534">seed 11：+5.000　·　seed 22：+26.800　·　seed 33：+18.467</text>
+    <text x="480" y="947" text-anchor="middle" font-family="Arial, 'Microsoft JhengHei', sans-serif" font-size="18" font-weight="700" fill="#0f172a">Day 21 → 選 Dueling Double DQN 做 Final Long Training</text>
+  </g>
+</svg>

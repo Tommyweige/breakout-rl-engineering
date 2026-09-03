@@ -1,0 +1,9 @@
+flowchart TD
+    A["相同規則、相同 seeds 11 / 22 / 33<br/>三個 family 都先比較到 500K"]
+    B["500K 平均分<br/>DQN 15.8 · Double 18.2 · Dueling 20.2"]
+    C["但結果還不夠一致<br/>seed 33：Double 21.2 > Dueling 20.0"]
+    D["所以不急著選 winner<br/>只把前兩名 Double + Dueling 延長到 1M"]
+    E["1M：三組相同 seed 全部<br/>Dueling > Double"]
+    F["Day 21 Final-Training family<br/>Dueling Double DQN"]
+
+    A --> B --> C --> D --> E --> F
