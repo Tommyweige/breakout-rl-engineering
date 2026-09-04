@@ -1,0 +1,7 @@
+flowchart LR
+    A["Healthy 2.5M\ncandidate"] --> B["Select at most 1\nby aggregate evaluation"]
+    B --> C["Stage C\nexplicit user target to 5M"]
+    C --> D{"Healthy?"}
+    D -- "No" --> X["Preserve failure\nevidence and stop"]
+    D -- "Yes" --> E["Compare healthy milestones\nand freeze one checkpoint"]
+    E --> F["Open final holdout\nonly after freeze\n404 / 505 / 606 groups"]

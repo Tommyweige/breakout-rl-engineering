@@ -1,0 +1,9 @@
+flowchart LR
+    A["Day 20 winner\ndueling_double_dqn"] --> B["Stage A\n3 fresh seeds to 1M"]
+    B --> C{"Healthy and\nselection complete?"}
+    C -- "No" --> X["Preserve failure\nevidence and stop"]
+    C -- "Yes" --> D["Select at most 2\nby aggregate mean return"]
+    D --> E["Stage B\nselected seeds to 2.5M\ncontinuous Replay"]
+    E --> F{"Healthy and\nevaluation complete?"}
+    F -- "No" --> X
+    F -- "Yes" --> G["Pass top candidate\nto final-freeze gate"]

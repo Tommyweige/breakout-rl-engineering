@@ -15,6 +15,9 @@ results/
 # Local DQN training runs; selected reproducible evidence may still be tracked.
 runs/
 
+# Temporary local gameplay renders; canonical Day 21 progression evidence lives under assets/day21/.
+outputs/gameplay-progression/
+
 # Secrets and local configuration
 .env
 .env.*

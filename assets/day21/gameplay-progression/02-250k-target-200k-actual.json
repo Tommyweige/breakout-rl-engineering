@@ -1,0 +1,139 @@
+{
+  "stage": "02-250k-target-200k-actual",
+  "label": "250K target / 200K nearest available",
+  "policy": "checkpoint",
+  "training_seed": 2022,
+  "requested_transitions": 250000,
+  "actual_checkpoint_step": 200000,
+  "checkpoint_step_from_payload": 200000,
+  "checkpoint": "E:/breakout-rl-engineering-day21-runs/day21-final-long-training/seed2022-retry-01-retry-02-retry-03/checkpoints/step-00200000.pt",
+  "checkpoint_sha256": "b82bd7334fb380ff4cb3c35f9762a4212a527bed26b99ab7bf9e48870775159f",
+  "source_run_id": "day21-final-long-training-seed2022",
+  "source_stage": "stage_a_1m",
+  "source_checkpoint": null,
+  "source_checkpoint_sha256": null,
+  "substitution_reason": "No 250K checkpoint exists in the verified seed-2022 run; 200K is the nearest available checkpoint.",
+  "algorithm": "double_dqn",
+  "architecture": "dueling",
+  "showcase_evaluation_seed": 101,
+  "evaluation_epsilon": 0.0,
+  "environment_id": "ALE/Breakout-v5",
+  "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+  "contract_sha256": "e9947fc3a1235100aa92f75a79cf33668b36b4f325f22a0bc8b9546a356b85ba",
+  "contract": {
+    "schema_version": 2,
+    "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+    "environment_id": "ALE/Breakout-v5",
+    "frame_skip": 4,
+    "frame_stack": 4,
+    "sticky_action_probability": 0.25,
+    "fire_reset": true,
+    "fire_reset_confirmation": {
+      "max_fire_attempts": 8,
+      "confirmation_steps": 2,
+      "min_observation_change_fraction": 0.0001,
+      "confirmation_operator": "any",
+      "confirmation_signals": [
+        "raw_reward",
+        "observation_activity_streak"
+      ]
+    },
+    "terminal_on_life_loss": false,
+    "time_limit_semantics": {
+      "source": "ale.game_truncated",
+      "max_num_frames_per_episode": 108000,
+      "agent_step_limit": 27000,
+      "truncated_is_finished": true,
+      "external_time_limit_wrapper": false
+    },
+    "concrete_episode_seeds": [
+      101,
+      102,
+      103,
+      104,
+      105,
+      202,
+      203,
+      204,
+      205,
+      206,
+      303,
+      304,
+      305,
+      306,
+      307
+    ],
+    "evaluation_epsilon": 0.0,
+    "raw_reward_rule": "sum environment rewards without clipping"
+  },
+  "action_mapping": {
+    "0": "NOOP",
+    "1": "FIRE",
+    "2": "RIGHT",
+    "3": "LEFT"
+  },
+  "requested_action_counts": {
+    "NOOP": 76,
+    "FIRE": 54,
+    "RIGHT": 141,
+    "LEFT": 185
+  },
+  "executed_action_counts": {
+    "NOOP": 72,
+    "FIRE": 63,
+    "RIGHT": 137,
+    "LEFT": 184
+  },
+  "device": "cuda:0",
+  "requested_device": "cuda",
+  "episodes": 1,
+  "episode_returns": [
+    8.0
+  ],
+  "episode_lengths": [
+    456
+  ],
+  "terminated_count": 1,
+  "truncated_count": 0,
+  "recorder_cap_reached_count": 0,
+  "agent_steps": 456,
+  "captured_render_frames": 457,
+  "frame_repeat": 2,
+  "capture_every_agent_step": 1,
+  "playback_speed": 1.0,
+  "video": {
+    "path": "C:/Users/tommy/.codex/worktrees/85d9/breakout-rl-engineering/assets/day21/gameplay-progression/02-250k-target-200k-actual.mp4",
+    "sha256": "b150b7369976736002bc31fd7312e724c48a9efd4234971c4002ad285e455542",
+    "frame_count": 914,
+    "fps": 30,
+    "measured_fps": 30.0,
+    "frame_size": [
+      240,
+      316
+    ],
+    "codec": "H.264/AVC",
+    "codec_tag": "h264",
+    "requested_codec_tag": "avc1",
+    "pixel_format": "yuv420p",
+    "codec_pixel_format_tag": "I420",
+    "file_size_bytes": 210914
+  },
+  "source_hashes": {
+    "config_sha256": "aa2278ba70872b199d1574b81f968fb18c9227cb30454d590c8bb3ab78752301",
+    "contract_sha256": "e9947fc3a1235100aa92f75a79cf33668b36b4f325f22a0bc8b9546a356b85ba",
+    "recorder_script_sha256": "6aafe602e9dd3ed3596df5189d64c2cbb1eaddcf3e909bdbdd32c4bfe28c25bf",
+    "source_commit": "5c1b75165394a0a899cc8ca9ee5b896ec6646b38",
+    "source_dirty": false,
+    "source_status_snapshot": ""
+  },
+  "generation": {
+    "source_script": "scripts/visualization/record_gameplay_progression.py",
+    "render_source": "make_breakout_env(render_mode='rgb_array', **breakout_environment_kwargs(contract)).render()",
+    "generation_command": "python -m scripts.visualization.record_gameplay_progression --manifest configs/eval/gameplay-progression.json --output C:/Users/tommy/.codex/worktrees/85d9/breakout-rl-engineering/assets/day21/gameplay-progression"
+  },
+  "verified_checkpoint_source": {
+    "path": "E:/breakout-rl-engineering-day21-runs/day21-final-long-training/seed2022-retry-01-retry-02-retry-03/checkpoints/step-00200000.pt",
+    "sha256": "b82bd7334fb380ff4cb3c35f9762a4212a527bed26b99ab7bf9e48870775159f",
+    "source_checkpoint_sha256": null
+  }
+}

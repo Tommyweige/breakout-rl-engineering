@@ -1,0 +1,19 @@
+flowchart LR
+    A["3 fresh seeds<br/>1011 · 2022 · 3033"] --> B["1M<br/>34.0 · 34.9 · 33.1"]
+    B --> C["選 2 個<br/>2022 · 1011"]
+    C --> D["2.5M<br/>42.6 · 51.4"]
+    D --> E["選 2022"]
+    E --> F["5M<br/>49.9"]
+    D -. "保留 2.5M" .-> G["比較<br/>2.5M vs 5M"]
+    F --> G
+    G --> H["freeze<br/>2.5M"]
+    H --> I["final holdout<br/>30.9"]
+
+    classDef start fill:#e8f1ff,stroke:#4b77be,color:#17365d
+    classDef milestone fill:#eef8ee,stroke:#4f8a4f,color:#1f4d1f
+    classDef decision fill:#fff4d6,stroke:#b8860b,color:#5c4300
+    classDef final fill:#f4eafd,stroke:#8457a6,color:#45265f
+    class A start
+    class B,D,F milestone
+    class C,E,G decision
+    class H,I final

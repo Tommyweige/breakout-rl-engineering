@@ -1,0 +1,139 @@
+{
+  "stage": "06-5m",
+  "label": "5M transitions",
+  "policy": "checkpoint",
+  "training_seed": 2022,
+  "requested_transitions": 5000000,
+  "actual_checkpoint_step": 5000000,
+  "checkpoint_step_from_payload": 5000000,
+  "checkpoint": "E:/breakout-rl-engineering-day21-runs/day21-final-long-training/seed2022-retry-01-retry-02-retry-03/checkpoints/step-05000000.pt",
+  "checkpoint_sha256": "d760915bd22f7aaf679d59e2d6d77238cd1537934457f51b3a07bb94b36bad99",
+  "source_run_id": "day21-final-long-training-seed2022",
+  "source_stage": "stage_c_5m",
+  "source_checkpoint": null,
+  "source_checkpoint_sha256": null,
+  "substitution_reason": null,
+  "algorithm": "double_dqn",
+  "architecture": "dueling",
+  "showcase_evaluation_seed": 101,
+  "evaluation_epsilon": 0.0,
+  "environment_id": "ALE/Breakout-v5",
+  "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+  "contract_sha256": "e9947fc3a1235100aa92f75a79cf33668b36b4f325f22a0bc8b9546a356b85ba",
+  "contract": {
+    "schema_version": 2,
+    "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+    "environment_id": "ALE/Breakout-v5",
+    "frame_skip": 4,
+    "frame_stack": 4,
+    "sticky_action_probability": 0.25,
+    "fire_reset": true,
+    "fire_reset_confirmation": {
+      "max_fire_attempts": 8,
+      "confirmation_steps": 2,
+      "min_observation_change_fraction": 0.0001,
+      "confirmation_operator": "any",
+      "confirmation_signals": [
+        "raw_reward",
+        "observation_activity_streak"
+      ]
+    },
+    "terminal_on_life_loss": false,
+    "time_limit_semantics": {
+      "source": "ale.game_truncated",
+      "max_num_frames_per_episode": 108000,
+      "agent_step_limit": 27000,
+      "truncated_is_finished": true,
+      "external_time_limit_wrapper": false
+    },
+    "concrete_episode_seeds": [
+      101,
+      102,
+      103,
+      104,
+      105,
+      202,
+      203,
+      204,
+      205,
+      206,
+      303,
+      304,
+      305,
+      306,
+      307
+    ],
+    "evaluation_epsilon": 0.0,
+    "raw_reward_rule": "sum environment rewards without clipping"
+  },
+  "action_mapping": {
+    "0": "NOOP",
+    "1": "FIRE",
+    "2": "RIGHT",
+    "3": "LEFT"
+  },
+  "requested_action_counts": {
+    "NOOP": 380,
+    "FIRE": 109,
+    "RIGHT": 358,
+    "LEFT": 408
+  },
+  "executed_action_counts": {
+    "NOOP": 377,
+    "FIRE": 117,
+    "RIGHT": 357,
+    "LEFT": 404
+  },
+  "device": "cuda:0",
+  "requested_device": "cuda",
+  "episodes": 1,
+  "episode_returns": [
+    45.0
+  ],
+  "episode_lengths": [
+    1255
+  ],
+  "terminated_count": 1,
+  "truncated_count": 0,
+  "recorder_cap_reached_count": 0,
+  "agent_steps": 1255,
+  "captured_render_frames": 1256,
+  "frame_repeat": 2,
+  "capture_every_agent_step": 1,
+  "playback_speed": 1.0,
+  "video": {
+    "path": "C:/Users/tommy/.codex/worktrees/85d9/breakout-rl-engineering/assets/day21/gameplay-progression/06-5m.mp4",
+    "sha256": "5161935651384f6d4ac4165f6db74d9e6a6994e191821484cf48e92283a2e628",
+    "frame_count": 2512,
+    "fps": 30,
+    "measured_fps": 30.0,
+    "frame_size": [
+      240,
+      316
+    ],
+    "codec": "H.264/AVC",
+    "codec_tag": "h264",
+    "requested_codec_tag": "avc1",
+    "pixel_format": "yuv420p",
+    "codec_pixel_format_tag": "I420",
+    "file_size_bytes": 597072
+  },
+  "source_hashes": {
+    "config_sha256": "aa2278ba70872b199d1574b81f968fb18c9227cb30454d590c8bb3ab78752301",
+    "contract_sha256": "e9947fc3a1235100aa92f75a79cf33668b36b4f325f22a0bc8b9546a356b85ba",
+    "recorder_script_sha256": "6aafe602e9dd3ed3596df5189d64c2cbb1eaddcf3e909bdbdd32c4bfe28c25bf",
+    "source_commit": "5c1b75165394a0a899cc8ca9ee5b896ec6646b38",
+    "source_dirty": false,
+    "source_status_snapshot": ""
+  },
+  "generation": {
+    "source_script": "scripts/visualization/record_gameplay_progression.py",
+    "render_source": "make_breakout_env(render_mode='rgb_array', **breakout_environment_kwargs(contract)).render()",
+    "generation_command": "python -m scripts.visualization.record_gameplay_progression --manifest configs/eval/gameplay-progression.json --output C:/Users/tommy/.codex/worktrees/85d9/breakout-rl-engineering/assets/day21/gameplay-progression"
+  },
+  "verified_checkpoint_source": {
+    "path": "E:/breakout-rl-engineering-day21-runs/day21-final-long-training/seed2022-retry-01-retry-02-retry-03/checkpoints/step-05000000.pt",
+    "sha256": "d760915bd22f7aaf679d59e2d6d77238cd1537934457f51b3a07bb94b36bad99",
+    "source_checkpoint_sha256": null
+  }
+}

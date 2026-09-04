@@ -1,0 +1,138 @@
+{
+  "checkpoint": "E:/breakout-rl-engineering-day21-runs/day21-final-long-training/seed2022-retry-01-retry-02-retry-03/checkpoints/step-01000000.pt",
+  "checkpoint_sha256": "cbf348d72200c508b3c8300dd1ac3769b712fa0c60cb1da526fe87864bdcf5e8",
+  "source_commit": null,
+  "checkpoint_step": 1000000,
+  "training_run_id": "seed2022-retry-01-retry-02-retry-03",
+  "training_seed": 2022,
+  "algorithm": "double_dqn",
+  "architecture": "dueling",
+  "checkpoint_contract_id": "day15-breakout-evaluation-v2-fire-reset",
+  "replay_backend": "gpu",
+  "training_config": {
+    "total_steps": 5000000,
+    "seed": 2022,
+    "algorithm": "double_dqn",
+    "architecture": "dueling",
+    "gamma": 0.99,
+    "learning_rate": 0.0001,
+    "batch_size": 32,
+    "replay_capacity": 10000,
+    "learning_starts": 1000,
+    "train_frequency": 4,
+    "target_update_interval": 500,
+    "epsilon_start": 0.9,
+    "epsilon_end": 0.05,
+    "epsilon_decay_steps": 10000,
+    "gradient_clip_norm": 10.0,
+    "reward_clip": true,
+    "device": "cuda",
+    "precision": "float32",
+    "checkpoint_interval": 100000,
+    "diagnostics_interval": 100,
+    "metrics_flush_interval": 500,
+    "cpu_threads": 2,
+    "replay_transfer": "direct",
+    "replay_backend": "gpu",
+    "profile_stages": true,
+    "num_envs": 2,
+    "strict_action_selection_parity": true,
+    "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+    "contract_path": "configs/eval/breakout_contract_v2.json"
+  },
+  "model_config": {
+    "num_actions": 4,
+    "input_shape": [
+      4,
+      84,
+      84
+    ],
+    "hidden_dim": 512,
+    "architecture": "dueling",
+    "parameter_count": 3292837
+  },
+  "environment": "ALE/Breakout-v5",
+  "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+  "contract_path": "C:/Users/tommy/.codex/worktrees/85d9/breakout-rl-engineering/configs/eval/breakout_contract_v2.json",
+  "contract": {
+    "schema_version": 2,
+    "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+    "environment_id": "ALE/Breakout-v5",
+    "frame_skip": 4,
+    "frame_stack": 4,
+    "sticky_action_probability": 0.25,
+    "fire_reset": true,
+    "fire_reset_confirmation": {
+      "max_fire_attempts": 8,
+      "confirmation_steps": 2,
+      "min_observation_change_fraction": 0.0001,
+      "confirmation_operator": "any",
+      "confirmation_signals": [
+        "raw_reward",
+        "observation_activity_streak"
+      ]
+    },
+    "terminal_on_life_loss": false,
+    "time_limit_semantics": {
+      "source": "ale.game_truncated",
+      "max_num_frames_per_episode": 108000,
+      "agent_step_limit": 27000,
+      "truncated_is_finished": true,
+      "external_time_limit_wrapper": false
+    },
+    "concrete_episode_seeds": [
+      101,
+      102,
+      103,
+      104,
+      105,
+      202,
+      203,
+      204,
+      205,
+      206,
+      303,
+      304,
+      305,
+      306,
+      307
+    ],
+    "evaluation_epsilon": 0.0,
+    "raw_reward_rule": "sum environment rewards without clipping"
+  },
+  "evaluation_seed": 101,
+  "evaluation_epsilon": 0.0,
+  "device": "cuda:0",
+  "episodes": 1,
+  "max_steps_per_episode": 1000,
+  "evaluation_steps": 1000,
+  "episode_returns": [
+    39.0
+  ],
+  "record_every": 8,
+  "source_script": "record_checkpoint_gameplay.py",
+  "render_source": "make_breakout_env(render_mode='rgb_array', **breakout_environment_kwargs(contract)).render()",
+  "reproduction_command": "python -m scripts.visualization.record_checkpoint_gameplay --checkpoint E:/breakout-rl-engineering-day21-runs/day21-final-long-training/seed2022-retry-01-retry-02-retry-03/checkpoints/step-01000000.pt --output C:/Users/tommy/.codex/worktrees/85d9/breakout-rl-engineering/assets/day21/gameplay/seed2022/stage_a_1m.gif --metadata C:/Users/tommy/.codex/worktrees/85d9/breakout-rl-engineering/assets/day21/gameplay/seed2022/stage_a_1m.json --device cuda --contract C:/Users/tommy/.codex/worktrees/85d9/breakout-rl-engineering/configs/eval/breakout_contract_v2.json --evaluation-seed 101 --episodes 1 --max-steps 1000 --record-every 8 --fps 10 --max-width 240",
+  "gif": {
+    "path": "C:/Users/tommy/.codex/worktrees/85d9/breakout-rl-engineering/assets/day21/gameplay/seed2022/stage_a_1m.gif",
+    "frame_count": 126,
+    "fps": 10,
+    "frame_duration_ms": 100,
+    "duration_seconds": 12.6,
+    "frame_size": [
+      240,
+      339
+    ],
+    "file_size_bytes": 428919
+  },
+  "day21": {
+    "experiment_id": "day21-final-long-training",
+    "run_id": "day21-final-long-training-seed2022",
+    "training_seed": 2022,
+    "stage": "stage_a_1m",
+    "selection_evaluation_seed": 101,
+    "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+    "contract_sha256": "e9947fc3a1235100aa92f75a79cf33668b36b4f325f22a0bc8b9546a356b85ba",
+    "manifest": "experiments/day21-final-long-training/manifest.json"
+  }
+}

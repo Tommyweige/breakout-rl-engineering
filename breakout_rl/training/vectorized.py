@@ -554,6 +554,7 @@ class VectorizedDQNTrainer:
         self._stage_start_replay_insertion_calls = 0
         self._stage_start_replay_insertion_transitions = 0
         self._resume_provenance: dict[str, Any] | None = None
+        self._observations: np.ndarray | None = None
 
         environment_spec = getattr(env, "spec", None)
         if environment_spec is None:
@@ -956,6 +957,8 @@ class VectorizedDQNTrainer:
             "last_target_sync_step": self.last_target_sync_step,
             "raw_reward": raw_reward,
             "training_reward": training_reward,
+            "terminated": terminated,
+            "truncated": truncated,
             "requested_action": requested_action,
             "requested_action_name": ATARI_ACTION_NAMES.get(
                 requested_action,
@@ -1500,14 +1503,64 @@ class VectorizedDQNTrainer:
             chunk_start = chunk_end
         return last_result
 
+    def train_until(
+        self,
+        target_steps: int | None = None,
+        *,
+        close: bool = False,
+    ) -> dict[str, Any]:
+        """Run to a milestone while keeping the environment and replay alive.
+
+        A caller can use this seam to inspect a checkpoint at a milestone and
+        then continue the same trainer session.  This preserves the replay
+        buffer and current vector-environment observations between milestones.
+        ``close=True`` is intended for the final call and closes the metrics
+        file after the summary is written.
+        """
+
+        target = self.config.total_steps if target_steps is None else operator.index(target_steps)
+        if target < self.global_step:
+            raise ValueError(
+                "target_steps must be greater than or equal to the current transition count"
+            )
+        if target > self.config.total_steps:
+            raise ValueError("target_steps must not exceed config.total_steps")
+        if target % self.num_envs != 0:
+            raise ValueError("target_steps must be divisible by num_envs")
+
+        previous_target = getattr(self, "_active_target_steps", None)
+        previous_close = getattr(self, "_close_after_train", None)
+        self._active_target_steps = int(target)
+        self._close_after_train = bool(close)
+        self._stage_start_step = self.global_step
+        self._stage_start_physical_environment_steps = self.physical_environment_steps
+        self._set_stage_start_counter_snapshot()
+        self._started_at = time.perf_counter()
+        try:
+            return self.train()
+        finally:
+            if previous_target is None:
+                self.__dict__.pop("_active_target_steps", None)
+            else:
+                self._active_target_steps = previous_target
+            if previous_close is None:
+                self.__dict__.pop("_close_after_train", None)
+            else:
+                self._close_after_train = previous_close
+
     def train(self) -> dict[str, Any]:
         """Run until ``config.total_steps`` accepted transitions are stored."""
 
-        reset_seed = self.config.seed if self.global_step == 0 else None
-        observations = self._reset_result_observation(self.env.reset(seed=reset_seed))
+        target_steps = getattr(self, "_active_target_steps", self.config.total_steps)
+        if self._observations is None:
+            reset_seed = self.config.seed if self.global_step == 0 else None
+            self._observations = self._reset_result_observation(
+                self.env.reset(seed=reset_seed)
+            )
+        observations = self._observations
 
         try:
-            while self.global_step < self.config.total_steps:
+            while self.global_step < target_steps:
                 previous_step = self.global_step
                 vector_step_end = previous_step + self.num_envs
                 current_observations = np.array(observations, copy=True)
@@ -1678,6 +1731,7 @@ class VectorizedDQNTrainer:
                 f"step-{self.global_step:08d}"
             ):
                 self._stage_profiler.measure("checkpoint", self.save_checkpoint)
+            self._observations = np.array(observations, copy=True)
             summary = self._summary()
             self.metrics.update_runtime_metadata(summary["runtime"])
             self.metrics.write_summary(summary)
@@ -1693,7 +1747,8 @@ class VectorizedDQNTrainer:
             self.metrics.write_summary(summary)
             raise
         finally:
-            self.metrics.close()
+            if getattr(self, "_close_after_train", True):
+                self.metrics.close()
 
 
 __all__ = [
