@@ -8,6 +8,10 @@ from typing import TYPE_CHECKING, Any, Mapping
 
 import numpy as np
 
+from breakout_rl.inference import (
+    EXPECTED_ACTION_MEANINGS,
+    prepare_model_input,
+)
 from breakout_rl.training.diagnostics import ATARI_ACTION_NAMES
 
 if TYPE_CHECKING:
@@ -91,15 +95,6 @@ def load_probe_states(path: str | Path) -> tuple[np.ndarray, dict[str, Any]]:
     return validate_probe_states(states), metadata
 
 
-def _resolve_device(device: torch.device | str) -> torch.device:
-    import torch
-
-    resolved = torch.device(device)
-    if resolved.type == "cuda" and not torch.cuda.is_available():
-        raise RuntimeError("CUDA was requested, but it is not available")
-    return resolved
-
-
 def infer_q_values(
     model: nn.Module,
     probe_states: Any,
@@ -114,31 +109,28 @@ def infer_q_values(
     if not isinstance(model, nn.Module):
         raise TypeError("model must be a torch.nn.Module")
     observations = validate_probe_states(probe_states)
-    resolved_device = _resolve_device(device)
+    resolved_device = torch.device(device)
+    if resolved_device.type == "cuda" and not torch.cuda.is_available():
+        raise RuntimeError("CUDA was requested, but it is not available")
     model = model.to(resolved_device)
     was_training = model.training
     model.eval()
     try:
-        inputs = torch.from_numpy(observations).to(
-            device=resolved_device,
-            dtype=torch.float32,
-        )
-        inputs = inputs.div(255.0)
+        inputs = prepare_model_input(observations, device=resolved_device)
         with torch.no_grad():
             outputs = model(inputs)
     finally:
         model.train(was_training)
     if not isinstance(outputs, torch.Tensor):
         raise TypeError("model must return a torch.Tensor")
-    if outputs.ndim != 2 or int(outputs.shape[0]) != int(observations.shape[0]):
-        raise ValueError("model output must have shape (N, action_count)")
-    if int(outputs.shape[1]) < 1:
-        raise ValueError("model must return at least one action value")
-    if not outputs.is_floating_point():
-        raise TypeError("model output must be floating point")
+    expected_shape = (int(observations.shape[0]), len(EXPECTED_ACTION_MEANINGS))
+    if tuple(outputs.shape) != expected_shape:
+        raise ValueError(f"model output must have shape {expected_shape}")
+    if outputs.dtype != torch.float32:
+        raise TypeError("model output must have dtype torch.float32")
     if not torch.isfinite(outputs).all().item():
         raise ValueError("model output contains non-finite Q-values")
-    return outputs.detach().cpu().numpy().astype(np.float64, copy=False)
+    return np.ascontiguousarray(outputs.detach().cpu().numpy())
 
 
 def summarize_q_values(
@@ -221,10 +213,7 @@ def plot_q_probe_summary(q_values: Any, output: str | Path) -> Path:
     axes[0].set_title("Q-value distribution on fixed probes")
     axes[0].set_ylabel("Q-value")
     axes[0].grid(axis="y", alpha=0.25)
-    counts = [
-        summary["selected_action_distribution"].get(label, 0)
-        for label in labels
-    ]
+    counts = [summary["selected_action_distribution"].get(label, 0) for label in labels]
     axes[1].bar(labels, counts)
     axes[1].set_title("Greedy action per probe")
     axes[1].set_ylabel("probe count")

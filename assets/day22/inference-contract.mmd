@@ -1,0 +1,14 @@
+sequenceDiagram
+    autonumber
+    participant E as ALE instance
+    participant A as Model adapter
+    participant M as ONNX graph
+    participant S as Argmax selector
+    E->>A: uint8 frames [4,84,84]
+    A->>A: float32, /255 once, add N
+    A->>M: observation [N,4,84,84]
+    M-->>S: q_values [N,4]
+    S->>S: argmax over four values
+    S-->>E: 0 NOOP / 1 FIRE / 2 RIGHT / 3 LEFT
+    Note over E: ALE owns grayscale, resize, skip, and stack.
+    Note over M: Graph excludes ALE and image preprocessing.

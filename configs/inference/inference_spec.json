@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "contract_id": "day22-breakout-inference-v1",
+  "environment_contract": {
+    "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+    "path": "configs/eval/breakout_contract_v2.json",
+    "sha256": "e9947fc3a1235100aa92f75a79cf33668b36b4f325f22a0bc8b9546a356b85ba"
+  },
+  "input": {
+    "name": "observation",
+    "dtype": "float32",
+    "shape": [
+      "N",
+      4,
+      84,
+      84
+    ],
+    "layout": "NCHW",
+    "range": [
+      0.0,
+      1.0
+    ]
+  },
+  "preprocessing": {
+    "owner": "environment_then_model_adapter",
+    "source_observation_dtype": "uint8",
+    "source_observation_shape": [
+      4,
+      84,
+      84
+    ],
+    "frame_stack": 4,
+    "screen_size": 84,
+    "normalization": "divide uint8 values by 255.0 once",
+    "normalization_divisor": 255.0,
+    "onnx_graph_owns": []
+  },
+  "output": {
+    "name": "q_values",
+    "dtype": "float32",
+    "shape": [
+      "N",
+      4
+    ],
+    "meaning": "raw Q-values, not probabilities"
+  },
+  "actions": {
+    "meanings": [
+      "NOOP",
+      "FIRE",
+      "RIGHT",
+      "LEFT"
+    ],
+    "greedy_rule": "argmax",
+    "index_base": 0
+  },
+  "deployment": {
+    "runtime": "browser client-side",
+    "model_relative_url": "models/final_model/model.onnx"
+  }
+}

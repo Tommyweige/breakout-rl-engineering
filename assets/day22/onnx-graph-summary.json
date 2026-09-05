@@ -1,0 +1,77 @@
+{
+  "artifact_type": "day22_onnx_graph_summary_visualization",
+  "command": "python -m scripts.visualization.visualize_onnx_graph_summary --model assets/day22/models/final_model/model.onnx",
+  "output": "assets/day22/onnx-graph-summary.png",
+  "schema_version": 1,
+  "source_artifacts": {
+    "onnx_metadata": "assets/day22/models/final_model/model.onnx.metadata.json",
+    "onnx_model": "assets/day22/models/final_model/model.onnx",
+    "pytorch_model": "assets/day21/models/final_model/model.pt"
+  },
+  "summary": {
+    "export_metadata": {
+      "opset_version": 17,
+      "path": "assets/day22/models/final_model/model.onnx.metadata.json",
+      "sha256": "3b66b8135c501324b08fffa5a94a682c7c22db64d2fec2684d820591312d3e4f",
+      "source_checkpoint_sha256": "ab07c0a48202428ddbb377c81f4091b3c434ce95e19d19fb1ec335df79841c48",
+      "source_model_sha256": "6002029dcdbcbb7c93fca0c589880611aed2e2e7924db0f6b0c1f5160824389a"
+    },
+    "files": {
+      "onnx": {
+        "path": "assets/day22/models/final_model/model.onnx",
+        "sha256": "cf90c74b1d09d5d7e2e0c71014f2daef2b5e1833425d300da06e34d1e4ef7f12",
+        "size_bytes": 13175034
+      },
+      "pytorch": {
+        "path": "assets/day21/models/final_model/model.pt",
+        "sha256": "6002029dcdbcbb7c93fca0c589880611aed2e2e7924db0f6b0c1f5160824389a",
+        "size_bytes": 13179473
+      }
+    },
+    "graph": {
+      "checker_passed": true,
+      "initializer_count": 14,
+      "inputs": [
+        {
+          "dtype": "float32",
+          "name": "observation",
+          "onnx_dtype": "FLOAT",
+          "shape": [
+            "N",
+            4,
+            84,
+            84
+          ]
+        }
+      ],
+      "ir_version": 8,
+      "model_path": "assets/day22/models/final_model/model.onnx",
+      "node_count": 16,
+      "operator_type_counts": {
+        "Add": 1,
+        "Conv": 3,
+        "Flatten": 1,
+        "Gemm": 4,
+        "ReduceMean": 1,
+        "Relu": 5,
+        "Sub": 1
+      },
+      "opset_imports": {
+        "ai.onnx": 17
+      },
+      "outputs": [
+        {
+          "dtype": "float32",
+          "name": "q_values",
+          "onnx_dtype": "FLOAT",
+          "shape": [
+            "N",
+            4
+          ]
+        }
+      ]
+    },
+    "technical_question": "What input/output contract and serialized operator inventory did the real ONNX export produce?"
+  },
+  "technical_question": "What input/output contract and serialized operator inventory did the real ONNX export produce?"
+}

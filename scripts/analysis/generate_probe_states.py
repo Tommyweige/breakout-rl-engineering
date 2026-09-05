@@ -18,6 +18,7 @@ from breakout_rl.evaluation_contract import (
     load_evaluation_contract,
     validate_breakout_runtime_contract,
 )
+from breakout_rl.inference import EXPECTED_ACTION_MEANINGS
 
 
 def _observation(value: Any) -> np.ndarray:
@@ -113,6 +114,18 @@ def generate_probe_artifact(
         int(seed)
         for seed in (contract.concrete_episode_seeds if seeds is None else seeds)
     )
+    action_probe_env = make_breakout_env(**breakout_environment_kwargs(contract))
+    try:
+        action_meanings = tuple(
+            str(value) for value in action_probe_env.unwrapped.get_action_meanings()
+        )
+    finally:
+        action_probe_env.close()
+    if action_meanings != EXPECTED_ACTION_MEANINGS:
+        raise RuntimeError(
+            "Breakout action meanings do not match the canonical inference order: "
+            f"observed={list(action_meanings)}, expected={list(EXPECTED_ACTION_MEANINGS)}"
+        )
     observations, records = collect_probe_states(
         contract,
         seeds=selected_seeds,
@@ -126,6 +139,7 @@ def generate_probe_artifact(
         "contract_path": source.as_posix(),
         "contract_sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
         "environment_id": contract.environment_id,
+        "action_meanings": list(action_meanings),
         "source_behavior": "seeded_uniform_random_requested_actions",
         "environment_fire_reset": contract.fire_reset,
         "seeds": list(selected_seeds),
