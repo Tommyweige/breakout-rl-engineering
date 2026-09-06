@@ -95,12 +95,6 @@ Day 22 已經先保留了一批固定的 Breakout 遊戲狀態。
 1. 四個 Q-value 差多少；
 2. 最後選出的動作是不是一樣。
 
-下面這張流程圖把比較的先後順序畫清楚：先載入同一批 Day 22 fixtures，再分別請求 CPU 或 CUDA provider，最後才比較 Q-value、margin 與 argmax action。
-
-[![Day 23 從固定 probe states 經過 PyTorch CUDA reference 與 ONNX Runtime provider，到 Q-value 和 action agreement 比較的流程](https://github.com/Tommyweige/breakout-rl-engineering/blob/ecf18e878be7aced9aaf681711e78300f9db5aef/assets/day23/pytorch-onnx-parity-flow.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/ecf18e878be7aced9aaf681711e78300f9db5aef/assets/day23/pytorch-onnx-parity-flow.png)
-
-圖中的 sequence 只描述一次 parity validation 的資料流，不代表完整 Breakout gameplay loop；遊戲環境本身仍由另外的 smoke 測試驗證。
-
 這樣做的好處很直觀。
 
 如果三邊看到的畫面不一樣，那根本不知道差異是模型造成的，還是遊戲本身造成的；現在輸入固定，就能把問題縮小成：
@@ -113,7 +107,7 @@ Day 22 已經先保留了一批固定的 Breakout 遊戲狀態。
 
 下面這張圖是直接由實際比較結果產生的，不是另外手填數字。
 
-[![PyTorch 與 ONNX Runtime 的 Q-value 與動作比較](https://github.com/Tommyweige/breakout-rl-engineering/blob/ecf18e878be7aced9aaf681711e78300f9db5aef/assets/day23/pytorch-vs-onnx-parity.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/ecf18e878be7aced9aaf681711e78300f9db5aef/assets/day23/pytorch-vs-onnx-parity.png)
+[![PyTorch 與 ONNX Runtime 的 Q-value 與動作比較](https://github.com/Tommyweige/breakout-rl-engineering/blob/d8b2bea0de403c7b6addcd08e5f45911bd73d92b/assets/day23/pytorch-vs-onnx-parity.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/d8b2bea0de403c7b6addcd08e5f45911bd73d92b/assets/day23/pytorch-vs-onnx-parity.png)
 
 這張圖可以不用一次看懂所有細節，只要先抓兩件事。
 
