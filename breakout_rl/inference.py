@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import operator
+import platform
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Mapping, Sequence
@@ -523,6 +524,156 @@ def _resolve_policy_device(device: torch.device | str) -> torch.device:
     return resolved
 
 
+def _load_onnxruntime() -> Any:
+    """Import ONNX Runtime only when an ONNX policy is actually requested."""
+
+    try:
+        import onnxruntime as ort
+    except ImportError as error:  # pragma: no cover - depends on environment setup
+        raise RuntimeError(
+            "ONNXRuntimePolicy requires the pinned 'onnxruntime-gpu' package; "
+            "install the repository environment first"
+        ) from error
+    return ort
+
+
+def _resolve_onnx_provider(provider: str) -> str:
+    if not isinstance(provider, str) or not provider.strip():
+        raise ValueError("provider must be 'cpu', 'cuda', or an ONNX provider name")
+    normalized = provider.strip().lower()
+    aliases = {
+        "cpu": "CPUExecutionProvider",
+        "cpuexecutionprovider": "CPUExecutionProvider",
+        "cuda": "CUDAExecutionProvider",
+        "cudaexecutionprovider": "CUDAExecutionProvider",
+    }
+    try:
+        return aliases[normalized]
+    except KeyError as error:
+        raise ValueError(
+            "provider must be 'cpu', 'cuda', 'CPUExecutionProvider', or "
+            "'CUDAExecutionProvider'"
+        ) from error
+
+
+def _validate_onnx_value_info(
+    value_info: Any,
+    *,
+    expected_name: str,
+    expected_shape: tuple[ShapeDimension, ...],
+    kind: str,
+) -> None:
+    observed_name = str(getattr(value_info, "name", ""))
+    if observed_name != expected_name:
+        raise ValueError(
+            f"ONNX {kind} name does not match the inference contract: "
+            f"observed={observed_name!r}, expected={expected_name!r}"
+        )
+    observed_type = str(getattr(value_info, "type", ""))
+    if observed_type != "tensor(float)":
+        raise TypeError(
+            f"ONNX {kind} must have dtype float32; observed {observed_type!r}"
+        )
+    observed_shape = tuple(getattr(value_info, "shape", ()))
+    if len(observed_shape) != len(expected_shape):
+        raise ValueError(
+            f"ONNX {kind} rank does not match the inference contract: "
+            f"observed={observed_shape}, expected={expected_shape}"
+        )
+    for index, (observed, expected) in enumerate(
+        zip(observed_shape, expected_shape, strict=True)
+    ):
+        if expected == "N":
+            if observed not in {None, "N"}:
+                raise ValueError(
+                    f"ONNX {kind} dimension {index} must be dynamic 'N'; "
+                    f"observed={observed!r}"
+                )
+        elif observed != expected:
+            raise ValueError(
+                f"ONNX {kind} dimension {index} does not match the inference "
+                f"contract: observed={observed!r}, expected={expected!r}"
+            )
+
+
+def _cuda_runtime_metadata(*, device_index: int) -> dict[str, Any]:
+    cuda_available = bool(torch.cuda.is_available())
+    gpu_model: str | None = None
+    cudnn_version: int | None = None
+    if cuda_available:
+        try:
+            gpu_model = str(torch.cuda.get_device_name(device_index))
+        except (RuntimeError, TypeError, ValueError):
+            gpu_model = None
+        try:
+            cudnn_version_value = torch.backends.cudnn.version()
+            cudnn_version = (
+                int(cudnn_version_value)
+                if cudnn_version_value is not None
+                else None
+            )
+        except (RuntimeError, TypeError, ValueError):
+            cudnn_version = None
+    return {
+        "python_version": platform.python_version(),
+        "pytorch_version": torch.__version__,
+        "cuda_available": cuda_available,
+        "cuda_device_index": device_index,
+        "cuda_version": torch.version.cuda,
+        "cudnn_version": cudnn_version,
+        "gpu_model": gpu_model,
+    }
+
+
+def _graph_assignment_metadata(session: Any, *, requested_provider: str) -> dict[str, Any]:
+    """Return provider assignment evidence for a strict CUDA session."""
+
+    if requested_provider != "CUDAExecutionProvider":
+        return {"status": "not_requested"}
+    get_assignment = getattr(session, "get_provider_graph_assignment_info", None)
+    if not callable(get_assignment):
+        raise RuntimeError(
+            "CUDAExecutionProvider session cannot expose graph assignment metadata; "
+            "refusing to claim strict CUDA execution"
+        )
+    try:
+        assignments = get_assignment()
+    except Exception as error:  # pragma: no cover - provider/version specific
+        raise RuntimeError(
+            "CUDAExecutionProvider graph assignment metadata could not be read; "
+            "refusing to claim strict CUDA execution"
+        ) from error
+
+    by_provider: dict[str, int] = {}
+    nodes: list[dict[str, str]] = []
+    for subgraph in assignments:
+        provider = str(getattr(subgraph, "ep_name", ""))
+        assigned_nodes = list(subgraph.get_nodes())
+        by_provider[provider] = by_provider.get(provider, 0) + len(assigned_nodes)
+        for node in assigned_nodes:
+            nodes.append(
+                {
+                    "provider": provider,
+                    "name": str(getattr(node, "name", "")),
+                    "op_type": str(getattr(node, "op_type", "")),
+                }
+            )
+    fallback_nodes = [
+        node for node in nodes if node["provider"] != requested_provider
+    ]
+    if fallback_nodes:
+        raise RuntimeError(
+            "CUDAExecutionProvider graph assignment used a non-CUDA provider for "
+            f"{len(fallback_nodes)} node(s); refusing silent fallback"
+        )
+    return {
+        "status": "verified",
+        "node_count": len(nodes),
+        "nodes_by_provider": dict(sorted(by_provider.items())),
+        "fallback_node_count": len(fallback_nodes),
+    }
+
+
 class PyTorchPolicy:
     """Run one PyTorch Q-network through the shared inference contract."""
 
@@ -592,10 +743,201 @@ class PyTorchPolicy:
         return self.select_action(observation)
 
 
+class ONNXRuntimePolicy:
+    """Run one exported ONNX Q-network through the shared inference contract."""
+
+    def __init__(
+        self,
+        model_path: str | Path,
+        *,
+        provider: str = "cpu",
+        device_index: int = 0,
+        spec: InferenceSpec | Mapping[str, Any] | None = None,
+    ) -> None:
+        self.spec = _coerce_spec(spec)
+        if isinstance(device_index, bool) or not isinstance(device_index, int):
+            raise TypeError("device_index must be a non-negative integer")
+        if device_index < 0:
+            raise ValueError("device_index must be a non-negative integer")
+        self.model_path = Path(model_path).resolve()
+        if not self.model_path.is_file():
+            raise FileNotFoundError(self.model_path)
+        self.requested_provider = _resolve_onnx_provider(provider)
+        self.device_index = device_index
+        ort = _load_onnxruntime()
+        available_providers = tuple(str(value) for value in ort.get_available_providers())
+        if self.requested_provider not in available_providers:
+            raise RuntimeError(
+                f"{self.requested_provider} requested but unavailable; "
+                f"available providers={list(available_providers)}; "
+                "refusing CPU fallback"
+            )
+
+        if self.requested_provider == "CUDAExecutionProvider":
+            preload_dlls = getattr(ort, "preload_dlls", None)
+            if callable(preload_dlls):
+                try:
+                    preload_dlls()
+                except Exception as error:  # pragma: no cover - host dependent
+                    raise RuntimeError(
+                        "CUDAExecutionProvider requested but CUDA/cuDNN DLL "
+                        "preloading failed; refusing CPU fallback"
+                    ) from error
+
+        session_options = ort.SessionOptions()
+        if self.requested_provider == "CUDAExecutionProvider":
+            try:
+                session_options.add_session_config_entry(
+                    "session.record_ep_graph_assignment_info",
+                    "1",
+                )
+            except Exception as error:  # pragma: no cover - provider/version specific
+                raise RuntimeError(
+                    "CUDAExecutionProvider session cannot record graph assignment "
+                    "metadata; refusing to claim strict CUDA execution"
+                ) from error
+        try:
+            if self.requested_provider == "CUDAExecutionProvider":
+                cuda_options: dict[str, str] = {"use_tf32": "0"}
+                if device_index:
+                    cuda_options["device_id"] = str(device_index)
+                provider_options: list[Any] = [
+                    (self.requested_provider, cuda_options)
+                ]
+            else:
+                provider_options = [self.requested_provider]
+            self.session = ort.InferenceSession(
+                str(self.model_path),
+                sess_options=session_options,
+                providers=provider_options,
+            )
+        except Exception as error:  # pragma: no cover - provider/version specific
+            raise RuntimeError(
+                f"failed to create {self.requested_provider} ONNX session; "
+                "requested provider was not replaced with CPU"
+            ) from error
+        disable_fallback = getattr(self.session, "disable_fallback", None)
+        if callable(disable_fallback):
+            disable_fallback()
+
+        active_providers = tuple(str(value) for value in self.session.get_providers())
+        if not active_providers or active_providers[0] != self.requested_provider:
+            raise RuntimeError(
+                f"requested {self.requested_provider}, but ONNX Runtime selected "
+                f"{list(active_providers)}; refusing silent fallback"
+            )
+        inputs = list(self.session.get_inputs())
+        outputs = list(self.session.get_outputs())
+        if len(inputs) != 1 or len(outputs) != 1:
+            raise ValueError(
+                "ONNX model must expose exactly one input and one output; "
+                f"observed inputs={len(inputs)}, outputs={len(outputs)}"
+            )
+        _validate_onnx_value_info(
+            inputs[0],
+            expected_name=self.spec.input_name,
+            expected_shape=self.spec.input_shape,
+            kind="input",
+        )
+        _validate_onnx_value_info(
+            outputs[0],
+            expected_name=self.spec.output_name,
+            expected_shape=self.spec.output_shape,
+            kind="output",
+        )
+        self._input_name = str(inputs[0].name)
+        self._output_name = str(outputs[0].name)
+        self._runtime_metadata = {
+            "requested_provider": self.requested_provider,
+            "available_providers": list(available_providers),
+            "active_providers": list(active_providers),
+            "actual_provider": active_providers[0],
+            "onnxruntime_version": str(getattr(ort, "__version__", "unknown")),
+            "onnxruntime_device": str(
+                getattr(ort, "get_device", lambda: "unknown")()
+            ),
+            "session_provider_options": self.session.get_provider_options(),
+            "graph_assignment": _graph_assignment_metadata(
+                self.session,
+                requested_provider=self.requested_provider,
+            ),
+            **_cuda_runtime_metadata(device_index=device_index),
+        }
+
+    @property
+    def runtime_metadata(self) -> dict[str, Any]:
+        """Return provider and host-runtime facts captured at session creation."""
+
+        return dict(self._runtime_metadata)
+
+    def predict_q_values(self, observation: np.ndarray) -> np.ndarray:
+        """Return finite float32 Q-values with the canonical ``(N, 4)`` shape."""
+
+        model_input = prepare_model_input(
+            observation,
+            device="cpu",
+            spec=self.spec,
+        )
+        input_array = np.ascontiguousarray(model_input.numpy(), dtype=np.float32)
+        try:
+            outputs = self.session.run(
+                [self._output_name],
+                {self._input_name: input_array},
+            )
+        except Exception as error:  # pragma: no cover - provider/version specific
+            raise RuntimeError(
+                f"{self.requested_provider} ONNX inference failed; "
+                "the requested provider was not replaced with CPU"
+            ) from error
+        if len(outputs) != 1:
+            raise ValueError(f"ONNX model returned {len(outputs)} outputs")
+        q_values = np.asarray(outputs[0])
+        expected_shape = (input_array.shape[0], len(self.spec.action_meanings))
+        if q_values.dtype != np.dtype("float32"):
+            raise TypeError(
+                "ONNX model output must have dtype float32; "
+                f"received {q_values.dtype}"
+            )
+        if tuple(q_values.shape) != expected_shape:
+            raise ValueError(
+                "ONNX model output must have shape "
+                f"{expected_shape}; received {tuple(q_values.shape)}"
+            )
+        if not np.isfinite(q_values).all():
+            raise ValueError("ONNX model output contains non-finite Q-values")
+        return np.ascontiguousarray(q_values)
+
+    def select_actions(self, observation: np.ndarray) -> np.ndarray:
+        """Return one greedy action index for every observation in a batch."""
+
+        return np.asarray(
+            q_values_to_action(self.predict_q_values(observation), spec=self.spec),
+            dtype=np.int64,
+        )
+
+    def select_action(self, observation: np.ndarray) -> int:
+        """Return one greedy action for a single CHW observation."""
+
+        if not isinstance(observation, np.ndarray) or observation.ndim != 3:
+            raise ValueError(
+                "select_action expects one observation with shape (4, 84, 84)"
+            )
+        return int(
+            q_values_to_action(
+                self.predict_q_values(observation)[0],
+                spec=self.spec,
+            )
+        )
+
+    def __call__(self, observation: np.ndarray) -> int:
+        return self.select_action(observation)
+
+
 __all__ = [
     "DEFAULT_INFERENCE_SPEC_PATH",
     "EXPECTED_ACTION_MEANINGS",
     "InferenceSpec",
+    "ONNXRuntimePolicy",
     "PyTorchPolicy",
     "action_meaning",
     "default_inference_spec",

@@ -1,0 +1,157 @@
+{
+  "artifact_type": "day23_policy_gameplay_smoke",
+  "auto_fire_reason_counts": {
+    "after_life_loss": 2,
+    "initial_serve": 3
+  },
+  "environment_contract": {
+    "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+    "path": "configs/eval/breakout_contract_v2.json",
+    "semantics": {
+      "concrete_episode_seeds": [
+        101,
+        102,
+        103,
+        104,
+        105,
+        202,
+        203,
+        204,
+        205,
+        206,
+        303,
+        304,
+        305,
+        306,
+        307
+      ],
+      "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+      "environment_id": "ALE/Breakout-v5",
+      "evaluation_epsilon": 0.0,
+      "fire_reset": true,
+      "fire_reset_confirmation": {
+        "confirmation_operator": "any",
+        "confirmation_signals": [
+          "raw_reward",
+          "observation_activity_streak"
+        ],
+        "confirmation_steps": 2,
+        "max_fire_attempts": 8,
+        "min_observation_change_fraction": 0.0001
+      },
+      "frame_skip": 4,
+      "frame_stack": 4,
+      "raw_reward_rule": "sum environment rewards without clipping",
+      "schema_version": 2,
+      "sticky_action_probability": 0.25,
+      "terminal_on_life_loss": false,
+      "time_limit_semantics": {
+        "agent_step_limit": 27000,
+        "external_time_limit_wrapper": false,
+        "max_num_frames_per_episode": 108000,
+        "source": "ale.game_truncated",
+        "truncated_is_finished": true
+      }
+    },
+    "sha256": "e9947fc3a1235100aa92f75a79cf33668b36b4f325f22a0bc8b9546a356b85ba"
+  },
+  "executed_action_distribution": {
+    "FIRE": 95,
+    "LEFT": 77,
+    "NOOP": 19,
+    "RIGHT": 65
+  },
+  "inference_spec": {
+    "action_meanings": [
+      "NOOP",
+      "FIRE",
+      "RIGHT",
+      "LEFT"
+    ],
+    "contract_id": "day22-breakout-inference-v1",
+    "input_name": "observation",
+    "normalization_divisor": 255.0,
+    "output_name": "q_values",
+    "path": "configs/inference/inference_spec.json",
+    "sha256": "68637a63d3f0242f74089314049251521bec14a6fa3267b57fa46470acfff8ec"
+  },
+  "max_steps": 256,
+  "model": {
+    "path": "assets/day22/models/final_model/model.onnx",
+    "sha256": "cf90c74b1d09d5d7e2e0c71014f2daef2b5e1833425d300da06e34d1e4ef7f12"
+  },
+  "raw_episode_return": 6.0,
+  "reproduction_command": "python -m scripts.demos.play_with_policy --runtime onnx --provider cuda --steps 256 --seed 101",
+  "requested_action_distribution": {
+    "FIRE": 90,
+    "LEFT": 80,
+    "NOOP": 19,
+    "RIGHT": 67
+  },
+  "requested_onnx_provider": "cuda",
+  "runtime": "onnx",
+  "runtime_metadata": {
+    "active_providers": [
+      "CUDAExecutionProvider",
+      "CPUExecutionProvider"
+    ],
+    "actual_provider": "CUDAExecutionProvider",
+    "available_providers": [
+      "TensorrtExecutionProvider",
+      "CUDAExecutionProvider",
+      "CPUExecutionProvider"
+    ],
+    "cuda_available": true,
+    "cuda_device_index": 0,
+    "cuda_version": "13.0",
+    "cudnn_version": 92000,
+    "gpu_model": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "graph_assignment": {
+      "fallback_node_count": 0,
+      "node_count": 16,
+      "nodes_by_provider": {
+        "CUDAExecutionProvider": 16
+      },
+      "status": "verified"
+    },
+    "onnxruntime_device": "GPU",
+    "onnxruntime_version": "1.29.0",
+    "python_version": "3.12.13",
+    "pytorch_version": "2.13.0+cu130",
+    "requested_provider": "CUDAExecutionProvider",
+    "session_provider_options": {
+      "CPUExecutionProvider": {},
+      "CUDAExecutionProvider": {
+        "arena_extend_strategy": "kNextPowerOfTwo",
+        "cudnn_conv1d_pad_to_nc1d": "0",
+        "cudnn_conv_algo_search": "EXHAUSTIVE",
+        "cudnn_conv_use_max_workspace": "1",
+        "device_id": "0",
+        "do_copy_in_default_stream": "1",
+        "enable_cuda_graph": "0",
+        "enable_cudnn": "1",
+        "fuse_conv_bias": "0",
+        "gpu_external_alloc": "0",
+        "gpu_external_empty_cache": "0",
+        "gpu_external_free": "0",
+        "gpu_mem_limit": "18446744073709551615",
+        "has_user_compute_stream": "0",
+        "prefer_nhwc": "0",
+        "sdpa_kernel": "0",
+        "tunable_op_enable": "0",
+        "tunable_op_max_tuning_duration_ms": "0",
+        "tunable_op_tuning_enable": "0",
+        "use_ep_level_unified_stream": "0",
+        "use_tf32": "0",
+        "user_compute_stream": "0"
+      }
+    }
+  },
+  "schema_version": 1,
+  "seed": 101,
+  "smoke_question": "Can the selected policy execute Contract v2 Breakout steps and return valid actions without an inference integration error?",
+  "status": "completed",
+  "steps_completed": 256,
+  "terminated": false,
+  "truncated": false
+}

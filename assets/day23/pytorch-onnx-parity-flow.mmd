@@ -1,0 +1,17 @@
+sequenceDiagram
+    autonumber
+    participant F as Day 22 fixtures
+    participant C as Parity comparator
+    participant P as PyTorch CUDA reference
+    participant O as ONNXRuntimePolicy
+    participant M as ONNX model
+
+    F->>C: Load uint8 probe states
+    F->>P: Load golden Q-values/actions
+    C->>P: Verify hashes, shapes, and argmax actions
+    C->>O: Request CPU or CUDA provider
+    O->>O: Prepare BCHW float32 input
+    O->>M: Run observation batch (N=1 or N=4)
+    M-->>O: Return q_values (N,4)
+    O-->>C: Return Q-values and shared argmax actions
+    C->>C: Compare errors, margins, and agreement

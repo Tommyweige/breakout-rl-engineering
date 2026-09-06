@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "artifact_type": "day23_onnx_runtime_parity_validation",
+  "reference": {
+    "runtime": "PyTorch",
+    "provider": "CUDA",
+    "precision": "float32",
+    "fixture": "assets/day22/inference/pytorch_reference.npz"
+  },
+  "lineage": {
+    "canonical_source_model_path": "assets/day21/models/final_model/model.pt",
+    "canonical_source_metadata_path": "assets/day21/models/final_model/metadata.json",
+    "canonical_source_model_sha256": "6002029dcdbcbb7c93fca0c589880611aed2e2e7924db0f6b0c1f5160824389a",
+    "source_run_id": "day21-final-long-training-seed2022",
+    "source_stage": "stage_b_2_5m",
+    "source_checkpoint_sha256": "ab07c0a48202428ddbb377c81f4091b3c434ce95e19d19fb1ec335df79841c48",
+    "source_checkpoint_step": 2500000,
+    "onnx_model_path": "assets/day22/models/final_model/model.onnx",
+    "onnx_metadata_path": "assets/day22/models/final_model/model.onnx.metadata.json",
+    "onnx_model_sha256": "cf90c74b1d09d5d7e2e0c71014f2daef2b5e1833425d300da06e34d1e4ef7f12",
+    "inference_spec_path": "configs/inference/inference_spec.json",
+    "inference_spec_sha256": "68637a63d3f0242f74089314049251521bec14a6fa3267b57fa46470acfff8ec",
+    "environment_contract_path": "configs/eval/breakout_contract_v2.json",
+    "environment_contract_sha256": "e9947fc3a1235100aa92f75a79cf33668b36b4f325f22a0bc8b9546a356b85ba",
+    "probe_states_path": "assets/day22/inference/probe_states.npz",
+    "probe_states_sha256": "eec131af71f3aeb089be7b9d90607d87187a99a94739f135767fe9bf1f19c2f3",
+    "pytorch_reference_path": "assets/day22/inference/pytorch_reference.npz",
+    "pytorch_reference_sha256": "36ac1d7dac9c2024d92d3669c4ea3cd9dcb1978c99bffe1d10cdea1618e5fd07",
+    "fixture_metadata_path": "assets/day22/inference/metadata.json"
+  },
+  "providers": {
+    "cpu": "CPUExecutionProvider",
+    "cuda": "CUDAExecutionProvider"
+  },
+  "batch_sizes": [
+    1,
+    4
+  ],
+  "preprocessing_max_absolute_error": 1e-7,
+  "relative_error_epsilon": 1e-12,
+  "thresholds": {
+    "cpu": {
+      "max_absolute_error": 0.0002,
+      "mean_absolute_error": 0.0001,
+      "max_relative_error": 0.0001,
+      "mean_relative_error": 0.00005,
+      "action_agreement_rate": 1.0
+    },
+    "cuda": {
+      "max_absolute_error": 0.0002,
+      "mean_absolute_error": 0.0001,
+      "max_relative_error": 0.0001,
+      "mean_relative_error": 0.00005,
+      "action_agreement_rate": 1.0
+    }
+  }
+}

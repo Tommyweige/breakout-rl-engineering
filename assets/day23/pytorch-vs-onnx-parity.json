@@ -1,0 +1,13 @@
+{
+  "artifact_type": "day23_onnx_runtime_parity_visualization",
+  "command": "python -m scripts.visualization.visualize_pytorch_onnx_parity --input assets/day23/onnx-runtime-parity.json --output assets/day23/pytorch-vs-onnx-parity.png",
+  "output": "assets/day23/pytorch-vs-onnx-parity.png",
+  "schema_version": 1,
+  "selected_batch": 4,
+  "source_comparison": {
+    "lf_normalized_sha256": "91e58908d4f1fafbc93f704a5225bc67e447e1051c067cf666362022ff237a8b",
+    "path": "assets/day23/onnx-runtime-parity.json",
+    "sha256": "6ebcdad6eb5e0b06161723a7b72d131cb71a9285cd5a4937a0ad9e7ff637ef28"
+  },
+  "technical_question": "Do Q-value deviations stay close and preserve greedy action choices across native ORT providers?"
+}

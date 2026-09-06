@@ -405,7 +405,7 @@ Backend
 
 * Day 21 — [Final Long Training：固定最後模型](docs/day21-final-long-training.md)
 * Day 22 — [PyTorch to ONNX：凍結 inference contract](docs/day22-pytorch-to-onnx.md)
-* Day 23 — ONNX Runtime inference
+* Day 23 — [ONNX Runtime inference：驗證 Q-value 與 action parity](docs/day23-onnx-runtime-inference.md)
 * Day 24 — 正確的 inference benchmarking
 * Day 25 — FP32 vs. FP16
 
