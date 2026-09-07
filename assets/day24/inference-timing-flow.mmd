@@ -1,0 +1,14 @@
+flowchart LR
+    runtime["runtime/provider call"]
+    qvalues["q-values<br/>float32 (N,4)"]
+    materialize["output materialization<br/>device → host when needed"]
+    action["argmax<br/>one action per state"]
+    sync["CUDA synchronize<br/>before/after timed GPU work"]
+
+    runtime --> qvalues --> materialize --> action
+    sync -. "prevents async launch-only timing" .-> runtime
+
+    classDef boundary fill:#f8f0e4,stroke:#c55a11,color:#4a2b12
+    classDef output fill:#e8f4ea,stroke:#4b8b3b,color:#203a1c
+    class runtime,sync boundary
+    class qvalues,materialize,action output

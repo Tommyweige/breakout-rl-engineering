@@ -1,0 +1,17 @@
+flowchart LR
+    raw["Contract v2 observation<br/>uint8 (4,84,84)"]
+    adapter["shared inference adapter<br/>normalize by 255 once"]
+    ready["model-ready input<br/>float32 NCHW"]
+    model_only["model-only scope<br/>starts here"]
+    end_to_end["end-to-end scope<br/>includes adapter"]
+    runtime["runtime/provider call"]
+
+    raw --> adapter --> ready --> model_only --> runtime
+    raw -. "includes" .-> end_to_end --> runtime
+    ready -. "starts here" .-> model_only
+
+    classDef input fill:#e8f1fb,stroke:#2f6f9f,color:#172b4d
+    classDef boundary fill:#f8f0e4,stroke:#c55a11,color:#4a2b12
+    classDef output fill:#e8f4ea,stroke:#4b8b3b,color:#203a1c
+    class raw,ready input
+    class adapter,model_only,end_to_end,runtime boundary

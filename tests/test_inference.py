@@ -128,6 +128,18 @@ class InferenceContractTests(unittest.TestCase):
         self.assertEqual(batch_q.shape, (2, 4))
         self.assertTrue(all(parameter.grad is None for parameter in model.parameters()))
 
+    def test_pytorch_policy_accepts_a_prepared_model_input(self) -> None:
+        model = FixedQNetwork()
+        policy = PyTorchPolicy(model, device="cpu")
+        model_input = prepare_model_input(self.observation, device="cpu")
+
+        q_values = policy.predict_model_input(model_input)
+
+        self.assertIsInstance(q_values, torch.Tensor)
+        self.assertEqual(tuple(q_values.shape), (1, 4))
+        self.assertEqual(q_values.device.type, "cpu")
+        np.testing.assert_allclose(q_values.detach().numpy(), [[0.0, 1.0, 3.0, 2.0]])
+
 
 @unittest.skipUnless(
     importlib.util.find_spec("onnxruntime") is not None,
@@ -156,6 +168,15 @@ class ONNXRuntimePolicyTests(unittest.TestCase):
         )
         self.assertEqual(policy.runtime_metadata["requested_provider"], "CPUExecutionProvider")
         self.assertEqual(policy.runtime_metadata["actual_provider"], "CPUExecutionProvider")
+
+    def test_cpu_policy_accepts_a_prepared_model_input(self) -> None:
+        policy = ONNXRuntimePolicy(self.MODEL, provider="cpu")
+        model_input = prepare_model_input(self.observation, device="cpu").numpy()
+
+        q_values = policy.predict_model_input(model_input)
+
+        self.assertEqual(q_values.shape, (1, 4))
+        self.assertEqual(q_values.dtype, np.float32)
 
     def test_requested_cuda_provider_never_silently_falls_back_when_unavailable(self) -> None:
         import onnxruntime as ort

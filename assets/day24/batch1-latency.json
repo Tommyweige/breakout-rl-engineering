@@ -1,0 +1,16 @@
+{
+  "artifact_type": "day24_inference_benchmark_visualization",
+  "benchmark_id": "day24-final-native-v2-20260905-rtx4060",
+  "command": "python -m scripts.visualization.visualize_inference_benchmarks --benchmark-id day24-final-native-v2-20260905-rtx4060",
+  "output": "assets/day24/batch1-latency.png",
+  "schema_version": 1,
+  "source_raw_samples": {
+    "path": "assets/day24/benchmarks/day24-final-native-v2-20260905-rtx4060/raw-samples.json",
+    "sha256": "651bc0e6f369b4886ff2fe07ab1b1120083f0e21c2737a8d314ecf462c52746f"
+  },
+  "source_summary": {
+    "path": "assets/day24/benchmarks/day24-final-native-v2-20260905-rtx4060/summary.json",
+    "sha256": "254926c7a71ffae83500717c6ae62b7ce999457f9d80f7f979c6daca4acc6268"
+  },
+  "technical_question": "How do the steady-state P50 and P95 decision costs compare across runtime/provider and model-only versus end-to-end scope?"
+}

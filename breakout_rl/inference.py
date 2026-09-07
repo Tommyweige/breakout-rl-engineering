@@ -691,6 +691,50 @@ class PyTorchPolicy:
         self.model = model.to(self.device)
         self.model.eval()
 
+    def predict_model_input(self, model_input: torch.Tensor) -> torch.Tensor:
+        """Run a validated, already-prepared model input on the policy device."""
+
+        if not isinstance(model_input, torch.Tensor):
+            raise TypeError("model_input must be a torch.Tensor")
+        if model_input.ndim != 4 or tuple(model_input.shape[1:]) != tuple(
+            self.spec.source_observation_shape
+        ):
+            raise ValueError(
+                "model_input must have shape (N, 4, 84, 84); "
+                f"received {tuple(model_input.shape)}"
+            )
+        if model_input.shape[0] < 1:
+            raise ValueError("model_input must contain at least one observation")
+        if model_input.dtype != torch.float32:
+            raise TypeError("model_input must have dtype torch.float32")
+        if model_input.device != self.device:
+            raise ValueError(
+                "model_input must already be on the policy device: "
+                f"input={model_input.device}, policy={self.device}"
+            )
+        if not torch.isfinite(model_input).all().item() or not (
+            (0.0 <= model_input).all().item()
+            and (model_input <= 1.0).all().item()
+        ):
+            raise ValueError("model_input must contain finite values in [0, 1]")
+
+        self.model.eval()
+        with torch.inference_mode():
+            outputs = self.model(model_input)
+        if not isinstance(outputs, torch.Tensor):
+            raise TypeError("model must return a torch.Tensor")
+        expected_shape = (model_input.shape[0], len(self.spec.action_meanings))
+        if outputs.ndim != 2 or tuple(outputs.shape) != expected_shape:
+            raise ValueError(
+                "model output must have shape "
+                f"(N, {len(self.spec.action_meanings)})"
+            )
+        if outputs.dtype != torch.float32:
+            raise TypeError("model output must have dtype torch.float32")
+        if not torch.isfinite(outputs).all().item():
+            raise ValueError("model output contains non-finite Q-values")
+        return outputs
+
     def predict_q_values(self, observation: np.ndarray) -> np.ndarray:
         """Return finite float32 Q-values with the canonical ``(N, 4)`` shape."""
 
@@ -699,22 +743,7 @@ class PyTorchPolicy:
             device=self.device,
             spec=self.spec,
         )
-        self.model.eval()
-        with torch.inference_mode():
-            outputs = self.model(model_input)
-        if not isinstance(outputs, torch.Tensor):
-            raise TypeError("model must return a torch.Tensor")
-        if outputs.ndim != 2 or tuple(outputs.shape) != (
-            model_input.shape[0],
-            len(self.spec.action_meanings),
-        ):
-            raise ValueError(
-                "model output must have shape " f"(N, {len(self.spec.action_meanings)})"
-            )
-        if outputs.dtype != torch.float32:
-            raise TypeError("model output must have dtype torch.float32")
-        if not torch.isfinite(outputs).all().item():
-            raise ValueError("model output contains non-finite Q-values")
+        outputs = self.predict_model_input(model_input)
         return np.ascontiguousarray(outputs.detach().cpu().numpy())
 
     def select_actions(self, observation: np.ndarray) -> np.ndarray:
@@ -752,6 +781,8 @@ class ONNXRuntimePolicy:
         *,
         provider: str = "cpu",
         device_index: int = 0,
+        intra_op_num_threads: int | None = None,
+        inter_op_num_threads: int | None = None,
         spec: InferenceSpec | Mapping[str, Any] | None = None,
     ) -> None:
         self.spec = _coerce_spec(spec)
@@ -759,6 +790,14 @@ class ONNXRuntimePolicy:
             raise TypeError("device_index must be a non-negative integer")
         if device_index < 0:
             raise ValueError("device_index must be a non-negative integer")
+        for value, name in (
+            (intra_op_num_threads, "intra_op_num_threads"),
+            (inter_op_num_threads, "inter_op_num_threads"),
+        ):
+            if value is not None and (
+                isinstance(value, bool) or not isinstance(value, int) or value < 0
+            ):
+                raise ValueError(f"{name} must be a non-negative integer or None")
         self.model_path = Path(model_path).resolve()
         if not self.model_path.is_file():
             raise FileNotFoundError(self.model_path)
@@ -785,6 +824,10 @@ class ONNXRuntimePolicy:
                     ) from error
 
         session_options = ort.SessionOptions()
+        if intra_op_num_threads is not None:
+            session_options.intra_op_num_threads = intra_op_num_threads
+        if inter_op_num_threads is not None:
+            session_options.inter_op_num_threads = inter_op_num_threads
         if self.requested_provider == "CUDAExecutionProvider":
             try:
                 session_options.add_session_config_entry(
@@ -857,6 +900,8 @@ class ONNXRuntimePolicy:
                 getattr(ort, "get_device", lambda: "unknown")()
             ),
             "session_provider_options": self.session.get_provider_options(),
+            "intra_op_num_threads": int(session_options.intra_op_num_threads),
+            "inter_op_num_threads": int(session_options.inter_op_num_threads),
             "graph_assignment": _graph_assignment_metadata(
                 self.session,
                 requested_provider=self.requested_provider,
@@ -879,6 +924,29 @@ class ONNXRuntimePolicy:
             spec=self.spec,
         )
         input_array = np.ascontiguousarray(model_input.numpy(), dtype=np.float32)
+        return self.predict_model_input(input_array)
+
+    def predict_model_input(self, model_input: np.ndarray) -> np.ndarray:
+        """Run a validated, already-prepared float32 input through the session."""
+
+        if not isinstance(model_input, np.ndarray):
+            raise TypeError("model_input must be a numpy.ndarray")
+        if model_input.dtype != np.dtype("float32"):
+            raise TypeError("model_input must have dtype float32")
+        if model_input.ndim != 4 or tuple(model_input.shape[1:]) != tuple(
+            self.spec.source_observation_shape
+        ):
+            raise ValueError(
+                "model_input must have shape (N, 4, 84, 84); "
+                f"received {tuple(model_input.shape)}"
+            )
+        if model_input.shape[0] < 1:
+            raise ValueError("model_input must contain at least one observation")
+        if not np.isfinite(model_input).all() or not (
+            (0.0 <= model_input).all() and (model_input <= 1.0).all()
+        ):
+            raise ValueError("model_input must contain finite values in [0, 1]")
+        input_array = np.ascontiguousarray(model_input, dtype=np.float32)
         try:
             outputs = self.session.run(
                 [self._output_name],

@@ -23,6 +23,10 @@
 - Day 18 — [DQN vs. Double DQN：從 100K 到 500K 的中程公平比較](day18-dqn-vs-double-dqn.md)
 - Day 19 — [Dueling Network Architecture](day19-dueling-network-architecture.md)
 - Day 20 — [DQN Family Comparison](day20-dqn-family-comparison.md)
+- Day 21 — [Final long training](day21-final-long-training.md)
+- Day 22 — [PyTorch to ONNX](day22-pytorch-to-onnx.md)
+- Day 23 — [ONNX Runtime inference](day23-onnx-runtime-inference.md)
+- Day 24 — [Correct inference benchmarking](day24-correct-inference-benchmarking.md)
 
 Day 20 onward should continue the same naming and article rules defined in `AGENTS.md`.
 
