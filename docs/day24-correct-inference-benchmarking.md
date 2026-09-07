@@ -166,7 +166,7 @@ GPU 很多工作是非同步的。
 
 下面這張圖直接來自實際 benchmark 資料，會同時畫出 P50 和 P95。
 
-[![Day 24 batch=1 推論延遲比較](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/64bd0e68ac69f8b6158e20474b03b8c82069e5ce/assets/day24/batch1-latency.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/64bd0e68ac69f8b6158e20474b03b8c82069e5ce/assets/day24/batch1-latency.png)
+[![Day 24 batch=1 推論延遲比較](https://github.com/Tommyweige/breakout-rl-engineering/blob/5fc881f08363809aba3544c5f429e7b78db386e4/assets/day24/batch1-latency.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/5fc881f08363809aba3544c5f429e7b78db386e4/assets/day24/batch1-latency.png)
 
 這次正式 v2 run 的 batch=1 完整決策結果如下：
 
@@ -203,7 +203,7 @@ P50 = 1 ms
 
 所以第二張圖直接把 100 次 batch=1 完整決策的測量畫出來。
 
-[![Day 24 batch=1 延遲分布](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/64bd0e68ac69f8b6158e20474b03b8c82069e5ce/assets/day24/latency-distribution.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/64bd0e68ac69f8b6158e20474b03b8c82069e5ce/assets/day24/latency-distribution.png)
+[![Day 24 batch=1 延遲分布](https://github.com/Tommyweige/breakout-rl-engineering/blob/5fc881f08363809aba3544c5f429e7b78db386e4/assets/day24/latency-distribution.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/5fc881f08363809aba3544c5f429e7b78db386e4/assets/day24/latency-distribution.png)
 
 看這張圖時可以注意兩件事：
 
