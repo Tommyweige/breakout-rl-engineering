@@ -46,7 +46,11 @@ Agent 最後只做一件事：**選分數最高的那個動作。**
 
 下面這張圖就是這次實際測量的結果。
 
-[![Day 25 FP32 與 FP16 的決策、延遲和模型大小比較](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/b0984b29d784f402d4925ff435cddee36013b04e/assets/day25/fp32-vs-fp16.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/b0984b29d784f402d4925ff435cddee36013b04e/assets/day25/fp32-vs-fp16.png)
+[![Day 25 FP32 與 FP16 的決策、延遲和模型大小比較](https://github.com/Tommyweige/breakout-rl-engineering/blob/ecf7c0c950fed48f7d42033f8f82190d4d0d422e/assets/day25/fp32-vs-fp16.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/ecf7c0c950fed48f7d42033f8f82190d4d0d422e/assets/day25/fp32-vs-fp16.png)
+
+這次比較的流程也可以畫成一條結構關係：同一個 Final Model 先分成四條 CUDA 路徑，再用相同 probes 與固定 Contract v2 seeds 比較數值、動作與評估結果，最後才一起看 latency、模型大小與 Browser FP32 baseline。這張圖描述的是實驗順序，不是某一局遊戲的 action trace。
+
+[![Day 25 從 Final Model 到 FP32/FP16 correctness、latency 與 Browser baseline 決策的實驗流程](https://github.com/Tommyweige/breakout-rl-engineering/blob/ecf7c0c950fed48f7d42033f8f82190d4d0d422e/assets/day25/precision-comparison-flow.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/ecf7c0c950fed48f7d42033f8f82190d4d0d422e/assets/day25/precision-comparison-flow.png)
 
 ---
 
