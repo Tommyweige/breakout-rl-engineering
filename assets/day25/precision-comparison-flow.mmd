@@ -1,0 +1,26 @@
+flowchart LR
+    A[Day 21 Final Model] --> B[PyTorch CUDA FP32]
+    A --> C[PyTorch CUDA FP16]
+    D[Day 22 FP32 ONNX] --> E[ORT CUDA FP32]
+    D --> F[FP16 converter]
+    F --> G[Day 25 FP16 ONNX<br/>FP32 input/output,<br/>internal FP16]
+    G --> H[ORT CUDA FP16]
+
+    B --> I[Same probes<br/>and fixed Contract v2 seeds]
+    C --> I
+    E --> I
+    H --> I
+    I --> J[Numeric error,<br/>action agreement,<br/>evaluation parity]
+    J --> K[Batch=1 P50/P95<br/>end-to-end benchmark]
+    K --> L[Combine correctness,<br/>latency, model size]
+    L --> M[Native FP16<br/>recommendation]
+    L --> N[Browser baseline<br/>remains FP32 ONNX]
+
+    classDef baseline fill:#e2e8f0,stroke:#475569,color:#0f172a
+    classDef fp16 fill:#fee2e2,stroke:#dc2626,color:#450a0a
+    classDef evidence fill:#dbeafe,stroke:#2563eb,color:#172554
+    classDef decision fill:#dcfce7,stroke:#16a34a,color:#14532d
+    class A,D,B,E,N baseline
+    class C,F,G,H fp16
+    class I,J,K evidence
+    class L,M decision

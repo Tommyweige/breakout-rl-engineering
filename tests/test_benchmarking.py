@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -146,6 +147,43 @@ class BenchmarkingTests(unittest.TestCase):
         self.assertEqual(entry["batch_size"], 1)
         self.assertEqual(entry["sample_count"], 4)
         self.assertIn("p50_ns", entry["latency"])
+
+    def test_benchmark_artifact_type_can_be_overridden_for_a_new_experiment(self) -> None:
+        observations = np.zeros((1, 4, 84, 84), dtype=np.uint8)
+        backend = InferenceBackend(
+            runtime="test-runtime",
+            requested_provider="cpu",
+            actual_provider="test-cpu",
+            precision="float16",
+            cpu_threads=1,
+            thread_setting="1",
+            input_ownership="numpy.uint8/cpu",
+            output_ownership="numpy.float32/cpu",
+            prepare_model_input=lambda value: value.astype(np.float32) / 255.0,
+            run_model_input=lambda value: np.zeros((value.shape[0], 4), dtype=np.float32),
+            materialize_output=lambda value: np.asarray(value),
+        )
+        measured = run_benchmark_target(
+            backend,
+            observations,
+            config=BenchmarkConfig(warmup_iterations=0, iterations=1, batch_sizes=(1,)),
+        )
+
+        with tempfile.TemporaryDirectory() as directory:
+            write_benchmark_artifacts(
+                Path(directory),
+                {
+                    "artifact_type": "day25_precision_benchmark",
+                    "benchmark_id": "day25-test",
+                    "summary": measured["summary"],
+                    "raw_samples": measured["raw_samples"],
+                },
+            )
+            summary = json.loads((Path(directory) / "summary.json").read_text())
+            raw = json.loads((Path(directory) / "raw-samples.json").read_text())
+
+        self.assertEqual(summary["artifact_type"], "day25_precision_benchmark_summary")
+        self.assertEqual(raw["artifact_type"], "day25_precision_benchmark_raw_samples")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,105 @@
+{
+  "artifact_type": "day25_fp16_onnx_model",
+  "conversion": {
+    "function": "convert_float_to_float16",
+    "keep_io_types": true,
+    "module": "onnxruntime.transformers.float16",
+    "onnx_version": "1.19.0",
+    "onnxruntime_version": "1.29.0",
+    "package": "onnxruntime",
+    "python_version": "3.12.13"
+  },
+  "formal_cuda_validation": {
+    "cuda_version": "13.0",
+    "device_index": 0,
+    "gpu_model": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "graph_assignment": {
+      "fallback_node_count": 0,
+      "node_count": 18,
+      "nodes_by_provider": {
+        "CUDAExecutionProvider": 18
+      },
+      "status": "verified"
+    },
+    "model_sha256": "92d3bbc447418255202309adaa9ba27d3c553e2b8e6eca8957d8174d704f6251",
+    "onnxruntime_version": "1.29.0",
+    "precision": "float16",
+    "provider": "CUDAExecutionProvider",
+    "pytorch_version": "2.13.0+cu130"
+  },
+  "graph": {
+    "checker_passed": true,
+    "initializer_count": 14,
+    "inputs": [
+      {
+        "dtype": "float32",
+        "name": "observation",
+        "onnx_dtype": "FLOAT",
+        "shape": [
+          "N",
+          4,
+          84,
+          84
+        ]
+      }
+    ],
+    "ir_version": 8,
+    "model_path": "C:/Users/tommy/.codex/worktrees/3b3e/breakout-rl-engineering/assets/day25/models/model.fp16.onnx",
+    "node_count": 18,
+    "operator_type_counts": {
+      "Add": 1,
+      "Cast": 2,
+      "Conv": 3,
+      "Flatten": 1,
+      "Gemm": 4,
+      "ReduceMean": 1,
+      "Relu": 5,
+      "Sub": 1
+    },
+    "opset_imports": {
+      "ai.onnx": 17
+    },
+    "outputs": [
+      {
+        "dtype": "float32",
+        "name": "q_values",
+        "onnx_dtype": "FLOAT",
+        "shape": [
+          "N",
+          4
+        ]
+      }
+    ]
+  },
+  "lineage_config": {
+    "path": "configs/inference/precision_validation.json",
+    "sha256": "67feebd53012ec08be35b7a4995e11cb6fbdbb9ab8d5e3e77516ba9151d10648"
+  },
+  "model_path": "assets/day25/models/model.fp16.onnx",
+  "model_sha256": "92d3bbc447418255202309adaa9ba27d3c553e2b8e6eca8957d8174d704f6251",
+  "model_size_bytes": 6590582,
+  "precision": {
+    "browser_baseline_unchanged": true,
+    "input_dtype": "float32",
+    "internal": "float16",
+    "io_policy": "float32 input / float32 output with internal float16 graph",
+    "output_dtype": "float32"
+  },
+  "schema_version": 1,
+  "source": {
+    "inference_spec": {
+      "contract_id": "day22-breakout-inference-v1",
+      "path": "configs/inference/inference_spec.json",
+      "sha256": "68637a63d3f0242f74089314049251521bec14a6fa3267b57fa46470acfff8ec"
+    },
+    "onnx_model": {
+      "metadata_path": "assets/day22/models/final_model/model.onnx.metadata.json",
+      "metadata_sha256": "3b66b8135c501324b08fffa5a94a682c7c22db64d2fec2684d820591312d3e4f",
+      "path": "assets/day22/models/final_model/model.onnx",
+      "sha256": "cf90c74b1d09d5d7e2e0c71014f2daef2b5e1833425d300da06e34d1e4ef7f12"
+    },
+    "source_checkpoint_sha256": "ab07c0a48202428ddbb377c81f4091b3c434ce95e19d19fb1ec335df79841c48",
+    "source_checkpoint_step": 2500000,
+    "source_model_sha256": "6002029dcdbcbb7c93fca0c589880611aed2e2e7924db0f6b0c1f5160824389a"
+  }
+}

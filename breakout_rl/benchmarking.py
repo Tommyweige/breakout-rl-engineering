@@ -395,9 +395,12 @@ def write_benchmark_artifacts(output_dir: str | Path, payload: Mapping[str, Any]
     raw_samples = payload.get("raw_samples")
     if not isinstance(summary, Mapping) or not isinstance(raw_samples, Sequence):
         raise TypeError("payload must contain a summary mapping and raw_samples sequence")
+    artifact_type = str(payload.get("artifact_type", "day24_inference_benchmark"))
+    if not artifact_type.strip():
+        raise ValueError("payload artifact_type must be a non-empty string")
     summary_payload = dict(summary)
     summary_payload.setdefault("schema_version", BENCHMARK_SCHEMA_VERSION)
-    summary_payload["artifact_type"] = "day24_inference_benchmark_summary"
+    summary_payload["artifact_type"] = f"{artifact_type}_summary"
     summary_payload["benchmark_id"] = payload.get("benchmark_id")
     for key in (
         "generated_at_utc",
@@ -410,7 +413,7 @@ def write_benchmark_artifacts(output_dir: str | Path, payload: Mapping[str, Any]
             summary_payload[key] = payload[key]
     raw_payload = {
         "schema_version": BENCHMARK_SCHEMA_VERSION,
-        "artifact_type": "day24_inference_benchmark_raw_samples",
+        "artifact_type": f"{artifact_type}_raw_samples",
         "benchmark_id": payload.get("benchmark_id"),
         "samples": list(raw_samples),
     }

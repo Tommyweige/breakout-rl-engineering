@@ -1,0 +1,22 @@
+{
+  "artifact_type": "day25_precision_comparison_visualization",
+  "command": "python -m scripts.visualization.visualize_precision_comparison",
+  "matplotlib_version": "3.11.1",
+  "output": "assets/day25/fp32-vs-fp16.png",
+  "output_sha256": "f092847d91f2c6458dbfd14912343b1fa860b85d20ccf650bea247d2bffc1b79",
+  "python_version": "3.12.13",
+  "schema_version": 1,
+  "source_model_paths": {
+    "fp16_onnx": "assets/day25/models/model.fp16.onnx",
+    "fp32_onnx": "assets/day22/models/final_model/model.onnx"
+  },
+  "sources": {
+    "benchmark_raw_samples": "assets/day25/benchmarks/day25-6a73229d443e/raw-samples.json",
+    "benchmark_raw_samples_sha256": "8266e8fb38fa246d0362f023961bba91da458cf028441c0f1f50a661b186218c",
+    "benchmark_summary": "assets/day25/benchmarks/day25-6a73229d443e/summary.json",
+    "benchmark_summary_sha256": "291647dc5e681ff6f9ddb21d6ccf9e931f77a260b92e24e5674b002fec4e3420",
+    "comparison": "assets/day25/precision-comparison.json",
+    "comparison_sha256": "7ad3f82687542dad355c9144255c84854a640a5837b1968388cffc53d39c765b"
+  },
+  "technical_question": "Does internal FP16 preserve policy decisions and improve native batch=1 latency?"
+}
