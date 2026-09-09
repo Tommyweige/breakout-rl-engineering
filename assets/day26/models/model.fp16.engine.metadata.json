@@ -1,0 +1,103 @@
+{
+  "artifact_type": "day26_tensorrt_engine",
+  "build": {
+    "build_api": "TensorRT Python API",
+    "build_seconds": 6.457422100007534,
+    "engine_size_bytes": 6690116,
+    "parser": {
+      "input_dtype": "DataType.FLOAT",
+      "input_name": "observation",
+      "input_shape": [
+        -1,
+        4,
+        84,
+        84
+      ],
+      "output_dtype": "DataType.FLOAT",
+      "output_name": "q_values",
+      "output_shape": [
+        -1,
+        4
+      ]
+    },
+    "precision_control": "source ONNX tensor types; TensorRT 11 strongly typed network"
+  },
+  "engine_compatibility": {
+    "hardware_specific": true,
+    "portable_across_gpu_architectures": false,
+    "portable_across_platforms": false,
+    "source_precision_contract": "Day 25 derived typed FP16 ONNX because TensorRT 11 is strongly typed"
+  },
+  "engine_path": "assets/day26/models/model.fp16.engine",
+  "engine_sha256": "a6a89cc6a9ba90025fe2892c7f96c7d49eb32088f6d2aabcc8242dacd990a929",
+  "engine_size_bytes": 6690116,
+  "hardware": {
+    "compute_capability": "8.9",
+    "device_index": 0,
+    "free_memory_before_build_bytes": 7451181056,
+    "gpu_model": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "total_memory_bytes": 8585216000
+  },
+  "lineage": {
+    "canonical_source_model": {
+      "path": "assets/day21/models/final_model/model.pt",
+      "sha256": "6002029dcdbcbb7c93fca0c589880611aed2e2e7924db0f6b0c1f5160824389a",
+      "source_checkpoint_sha256": "ab07c0a48202428ddbb377c81f4091b3c434ce95e19d19fb1ec335df79841c48",
+      "source_checkpoint_step": 2500000
+    },
+    "day25_comparison": {
+      "path": "assets/day25/precision-comparison.json",
+      "sha256": "7ad3f82687542dad355c9144255c84854a640a5837b1968388cffc53d39c765b"
+    },
+    "environment_contract": {
+      "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+      "path": "configs/eval/breakout_contract_v2.json",
+      "sha256": "e9947fc3a1235100aa92f75a79cf33668b36b4f325f22a0bc8b9546a356b85ba"
+    },
+    "inference_spec": {
+      "path": "configs/inference/inference_spec.json",
+      "sha256": "68637a63d3f0242f74089314049251521bec14a6fa3267b57fa46470acfff8ec"
+    },
+    "onnx": {
+      "path": "assets/day25/models/model.fp16.onnx",
+      "precision": "float16",
+      "sha256": "92d3bbc447418255202309adaa9ba27d3c553e2b8e6eca8957d8174d704f6251"
+    }
+  },
+  "memory_policy": {
+    "free_memory_after_build_bytes": 7449083904,
+    "required_headroom_bytes": 1073741824,
+    "workspace_limit_bytes": 1073741824
+  },
+  "metadata_path": "assets/day26/models/model.fp16.engine.metadata.json",
+  "optimization_profile": {
+    "max": [
+      32,
+      4,
+      84,
+      84
+    ],
+    "min": [
+      1,
+      4,
+      84,
+      84
+    ],
+    "opt": [
+      1,
+      4,
+      84,
+      84
+    ]
+  },
+  "precision": "float16",
+  "schema_version": 1,
+  "software": {
+    "cuda_version": "13.0",
+    "preflight_path": "assets/day26/tensorrt-preflight.json",
+    "preflight_sha256": "bd109a05c1f3771a7c64bc221aa647ee971251ce0a4dd1012b6d8013e0252f1c",
+    "python_version": "3.12.13",
+    "pytorch_version": "2.13.0+cu130",
+    "tensorrt_version": "11.2.1.2"
+  }
+}

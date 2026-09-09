@@ -1,0 +1,28 @@
+flowchart LR
+    A[Day 21 Final Model] --> B[Day 22 FP32 ONNX]
+    B --> C[GPU + ORT CUDA<br/>preflight]
+    D[Day 25 typed<br/>FP16 ONNX] --> E[FP16 source]
+    B --> F[FP32 source]
+    C -->|BLOCKED| G[Blocker report<br/>no performance claim]
+    C -->|READY| H[Build hardware-specific<br/>engines]
+    F --> H
+    E --> H
+    H --> I[Golden fixtures<br/>PyTorch + ORT + TRT]
+    I --> J[Q error<br/>actions + margin]
+    J --> K[Contract v2<br/>fixed seeds]
+    K --> L[Batch=1 P50/P95<br/>model-only + end-to-end]
+    L --> M[Correctness first<br/>then latency + size]
+    M -->|pass and faster| N[Native NVIDIA<br/>candidate]
+    M -->|fail or slower| O[Do not adopt]
+    C --> P[Browser remains<br/>FP32 ONNX → ORT Web]
+
+    classDef source fill:#e2e8f0,stroke:#475569,color:#0f172a
+    classDef gate fill:#fef3c7,stroke:#d97706,color:#451a03
+    classDef evidence fill:#dbeafe,stroke:#2563eb,color:#172554
+    classDef decision fill:#dcfce7,stroke:#16a34a,color:#14532d
+    classDef blocked fill:#fee2e2,stroke:#dc2626,color:#450a0a
+    class A,B,D source
+    class C,H gate
+    class I,J,K,L evidence
+    class M,N,O,P decision
+    class G blocked

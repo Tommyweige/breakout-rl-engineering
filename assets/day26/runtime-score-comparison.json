@@ -1,0 +1,3473 @@
+{
+  "aggregates": {
+    "onnx_cuda_fp32": {
+      "bootstrap_mean_ci": {
+        "confidence_level": 0.95,
+        "lower": 36.6,
+        "mean": 42.03333333333333,
+        "method": "percentile_bootstrap_mean",
+        "resamples": 10000,
+        "seed": 26060906,
+        "upper": 47.766666666666666
+      },
+      "count": 30,
+      "episode_count": 30,
+      "episode_length_statistics": {
+        "count": 30,
+        "max": 1572.0,
+        "mean": 1058.6333333333334,
+        "median": 1014.0,
+        "min": 680.0,
+        "p10": 771.9,
+        "p90": 1336.8000000000002,
+        "std": 223.54350558423496
+      },
+      "failure_count": 0,
+      "failure_seeds": [],
+      "max": 74.0,
+      "mean": 42.03333333333333,
+      "median": 37.0,
+      "min": 18.0,
+      "p10": 26.0,
+      "p90": 61.000000000000014,
+      "runtime": "onnx_cuda_fp32",
+      "statistics_scope": "successful_episodes",
+      "std": 15.57879613092388,
+      "successful_episode_count": 30
+    },
+    "pytorch_cuda_fp32": {
+      "bootstrap_mean_ci": {
+        "confidence_level": 0.95,
+        "lower": 36.9,
+        "mean": 42.53333333333333,
+        "method": "percentile_bootstrap_mean",
+        "resamples": 10000,
+        "seed": 26060906,
+        "upper": 48.43333333333333
+      },
+      "count": 30,
+      "episode_count": 30,
+      "episode_length_statistics": {
+        "count": 30,
+        "max": 1572.0,
+        "mean": 1063.1666666666667,
+        "median": 1014.0,
+        "min": 680.0,
+        "p10": 771.9,
+        "p90": 1398.5,
+        "std": 233.96012243305242
+      },
+      "failure_count": 0,
+      "failure_seeds": [],
+      "max": 74.0,
+      "mean": 42.53333333333333,
+      "median": 37.0,
+      "min": 18.0,
+      "p10": 26.0,
+      "p90": 68.2,
+      "runtime": "pytorch_cuda_fp32",
+      "statistics_scope": "successful_episodes",
+      "std": 16.12396422168637,
+      "successful_episode_count": 30
+    },
+    "tensorrt_cuda_fp16": {
+      "bootstrap_mean_ci": {
+        "confidence_level": 0.95,
+        "lower": 32.13333333333333,
+        "mean": 36.8,
+        "method": "percentile_bootstrap_mean",
+        "resamples": 10000,
+        "seed": 26060906,
+        "upper": 41.53333333333333
+      },
+      "count": 30,
+      "episode_count": 30,
+      "episode_length_statistics": {
+        "count": 30,
+        "max": 1503.0,
+        "mean": 1016.1333333333333,
+        "median": 1045.0,
+        "min": 580.0,
+        "p10": 689.1,
+        "p90": 1235.5,
+        "std": 220.5249393807623
+      },
+      "failure_count": 0,
+      "failure_seeds": [],
+      "max": 64.0,
+      "mean": 36.8,
+      "median": 34.0,
+      "min": 16.0,
+      "p10": 18.8,
+      "p90": 54.2,
+      "runtime": "tensorrt_cuda_fp16",
+      "statistics_scope": "successful_episodes",
+      "std": 13.191916716939454,
+      "successful_episode_count": 30
+    },
+    "tensorrt_cuda_fp32": {
+      "bootstrap_mean_ci": {
+        "confidence_level": 0.95,
+        "lower": 36.6,
+        "mean": 42.03333333333333,
+        "method": "percentile_bootstrap_mean",
+        "resamples": 10000,
+        "seed": 26060906,
+        "upper": 47.766666666666666
+      },
+      "count": 30,
+      "episode_count": 30,
+      "episode_length_statistics": {
+        "count": 30,
+        "max": 1572.0,
+        "mean": 1058.6333333333334,
+        "median": 1014.0,
+        "min": 680.0,
+        "p10": 771.9,
+        "p90": 1336.8000000000002,
+        "std": 223.54350558423496
+      },
+      "failure_count": 0,
+      "failure_seeds": [],
+      "max": 74.0,
+      "mean": 42.03333333333333,
+      "median": 37.0,
+      "min": 18.0,
+      "p10": 26.0,
+      "p90": 61.000000000000014,
+      "runtime": "tensorrt_cuda_fp32",
+      "statistics_scope": "successful_episodes",
+      "std": 15.57879613092388,
+      "successful_episode_count": 30
+    }
+  },
+  "artifact_type": "day26_runtime_score_comparison",
+  "bootstrap": {
+    "confidence_level": 0.95,
+    "enabled": true,
+    "resamples": 10000,
+    "seed": 26060906
+  },
+  "decision": {
+    "adoption_gate": "score distribution and latency; no gameplay trace equality gate",
+    "checks": {
+      "all_runtime_episodes_complete": true,
+      "batch1_end_to_end_p95_improved": true,
+      "candidate_worse_fraction_acceptable": true,
+      "fixed_state_sanity": true,
+      "maintenance_cost_accepted": true,
+      "mean_distribution_not_materially_lower": true,
+      "median_distribution_not_materially_lower": true,
+      "minimum_score_not_materially_lower": true,
+      "p10_low_tail_not_materially_lower": true,
+      "p90_upper_distribution_not_materially_lower": true,
+      "score_spread_not_materially_changed": true
+    },
+    "distribution": {
+      "baseline_runtime": "onnx_cuda_fp32",
+      "batch1_p95_improvement_fraction": 0.3145621355635866,
+      "candidate_runtime": "tensorrt_cuda_fp32",
+      "candidate_worse_fraction": 0.0,
+      "distribution_deltas": {
+        "max": 0.0,
+        "mean": 0.0,
+        "median": 0.0,
+        "min": 0.0,
+        "p10": 0.0,
+        "p90": 0.0,
+        "std": 0.0
+      },
+      "mean_delta": 0.0,
+      "median_delta": 0.0,
+      "p10_delta": 0.0,
+      "p90_delta": 0.0,
+      "paired_bootstrap_mean_ci": {
+        "confidence_level": 0.95,
+        "lower": 0.0,
+        "mean": 0.0,
+        "method": "percentile_bootstrap_mean",
+        "resamples": 10000,
+        "seed": 26060909,
+        "upper": 0.0
+      },
+      "paired_statistics": {
+        "count": 30,
+        "max": 0.0,
+        "mean": 0.0,
+        "median": 0.0,
+        "min": 0.0,
+        "p10": 0.0,
+        "p90": 0.0,
+        "std": 0.0
+      },
+      "relative_score_drop": {
+        "mean": 0.0,
+        "median": 0.0,
+        "min": 0.0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "std_relative_change": 0.0
+    },
+    "recommendation": "native deployment-worthy"
+  },
+  "elapsed_seconds": 178.99444429995492,
+  "evaluation_id": "day26-runtime-score-v1",
+  "evaluation_protocol": {
+    "action_trace_equality_is_adoption_gate": false,
+    "adoption_policy": {
+      "maintenance_cost_accepted": true,
+      "max_candidate_worse_fraction": 0.7,
+      "max_mean_relative_score_drop": 0.1,
+      "max_median_relative_score_drop": 0.1,
+      "max_min_relative_score_drop": 0.15,
+      "max_p10_relative_score_drop": 0.15,
+      "max_p90_relative_score_drop": 0.1,
+      "max_std_relative_change": 0.25,
+      "min_batch1_p95_improvement_fraction": 0.05,
+      "require_batch1_p95_improvement": true
+    },
+    "device_index": 0,
+    "environment_contract_id": "day15-breakout-evaluation-v2-fire-reset",
+    "environment_contract_path": "configs/eval/breakout_contract_v2.json",
+    "environment_contract_sha256": "e9947fc3a1235100aa92f75a79cf33668b36b4f325f22a0bc8b9546a356b85ba",
+    "environment_id": "ALE/Breakout-v5",
+    "evaluation_epsilon": 0.0,
+    "runtime_targets": [
+      "pytorch_cuda_fp32",
+      "onnx_cuda_fp32",
+      "tensorrt_cuda_fp32",
+      "tensorrt_cuda_fp16"
+    ]
+  },
+  "evaluation_status": "completed",
+  "generated_at_utc": "2026-09-06T03:37:57.374112Z",
+  "generation": {
+    "command": "C:\\Users\\tommy\\.codex\\worktrees\\3b3e\\breakout-rl-engineering\\scripts\\evaluation\\evaluate_runtime_scores.py --config configs/eval/day26_runtime_score_evaluation.json --tensorrt-config configs/inference/tensorrt_experiment.json --preflight assets/day26/tensorrt-preflight.json --comparison assets/day26/tensorrt-comparison.json --tensorrt-site-packages C:\\Users\\tommy\\AppData\\Local\\Temp\\breakout-day26-tensorrt\\Lib\\site-packages --device-index 0 --force",
+    "cuda_version": "13.0",
+    "gpu_model": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "python_version": "3.12.13",
+    "pytorch_version": "2.13.0+cu130",
+    "repository_relative_paths_only": true
+  },
+  "paired_score_differences": {
+    "onnx_fp32_minus_pytorch_fp32": {
+      "bootstrap_mean_ci": {
+        "confidence_level": 0.95,
+        "lower": -2.1666666666666665,
+        "mean": -0.5,
+        "method": "percentile_bootstrap_mean",
+        "resamples": 10000,
+        "seed": 26060907,
+        "upper": 1.1
+      },
+      "declared_seed_count": 30,
+      "definition": "left_score_minus_right_score",
+      "differences": [
+        {
+          "difference": 0.0,
+          "left_score": 73.0,
+          "right_score": 73.0,
+          "seed": 101
+        },
+        {
+          "difference": -6.0,
+          "left_score": 45.0,
+          "right_score": 51.0,
+          "seed": 102
+        },
+        {
+          "difference": 0.0,
+          "left_score": 58.0,
+          "right_score": 58.0,
+          "seed": 103
+        },
+        {
+          "difference": 0.0,
+          "left_score": 47.0,
+          "right_score": 47.0,
+          "seed": 104
+        },
+        {
+          "difference": 0.0,
+          "left_score": 74.0,
+          "right_score": 74.0,
+          "seed": 105
+        },
+        {
+          "difference": -8.0,
+          "left_score": 60.0,
+          "right_score": 68.0,
+          "seed": 106
+        },
+        {
+          "difference": 0.0,
+          "left_score": 32.0,
+          "right_score": 32.0,
+          "seed": 107
+        },
+        {
+          "difference": 0.0,
+          "left_score": 26.0,
+          "right_score": 26.0,
+          "seed": 108
+        },
+        {
+          "difference": 16.0,
+          "left_score": 59.0,
+          "right_score": 43.0,
+          "seed": 109
+        },
+        {
+          "difference": 0.0,
+          "left_score": 36.0,
+          "right_score": 36.0,
+          "seed": 110
+        },
+        {
+          "difference": 0.0,
+          "left_score": 58.0,
+          "right_score": 58.0,
+          "seed": 202
+        },
+        {
+          "difference": 0.0,
+          "left_score": 26.0,
+          "right_score": 26.0,
+          "seed": 203
+        },
+        {
+          "difference": 0.0,
+          "left_score": 37.0,
+          "right_score": 37.0,
+          "seed": 204
+        },
+        {
+          "difference": -17.0,
+          "left_score": 45.0,
+          "right_score": 62.0,
+          "seed": 205
+        },
+        {
+          "difference": 0.0,
+          "left_score": 70.0,
+          "right_score": 70.0,
+          "seed": 206
+        },
+        {
+          "difference": 0.0,
+          "left_score": 21.0,
+          "right_score": 21.0,
+          "seed": 207
+        },
+        {
+          "difference": 0.0,
+          "left_score": 18.0,
+          "right_score": 18.0,
+          "seed": 208
+        },
+        {
+          "difference": 0.0,
+          "left_score": 27.0,
+          "right_score": 27.0,
+          "seed": 209
+        },
+        {
+          "difference": 0.0,
+          "left_score": 50.0,
+          "right_score": 50.0,
+          "seed": 210
+        },
+        {
+          "difference": 0.0,
+          "left_score": 27.0,
+          "right_score": 27.0,
+          "seed": 211
+        },
+        {
+          "difference": 0.0,
+          "left_score": 35.0,
+          "right_score": 35.0,
+          "seed": 303
+        },
+        {
+          "difference": 0.0,
+          "left_score": 60.0,
+          "right_score": 60.0,
+          "seed": 304
+        },
+        {
+          "difference": 0.0,
+          "left_score": 48.0,
+          "right_score": 48.0,
+          "seed": 305
+        },
+        {
+          "difference": 0.0,
+          "left_score": 34.0,
+          "right_score": 34.0,
+          "seed": 306
+        },
+        {
+          "difference": 0.0,
+          "left_score": 38.0,
+          "right_score": 38.0,
+          "seed": 307
+        },
+        {
+          "difference": 0.0,
+          "left_score": 29.0,
+          "right_score": 29.0,
+          "seed": 308
+        },
+        {
+          "difference": 0.0,
+          "left_score": 37.0,
+          "right_score": 37.0,
+          "seed": 309
+        },
+        {
+          "difference": 0.0,
+          "left_score": 36.0,
+          "right_score": 36.0,
+          "seed": 310
+        },
+        {
+          "difference": 0.0,
+          "left_score": 28.0,
+          "right_score": 28.0,
+          "seed": 311
+        },
+        {
+          "difference": 0.0,
+          "left_score": 27.0,
+          "right_score": 27.0,
+          "seed": 312
+        }
+      ],
+      "excluded_seeds": [],
+      "left_runtime": "onnx_cuda_fp32",
+      "paired_episode_count": 30,
+      "right_runtime": "pytorch_cuda_fp32",
+      "statistics": {
+        "count": 30,
+        "max": 16.0,
+        "mean": -0.5,
+        "median": 0.0,
+        "min": -17.0,
+        "p10": -0.5999999999999979,
+        "p90": 0.0,
+        "std": 4.6097722286464435
+      }
+    },
+    "tensorrt_fp16_minus_pytorch_fp32": {
+      "bootstrap_mean_ci": {
+        "confidence_level": 0.95,
+        "lower": -12.833333333333334,
+        "mean": -5.733333333333333,
+        "method": "percentile_bootstrap_mean",
+        "resamples": 10000,
+        "seed": 26060910,
+        "upper": 1.0
+      },
+      "declared_seed_count": 30,
+      "definition": "left_score_minus_right_score",
+      "differences": [
+        {
+          "difference": -46.0,
+          "left_score": 27.0,
+          "right_score": 73.0,
+          "seed": 101
+        },
+        {
+          "difference": -29.0,
+          "left_score": 22.0,
+          "right_score": 51.0,
+          "seed": 102
+        },
+        {
+          "difference": -24.0,
+          "left_score": 34.0,
+          "right_score": 58.0,
+          "seed": 103
+        },
+        {
+          "difference": -4.0,
+          "left_score": 43.0,
+          "right_score": 47.0,
+          "seed": 104
+        },
+        {
+          "difference": -20.0,
+          "left_score": 54.0,
+          "right_score": 74.0,
+          "seed": 105
+        },
+        {
+          "difference": -4.0,
+          "left_score": 64.0,
+          "right_score": 68.0,
+          "seed": 106
+        },
+        {
+          "difference": 4.0,
+          "left_score": 36.0,
+          "right_score": 32.0,
+          "seed": 107
+        },
+        {
+          "difference": 25.0,
+          "left_score": 51.0,
+          "right_score": 26.0,
+          "seed": 108
+        },
+        {
+          "difference": 13.0,
+          "left_score": 56.0,
+          "right_score": 43.0,
+          "seed": 109
+        },
+        {
+          "difference": 5.0,
+          "left_score": 41.0,
+          "right_score": 36.0,
+          "seed": 110
+        },
+        {
+          "difference": -25.0,
+          "left_score": 33.0,
+          "right_score": 58.0,
+          "seed": 202
+        },
+        {
+          "difference": 3.0,
+          "left_score": 29.0,
+          "right_score": 26.0,
+          "seed": 203
+        },
+        {
+          "difference": -8.0,
+          "left_score": 29.0,
+          "right_score": 37.0,
+          "seed": 204
+        },
+        {
+          "difference": -46.0,
+          "left_score": 16.0,
+          "right_score": 62.0,
+          "seed": 205
+        },
+        {
+          "difference": -48.0,
+          "left_score": 22.0,
+          "right_score": 70.0,
+          "seed": 206
+        },
+        {
+          "difference": 13.0,
+          "left_score": 34.0,
+          "right_score": 21.0,
+          "seed": 207
+        },
+        {
+          "difference": -2.0,
+          "left_score": 16.0,
+          "right_score": 18.0,
+          "seed": 208
+        },
+        {
+          "difference": -10.0,
+          "left_score": 17.0,
+          "right_score": 27.0,
+          "seed": 209
+        },
+        {
+          "difference": -1.0,
+          "left_score": 49.0,
+          "right_score": 50.0,
+          "seed": 210
+        },
+        {
+          "difference": 12.0,
+          "left_score": 39.0,
+          "right_score": 27.0,
+          "seed": 211
+        },
+        {
+          "difference": 17.0,
+          "left_score": 52.0,
+          "right_score": 35.0,
+          "seed": 303
+        },
+        {
+          "difference": -17.0,
+          "left_score": 43.0,
+          "right_score": 60.0,
+          "seed": 304
+        },
+        {
+          "difference": 0.0,
+          "left_score": 48.0,
+          "right_score": 48.0,
+          "seed": 305
+        },
+        {
+          "difference": 23.0,
+          "left_score": 57.0,
+          "right_score": 34.0,
+          "seed": 306
+        },
+        {
+          "difference": -5.0,
+          "left_score": 33.0,
+          "right_score": 38.0,
+          "seed": 307
+        },
+        {
+          "difference": 0.0,
+          "left_score": 29.0,
+          "right_score": 29.0,
+          "seed": 308
+        },
+        {
+          "difference": -4.0,
+          "left_score": 33.0,
+          "right_score": 37.0,
+          "seed": 309
+        },
+        {
+          "difference": 14.0,
+          "left_score": 50.0,
+          "right_score": 36.0,
+          "seed": 310
+        },
+        {
+          "difference": 0.0,
+          "left_score": 28.0,
+          "right_score": 28.0,
+          "seed": 311
+        },
+        {
+          "difference": -8.0,
+          "left_score": 19.0,
+          "right_score": 27.0,
+          "seed": 312
+        }
+      ],
+      "excluded_seeds": [],
+      "left_runtime": "tensorrt_cuda_fp16",
+      "paired_episode_count": 30,
+      "right_runtime": "pytorch_cuda_fp32",
+      "statistics": {
+        "count": 30,
+        "max": 25.0,
+        "mean": -5.733333333333333,
+        "median": -3.0,
+        "min": -48.0,
+        "p10": -30.699999999999996,
+        "p90": 14.300000000000004,
+        "std": 18.936619433139477
+      }
+    },
+    "tensorrt_fp32_minus_onnx_fp32": {
+      "bootstrap_mean_ci": {
+        "confidence_level": 0.95,
+        "lower": 0.0,
+        "mean": 0.0,
+        "method": "percentile_bootstrap_mean",
+        "resamples": 10000,
+        "seed": 26060909,
+        "upper": 0.0
+      },
+      "declared_seed_count": 30,
+      "definition": "left_score_minus_right_score",
+      "differences": [
+        {
+          "difference": 0.0,
+          "left_score": 73.0,
+          "right_score": 73.0,
+          "seed": 101
+        },
+        {
+          "difference": 0.0,
+          "left_score": 45.0,
+          "right_score": 45.0,
+          "seed": 102
+        },
+        {
+          "difference": 0.0,
+          "left_score": 58.0,
+          "right_score": 58.0,
+          "seed": 103
+        },
+        {
+          "difference": 0.0,
+          "left_score": 47.0,
+          "right_score": 47.0,
+          "seed": 104
+        },
+        {
+          "difference": 0.0,
+          "left_score": 74.0,
+          "right_score": 74.0,
+          "seed": 105
+        },
+        {
+          "difference": 0.0,
+          "left_score": 60.0,
+          "right_score": 60.0,
+          "seed": 106
+        },
+        {
+          "difference": 0.0,
+          "left_score": 32.0,
+          "right_score": 32.0,
+          "seed": 107
+        },
+        {
+          "difference": 0.0,
+          "left_score": 26.0,
+          "right_score": 26.0,
+          "seed": 108
+        },
+        {
+          "difference": 0.0,
+          "left_score": 59.0,
+          "right_score": 59.0,
+          "seed": 109
+        },
+        {
+          "difference": 0.0,
+          "left_score": 36.0,
+          "right_score": 36.0,
+          "seed": 110
+        },
+        {
+          "difference": 0.0,
+          "left_score": 58.0,
+          "right_score": 58.0,
+          "seed": 202
+        },
+        {
+          "difference": 0.0,
+          "left_score": 26.0,
+          "right_score": 26.0,
+          "seed": 203
+        },
+        {
+          "difference": 0.0,
+          "left_score": 37.0,
+          "right_score": 37.0,
+          "seed": 204
+        },
+        {
+          "difference": 0.0,
+          "left_score": 45.0,
+          "right_score": 45.0,
+          "seed": 205
+        },
+        {
+          "difference": 0.0,
+          "left_score": 70.0,
+          "right_score": 70.0,
+          "seed": 206
+        },
+        {
+          "difference": 0.0,
+          "left_score": 21.0,
+          "right_score": 21.0,
+          "seed": 207
+        },
+        {
+          "difference": 0.0,
+          "left_score": 18.0,
+          "right_score": 18.0,
+          "seed": 208
+        },
+        {
+          "difference": 0.0,
+          "left_score": 27.0,
+          "right_score": 27.0,
+          "seed": 209
+        },
+        {
+          "difference": 0.0,
+          "left_score": 50.0,
+          "right_score": 50.0,
+          "seed": 210
+        },
+        {
+          "difference": 0.0,
+          "left_score": 27.0,
+          "right_score": 27.0,
+          "seed": 211
+        },
+        {
+          "difference": 0.0,
+          "left_score": 35.0,
+          "right_score": 35.0,
+          "seed": 303
+        },
+        {
+          "difference": 0.0,
+          "left_score": 60.0,
+          "right_score": 60.0,
+          "seed": 304
+        },
+        {
+          "difference": 0.0,
+          "left_score": 48.0,
+          "right_score": 48.0,
+          "seed": 305
+        },
+        {
+          "difference": 0.0,
+          "left_score": 34.0,
+          "right_score": 34.0,
+          "seed": 306
+        },
+        {
+          "difference": 0.0,
+          "left_score": 38.0,
+          "right_score": 38.0,
+          "seed": 307
+        },
+        {
+          "difference": 0.0,
+          "left_score": 29.0,
+          "right_score": 29.0,
+          "seed": 308
+        },
+        {
+          "difference": 0.0,
+          "left_score": 37.0,
+          "right_score": 37.0,
+          "seed": 309
+        },
+        {
+          "difference": 0.0,
+          "left_score": 36.0,
+          "right_score": 36.0,
+          "seed": 310
+        },
+        {
+          "difference": 0.0,
+          "left_score": 28.0,
+          "right_score": 28.0,
+          "seed": 311
+        },
+        {
+          "difference": 0.0,
+          "left_score": 27.0,
+          "right_score": 27.0,
+          "seed": 312
+        }
+      ],
+      "excluded_seeds": [],
+      "left_runtime": "tensorrt_cuda_fp32",
+      "paired_episode_count": 30,
+      "right_runtime": "onnx_cuda_fp32",
+      "statistics": {
+        "count": 30,
+        "max": 0.0,
+        "mean": 0.0,
+        "median": 0.0,
+        "min": 0.0,
+        "p10": 0.0,
+        "p90": 0.0,
+        "std": 0.0
+      }
+    },
+    "tensorrt_fp32_minus_pytorch_fp32": {
+      "bootstrap_mean_ci": {
+        "confidence_level": 0.95,
+        "lower": -2.1666666666666665,
+        "mean": -0.5,
+        "method": "percentile_bootstrap_mean",
+        "resamples": 10000,
+        "seed": 26060908,
+        "upper": 1.1333333333333333
+      },
+      "declared_seed_count": 30,
+      "definition": "left_score_minus_right_score",
+      "differences": [
+        {
+          "difference": 0.0,
+          "left_score": 73.0,
+          "right_score": 73.0,
+          "seed": 101
+        },
+        {
+          "difference": -6.0,
+          "left_score": 45.0,
+          "right_score": 51.0,
+          "seed": 102
+        },
+        {
+          "difference": 0.0,
+          "left_score": 58.0,
+          "right_score": 58.0,
+          "seed": 103
+        },
+        {
+          "difference": 0.0,
+          "left_score": 47.0,
+          "right_score": 47.0,
+          "seed": 104
+        },
+        {
+          "difference": 0.0,
+          "left_score": 74.0,
+          "right_score": 74.0,
+          "seed": 105
+        },
+        {
+          "difference": -8.0,
+          "left_score": 60.0,
+          "right_score": 68.0,
+          "seed": 106
+        },
+        {
+          "difference": 0.0,
+          "left_score": 32.0,
+          "right_score": 32.0,
+          "seed": 107
+        },
+        {
+          "difference": 0.0,
+          "left_score": 26.0,
+          "right_score": 26.0,
+          "seed": 108
+        },
+        {
+          "difference": 16.0,
+          "left_score": 59.0,
+          "right_score": 43.0,
+          "seed": 109
+        },
+        {
+          "difference": 0.0,
+          "left_score": 36.0,
+          "right_score": 36.0,
+          "seed": 110
+        },
+        {
+          "difference": 0.0,
+          "left_score": 58.0,
+          "right_score": 58.0,
+          "seed": 202
+        },
+        {
+          "difference": 0.0,
+          "left_score": 26.0,
+          "right_score": 26.0,
+          "seed": 203
+        },
+        {
+          "difference": 0.0,
+          "left_score": 37.0,
+          "right_score": 37.0,
+          "seed": 204
+        },
+        {
+          "difference": -17.0,
+          "left_score": 45.0,
+          "right_score": 62.0,
+          "seed": 205
+        },
+        {
+          "difference": 0.0,
+          "left_score": 70.0,
+          "right_score": 70.0,
+          "seed": 206
+        },
+        {
+          "difference": 0.0,
+          "left_score": 21.0,
+          "right_score": 21.0,
+          "seed": 207
+        },
+        {
+          "difference": 0.0,
+          "left_score": 18.0,
+          "right_score": 18.0,
+          "seed": 208
+        },
+        {
+          "difference": 0.0,
+          "left_score": 27.0,
+          "right_score": 27.0,
+          "seed": 209
+        },
+        {
+          "difference": 0.0,
+          "left_score": 50.0,
+          "right_score": 50.0,
+          "seed": 210
+        },
+        {
+          "difference": 0.0,
+          "left_score": 27.0,
+          "right_score": 27.0,
+          "seed": 211
+        },
+        {
+          "difference": 0.0,
+          "left_score": 35.0,
+          "right_score": 35.0,
+          "seed": 303
+        },
+        {
+          "difference": 0.0,
+          "left_score": 60.0,
+          "right_score": 60.0,
+          "seed": 304
+        },
+        {
+          "difference": 0.0,
+          "left_score": 48.0,
+          "right_score": 48.0,
+          "seed": 305
+        },
+        {
+          "difference": 0.0,
+          "left_score": 34.0,
+          "right_score": 34.0,
+          "seed": 306
+        },
+        {
+          "difference": 0.0,
+          "left_score": 38.0,
+          "right_score": 38.0,
+          "seed": 307
+        },
+        {
+          "difference": 0.0,
+          "left_score": 29.0,
+          "right_score": 29.0,
+          "seed": 308
+        },
+        {
+          "difference": 0.0,
+          "left_score": 37.0,
+          "right_score": 37.0,
+          "seed": 309
+        },
+        {
+          "difference": 0.0,
+          "left_score": 36.0,
+          "right_score": 36.0,
+          "seed": 310
+        },
+        {
+          "difference": 0.0,
+          "left_score": 28.0,
+          "right_score": 28.0,
+          "seed": 311
+        },
+        {
+          "difference": 0.0,
+          "left_score": 27.0,
+          "right_score": 27.0,
+          "seed": 312
+        }
+      ],
+      "excluded_seeds": [],
+      "left_runtime": "tensorrt_cuda_fp32",
+      "paired_episode_count": 30,
+      "right_runtime": "pytorch_cuda_fp32",
+      "statistics": {
+        "count": 30,
+        "max": 16.0,
+        "mean": -0.5,
+        "median": 0.0,
+        "min": -17.0,
+        "p10": -0.5999999999999979,
+        "p90": 0.0,
+        "std": 4.6097722286464435
+      }
+    }
+  },
+  "per_runtime": {
+    "onnx_cuda_fp32": {
+      "aggregate": {
+        "bootstrap_mean_ci": {
+          "confidence_level": 0.95,
+          "lower": 36.6,
+          "mean": 42.03333333333333,
+          "method": "percentile_bootstrap_mean",
+          "resamples": 10000,
+          "seed": 26060906,
+          "upper": 47.766666666666666
+        },
+        "count": 30,
+        "episode_count": 30,
+        "episode_length_statistics": {
+          "count": 30,
+          "max": 1572.0,
+          "mean": 1058.6333333333334,
+          "median": 1014.0,
+          "min": 680.0,
+          "p10": 771.9,
+          "p90": 1336.8000000000002,
+          "std": 223.54350558423496
+        },
+        "failure_count": 0,
+        "failure_seeds": [],
+        "max": 74.0,
+        "mean": 42.03333333333333,
+        "median": 37.0,
+        "min": 18.0,
+        "p10": 26.0,
+        "p90": 61.000000000000014,
+        "runtime": "onnx_cuda_fp32",
+        "statistics_scope": "successful_episodes",
+        "std": 15.57879613092388,
+        "successful_episode_count": 30
+      },
+      "episodes": [
+        {
+          "episode_index": 1,
+          "episode_length": 1300,
+          "episode_return": 73.0,
+          "evaluation_seed": 101,
+          "failure": false,
+          "runtime": "onnx_cuda_fp32",
+          "runtime_error": null,
+          "score": 73.0,
+          "seed": 101,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 2,
+          "episode_length": 1119,
+          "episode_return": 45.0,
+          "evaluation_seed": 101,
+          "failure": false,
+          "runtime": "onnx_cuda_fp32",
+          "runtime_error": null,
+          "score": 45.0,
+          "seed": 102,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 3,
+          "episode_length": 1035,
+          "episode_return": 58.0,
+          "evaluation_seed": 101,
+          "failure": false,
+          "runtime": "onnx_cuda_fp32",
+          "runtime_error": null,
+          "score": 58.0,
+          "seed": 103,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 4,
+          "episode_length": 1206,
+          "episode_return": 47.0,
+          "evaluation_seed": 101,
+          "failure": false,
+          "runtime": "onnx_cuda_fp32",
+          "runtime_error": null,
+          "score": 47.0,
+          "seed": 104,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 5,
+          "episode_length": 1572,
+          "episode_return": 74.0,
+          "evaluation_seed": 101,
+          "failure": false,
+          "runtime": "onnx_cuda_fp32",
+          "runtime_error": null,
+          "score": 74.0,
+          "seed": 105,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 6,
+          "episode_length": 1328,
+          "episode_return": 60.0,
+          "evaluation_seed": 101,
+          "failure": false,
+          "runtime": "onnx_cuda_fp32",
+          "runtime_error": null,
+          "score": 60.0,
+          "seed": 106,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 7,
+          "episode_length": 910,
+          "episode_return": 32.0,
+          "evaluation_seed": 101,
+          "failure": false,
+          "runtime": "onnx_cuda_fp32",
+          "runtime_error": null,
+          "score": 32.0,
+          "seed": 107,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 8,
+          "episode_length": 929,
+          "episode_return": 26.0,
+          "evaluation_seed": 101,
+          "failure": false,
+          "runtime": "onnx_cuda_fp32",
+          "runtime_error": null,
+          "score": 26.0,
+          "seed": 108,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 9,
+          "episode_length": 1330,
+          "episode_return": 59.0,
+          "evaluation_seed": 101,
+          "failure": false,
+          "runtime": "onnx_cuda_fp32",
+          "runtime_error": null,
+          "score": 59.0,
+          "seed": 109,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 10,
+          "episode_length": 982,
+          "episode_return": 36.0,
+          "evaluation_seed": 101,
+          "failure": false,
+          "runtime": "onnx_cuda_fp32",
+          "runtime_error": null,
+          "score": 36.0,
+          "seed": 110,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 1,
+          "episode_length": 1403,
+          "episode_return": 58.0,
+          "evaluation_seed": 202,
+          "failure": false,
+          "runtime": "onnx_cuda_fp32",
+          "runtime_error": null,
+          "score": 58.0,
+          "seed": 202,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 2,
+          "episode_length": 773,
+          "episode_return": 26.0,
+          "evaluation_seed": 202,
+          "failure": false,
+          "runtime": "onnx_cuda_fp32",
+          "runtime_error": null,
+          "score": 26.0,
+          "seed": 203,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 3,
+          "episode_length": 891,
+          "episode_return": 37.0,
+          "evaluation_seed": 202,
+          "failure": false,
+          "runtime": "onnx_cuda_fp32",
+          "runtime_error": null,
+          "score": 37.0,
+          "seed": 204,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 4,
+          "episode_length": 1136,
+          "episode_return": 45.0,
+          "evaluation_seed": 202,
+          "failure": false,
+          "runtime": "onnx_cuda_fp32",
+          "runtime_error": null,
+          "score": 45.0,
+          "seed": 205,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 5,
+          "episode_length": 1219,
+          "episode_return": 70.0,
+          "evaluation_seed": 202,
+          "failure": false,
+          "runtime": "onnx_cuda_fp32",
+          "runtime_error": null,
+          "score": 70.0,
+          "seed": 206,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 6,
+          "episode_length": 762,
+          "episode_return": 21.0,
+          "evaluation_seed": 202,
+          "failure": false,
+          "runtime": "onnx_cuda_fp32",
+          "runtime_error": null,
+          "score": 21.0,
+          "seed": 207,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 7,
+          "episode_length": 680,
+          "episode_return": 18.0,
+          "evaluation_seed": 202,
+          "failure": false,
+          "runtime": "onnx_cuda_fp32",
+          "runtime_error": null,
+          "score": 18.0,
+          "seed": 208,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 8,
+          "episode_length": 969,
+          "episode_return": 27.0,
+          "evaluation_seed": 202,
+          "failure": false,
+          "runtime": "onnx_cuda_fp32",
+          "runtime_error": null,
+          "score": 27.0,
+          "seed": 209,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 9,
+          "episode_length": 1262,
+          "episode_return": 50.0,
+          "evaluation_seed": 202,
+          "failure": false,
+          "runtime": "onnx_cuda_fp32",
+          "runtime_error": null,
+          "score": 50.0,
+          "seed": 210,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 10,
+          "episode_length": 687,
+          "episode_return": 27.0,
+          "evaluation_seed": 202,
+          "failure": false,
+          "runtime": "onnx_cuda_fp32",
+          "runtime_error": null,
+          "score": 27.0,
+          "seed": 211,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 1,
+          "episode_length": 912,
+          "episode_return": 35.0,
+          "evaluation_seed": 303,
+          "failure": false,
+          "runtime": "onnx_cuda_fp32",
+          "runtime_error": null,
+          "score": 35.0,
+          "seed": 303,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 2,
+          "episode_length": 1398,
+          "episode_return": 60.0,
+          "evaluation_seed": 303,
+          "failure": false,
+          "runtime": "onnx_cuda_fp32",
+          "runtime_error": null,
+          "score": 60.0,
+          "seed": 304,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 3,
+          "episode_length": 1203,
+          "episode_return": 48.0,
+          "evaluation_seed": 303,
+          "failure": false,
+          "runtime": "onnx_cuda_fp32",
+          "runtime_error": null,
+          "score": 48.0,
+          "seed": 305,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 4,
+          "episode_length": 988,
+          "episode_return": 34.0,
+          "evaluation_seed": 303,
+          "failure": false,
+          "runtime": "onnx_cuda_fp32",
+          "runtime_error": null,
+          "score": 34.0,
+          "seed": 306,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 5,
+          "episode_length": 886,
+          "episode_return": 38.0,
+          "evaluation_seed": 303,
+          "failure": false,
+          "runtime": "onnx_cuda_fp32",
+          "runtime_error": null,
+          "score": 38.0,
+          "seed": 307,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 6,
+          "episode_length": 816,
+          "episode_return": 29.0,
+          "evaluation_seed": 303,
+          "failure": false,
+          "runtime": "onnx_cuda_fp32",
+          "runtime_error": null,
+          "score": 29.0,
+          "seed": 308,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 7,
+          "episode_length": 1046,
+          "episode_return": 37.0,
+          "evaluation_seed": 303,
+          "failure": false,
+          "runtime": "onnx_cuda_fp32",
+          "runtime_error": null,
+          "score": 37.0,
+          "seed": 309,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 8,
+          "episode_length": 1116,
+          "episode_return": 36.0,
+          "evaluation_seed": 303,
+          "failure": false,
+          "runtime": "onnx_cuda_fp32",
+          "runtime_error": null,
+          "score": 36.0,
+          "seed": 310,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 9,
+          "episode_length": 908,
+          "episode_return": 28.0,
+          "evaluation_seed": 303,
+          "failure": false,
+          "runtime": "onnx_cuda_fp32",
+          "runtime_error": null,
+          "score": 28.0,
+          "seed": 311,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 10,
+          "episode_length": 993,
+          "episode_return": 27.0,
+          "evaluation_seed": 303,
+          "failure": false,
+          "runtime": "onnx_cuda_fp32",
+          "runtime_error": null,
+          "score": 27.0,
+          "seed": 312,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        }
+      ],
+      "runtime_metadata": {
+        "evaluation_steps": 31759,
+        "group_count": 3,
+        "group_runs": [
+          {
+            "cuda_available": true,
+            "cuda_device_index": 0,
+            "cuda_device_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+            "evaluation_steps": 11711,
+            "gpu_model": "NVIDIA GeForce RTX 4060 Laptop GPU",
+            "gpu_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+            "python_version": "3.12.13",
+            "pytorch_version": "2.13.0+cu130",
+            "requested_device": "cuda:0",
+            "resolved_device": "cuda:0",
+            "seed_group": 101,
+            "status": "completed",
+            "steps_per_second": 696.0048200064462,
+            "torch_cuda_version": "13.0",
+            "wall_clock_seconds": 16.826032900018618
+          },
+          {
+            "cuda_available": true,
+            "cuda_device_index": 0,
+            "cuda_device_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+            "evaluation_steps": 9782,
+            "gpu_model": "NVIDIA GeForce RTX 4060 Laptop GPU",
+            "gpu_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+            "python_version": "3.12.13",
+            "pytorch_version": "2.13.0+cu130",
+            "requested_device": "cuda:0",
+            "resolved_device": "cuda:0",
+            "seed_group": 202,
+            "status": "completed",
+            "steps_per_second": 690.5782430764442,
+            "torch_cuda_version": "13.0",
+            "wall_clock_seconds": 14.16494089999469
+          },
+          {
+            "cuda_available": true,
+            "cuda_device_index": 0,
+            "cuda_device_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+            "evaluation_steps": 10266,
+            "gpu_model": "NVIDIA GeForce RTX 4060 Laptop GPU",
+            "gpu_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+            "python_version": "3.12.13",
+            "pytorch_version": "2.13.0+cu130",
+            "requested_device": "cuda:0",
+            "resolved_device": "cuda:0",
+            "seed_group": 303,
+            "status": "completed",
+            "steps_per_second": 704.6749354281736,
+            "torch_cuda_version": "13.0",
+            "wall_clock_seconds": 14.568419400020503
+          }
+        ],
+        "wall_clock_seconds": 45.55939320003381
+      }
+    },
+    "pytorch_cuda_fp32": {
+      "aggregate": {
+        "bootstrap_mean_ci": {
+          "confidence_level": 0.95,
+          "lower": 36.9,
+          "mean": 42.53333333333333,
+          "method": "percentile_bootstrap_mean",
+          "resamples": 10000,
+          "seed": 26060906,
+          "upper": 48.43333333333333
+        },
+        "count": 30,
+        "episode_count": 30,
+        "episode_length_statistics": {
+          "count": 30,
+          "max": 1572.0,
+          "mean": 1063.1666666666667,
+          "median": 1014.0,
+          "min": 680.0,
+          "p10": 771.9,
+          "p90": 1398.5,
+          "std": 233.96012243305242
+        },
+        "failure_count": 0,
+        "failure_seeds": [],
+        "max": 74.0,
+        "mean": 42.53333333333333,
+        "median": 37.0,
+        "min": 18.0,
+        "p10": 26.0,
+        "p90": 68.2,
+        "runtime": "pytorch_cuda_fp32",
+        "statistics_scope": "successful_episodes",
+        "std": 16.12396422168637,
+        "successful_episode_count": 30
+      },
+      "episodes": [
+        {
+          "episode_index": 1,
+          "episode_length": 1300,
+          "episode_return": 73.0,
+          "evaluation_seed": 101,
+          "failure": false,
+          "runtime": "pytorch_cuda_fp32",
+          "runtime_error": null,
+          "score": 73.0,
+          "seed": 101,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 2,
+          "episode_length": 1069,
+          "episode_return": 51.0,
+          "evaluation_seed": 101,
+          "failure": false,
+          "runtime": "pytorch_cuda_fp32",
+          "runtime_error": null,
+          "score": 51.0,
+          "seed": 102,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 3,
+          "episode_length": 1035,
+          "episode_return": 58.0,
+          "evaluation_seed": 101,
+          "failure": false,
+          "runtime": "pytorch_cuda_fp32",
+          "runtime_error": null,
+          "score": 58.0,
+          "seed": 103,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 4,
+          "episode_length": 1206,
+          "episode_return": 47.0,
+          "evaluation_seed": 101,
+          "failure": false,
+          "runtime": "pytorch_cuda_fp32",
+          "runtime_error": null,
+          "score": 47.0,
+          "seed": 104,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 5,
+          "episode_length": 1572,
+          "episode_return": 74.0,
+          "evaluation_seed": 101,
+          "failure": false,
+          "runtime": "pytorch_cuda_fp32",
+          "runtime_error": null,
+          "score": 74.0,
+          "seed": 105,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 6,
+          "episode_length": 1536,
+          "episode_return": 68.0,
+          "evaluation_seed": 101,
+          "failure": false,
+          "runtime": "pytorch_cuda_fp32",
+          "runtime_error": null,
+          "score": 68.0,
+          "seed": 106,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 7,
+          "episode_length": 910,
+          "episode_return": 32.0,
+          "evaluation_seed": 101,
+          "failure": false,
+          "runtime": "pytorch_cuda_fp32",
+          "runtime_error": null,
+          "score": 32.0,
+          "seed": 107,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 8,
+          "episode_length": 929,
+          "episode_return": 26.0,
+          "evaluation_seed": 101,
+          "failure": false,
+          "runtime": "pytorch_cuda_fp32",
+          "runtime_error": null,
+          "score": 26.0,
+          "seed": 108,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 9,
+          "episode_length": 1127,
+          "episode_return": 43.0,
+          "evaluation_seed": 101,
+          "failure": false,
+          "runtime": "pytorch_cuda_fp32",
+          "runtime_error": null,
+          "score": 43.0,
+          "seed": 109,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 10,
+          "episode_length": 982,
+          "episode_return": 36.0,
+          "evaluation_seed": 101,
+          "failure": false,
+          "runtime": "pytorch_cuda_fp32",
+          "runtime_error": null,
+          "score": 36.0,
+          "seed": 110,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 1,
+          "episode_length": 1403,
+          "episode_return": 58.0,
+          "evaluation_seed": 202,
+          "failure": false,
+          "runtime": "pytorch_cuda_fp32",
+          "runtime_error": null,
+          "score": 58.0,
+          "seed": 202,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 2,
+          "episode_length": 773,
+          "episode_return": 26.0,
+          "evaluation_seed": 202,
+          "failure": false,
+          "runtime": "pytorch_cuda_fp32",
+          "runtime_error": null,
+          "score": 26.0,
+          "seed": 203,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 3,
+          "episode_length": 891,
+          "episode_return": 37.0,
+          "evaluation_seed": 202,
+          "failure": false,
+          "runtime": "pytorch_cuda_fp32",
+          "runtime_error": null,
+          "score": 37.0,
+          "seed": 204,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 4,
+          "episode_length": 1317,
+          "episode_return": 62.0,
+          "evaluation_seed": 202,
+          "failure": false,
+          "runtime": "pytorch_cuda_fp32",
+          "runtime_error": null,
+          "score": 62.0,
+          "seed": 205,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 5,
+          "episode_length": 1219,
+          "episode_return": 70.0,
+          "evaluation_seed": 202,
+          "failure": false,
+          "runtime": "pytorch_cuda_fp32",
+          "runtime_error": null,
+          "score": 70.0,
+          "seed": 206,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 6,
+          "episode_length": 762,
+          "episode_return": 21.0,
+          "evaluation_seed": 202,
+          "failure": false,
+          "runtime": "pytorch_cuda_fp32",
+          "runtime_error": null,
+          "score": 21.0,
+          "seed": 207,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 7,
+          "episode_length": 680,
+          "episode_return": 18.0,
+          "evaluation_seed": 202,
+          "failure": false,
+          "runtime": "pytorch_cuda_fp32",
+          "runtime_error": null,
+          "score": 18.0,
+          "seed": 208,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 8,
+          "episode_length": 969,
+          "episode_return": 27.0,
+          "evaluation_seed": 202,
+          "failure": false,
+          "runtime": "pytorch_cuda_fp32",
+          "runtime_error": null,
+          "score": 27.0,
+          "seed": 209,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 9,
+          "episode_length": 1262,
+          "episode_return": 50.0,
+          "evaluation_seed": 202,
+          "failure": false,
+          "runtime": "pytorch_cuda_fp32",
+          "runtime_error": null,
+          "score": 50.0,
+          "seed": 210,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 10,
+          "episode_length": 687,
+          "episode_return": 27.0,
+          "evaluation_seed": 202,
+          "failure": false,
+          "runtime": "pytorch_cuda_fp32",
+          "runtime_error": null,
+          "score": 27.0,
+          "seed": 211,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 1,
+          "episode_length": 912,
+          "episode_return": 35.0,
+          "evaluation_seed": 303,
+          "failure": false,
+          "runtime": "pytorch_cuda_fp32",
+          "runtime_error": null,
+          "score": 35.0,
+          "seed": 303,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 2,
+          "episode_length": 1398,
+          "episode_return": 60.0,
+          "evaluation_seed": 303,
+          "failure": false,
+          "runtime": "pytorch_cuda_fp32",
+          "runtime_error": null,
+          "score": 60.0,
+          "seed": 304,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 3,
+          "episode_length": 1203,
+          "episode_return": 48.0,
+          "evaluation_seed": 303,
+          "failure": false,
+          "runtime": "pytorch_cuda_fp32",
+          "runtime_error": null,
+          "score": 48.0,
+          "seed": 305,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 4,
+          "episode_length": 988,
+          "episode_return": 34.0,
+          "evaluation_seed": 303,
+          "failure": false,
+          "runtime": "pytorch_cuda_fp32",
+          "runtime_error": null,
+          "score": 34.0,
+          "seed": 306,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 5,
+          "episode_length": 886,
+          "episode_return": 38.0,
+          "evaluation_seed": 303,
+          "failure": false,
+          "runtime": "pytorch_cuda_fp32",
+          "runtime_error": null,
+          "score": 38.0,
+          "seed": 307,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 6,
+          "episode_length": 816,
+          "episode_return": 29.0,
+          "evaluation_seed": 303,
+          "failure": false,
+          "runtime": "pytorch_cuda_fp32",
+          "runtime_error": null,
+          "score": 29.0,
+          "seed": 308,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 7,
+          "episode_length": 1046,
+          "episode_return": 37.0,
+          "evaluation_seed": 303,
+          "failure": false,
+          "runtime": "pytorch_cuda_fp32",
+          "runtime_error": null,
+          "score": 37.0,
+          "seed": 309,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 8,
+          "episode_length": 1116,
+          "episode_return": 36.0,
+          "evaluation_seed": 303,
+          "failure": false,
+          "runtime": "pytorch_cuda_fp32",
+          "runtime_error": null,
+          "score": 36.0,
+          "seed": 310,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 9,
+          "episode_length": 908,
+          "episode_return": 28.0,
+          "evaluation_seed": 303,
+          "failure": false,
+          "runtime": "pytorch_cuda_fp32",
+          "runtime_error": null,
+          "score": 28.0,
+          "seed": 311,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 10,
+          "episode_length": 993,
+          "episode_return": 27.0,
+          "evaluation_seed": 303,
+          "failure": false,
+          "runtime": "pytorch_cuda_fp32",
+          "runtime_error": null,
+          "score": 27.0,
+          "seed": 312,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        }
+      ],
+      "runtime_metadata": {
+        "evaluation_steps": 31895,
+        "group_count": 3,
+        "group_runs": [
+          {
+            "cuda_available": true,
+            "cuda_device_index": 0,
+            "cuda_device_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+            "evaluation_steps": 11666,
+            "gpu_model": "NVIDIA GeForce RTX 4060 Laptop GPU",
+            "gpu_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+            "python_version": "3.12.13",
+            "pytorch_version": "2.13.0+cu130",
+            "requested_device": "cuda:0",
+            "resolved_device": "cuda:0",
+            "seed_group": 101,
+            "status": "completed",
+            "steps_per_second": 694.7979141310744,
+            "torch_cuda_version": "13.0",
+            "wall_clock_seconds": 16.79049370001303
+          },
+          {
+            "cuda_available": true,
+            "cuda_device_index": 0,
+            "cuda_device_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+            "evaluation_steps": 9963,
+            "gpu_model": "NVIDIA GeForce RTX 4060 Laptop GPU",
+            "gpu_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+            "python_version": "3.12.13",
+            "pytorch_version": "2.13.0+cu130",
+            "requested_device": "cuda:0",
+            "resolved_device": "cuda:0",
+            "seed_group": 202,
+            "status": "completed",
+            "steps_per_second": 697.5491652432972,
+            "torch_cuda_version": "13.0",
+            "wall_clock_seconds": 14.282864200009499
+          },
+          {
+            "cuda_available": true,
+            "cuda_device_index": 0,
+            "cuda_device_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+            "evaluation_steps": 10266,
+            "gpu_model": "NVIDIA GeForce RTX 4060 Laptop GPU",
+            "gpu_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+            "python_version": "3.12.13",
+            "pytorch_version": "2.13.0+cu130",
+            "requested_device": "cuda:0",
+            "resolved_device": "cuda:0",
+            "seed_group": 303,
+            "status": "completed",
+            "steps_per_second": 685.2755171376593,
+            "torch_cuda_version": "13.0",
+            "wall_clock_seconds": 14.980835800000932
+          }
+        ],
+        "wall_clock_seconds": 46.05419370002346
+      }
+    },
+    "tensorrt_cuda_fp16": {
+      "aggregate": {
+        "bootstrap_mean_ci": {
+          "confidence_level": 0.95,
+          "lower": 32.13333333333333,
+          "mean": 36.8,
+          "method": "percentile_bootstrap_mean",
+          "resamples": 10000,
+          "seed": 26060906,
+          "upper": 41.53333333333333
+        },
+        "count": 30,
+        "episode_count": 30,
+        "episode_length_statistics": {
+          "count": 30,
+          "max": 1503.0,
+          "mean": 1016.1333333333333,
+          "median": 1045.0,
+          "min": 580.0,
+          "p10": 689.1,
+          "p90": 1235.5,
+          "std": 220.5249393807623
+        },
+        "failure_count": 0,
+        "failure_seeds": [],
+        "max": 64.0,
+        "mean": 36.8,
+        "median": 34.0,
+        "min": 16.0,
+        "p10": 18.8,
+        "p90": 54.2,
+        "runtime": "tensorrt_cuda_fp16",
+        "statistics_scope": "successful_episodes",
+        "std": 13.191916716939454,
+        "successful_episode_count": 30
+      },
+      "episodes": [
+        {
+          "episode_index": 1,
+          "episode_length": 860,
+          "episode_return": 27.0,
+          "evaluation_seed": 101,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp16",
+          "runtime_error": null,
+          "score": 27.0,
+          "seed": 101,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 2,
+          "episode_length": 750,
+          "episode_return": 22.0,
+          "evaluation_seed": 101,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp16",
+          "runtime_error": null,
+          "score": 22.0,
+          "seed": 102,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 3,
+          "episode_length": 1050,
+          "episode_return": 34.0,
+          "evaluation_seed": 101,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp16",
+          "runtime_error": null,
+          "score": 34.0,
+          "seed": 103,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 4,
+          "episode_length": 1097,
+          "episode_return": 43.0,
+          "evaluation_seed": 101,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp16",
+          "runtime_error": null,
+          "score": 43.0,
+          "seed": 104,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 5,
+          "episode_length": 1233,
+          "episode_return": 54.0,
+          "evaluation_seed": 101,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp16",
+          "runtime_error": null,
+          "score": 54.0,
+          "seed": 105,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 6,
+          "episode_length": 1503,
+          "episode_return": 64.0,
+          "evaluation_seed": 101,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp16",
+          "runtime_error": null,
+          "score": 64.0,
+          "seed": 106,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 7,
+          "episode_length": 973,
+          "episode_return": 36.0,
+          "evaluation_seed": 101,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp16",
+          "runtime_error": null,
+          "score": 36.0,
+          "seed": 107,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 8,
+          "episode_length": 1332,
+          "episode_return": 51.0,
+          "evaluation_seed": 101,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp16",
+          "runtime_error": null,
+          "score": 51.0,
+          "seed": 108,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 9,
+          "episode_length": 1162,
+          "episode_return": 56.0,
+          "evaluation_seed": 101,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp16",
+          "runtime_error": null,
+          "score": 56.0,
+          "seed": 109,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 10,
+          "episode_length": 1166,
+          "episode_return": 41.0,
+          "evaluation_seed": 101,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp16",
+          "runtime_error": null,
+          "score": 41.0,
+          "seed": 110,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 1,
+          "episode_length": 990,
+          "episode_return": 33.0,
+          "evaluation_seed": 202,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp16",
+          "runtime_error": null,
+          "score": 33.0,
+          "seed": 202,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 2,
+          "episode_length": 947,
+          "episode_return": 29.0,
+          "evaluation_seed": 202,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp16",
+          "runtime_error": null,
+          "score": 29.0,
+          "seed": 203,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 3,
+          "episode_length": 939,
+          "episode_return": 29.0,
+          "evaluation_seed": 202,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp16",
+          "runtime_error": null,
+          "score": 29.0,
+          "seed": 204,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 4,
+          "episode_length": 665,
+          "episode_return": 16.0,
+          "evaluation_seed": 202,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp16",
+          "runtime_error": null,
+          "score": 16.0,
+          "seed": 205,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 5,
+          "episode_length": 797,
+          "episode_return": 22.0,
+          "evaluation_seed": 202,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp16",
+          "runtime_error": null,
+          "score": 22.0,
+          "seed": 206,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 6,
+          "episode_length": 1077,
+          "episode_return": 34.0,
+          "evaluation_seed": 202,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp16",
+          "runtime_error": null,
+          "score": 34.0,
+          "seed": 207,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 7,
+          "episode_length": 580,
+          "episode_return": 16.0,
+          "evaluation_seed": 202,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp16",
+          "runtime_error": null,
+          "score": 16.0,
+          "seed": 208,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 8,
+          "episode_length": 690,
+          "episode_return": 17.0,
+          "evaluation_seed": 202,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp16",
+          "runtime_error": null,
+          "score": 17.0,
+          "seed": 209,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 9,
+          "episode_length": 1207,
+          "episode_return": 49.0,
+          "evaluation_seed": 202,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp16",
+          "runtime_error": null,
+          "score": 49.0,
+          "seed": 210,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 10,
+          "episode_length": 1165,
+          "episode_return": 39.0,
+          "evaluation_seed": 202,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp16",
+          "runtime_error": null,
+          "score": 39.0,
+          "seed": 211,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 1,
+          "episode_length": 1258,
+          "episode_return": 52.0,
+          "evaluation_seed": 303,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp16",
+          "runtime_error": null,
+          "score": 52.0,
+          "seed": 303,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 2,
+          "episode_length": 1191,
+          "episode_return": 43.0,
+          "evaluation_seed": 303,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp16",
+          "runtime_error": null,
+          "score": 43.0,
+          "seed": 304,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 3,
+          "episode_length": 1202,
+          "episode_return": 48.0,
+          "evaluation_seed": 303,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp16",
+          "runtime_error": null,
+          "score": 48.0,
+          "seed": 305,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 4,
+          "episode_length": 1204,
+          "episode_return": 57.0,
+          "evaluation_seed": 303,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp16",
+          "runtime_error": null,
+          "score": 57.0,
+          "seed": 306,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 5,
+          "episode_length": 1040,
+          "episode_return": 33.0,
+          "evaluation_seed": 303,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp16",
+          "runtime_error": null,
+          "score": 33.0,
+          "seed": 307,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 6,
+          "episode_length": 1067,
+          "episode_return": 29.0,
+          "evaluation_seed": 303,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp16",
+          "runtime_error": null,
+          "score": 29.0,
+          "seed": 308,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 7,
+          "episode_length": 1024,
+          "episode_return": 33.0,
+          "evaluation_seed": 303,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp16",
+          "runtime_error": null,
+          "score": 33.0,
+          "seed": 309,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 8,
+          "episode_length": 942,
+          "episode_return": 50.0,
+          "evaluation_seed": 303,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp16",
+          "runtime_error": null,
+          "score": 50.0,
+          "seed": 310,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 9,
+          "episode_length": 681,
+          "episode_return": 28.0,
+          "evaluation_seed": 303,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp16",
+          "runtime_error": null,
+          "score": 28.0,
+          "seed": 311,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 10,
+          "episode_length": 692,
+          "episode_return": 19.0,
+          "evaluation_seed": 303,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp16",
+          "runtime_error": null,
+          "score": 19.0,
+          "seed": 312,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        }
+      ],
+      "runtime_metadata": {
+        "evaluation_steps": 30484,
+        "group_count": 3,
+        "group_runs": [
+          {
+            "cuda_available": true,
+            "cuda_device_index": 0,
+            "cuda_device_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+            "evaluation_steps": 11126,
+            "gpu_model": "NVIDIA GeForce RTX 4060 Laptop GPU",
+            "gpu_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+            "python_version": "3.12.13",
+            "pytorch_version": "2.13.0+cu130",
+            "requested_device": "cuda:0",
+            "resolved_device": "cuda:0",
+            "seed_group": 101,
+            "status": "completed",
+            "steps_per_second": 745.7415799779175,
+            "torch_cuda_version": "13.0",
+            "wall_clock_seconds": 14.919377300015185
+          },
+          {
+            "cuda_available": true,
+            "cuda_device_index": 0,
+            "cuda_device_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+            "evaluation_steps": 9057,
+            "gpu_model": "NVIDIA GeForce RTX 4060 Laptop GPU",
+            "gpu_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+            "python_version": "3.12.13",
+            "pytorch_version": "2.13.0+cu130",
+            "requested_device": "cuda:0",
+            "resolved_device": "cuda:0",
+            "seed_group": 202,
+            "status": "completed",
+            "steps_per_second": 735.3351721782701,
+            "torch_cuda_version": "13.0",
+            "wall_clock_seconds": 12.316832299984526
+          },
+          {
+            "cuda_available": true,
+            "cuda_device_index": 0,
+            "cuda_device_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+            "evaluation_steps": 10301,
+            "gpu_model": "NVIDIA GeForce RTX 4060 Laptop GPU",
+            "gpu_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+            "python_version": "3.12.13",
+            "pytorch_version": "2.13.0+cu130",
+            "requested_device": "cuda:0",
+            "resolved_device": "cuda:0",
+            "seed_group": 303,
+            "status": "completed",
+            "steps_per_second": 739.1277543396342,
+            "torch_cuda_version": "13.0",
+            "wall_clock_seconds": 13.936697600001935
+          }
+        ],
+        "wall_clock_seconds": 41.172907200001646
+      }
+    },
+    "tensorrt_cuda_fp32": {
+      "aggregate": {
+        "bootstrap_mean_ci": {
+          "confidence_level": 0.95,
+          "lower": 36.6,
+          "mean": 42.03333333333333,
+          "method": "percentile_bootstrap_mean",
+          "resamples": 10000,
+          "seed": 26060906,
+          "upper": 47.766666666666666
+        },
+        "count": 30,
+        "episode_count": 30,
+        "episode_length_statistics": {
+          "count": 30,
+          "max": 1572.0,
+          "mean": 1058.6333333333334,
+          "median": 1014.0,
+          "min": 680.0,
+          "p10": 771.9,
+          "p90": 1336.8000000000002,
+          "std": 223.54350558423496
+        },
+        "failure_count": 0,
+        "failure_seeds": [],
+        "max": 74.0,
+        "mean": 42.03333333333333,
+        "median": 37.0,
+        "min": 18.0,
+        "p10": 26.0,
+        "p90": 61.000000000000014,
+        "runtime": "tensorrt_cuda_fp32",
+        "statistics_scope": "successful_episodes",
+        "std": 15.57879613092388,
+        "successful_episode_count": 30
+      },
+      "episodes": [
+        {
+          "episode_index": 1,
+          "episode_length": 1300,
+          "episode_return": 73.0,
+          "evaluation_seed": 101,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp32",
+          "runtime_error": null,
+          "score": 73.0,
+          "seed": 101,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 2,
+          "episode_length": 1119,
+          "episode_return": 45.0,
+          "evaluation_seed": 101,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp32",
+          "runtime_error": null,
+          "score": 45.0,
+          "seed": 102,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 3,
+          "episode_length": 1035,
+          "episode_return": 58.0,
+          "evaluation_seed": 101,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp32",
+          "runtime_error": null,
+          "score": 58.0,
+          "seed": 103,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 4,
+          "episode_length": 1206,
+          "episode_return": 47.0,
+          "evaluation_seed": 101,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp32",
+          "runtime_error": null,
+          "score": 47.0,
+          "seed": 104,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 5,
+          "episode_length": 1572,
+          "episode_return": 74.0,
+          "evaluation_seed": 101,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp32",
+          "runtime_error": null,
+          "score": 74.0,
+          "seed": 105,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 6,
+          "episode_length": 1328,
+          "episode_return": 60.0,
+          "evaluation_seed": 101,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp32",
+          "runtime_error": null,
+          "score": 60.0,
+          "seed": 106,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 7,
+          "episode_length": 910,
+          "episode_return": 32.0,
+          "evaluation_seed": 101,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp32",
+          "runtime_error": null,
+          "score": 32.0,
+          "seed": 107,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 8,
+          "episode_length": 929,
+          "episode_return": 26.0,
+          "evaluation_seed": 101,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp32",
+          "runtime_error": null,
+          "score": 26.0,
+          "seed": 108,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 9,
+          "episode_length": 1330,
+          "episode_return": 59.0,
+          "evaluation_seed": 101,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp32",
+          "runtime_error": null,
+          "score": 59.0,
+          "seed": 109,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 10,
+          "episode_length": 982,
+          "episode_return": 36.0,
+          "evaluation_seed": 101,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp32",
+          "runtime_error": null,
+          "score": 36.0,
+          "seed": 110,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 1,
+          "episode_length": 1403,
+          "episode_return": 58.0,
+          "evaluation_seed": 202,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp32",
+          "runtime_error": null,
+          "score": 58.0,
+          "seed": 202,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 2,
+          "episode_length": 773,
+          "episode_return": 26.0,
+          "evaluation_seed": 202,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp32",
+          "runtime_error": null,
+          "score": 26.0,
+          "seed": 203,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 3,
+          "episode_length": 891,
+          "episode_return": 37.0,
+          "evaluation_seed": 202,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp32",
+          "runtime_error": null,
+          "score": 37.0,
+          "seed": 204,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 4,
+          "episode_length": 1136,
+          "episode_return": 45.0,
+          "evaluation_seed": 202,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp32",
+          "runtime_error": null,
+          "score": 45.0,
+          "seed": 205,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 5,
+          "episode_length": 1219,
+          "episode_return": 70.0,
+          "evaluation_seed": 202,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp32",
+          "runtime_error": null,
+          "score": 70.0,
+          "seed": 206,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 6,
+          "episode_length": 762,
+          "episode_return": 21.0,
+          "evaluation_seed": 202,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp32",
+          "runtime_error": null,
+          "score": 21.0,
+          "seed": 207,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 7,
+          "episode_length": 680,
+          "episode_return": 18.0,
+          "evaluation_seed": 202,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp32",
+          "runtime_error": null,
+          "score": 18.0,
+          "seed": 208,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 8,
+          "episode_length": 969,
+          "episode_return": 27.0,
+          "evaluation_seed": 202,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp32",
+          "runtime_error": null,
+          "score": 27.0,
+          "seed": 209,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 9,
+          "episode_length": 1262,
+          "episode_return": 50.0,
+          "evaluation_seed": 202,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp32",
+          "runtime_error": null,
+          "score": 50.0,
+          "seed": 210,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 10,
+          "episode_length": 687,
+          "episode_return": 27.0,
+          "evaluation_seed": 202,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp32",
+          "runtime_error": null,
+          "score": 27.0,
+          "seed": 211,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 1,
+          "episode_length": 912,
+          "episode_return": 35.0,
+          "evaluation_seed": 303,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp32",
+          "runtime_error": null,
+          "score": 35.0,
+          "seed": 303,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 2,
+          "episode_length": 1398,
+          "episode_return": 60.0,
+          "evaluation_seed": 303,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp32",
+          "runtime_error": null,
+          "score": 60.0,
+          "seed": 304,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 3,
+          "episode_length": 1203,
+          "episode_return": 48.0,
+          "evaluation_seed": 303,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp32",
+          "runtime_error": null,
+          "score": 48.0,
+          "seed": 305,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 4,
+          "episode_length": 988,
+          "episode_return": 34.0,
+          "evaluation_seed": 303,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp32",
+          "runtime_error": null,
+          "score": 34.0,
+          "seed": 306,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 5,
+          "episode_length": 886,
+          "episode_return": 38.0,
+          "evaluation_seed": 303,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp32",
+          "runtime_error": null,
+          "score": 38.0,
+          "seed": 307,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 6,
+          "episode_length": 816,
+          "episode_return": 29.0,
+          "evaluation_seed": 303,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp32",
+          "runtime_error": null,
+          "score": 29.0,
+          "seed": 308,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 7,
+          "episode_length": 1046,
+          "episode_return": 37.0,
+          "evaluation_seed": 303,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp32",
+          "runtime_error": null,
+          "score": 37.0,
+          "seed": 309,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 8,
+          "episode_length": 1116,
+          "episode_return": 36.0,
+          "evaluation_seed": 303,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp32",
+          "runtime_error": null,
+          "score": 36.0,
+          "seed": 310,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 9,
+          "episode_length": 908,
+          "episode_return": 28.0,
+          "evaluation_seed": 303,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp32",
+          "runtime_error": null,
+          "score": 28.0,
+          "seed": 311,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        },
+        {
+          "episode_index": 10,
+          "episode_length": 993,
+          "episode_return": 27.0,
+          "evaluation_seed": 303,
+          "failure": false,
+          "runtime": "tensorrt_cuda_fp32",
+          "runtime_error": null,
+          "score": 27.0,
+          "seed": 312,
+          "terminated": true,
+          "termination_reason": "terminated",
+          "time_limit_source": null,
+          "truncated": false
+        }
+      ],
+      "runtime_metadata": {
+        "evaluation_steps": 31759,
+        "group_count": 3,
+        "group_runs": [
+          {
+            "cuda_available": true,
+            "cuda_device_index": 0,
+            "cuda_device_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+            "evaluation_steps": 11711,
+            "gpu_model": "NVIDIA GeForce RTX 4060 Laptop GPU",
+            "gpu_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+            "python_version": "3.12.13",
+            "pytorch_version": "2.13.0+cu130",
+            "requested_device": "cuda:0",
+            "resolved_device": "cuda:0",
+            "seed_group": 101,
+            "status": "completed",
+            "steps_per_second": 683.4445624620262,
+            "torch_cuda_version": "13.0",
+            "wall_clock_seconds": 17.135259600006975
+          },
+          {
+            "cuda_available": true,
+            "cuda_device_index": 0,
+            "cuda_device_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+            "evaluation_steps": 9782,
+            "gpu_model": "NVIDIA GeForce RTX 4060 Laptop GPU",
+            "gpu_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+            "python_version": "3.12.13",
+            "pytorch_version": "2.13.0+cu130",
+            "requested_device": "cuda:0",
+            "resolved_device": "cuda:0",
+            "seed_group": 202,
+            "status": "completed",
+            "steps_per_second": 699.7588907846186,
+            "torch_cuda_version": "13.0",
+            "wall_clock_seconds": 13.979100700002164
+          },
+          {
+            "cuda_available": true,
+            "cuda_device_index": 0,
+            "cuda_device_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+            "evaluation_steps": 10266,
+            "gpu_model": "NVIDIA GeForce RTX 4060 Laptop GPU",
+            "gpu_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+            "python_version": "3.12.13",
+            "pytorch_version": "2.13.0+cu130",
+            "requested_device": "cuda:0",
+            "resolved_device": "cuda:0",
+            "seed_group": 303,
+            "status": "completed",
+            "steps_per_second": 714.9117221543908,
+            "torch_cuda_version": "13.0",
+            "wall_clock_seconds": 14.359814900031779
+          }
+        ],
+        "wall_clock_seconds": 45.47417520004092
+      }
+    }
+  },
+  "runtime_failures": {
+    "onnx_cuda_fp32": 0,
+    "pytorch_cuda_fp32": 0,
+    "tensorrt_cuda_fp16": 0,
+    "tensorrt_cuda_fp32": 0
+  },
+  "schema_version": 1,
+  "seed_manifest": {
+    "count": 30,
+    "episode_seeds": [
+      101,
+      102,
+      103,
+      104,
+      105,
+      106,
+      107,
+      108,
+      109,
+      110,
+      202,
+      203,
+      204,
+      205,
+      206,
+      207,
+      208,
+      209,
+      210,
+      211,
+      303,
+      304,
+      305,
+      306,
+      307,
+      308,
+      309,
+      310,
+      311,
+      312
+    ],
+    "episodes_per_seed": 10,
+    "seed_groups": [
+      101,
+      202,
+      303
+    ],
+    "selection_rule": "predeclared_before_runtime_results",
+    "source_protocol": {
+      "base_concrete_episode_seeds": [
+        101,
+        102,
+        103,
+        104,
+        105,
+        202,
+        203,
+        204,
+        205,
+        206,
+        303,
+        304,
+        305,
+        306,
+        307
+      ],
+      "base_episodes_per_seed": 5,
+      "config_path": "configs/eval/breakout_eval.json",
+      "extension_rule": "retain the existing five resets in each group and add five more resets per group",
+      "seed_groups": [
+        101,
+        202,
+        303
+      ]
+    },
+    "unique": true
+  },
+  "source": {
+    "canonical_source_model": {
+      "path": "assets/day21/models/final_model/model.pt",
+      "sha256": "6002029dcdbcbb7c93fca0c589880611aed2e2e7924db0f6b0c1f5160824389a",
+      "source_checkpoint_sha256": "ab07c0a48202428ddbb377c81f4091b3c434ce95e19d19fb1ec335df79841c48",
+      "source_checkpoint_step": 2500000
+    },
+    "engine_fp16": {
+      "metadata_path": "assets/day26/models/model.v2.fp16.engine.metadata.json",
+      "metadata_sha256": "c4ba7133fdcd77ffb2fae0e8f389767f7dabd224fab70019c2d3664dba6ec5c4",
+      "network_typing": "strongly_typed",
+      "path": "assets/day26/models/model.v2.fp16.engine",
+      "precision": "float16",
+      "sha256": "b359690733859597e1b58eddf4f88edbfda047f08b24b0d112a9a0bb2a2980cf",
+      "size_bytes": 6727508,
+      "tf32_enabled": false
+    },
+    "engine_fp32": {
+      "metadata_path": "assets/day26/models/model.v2.fp32.engine.metadata.json",
+      "metadata_sha256": "de1504f20d055a6c06cda45c7db749b3b7a5527450b723c4fbbdb3326a803332",
+      "network_typing": "strongly_typed",
+      "path": "assets/day26/models/model.v2.fp32.engine",
+      "precision": "float32",
+      "sha256": "8f7ce5120d35d9936a88f764efcb628f5947b7b7b1e69bc8aa7b33e2f7ac67ea",
+      "size_bytes": 13392500,
+      "tf32_enabled": false
+    },
+    "evaluation_config": {
+      "path": "configs/eval/day26_runtime_score_evaluation.json",
+      "sha256": "b38ef96728e9e4b1cb2e794984d0ee0bdcbc7dc80f3d4ea279cfd1c478db7a5b"
+    },
+    "onnx_fp16": {
+      "path": "assets/day25/models/model.fp16.onnx",
+      "sha256": "92d3bbc447418255202309adaa9ba27d3c553e2b8e6eca8957d8174d704f6251"
+    },
+    "onnx_fp32": {
+      "path": "assets/day22/models/final_model/model.onnx",
+      "sha256": "cf90c74b1d09d5d7e2e0c71014f2daef2b5e1833425d300da06e34d1e4ef7f12"
+    },
+    "preflight": {
+      "path": "assets/day26/tensorrt-preflight.json",
+      "sha256": "5c6cd8ab9ae62da6ac29312e7badf169343c56a7b3cfa1b522b815ed96ca8938"
+    },
+    "prior_fixed_state_and_latency_evidence": {
+      "batch1_end_to_end": {
+        "onnx_cuda_fp32": {
+          "p50_ms": 0.66705,
+          "p95_ms": 1.10959
+        },
+        "pytorch_cuda_fp32": {
+          "p50_ms": 0.91055,
+          "p95_ms": 1.080505
+        },
+        "tensorrt_cuda_fp16": {
+          "p50_ms": 0.994,
+          "p95_ms": 1.162205
+        },
+        "tensorrt_cuda_fp32": {
+          "p50_ms": 0.6339,
+          "p95_ms": 0.760555
+        }
+      },
+      "benchmark_id": "day26-tensorrt-v2-9838273b8269",
+      "candidates": {
+        "onnx_cuda_fp32": {
+          "action_agreement_rate": 1.0,
+          "candidate_top_2_q_margin_min": 8.0108642578125e-05,
+          "max_absolute_error": 0.0001621246337890625,
+          "max_relative_error": 6.659158948224839e-05,
+          "mean_absolute_error": 3.693799177805583e-05,
+          "mean_relative_error": 1.3747944427160514e-05,
+          "passed": true
+        },
+        "tensorrt_cuda_fp16": {
+          "action_agreement_rate": 0.9333333333333333,
+          "candidate_top_2_q_margin_min": 0.0,
+          "max_absolute_error": 0.0036911964416503906,
+          "max_relative_error": 0.001406987853435137,
+          "mean_absolute_error": 0.001378131906191508,
+          "mean_relative_error": 0.0005103303262517235,
+          "passed": false
+        },
+        "tensorrt_cuda_fp32": {
+          "action_agreement_rate": 1.0,
+          "candidate_top_2_q_margin_min": 8.0108642578125e-05,
+          "max_absolute_error": 0.00016236305236816406,
+          "max_relative_error": 6.669157685384335e-05,
+          "mean_absolute_error": 3.705124060312907e-05,
+          "mean_relative_error": 1.3792995422831601e-05,
+          "passed": true
+        }
+      },
+      "path": "assets/day26/tensorrt-comparison.json",
+      "preflight": {
+        "path": "assets/day26/tensorrt-preflight.json",
+        "sha256": "5c6cd8ab9ae62da6ac29312e7badf169343c56a7b3cfa1b522b815ed96ca8938",
+        "status": "READY"
+      },
+      "sample_count": 60,
+      "sha256": "89d7c39164d5e91fd9ca4db1324dbd081ba558bbcde771d0cafcfdf91f47bd2e"
+    },
+    "source_protocol_config": {
+      "path": "configs/eval/breakout_eval.json",
+      "sha256": "84e2bd94af29a4bee700327fcc30e25eb27d09ef33e5424628baf83c0594c333"
+    },
+    "tensorrt_config": {
+      "path": "configs/inference/tensorrt_experiment.json",
+      "sha256": "01e54ce0a4cf8eae3c84f5ce557634dcccceffac77a22c7b6e4bf0ea2b4d182f"
+    }
+  },
+  "status": "completed",
+  "visualization": {
+    "path": "assets/day26/runtime-score-distribution.png",
+    "source": "per_runtime episode rows and paired_score_differences in this JSON"
+  }
+}

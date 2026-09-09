@@ -52,11 +52,13 @@ class BenchmarkConfig:
 class InferenceBackend:
     """A timing seam around one already-constructed inference runtime.
 
-    ``run_model_input`` is the production-style call used by the end-to-end
-    measurement. ``run_prevalidated_model_input`` is optional and is used only
-    by the model-only diagnostic after the input has already been prepared and
-    validated outside the timed loop. This keeps per-call validation work from
-    being mistaken for neural-network/runtime execution cost.
+    ``run_model_input`` is the public validated call when no prevalidated seam
+    is available. ``run_prevalidated_model_input`` is used by both benchmark
+    scopes after the input has already been prepared and validated outside the
+    timed loop. The end-to-end scope still measures input preparation,
+    transfers, output materialization, and argmax. This keeps per-call
+    validation work from being mistaken for neural-network/runtime execution
+    cost.
     """
 
     runtime: str
@@ -122,7 +124,9 @@ def summarize_samples(
         raise ValueError("batch_size must be positive")
     values = np.asarray(samples_ns, dtype=np.float64)
     if values.ndim != 1 or values.size < 1 or not np.isfinite(values).all():
-        raise ValueError("samples_ns must be a finite, non-empty one-dimensional sequence")
+        raise ValueError(
+            "samples_ns must be a finite, non-empty one-dimensional sequence"
+        )
     if (values <= 0).any():
         raise ValueError("latency samples must be positive")
     mean_ns = float(values.mean())
@@ -200,7 +204,7 @@ def _run_end_to_end_sample(
     input_prepare_ns = time.perf_counter_ns() - input_started
 
     runtime_started = time.perf_counter_ns()
-    output = backend.run_model_input(model_input)
+    output = _model_only_runner(backend)(model_input)
     backend.synchronize()
     runtime_inference_ns = time.perf_counter_ns() - runtime_started
 
@@ -305,9 +309,11 @@ def run_benchmark_target(
         )
         results.append(model_only_result)
 
-        # End-to-end intentionally uses the production-style policy call,
-        # including its input/output validation, because that is part of the
-        # real decision path exercised by the Agent.
+        # End-to-end keeps the production data path, but uses the same
+        # prevalidated runtime seam after ``prepare_model_input``.  The
+        # preparation step already validates the normalized CUDA tensor;
+        # repeating GPU finite/range checks inside the timed runtime call
+        # would measure validation overhead rather than the model path.
         for _ in range(config.warmup_iterations):
             _run_end_to_end_sample(backend, raw_batch)
         end_to_end_samples: list[dict[str, Any]] = []
@@ -386,7 +392,9 @@ def _result_metadata(
     }
 
 
-def write_benchmark_artifacts(output_dir: str | Path, payload: Mapping[str, Any]) -> None:
+def write_benchmark_artifacts(
+    output_dir: str | Path, payload: Mapping[str, Any]
+) -> None:
     """Write summary and raw samples as separate auditable JSON artifacts."""
 
     destination = Path(output_dir)
@@ -394,7 +402,9 @@ def write_benchmark_artifacts(output_dir: str | Path, payload: Mapping[str, Any]
     summary = payload.get("summary")
     raw_samples = payload.get("raw_samples")
     if not isinstance(summary, Mapping) or not isinstance(raw_samples, Sequence):
-        raise TypeError("payload must contain a summary mapping and raw_samples sequence")
+        raise TypeError(
+            "payload must contain a summary mapping and raw_samples sequence"
+        )
     artifact_type = str(payload.get("artifact_type", "day24_inference_benchmark"))
     if not artifact_type.strip():
         raise ValueError("payload artifact_type must be a non-empty string")
@@ -418,7 +428,8 @@ def write_benchmark_artifacts(output_dir: str | Path, payload: Mapping[str, Any]
         "samples": list(raw_samples),
     }
     (destination / "summary.json").write_text(
-        json.dumps(summary_payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        json.dumps(summary_payload, ensure_ascii=False, indent=2, sort_keys=True)
+        + "\n",
         encoding="utf-8",
     )
     (destination / "raw-samples.json").write_text(

@@ -1,0 +1,24 @@
+{
+  "artifact_type": "day26_tensorrt_visualization",
+  "generated_at_utc": "2026-09-05T13:41:26.756707Z",
+  "kind": "comparison",
+  "output": {
+    "path": "assets/day26/tensorrt-comparison.png",
+    "sha256": "7598f6e92256c048a4e41c36be25d989fe95f3067176446fa28c046045f7bf2e"
+  },
+  "runtime": {
+    "matplotlib_version": "3.11.1",
+    "python_version": "3.12.13"
+  },
+  "schema_version": 1,
+  "sources": {
+    "comparison": {
+      "path": "assets/day26/tensorrt-comparison.json",
+      "sha256": "89d7c39164d5e91fd9ca4db1324dbd081ba558bbcde771d0cafcfdf91f47bd2e"
+    },
+    "preflight": {
+      "path": "assets/day26/tensorrt-preflight.json",
+      "sha256": "5c6cd8ab9ae62da6ac29312e7badf169343c56a7b3cfa1b522b815ed96ca8938"
+    }
+  }
+}

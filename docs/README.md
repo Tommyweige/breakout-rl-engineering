@@ -27,6 +27,8 @@
 - Day 22 — [PyTorch to ONNX](day22-pytorch-to-onnx.md)
 - Day 23 — [ONNX Runtime inference](day23-onnx-runtime-inference.md)
 - Day 24 — [Correct inference benchmarking](day24-correct-inference-benchmarking.md)
+- Day 25 — [FP32 vs. FP16 precision](day25-fp32-vs-fp16.md)
+- Day 26 — [TensorRT optional optimization experiment](day26-tensorrt-optimization-experiment.md)
 
 Day 20 onward should continue the same naming and article rules defined in `AGENTS.md`.
 

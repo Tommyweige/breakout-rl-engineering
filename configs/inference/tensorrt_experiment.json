@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "artifact_type": "day26_tensorrt_experiment",
+  "technical_question": "Can TensorRT build a correct, useful batch=1 engine for the canonical Breakout policy on this NVIDIA GPU?",
+  "source": {
+    "canonical_source_model_path": "assets/day21/models/final_model/model.pt",
+    "canonical_source_model_sha256": "6002029dcdbcbb7c93fca0c589880611aed2e2e7924db0f6b0c1f5160824389a",
+    "source_checkpoint_sha256": "ab07c0a48202428ddbb377c81f4091b3c434ce95e19d19fb1ec335df79841c48",
+    "source_checkpoint_step": 2500000,
+    "onnx_fp32_path": "assets/day22/models/final_model/model.onnx",
+    "onnx_fp32_sha256": "cf90c74b1d09d5d7e2e0c71014f2daef2b5e1833425d300da06e34d1e4ef7f12",
+    "onnx_fp32_metadata_path": "assets/day22/models/final_model/model.onnx.metadata.json",
+    "day25_comparison_path": "assets/day25/precision-comparison.json",
+    "day25_comparison_sha256": "7ad3f82687542dad355c9144255c84854a640a5837b1968388cffc53d39c765b",
+    "onnx_fp16_path": "assets/day25/models/model.fp16.onnx",
+    "onnx_fp16_sha256": "92d3bbc447418255202309adaa9ba27d3c553e2b8e6eca8957d8174d704f6251",
+    "inference_spec_path": "configs/inference/inference_spec.json",
+    "environment_contract_path": "configs/eval/breakout_contract_v2.json",
+    "probe_states_path": "assets/day22/inference/probe_states.npz",
+    "pytorch_reference_path": "assets/day22/inference/pytorch_reference.npz"
+  },
+  "preflight": {
+    "output_path": "assets/day26/tensorrt-preflight.json",
+    "required_statuses_for_build": ["READY"],
+    "blocked_status_is_valid_result": true,
+    "official_documentation": [
+      "https://docs.nvidia.com/deeplearning/tensorrt/latest/installing-tensorrt/prerequisites.html",
+      "https://docs.nvidia.com/deeplearning/tensorrt/latest/getting-started/support-matrix.html",
+      "https://docs.nvidia.com/deeplearning/tensorrt/latest/inference-library/precision-control.html"
+    ]
+  },
+  "build": {
+    "workspace_limit_bytes": 1073741824,
+    "required_headroom_bytes": 1073741824,
+    "network_typing": "strongly_typed",
+    "tf32_enabled": false,
+    "optimization_profile": {
+      "min_batch": 1,
+      "opt_batch": 1,
+      "max_batch": 32
+    },
+    "precisions": ["float32", "float16"],
+    "fp32_engine_path": "assets/day26/models/model.v2.fp32.engine",
+    "fp32_metadata_path": "assets/day26/models/model.v2.fp32.engine.metadata.json",
+    "fp16_engine_path": "assets/day26/models/model.v2.fp16.engine",
+    "fp16_metadata_path": "assets/day26/models/model.v2.fp16.engine.metadata.json"
+  },
+  "parity": {
+    "relative_error_epsilon": 1e-12,
+    "thresholds": {
+      "tensorrt_fp32": {
+        "max_absolute_error": 0.0005,
+        "mean_absolute_error": 0.0002,
+        "max_relative_error": 0.001,
+        "mean_relative_error": 0.0002,
+        "action_agreement_rate": 1.0
+      },
+      "tensorrt_fp16": {
+        "max_absolute_error": 0.02,
+        "mean_absolute_error": 0.005,
+        "max_relative_error": 0.05,
+        "mean_relative_error": 0.01,
+        "action_agreement_rate": 1.0
+      }
+    }
+  },
+  "benchmark": {
+    "warmup_iterations": 25,
+    "iterations": 100,
+    "batch_sizes": [1, 4, 16, 32],
+    "primary_batch_size": 1,
+    "scopes": ["model_only", "end_to_end"]
+  },
+  "evaluation": {
+    "config_path": "configs/eval/breakout_eval.json",
+    "contract_path": "configs/eval/breakout_contract_v2.json",
+    "thresholds": {
+      "action_agreement_rate": 1.0,
+      "episode_return_match_rate": 1.0,
+      "episode_length_match_rate": 1.0
+    }
+  },
+  "browser_decision": {
+    "baseline_precision": "float32",
+    "runtime": "Cloudflare Pages -> Browser -> ORT Web WASM/WebGPU",
+    "tensorrt_is_web_serving": false
+  }
+}

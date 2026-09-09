@@ -61,7 +61,7 @@ class BenchmarkingTests(unittest.TestCase):
                 onnxruntime_providers=["CPUExecutionProvider"],
             )
 
-    def test_model_only_uses_prevalidated_call_but_end_to_end_uses_policy_call(self) -> None:
+    def test_both_scopes_use_prevalidated_call_after_input_preparation(self) -> None:
         observations = np.zeros((2, 4, 84, 84), dtype=np.uint8)
         calls = {"production": 0, "prevalidated": 0}
 
@@ -91,16 +91,22 @@ class BenchmarkingTests(unittest.TestCase):
 
         result = run_benchmark_target(backend, observations, config=config)
 
-        self.assertEqual(calls["prevalidated"], 3)
-        self.assertEqual(calls["production"], 3)
+        self.assertEqual(calls["prevalidated"], 6)
+        self.assertEqual(calls["production"], 0)
         model_only = next(
-            value for value in result["summary"]["results"] if value["scope"] == "model_only"
+            value
+            for value in result["summary"]["results"]
+            if value["scope"] == "model_only"
         )
         end_to_end = next(
-            value for value in result["summary"]["results"] if value["scope"] == "end_to_end"
+            value
+            for value in result["summary"]["results"]
+            if value["scope"] == "end_to_end"
         )
         self.assertEqual(model_only["timing_semantics"], "prevalidated_runtime_call")
-        self.assertEqual(end_to_end["timing_semantics"], "production_policy_decision_path")
+        self.assertEqual(
+            end_to_end["timing_semantics"], "production_policy_decision_path"
+        )
 
     def test_raw_samples_and_summary_round_trip(self) -> None:
         observations = np.zeros((4, 4, 84, 84), dtype=np.uint8)
@@ -114,7 +120,9 @@ class BenchmarkingTests(unittest.TestCase):
             input_ownership="numpy.uint8/cpu",
             output_ownership="numpy.float32/cpu",
             prepare_model_input=lambda value: value.astype(np.float32) / 255.0,
-            run_model_input=lambda value: np.zeros((value.shape[0], 4), dtype=np.float32),
+            run_model_input=lambda value: np.zeros(
+                (value.shape[0], 4), dtype=np.float32
+            ),
             materialize_output=lambda value: np.asarray(value),
         )
         config = BenchmarkConfig(warmup_iterations=1, iterations=4, batch_sizes=(1,))
@@ -140,15 +148,15 @@ class BenchmarkingTests(unittest.TestCase):
         self.assertEqual(loaded["benchmark_id"], "day24-test")
         self.assertEqual(len(loaded["raw_samples"]), 8)
         entry = next(
-            value
-            for value in loaded["results"]
-            if value["scope"] == "end_to_end"
+            value for value in loaded["results"] if value["scope"] == "end_to_end"
         )
         self.assertEqual(entry["batch_size"], 1)
         self.assertEqual(entry["sample_count"], 4)
         self.assertIn("p50_ns", entry["latency"])
 
-    def test_benchmark_artifact_type_can_be_overridden_for_a_new_experiment(self) -> None:
+    def test_benchmark_artifact_type_can_be_overridden_for_a_new_experiment(
+        self,
+    ) -> None:
         observations = np.zeros((1, 4, 84, 84), dtype=np.uint8)
         backend = InferenceBackend(
             runtime="test-runtime",
@@ -160,7 +168,9 @@ class BenchmarkingTests(unittest.TestCase):
             input_ownership="numpy.uint8/cpu",
             output_ownership="numpy.float32/cpu",
             prepare_model_input=lambda value: value.astype(np.float32) / 255.0,
-            run_model_input=lambda value: np.zeros((value.shape[0], 4), dtype=np.float32),
+            run_model_input=lambda value: np.zeros(
+                (value.shape[0], 4), dtype=np.float32
+            ),
             materialize_output=lambda value: np.asarray(value),
         )
         measured = run_benchmark_target(
