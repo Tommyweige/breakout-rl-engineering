@@ -59,7 +59,7 @@ FP16 就不同了。60 個狀態裡有 4 個改變了動作，所以它仍然需
 
 下面這張圖就是這次真正的實測結果。
 
-[![Day 26 TensorRT 與 PyTorch、ONNX Runtime 的實測比較](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/60712a248664fe727dd26ae9be510211d6b00d48/assets/day26/tensorrt-comparison.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/60712a248664fe727dd26ae9be510211d6b00d48/assets/day26/tensorrt-comparison.png)
+[![Day 26 TensorRT 與 PyTorch、ONNX Runtime 的實測比較](https://github.com/Tommyweige/breakout-rl-engineering/blob/69f0151b3bc95c860a2d7681a3c1e0c936fc5d5c/assets/day26/tensorrt-comparison.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/69f0151b3bc95c860a2d7681a3c1e0c936fc5d5c/assets/day26/tensorrt-comparison.png)
 
 ---
 
@@ -83,15 +83,7 @@ FP16 就不同了。60 個狀態裡有 4 個改變了動作，所以它仍然需
 
 因此，完整遊戲裡的 action trace 沒有 100% 一樣，並不自動代表其中一個版本「壞掉」。
 
-這也是我這次重新調整評估方式的原因。
-
 **部署真正該問的，不是它能不能逐步複製 PyTorch，而是它打很多局之後，整體能力有沒有明顯退步。**
-
-這個評估順序不是先看到延遲變快就直接採用，而是先確認 GPU、ONNX 與 TensorRT 的前置條件，再做固定狀態的 correctness 檢查，最後用固定 seeds 的多局分數和 batch=1 延遲做決定。下面的流程圖是根據實際 preflight、engine build、parity、benchmark 與 score evaluation artifact 整理出的結構關係；它描述驗證流程，不是某一局遊戲的逐步 action trace。
-
-[![Day 26 TensorRT 從 GPU preflight、engine build、固定狀態 parity 到多局分數與延遲決策的驗證流程](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/70ed6748bc1dfcc84e8a3a703a965295a11dacd5/assets/day26/tensorrt-experiment-flow.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/70ed6748bc1dfcc84e8a3a703a965295a11dacd5/assets/day26/tensorrt-experiment-flow.png)
-
-圖中最重要的分支是：TensorRT 即使通過固定狀態檢查，也還要在相同的多局 seeds 上確認分數沒有實質退化，並且確實帶來延遲改善；Browser 路徑則仍然保留 FP32 ONNX → ONNX Runtime Web，和 native TensorRT 實驗分開。
 
 ---
 
@@ -121,7 +113,7 @@ P10 可以想成較差的那一段分數，P90 則是較好的那一段。Tensor
 
 下圖左邊是四個 runtime 的真實 score distribution，右邊是同一個 seed 配對後的分數差。trajectory（一局遊戲中一路累積的狀態與動作序列）可以不同，但圖把它和「整體得分能力是否退化」分開呈現：
 
-[![Day 26 30 局 runtime score distribution 與 paired score difference](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/e56955a/assets/day26/runtime-score-distribution.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/e56955a/assets/day26/runtime-score-distribution.png)
+[![Day 26 30 局 runtime score distribution 與 paired score difference](https://github.com/Tommyweige/breakout-rl-engineering/blob/69f0151b3bc95c860a2d7681a3c1e0c936fc5d5c/assets/day26/runtime-score-distribution.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/69f0151b3bc95c860a2d7681a3c1e0c936fc5d5c/assets/day26/runtime-score-distribution.png)
 
 TensorRT FP32 相對 ORT FP32 的 paired difference 是 30 個零；相對 PyTorch FP32 的平均差是 -0.50，但 ORT FP32 也是 -0.50。這表示這輪觀察到的差異來自既有 runtime 間的行為差別，不是 TensorRT FP32 額外造成的退化。
 
@@ -158,21 +150,13 @@ TensorRT FP16： 6.73 MB
 
 第二：
 
-> **不能再用「完整遊戲是否逐步 100% 複製 PyTorch」當成唯一部署標準。**
-
 固定狀態測試適合確認模型有沒有明顯轉壞；真正要判斷一個 RL runtime 值不值得部署，應該讓它實際打很多局，再看整體得分能力是否維持。
 
 第三：
 
 > **TensorRT FP32 在 30 個固定 seeds 上與 ORT FP32 的 score distribution 完全一致，而且 batch=1 P95 快約 31%。**
 
-所以 Day 26 現在不是：
-
-```text
-TensorRT FP32 = 失敗
-```
-
-而是：
+所以 Day 26 的結果可以整理成：
 
 ```text
 速度        → batch=1 P95 改善約 31%
