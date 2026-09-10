@@ -186,7 +186,7 @@ Browser WASM 再算一次
 
 下面這張圖是模型部署到 Cloudflare Pages 後，在 Chrome 裡真的跑完 60 個狀態的結果。
 
-[![Chrome 中的 Day 27 WASM 驗證結果](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/c5153e6/assets/day27/browser-wasm-validation.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/c5153e6/assets/day27/browser-wasm-validation.png)
+[![Chrome 中的 Day 27 WASM 驗證結果](https://github.com/Tommyweige/breakout-rl-engineering/blob/5e2750337abd81b8a115e0147c3df41f31e9a2a4/assets/day27/browser-wasm-validation.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/5e2750337abd81b8a115e0147c3df41f31e9a2a4/assets/day27/browser-wasm-validation.png)
 
 驗證完成之後，Agent Panel 會顯示 `PASS`，並列出瀏覽器算出的分數和原本的結果。
 
@@ -221,7 +221,7 @@ Browser WASM 再算一次
 
 下面是還沒開始驗證時的頁面。
 
-[![Chrome 中的 Human / RL 雙欄網頁](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/c5153e6/assets/day27/dual-panel-browser-foundation.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/c5153e6/assets/day27/dual-panel-browser-foundation.png)
+[![Chrome 中的 Human / RL 雙欄網頁](https://github.com/Tommyweige/breakout-rl-engineering/blob/5e2750337abd81b8a115e0147c3df41f31e9a2a4/assets/day27/dual-panel-browser-foundation.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/5e2750337abd81b8a115e0147c3df41f31e9a2a4/assets/day27/dual-panel-browser-foundation.png)
 
 目前已經完成：
 
