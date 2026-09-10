@@ -1,0 +1,230 @@
+{
+  "artifact_type": "breakout_onnx_export_metadata",
+  "dynamic_batch_validation": {
+    "declared_input_shape": [
+      "N",
+      4,
+      84,
+      84
+    ],
+    "declared_output_shape": [
+      "N",
+      4
+    ],
+    "dimension": "N",
+    "onnx_runtime_execution": "deferred to Day 23",
+    "source_model_batches": [
+      {
+        "batch_size": 1,
+        "greedy_actions_sha256": "d86e8112f3c4c4442126f8e9f44f16867da487f29052bf91b810457db34209a4",
+        "q_values_sha256": "972a4b3e3a7cc5a0e90ef89c0f01454097cd69268de512cc53dd5d33e2efbf7c",
+        "source_model_input_shape": [
+          1,
+          4,
+          84,
+          84
+        ],
+        "source_model_output_shape": [
+          1,
+          4
+        ]
+      },
+      {
+        "batch_size": 4,
+        "greedy_actions_sha256": "7a3a19eb77b685da7a30fdea16012018dcf6a4a1e1ec2f62cce95819e348c837",
+        "q_values_sha256": "e4ae3dd69abd23a4359e06394bf75d72ea80dedb9ab4a8ed45b559104895ff67",
+        "source_model_input_shape": [
+          4,
+          4,
+          84,
+          84
+        ],
+        "source_model_output_shape": [
+          4,
+          4
+        ]
+      }
+    ],
+    "tested_batch_sizes": [
+      1,
+      4
+    ]
+  },
+  "generation": {
+    "command": "python -m scripts.deployment.export_onnx --source-model assets/day21/models/final_model/model.pt --source-metadata assets/day21/models/final_model/metadata.json",
+    "repository_relative_paths_only": true
+  },
+  "golden_fixture_provenance": {
+    "probe_states_sha256": "eec131af71f3aeb089be7b9d90607d87187a99a94739f135767fe9bf1f19c2f3",
+    "pytorch_reference_sha256": "36ac1d7dac9c2024d92d3669c4ea3cd9dcb1978c99bffe1d10cdea1618e5fd07",
+    "source_checkpoint_sha256": "ab07c0a48202428ddbb377c81f4091b3c434ce95e19d19fb1ec335df79841c48",
+    "source_model_sha256": "6002029dcdbcbb7c93fca0c589880611aed2e2e7924db0f6b0c1f5160824389a"
+  },
+  "host_graph_validation": {
+    "backend": "CPU host-side graph inspection",
+    "checker": "onnx.checker.check_model",
+    "checker_passed": true,
+    "graph": {
+      "checker_passed": true,
+      "initializer_count": 14,
+      "inputs": [
+        {
+          "dtype": "float32",
+          "name": "observation",
+          "onnx_dtype": "FLOAT",
+          "shape": [
+            "N",
+            4,
+            84,
+            84
+          ]
+        }
+      ],
+      "ir_version": 8,
+      "model_path": "assets/day22/models/final_model/model.onnx",
+      "node_count": 16,
+      "operator_type_counts": {
+        "Add": 1,
+        "Conv": 3,
+        "Flatten": 1,
+        "Gemm": 4,
+        "ReduceMean": 1,
+        "Relu": 5,
+        "Sub": 1
+      },
+      "opset_imports": {
+        "ai.onnx": 17
+      },
+      "outputs": [
+        {
+          "dtype": "float32",
+          "name": "q_values",
+          "onnx_dtype": "FLOAT",
+          "shape": [
+            "N",
+            4
+          ]
+        }
+      ]
+    }
+  },
+  "inference_spec": {
+    "contract_id": "day22-breakout-inference-v1",
+    "path": "configs/inference/inference_spec.json",
+    "sha256": "68637a63d3f0242f74089314049251521bec14a6fa3267b57fa46470acfff8ec"
+  },
+  "model_path": "assets/day22/models/final_model/model.onnx",
+  "model_sha256": "cf90c74b1d09d5d7e2e0c71014f2daef2b5e1833425d300da06e34d1e4ef7f12",
+  "model_size_bytes": 13175034,
+  "onnx_export": {
+    "dynamic_axes": {
+      "observation": {
+        "0": "N"
+      },
+      "q_values": {
+        "0": "N"
+      }
+    },
+    "dynamo": false,
+    "exporter": "torch.onnx.export",
+    "external_data": false,
+    "input_names": [
+      "observation"
+    ],
+    "opset_version": 17,
+    "output_names": [
+      "q_values"
+    ],
+    "source_model_config": {
+      "architecture": "dueling",
+      "hidden_dim": 512,
+      "input_shape": [
+        4,
+        84,
+        84
+      ],
+      "num_actions": 4,
+      "parameter_count": 3292837
+    }
+  },
+  "probe_states": {
+    "count": 60,
+    "path": "assets/day22/inference/probe_states.npz",
+    "sha256": "eec131af71f3aeb089be7b9d90607d87187a99a94739f135767fe9bf1f19c2f3"
+  },
+  "pytorch_reference": {
+    "max_abs_diff_to_current_cuda_reference": 0.0,
+    "path": "assets/day22/inference/pytorch_reference.npz",
+    "sha256": "36ac1d7dac9c2024d92d3669c4ea3cd9dcb1978c99bffe1d10cdea1618e5fd07",
+    "status": "created_or_validated_before_export"
+  },
+  "schema_version": 1,
+  "source_checkpoint_sha256": "ab07c0a48202428ddbb377c81f4091b3c434ce95e19d19fb1ec335df79841c48",
+  "source_checkpoint_step": 2500000,
+  "source_model": {
+    "algorithm": "double_dqn",
+    "architecture": "dueling",
+    "hidden_dim": 512,
+    "model_path": "assets/day21/models/final_model/model.pt",
+    "model_sha256": "6002029dcdbcbb7c93fca0c589880611aed2e2e7924db0f6b0c1f5160824389a",
+    "num_actions": 4,
+    "observation_shape": [
+      4,
+      84,
+      84
+    ],
+    "parameter_count": 3292837,
+    "source_checkpoint_sha256": "ab07c0a48202428ddbb377c81f4091b3c434ce95e19d19fb1ec335df79841c48",
+    "source_checkpoint_step": 2500000,
+    "source_run_id": "day21-final-long-training-seed2022",
+    "source_stage": "stage_b_2_5m",
+    "training_seed": 2022,
+    "training_transitions": 2500000
+  },
+  "source_model_sha256": "6002029dcdbcbb7c93fca0c589880611aed2e2e7924db0f6b0c1f5160824389a",
+  "source_model_validation": {
+    "actions_match": true,
+    "after_export": {
+      "greedy_actions_sha256": "33d2e5b5b44368a63b4576b68926548f9163e221bdca86f4acab03c0ce7f0229",
+      "input_shape": [
+        60,
+        4,
+        84,
+        84
+      ],
+      "q_values_sha256": "55a854e6af85d0b34cdf160201ab0347f777e1d39dcdb4f5b4a0def22b2facae",
+      "q_values_shape": [
+        60,
+        4
+      ]
+    },
+    "backend": "PyTorch",
+    "before_export": {
+      "greedy_actions_sha256": "33d2e5b5b44368a63b4576b68926548f9163e221bdca86f4acab03c0ce7f0229",
+      "input_shape": [
+        60,
+        4,
+        84,
+        84
+      ],
+      "q_values_sha256": "55a854e6af85d0b34cdf160201ab0347f777e1d39dcdb4f5b4a0def22b2facae",
+      "q_values_shape": [
+        60,
+        4
+      ]
+    },
+    "max_abs_diff_before_vs_after": 0.0,
+    "provenance_revalidated_after_export": true,
+    "purpose": "formal source-model reference; CUDA is mandatory",
+    "runtime": {
+      "cuda_available": true,
+      "cuda_device_index": 0,
+      "cuda_version": "13.0",
+      "device": "cuda:0",
+      "framework": "PyTorch",
+      "gpu_model": "NVIDIA GeForce RTX 4060 Laptop GPU",
+      "python_version": "3.12.13",
+      "pytorch_version": "2.13.0+cu130"
+    }
+  }
+}

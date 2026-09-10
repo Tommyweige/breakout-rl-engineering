@@ -6,6 +6,9 @@ __pycache__/
 .ruff_cache/
 .ipynb_checkpoints/
 
+# Cloudflare Wrangler local cache.
+.wrangler/
+
 # Conda and local experiment outputs
 *.conda
 checkpoints/
@@ -17,6 +20,7 @@ runs/
 
 # Temporary local gameplay renders; canonical Day 21 progression evidence lives under assets/day21/.
 outputs/gameplay-progression/
+.qa-redesign/
 
 # Secrets and local configuration
 .env

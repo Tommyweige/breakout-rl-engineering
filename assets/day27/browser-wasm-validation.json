@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "artifactType": "day27_browser_wasm_validation",
+  "sampleCount": 60,
+  "requestedBackend": "wasm",
+  "actualBackend": "wasm",
+  "maxAbsoluteError": 0.00016164779663085938,
+  "meanAbsoluteError": 0.000037033359209696455,
+  "actionAgreementRate": 1,
+  "disagreementIndices": [],
+  "browser": {
+    "name": "Chrome",
+    "version": "145.0.7632.117",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36"
+  },
+  "ortWebVersion": "1.29.0",
+  "modelSha256": "cf90c74b1d09d5d7e2e0c71014f2daef2b5e1833425d300da06e34d1e4ef7f12",
+  "timestamp": "2026-09-07T07:54:37.010Z",
+  "pageUrl": "https://day27-redesign.breakout-rl-browser.pages.dev/",
+  "previewUrl": "https://day27-redesign.breakout-rl-browser.pages.dev",
+  "passed": true,
+  "representative": {
+    "sampleIndex": 0,
+    "qValues": [
+      2.5644679069519043,
+      2.5750651359558105,
+      2.634133815765381,
+      2.531219005584717
+    ],
+    "referenceQValues": [
+      2.5644338130950928,
+      2.575026750564575,
+      2.6341304779052734,
+      2.5312085151672363
+    ],
+    "selectedAction": "RIGHT",
+    "referenceAction": "RIGHT",
+    "actionIndex": 2,
+    "referenceActionIndex": 2
+  },
+  "thresholds": {
+    "maxAbsoluteError": 0.0002,
+    "meanAbsoluteError": 0.0001,
+    "actionAgreementRate": 1
+  }
+}

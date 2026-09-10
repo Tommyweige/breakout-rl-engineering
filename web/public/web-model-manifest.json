@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "artifact_type": "day27_web_model_manifest",
+  "model": {
+    "url": "/models/final_model/model.onnx",
+    "source_path": "assets/day22/models/final_model/model.onnx",
+    "sha256": "cf90c74b1d09d5d7e2e0c71014f2daef2b5e1833425d300da06e34d1e4ef7f12",
+    "size_bytes": 13175034
+  },
+  "inference_spec": {
+    "url": "/inference_spec.json",
+    "source_path": "configs/inference/inference_spec.json",
+    "sha256": "d87bd56557d3dd8c67ee88cc460f8ca1cb210739be5e84618b16228d9af7e83f"
+  },
+  "fixtures": {
+    "observations_url": "/fixtures/day22-probe-observations.u8",
+    "reference_url": "/fixtures/day22-reference.json",
+    "sample_count": 60,
+    "observations_sha256": "93005ada43548fabb3ca4828009e4ba73ca26ece9ab5079c27ba4649e3c7c5ec",
+    "reference_sha256": "b6057df0002708f51d1b59a8d4fc5c14109be034830efcbc469242773c170ccf"
+  },
+  "requested_backend": "wasm",
+  "browser_runtime": "onnxruntime-web"
+}
