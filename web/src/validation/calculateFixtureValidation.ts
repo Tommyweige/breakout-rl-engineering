@@ -1,4 +1,4 @@
-import { ACTION_MEANINGS, type ActionMeaning } from '../inference/types';
+import { ACTION_MEANINGS, type ActionMeaning, type QMarginDiagnostics } from '../inference/types';
 import type { BrowserFixtureReference } from './fixtures';
 
 export interface FixtureCalculation {
@@ -6,6 +6,7 @@ export interface FixtureCalculation {
   meanAbsoluteError: number;
   actionAgreementRate: number;
   disagreementIndices: number[];
+  qMargin: QMarginDiagnostics;
   passed: boolean;
 }
 
@@ -13,6 +14,43 @@ function actionForIndex(index: number): ActionMeaning {
   const action = ACTION_MEANINGS[index];
   if (!action) throw new Error(`invalid action index ${index}`);
   return action;
+}
+
+function percentile(values: readonly number[], probability: number): number {
+  if (values.length === 0) return 0;
+  const sorted = [...values].sort((left, right) => left - right);
+  const position = (sorted.length - 1) * probability;
+  const lowerIndex = Math.floor(position);
+  const upperIndex = Math.ceil(position);
+  const lower = sorted[lowerIndex]!;
+  const upper = sorted[upperIndex]!;
+  return lower + (upper - lower) * (position - lowerIndex);
+}
+
+function qMargin(values: readonly number[]): number {
+  if (values.length !== ACTION_MEANINGS.length || values.some((value) => !Number.isFinite(value))) {
+    throw new Error('Q-margin calculation requires four finite Q-values');
+  }
+  const sorted = [...values].sort((left, right) => right - left);
+  return sorted[0]! - sorted[1]!;
+}
+
+function buildQMarginDiagnostics(
+  predictedMargins: readonly number[],
+  referenceMargins: readonly number[],
+): QMarginDiagnostics {
+  const absoluteMarginErrors = predictedMargins.map((margin, index) => Math.abs(margin - referenceMargins[index]!));
+  return {
+    minMargin: Math.min(...predictedMargins),
+    meanMargin: predictedMargins.reduce((sum, value) => sum + value, 0) / predictedMargins.length,
+    p50Margin: percentile(predictedMargins, 0.5),
+    maxMargin: Math.max(...predictedMargins),
+    referenceMinMargin: Math.min(...referenceMargins),
+    referenceMeanMargin: referenceMargins.reduce((sum, value) => sum + value, 0) / referenceMargins.length,
+    referenceP50Margin: percentile(referenceMargins, 0.5),
+    referenceMaxMargin: Math.max(...referenceMargins),
+    maxAbsoluteMarginError: Math.max(...absoluteMarginErrors),
+  };
 }
 
 export function calculateFixtureValidation(
@@ -29,6 +67,8 @@ export function calculateFixtureValidation(
   let maxAbsoluteError = 0;
   let actionMatches = 0;
   const disagreementIndices: number[] = [];
+  const predictedMargins: number[] = [];
+  const referenceMargins: number[] = [];
 
   for (let sampleIndex = 0; sampleIndex < reference.sample_count; sampleIndex += 1) {
     const predicted = predictedQValues[sampleIndex];
@@ -36,6 +76,8 @@ export function calculateFixtureValidation(
     if (!predicted || !expected || predicted.length !== ACTION_MEANINGS.length) {
       throw new Error(`prediction at sample ${sampleIndex} must contain four Q-values`);
     }
+    predictedMargins.push(qMargin(predicted));
+    referenceMargins.push(qMargin(expected));
     for (let actionIndex = 0; actionIndex < ACTION_MEANINGS.length; actionIndex += 1) {
       const predictedValue = predicted[actionIndex]!;
       const expectedValue = expected[actionIndex]!;
@@ -69,6 +111,7 @@ export function calculateFixtureValidation(
     meanAbsoluteError,
     actionAgreementRate,
     disagreementIndices,
+    qMargin: buildQMarginDiagnostics(predictedMargins, referenceMargins),
     passed,
   };
 }

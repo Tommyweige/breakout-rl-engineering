@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "artifactType": "day28_browser_validation",
+  "sampleCount": 60,
+  "requestedBackend": "webgpu",
+  "actualBackend": "webgpu",
+  "maxAbsoluteError": 0.00016188621520996094,
+  "meanAbsoluteError": 0.00003688633441925049,
+  "actionAgreementRate": 1,
+  "disagreementIndices": [],
+  "qMargin": {
+    "minMargin": 0.000080108642578125,
+    "meanMargin": 0.0292686661084493,
+    "p50Margin": 0.010903239250183105,
+    "maxMargin": 0.19426894187927246,
+    "referenceMinMargin": 0.00008130073547363281,
+    "referenceMeanMargin": 0.029278393586476645,
+    "referenceP50Margin": 0.010929703712463379,
+    "referenceMaxMargin": 0.19432497024536133,
+    "maxAbsoluteMarginError": 0.00005602836608886719
+  },
+  "environmentContract": {
+    "contractId": "day15-breakout-evaluation-v2-fire-reset",
+    "sourcePath": "configs/eval/breakout_contract_v2.json",
+    "sha256": "e9947fc3a1235100aa92f75a79cf33668b36b4f325f22a0bc8b9546a356b85ba",
+    "status": "partial",
+    "unsupportedFields": [
+      "ALE/Breakout-v5 environment stepping",
+      "frame_skip and sticky_action_probability during live stepping",
+      "serve/life-loss FIRE ownership",
+      "terminal_on_life_loss and TimeLimit semantics",
+      "concrete episode seeds and evaluation epsilon",
+      "raw episode reward aggregation"
+    ],
+    "note": "This Browser build validates fixed model inputs only; it does not execute ALE gameplay or score episodes."
+  },
+  "backendEvidence": "webgpu_session_exposes_env_webgpu_device",
+  "webgpuSupport": {
+    "supported": true,
+    "navigatorGpu": true,
+    "adapterAvailable": true,
+    "adapterInfo": {},
+    "isSecureContext": true,
+    "error": null
+  },
+  "browser": {
+    "name": "Chrome",
+    "version": "145.0.7632.117",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36",
+    "platform": "Windows"
+  },
+  "ortWebVersion": "1.29.0",
+  "modelSha256": "cf90c74b1d09d5d7e2e0c71014f2daef2b5e1833425d300da06e34d1e4ef7f12",
+  "timestamp": "2026-09-07T09:54:28.798Z",
+  "pageUrl": "https://day28-webgpu.breakout-rl-browser.pages.dev/",
+  "previewUrl": "https://day28-webgpu.breakout-rl-browser.pages.dev",
+  "passed": true,
+  "representative": {
+    "sampleIndex": 0,
+    "qValues": [
+      2.564467430114746,
+      2.5750646591186523,
+      2.6341333389282227,
+      2.5312185287475586
+    ],
+    "referenceQValues": [
+      2.5644338130950928,
+      2.575026750564575,
+      2.6341304779052734,
+      2.5312085151672363
+    ],
+    "selectedAction": "RIGHT",
+    "referenceAction": "RIGHT",
+    "actionIndex": 2,
+    "referenceActionIndex": 2
+  },
+  "thresholds": {
+    "maxAbsoluteError": 0.0002,
+    "meanAbsoluteError": 0.0001,
+    "actionAgreementRate": 1
+  }
+}

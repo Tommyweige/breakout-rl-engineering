@@ -1,15 +1,26 @@
-import { ACTION_MEANINGS, type FixtureRepresentative, type FixtureValidationResult } from '../inference/types';
+import {
+  ACTION_MEANINGS,
+  type BrowserEnvironmentParity,
+  type FixtureRepresentative,
+  type FixtureValidationResult,
+  type PolicyResult,
+} from '../inference/types';
 import { detectBrowser, currentPageUrl, currentPreviewUrl } from '../inference/browserInfo';
 import { validateInferenceSpec, validateWebModelManifest, type InferenceSpec, type WebModelManifest } from '../inference/manifest';
 import { OrtWebPolicy } from '../inference/OrtWebPolicy';
+import { detectWebGpuSupport } from '../inference/webgpuSupport';
 import { calculateFixtureValidation } from './calculateFixtureValidation';
 import { validateBrowserFixtureReference, validateObservationFixture, type BrowserFixtureReference } from './fixtures';
 
-interface LoadedFixtures {
+export interface LoadedBrowserFixtures {
   manifest: WebModelManifest;
   spec: InferenceSpec;
   reference: BrowserFixtureReference;
   observations: Uint8Array;
+}
+
+export interface FixtureValidationOptions {
+  infer?: (observation: Uint8Array) => Promise<PolicyResult>;
 }
 
 async function readResponse(response: Response, description: string): Promise<unknown> {
@@ -17,7 +28,7 @@ async function readResponse(response: Response, description: string): Promise<un
   return response.json();
 }
 
-async function loadFixtures(): Promise<LoadedFixtures> {
+export async function loadBrowserFixtures(): Promise<LoadedBrowserFixtures> {
   const [manifestResponse, specResponse, referenceResponse, observationResponse] = await Promise.all([
     fetch('/web-model-manifest.json'),
     fetch('/inference_spec.json'),
@@ -62,15 +73,39 @@ function representativeFrom(
   };
 }
 
-export async function runFixtureValidation(policy: OrtWebPolicy): Promise<FixtureValidationResult> {
-  const { manifest, reference, observations } = await loadFixtures();
+function browserEnvironmentParity(spec: InferenceSpec): BrowserEnvironmentParity {
+  return {
+    contractId: spec.environment_contract.contract_id,
+    sourcePath: spec.environment_contract.path,
+    sha256: spec.environment_contract.sha256,
+    status: 'partial',
+    unsupportedFields: [
+      'ALE/Breakout-v5 environment stepping',
+      'frame_skip and sticky_action_probability during live stepping',
+      'serve/life-loss FIRE ownership',
+      'terminal_on_life_loss and TimeLimit semantics',
+      'concrete episode seeds and evaluation epsilon',
+      'raw episode reward aggregation',
+    ],
+    note: 'This Browser build validates fixed model inputs only; it does not execute ALE gameplay or score episodes.',
+  };
+}
+
+export async function runFixtureValidation(
+  policy: OrtWebPolicy,
+  options: FixtureValidationOptions = {},
+): Promise<FixtureValidationResult> {
+  const { manifest, spec, reference, observations } = await loadBrowserFixtures();
+  const infer = options.infer ?? ((observation: Uint8Array) => policy.infer(observation));
   if (policy.modelPath !== manifest.model.url) {
     throw new Error(`policy model URL does not match manifest: ${policy.modelPath}`);
   }
 
   await policy.load();
-  if (policy.actualBackend !== 'wasm') {
-    throw new Error(`requested WASM but actual backend is ${policy.actualBackend ?? 'unavailable'}`);
+  if (policy.actualBackend !== policy.requestedBackend) {
+    throw new Error(
+      `requested ${policy.requestedBackend.toUpperCase()} but actual backend is ${policy.actualBackend ?? 'unavailable'}`,
+    );
   }
 
   const valuesPerSample = reference.observation_shape.reduce((product, value) => product * value, 1);
@@ -81,7 +116,12 @@ export async function runFixtureValidation(policy: OrtWebPolicy): Promise<Fixtur
   for (let index = 0; index < reference.sample_count; index += 1) {
     const start = index * valuesPerSample;
     const observation = observations.slice(start, start + valuesPerSample);
-    const result = await policy.infer(observation);
+    const result = await infer(observation);
+    if (result.requestedBackend !== policy.requestedBackend || result.actualBackend !== policy.requestedBackend) {
+      throw new Error(
+        `inference backend mismatch: policy requested ${policy.requestedBackend}, result requested ${result.requestedBackend}, actual ${result.actualBackend}`,
+      );
+    }
     predictedQValues.push([...result.qValues]);
     predictedActions.push(result.actionIndex);
     if (index === 0) {
@@ -92,15 +132,21 @@ export async function runFixtureValidation(policy: OrtWebPolicy): Promise<Fixtur
   if (!representative) throw new Error('fixture validation did not produce a representative inference');
   const calculation = calculateFixtureValidation(predictedQValues, predictedActions, reference);
   const timestamp = new Date().toISOString();
+  const webgpuSupport = policy.webgpuSupport ?? (await detectWebGpuSupport());
+  const backendEvidence = policy.backendEvidence;
+  if (!backendEvidence) throw new Error('validation did not observe an active execution backend');
 
   return {
     sampleCount: reference.sample_count,
     ...calculation,
-    requestedBackend: 'wasm',
+    requestedBackend: policy.requestedBackend,
     actualBackend: policy.actualBackend!,
     modelSha256: manifest.model.sha256,
     ortWebVersion: policy.ortWebVersion,
     browser: await detectBrowser(),
+    environmentContract: browserEnvironmentParity(spec),
+    backendEvidence,
+    webgpuSupport,
     timestamp,
     pageUrl: currentPageUrl(),
     previewUrl: currentPreviewUrl(),

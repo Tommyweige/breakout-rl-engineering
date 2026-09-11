@@ -22,14 +22,26 @@ describe('fixture validation calculation', () => {
       meanAbsoluteError: 0,
       actionAgreementRate: 1,
       disagreementIndices: [],
+      qMargin: {
+        minMargin: 1,
+        meanMargin: 1,
+        p50Margin: 1,
+        maxMargin: 1,
+        referenceMinMargin: 1,
+        referenceMeanMargin: 1,
+        referenceP50Margin: 1,
+        referenceMaxMargin: 1,
+        maxAbsoluteMarginError: 0,
+      },
       passed: true,
     });
   });
 
   it('reports numerical error and action disagreements instead of hiding them', () => {
-    const result = calculateFixtureValidation([[1.2, 2, 3, 4], [4, 3, 2, 1]], [3, 1], reference);
+    const result = calculateFixtureValidation([[1, 2, 3, 4], [4.2, 3, 2, 1]], [3, 1], reference);
     expect(result.maxAbsoluteError).toBeCloseTo(0.2);
     expect(result.disagreementIndices).toEqual([1]);
+    expect(result.qMargin.maxAbsoluteMarginError).toBeCloseTo(0.2);
     expect(result.passed).toBe(false);
   });
 });

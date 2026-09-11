@@ -1,7 +1,12 @@
 import type { BrowserInfo } from './types';
 
 interface UserAgentDataLike {
-  getHighEntropyValues?: (hints: string[]) => Promise<{ brands?: Array<{ brand: string; version: string }>; fullVersionList?: Array<{ brand: string; version: string }> }>;
+  platform?: string;
+  getHighEntropyValues?: (hints: string[]) => Promise<{
+    brands?: Array<{ brand: string; version: string }>;
+    fullVersionList?: Array<{ brand: string; version: string }>;
+    platform?: string;
+  }>;
 }
 
 export async function detectBrowser(userAgent: string = navigator.userAgent): Promise<BrowserInfo> {
@@ -11,15 +16,16 @@ export async function detectBrowser(userAgent: string = navigator.userAgent): Pr
     ['Firefox', /Firefox\/([\d.]+)/],
     ['Safari', /Version\/([\d.]+).*Safari\//],
   ];
-  let detected: BrowserInfo = { name: 'Unknown', version: 'Unknown', userAgent };
+  const userAgentData = (navigator as Navigator & { userAgentData?: UserAgentDataLike }).userAgentData;
+  const platform = userAgentData?.platform ?? navigator.platform ?? 'Unknown';
+  let detected: BrowserInfo = { name: 'Unknown', version: 'Unknown', userAgent, platform };
   for (const [name, pattern] of candidates) {
     const match = userAgent.match(pattern);
     if (match?.[1]) {
-      detected = { name, version: match[1], userAgent };
+      detected = { name, version: match[1], userAgent, platform };
       break;
     }
   }
-  const userAgentData = (navigator as Navigator & { userAgentData?: UserAgentDataLike }).userAgentData;
   if (userAgentData?.getHighEntropyValues) {
     try {
       const highEntropy = await userAgentData.getHighEntropyValues(['fullVersionList']);
@@ -30,6 +36,7 @@ export async function detectBrowser(userAgent: string = navigator.userAgent): Pr
           name: /Edge/i.test(browserBrand.brand) ? 'Edge' : 'Chrome',
           version: browserBrand.version,
           userAgent,
+          platform: highEntropy.platform ?? platform,
         };
       }
     } catch {

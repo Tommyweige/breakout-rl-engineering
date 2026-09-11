@@ -1,0 +1,29 @@
+sequenceDiagram
+    autonumber
+    participant UI as Agent Panel
+    participant P as OrtWebPolicy
+    participant G as WebGPU adapter
+    participant O as ORT Web session
+    participant V as Fixed-state validation
+    participant B as Batch=1 benchmark
+
+    UI->>P: choose requested backend
+    P->>G: detect adapter support
+    G-->>P: support metadata or unavailable
+    P->>O: create session with one explicit provider
+    O-->>P: session ready for requested backend
+    loop 60 fixed observations
+        V->>P: infer(uint8 observation)
+        P->>P: normalize / create [1, 4, 84, 84] tensor
+        P->>O: session.run
+        O-->>P: q_values
+        P-->>V: greedy action
+    end
+    V-->>UI: Q error / action agreement / Q-margin
+    B->>P: prepare one Float32 observation
+    loop warm-up, then measured samples
+        B->>P: inferPrepared(observation)
+        P->>O: session.run
+        O-->>B: q_values ready / elapsed time
+    end
+    B-->>UI: raw latency / P50 / P95

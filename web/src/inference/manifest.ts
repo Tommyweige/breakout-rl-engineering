@@ -25,6 +25,11 @@ export interface WebModelManifest {
 
 export interface InferenceSpec {
   schema_version: number;
+  environment_contract: {
+    contract_id: string;
+    path: string;
+    sha256: string;
+  };
   input: {
     name: string;
     dtype: string;
@@ -141,6 +146,15 @@ export function validateWebModelManifest(value: unknown): WebModelManifest {
 
 export function validateInferenceSpec(value: unknown): InferenceSpec {
   if (!isRecord(value)) throw new Error('inference spec must be an object');
+  const environmentContract = requiredObject(value, 'environment_contract');
+  const contractId = requiredString(environmentContract, 'contract_id');
+  const contractPath = requiredString(environmentContract, 'path');
+  if (contractId !== 'day15-breakout-evaluation-v2-fire-reset') {
+    throw new Error(`inference spec must reference Contract v2, got ${contractId}`);
+  }
+  if (contractPath !== 'configs/eval/breakout_contract_v2.json') {
+    throw new Error(`inference spec must reference the canonical Contract v2 path, got ${contractPath}`);
+  }
   const input = requiredObject(value, 'input');
   const output = requiredObject(value, 'output');
   const preprocessing = requiredObject(value, 'preprocessing');
@@ -167,6 +181,11 @@ export function validateInferenceSpec(value: unknown): InferenceSpec {
 
   return {
     schema_version: typeof value.schema_version === 'number' ? value.schema_version : 0,
+    environment_contract: {
+      contract_id: contractId,
+      path: contractPath,
+      sha256: requiredSha256(environmentContract, 'sha256'),
+    },
     input: {
       name: input.name,
       dtype: input.dtype,

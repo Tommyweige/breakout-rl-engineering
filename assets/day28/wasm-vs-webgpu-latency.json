@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "artifact_type": "day28_webgpu_latency_visualization",
+  "technical_question": "在同一個 Browser 與同一份模型下，WASM 與 WebGPU 的 steady-state batch=1 P50/P95 延遲如何比較？",
+  "source_artifact": {
+    "path": "assets/day28/web-benchmark.json",
+    "sha256": "ab29fff1801d463d1ff240f730f5c9dbe362be01647492603cb99e82c31802f3"
+  },
+  "model_sha256": "cf90c74b1d09d5d7e2e0c71014f2daef2b5e1833425d300da06e34d1e4ef7f12",
+  "browser": {
+    "name": "Chrome",
+    "version": "145.0.7632.117",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36",
+    "platform": "Windows"
+  },
+  "requested_backends": [
+    "wasm",
+    "webgpu"
+  ],
+  "actual_backends": {
+    "wasm": "wasm",
+    "webgpu": "webgpu"
+  },
+  "raw_sample_counts": {
+    "wasm": 100,
+    "webgpu": 100
+  },
+  "output": "assets/day28/wasm-vs-webgpu-latency.png",
+  "command": "conda run -n breakout-rl-engineering python -m scripts.visualization.visualize_day28_webgpu --input assets/day28/web-benchmark.json --output assets/day28/wasm-vs-webgpu-latency.png"
+}

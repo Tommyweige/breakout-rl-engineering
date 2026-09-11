@@ -14,6 +14,7 @@
     "preview": "vite preview",
     "deploy:preview": "wrangler pages deploy dist",
     "capture:evidence": "node scripts/capture-browser-evidence.mjs",
+    "capture:day28": "node scripts/capture-day28-evidence.mjs",
     "qa:visual": "node scripts/visual-qa-redesign.mjs"
   },
   "dependencies": {

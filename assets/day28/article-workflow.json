@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "artifact_type": "day28_article_workflow_provenance",
+  "article_path": "docs/day28-webgpu-inference.md",
+  "skill": {
+    "name": "technical-blog-writer",
+    "source_path": "C:/Users/tommy/.codex/skills/technical-blog-writer/SKILL.md",
+    "sha256": "c34cd809ad4b2244e44cac797cf48765863d9e0449d7f9515b5a9c758ddd08e0",
+    "read_before_draft": true
+  },
+  "read_references": {
+    "writing-style.md": "41b020f83f5a05dda7592bdb1736fed466e439cbb9ee9a26e5b44b9e032805e3",
+    "article-structure.md": "8c6a2f6a72bd2ddd0306fb2a1f6988c40d099c6d4cd108f393f571458a9cf230",
+    "code-guidelines.md": "d4d74b2ba71fc2660131b43fc3a34c9463eece417607ce8662d5c88c2231b68c",
+    "visualization-policy.md": "99dfe6c2a557aa504367ab89761b670eb4a4badd367f4b94692993514bdab0d3",
+    "mermaid-workflow.md": "57cc21c721a266fcc52139bd5e3c7040f17e87da7f11f96535faa89566744f6f",
+    "review-checklist.md": "0d99e8f52acfb82a230ba1bd9b0b151582beca2878df2ac5ccee564b71dc437e"
+  },
+  "gates_applied": {
+    "reader_led_problem_chain": true,
+    "just_in_time_terminology": true,
+    "evidence_first": true,
+    "real_browser_screenshot_exception": true,
+    "raw_data_visualization": true,
+    "mermaid_source_rendered_and_visually_inspected": true,
+    "article_ness_review": true,
+    "final_review_checklist": true
+  },
+  "recorded_at_utc": "2026-09-07T10:05:08.9653965Z"
+}

@@ -14,6 +14,11 @@ const manifest = {
 
 const spec = {
   schema_version: 1,
+  environment_contract: {
+    contract_id: 'day15-breakout-evaluation-v2-fire-reset',
+    path: 'configs/eval/breakout_contract_v2.json',
+    sha256: 'e'.repeat(64),
+  },
   input: { name: 'observation', dtype: 'float32', shape: ['N', 4, 84, 84] },
   output: { name: 'q_values', dtype: 'float32', shape: ['N', 4] },
   preprocessing: { source_observation_dtype: 'uint8', source_observation_shape: [4, 84, 84], normalization_divisor: 255 },
@@ -38,5 +43,9 @@ describe('inference action contract', () => {
 
   it('rejects a changed action mapping', () => {
     expect(() => validateInferenceSpec({ ...spec, actions: { ...spec.actions, meanings: ['NOOP', 'FIRE', 'LEFT', 'RIGHT'] } })).toThrow(/action mapping/);
+  });
+
+  it('rejects an inference spec that does not reference the canonical Contract v2', () => {
+    expect(() => validateInferenceSpec({ ...spec, environment_contract: { ...spec.environment_contract, path: 'other.json' } })).toThrow(/canonical Contract v2/);
   });
 });

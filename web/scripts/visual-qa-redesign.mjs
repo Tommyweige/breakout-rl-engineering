@@ -67,7 +67,7 @@ try {
         buttonSizes: buttons,
         panels,
         hasCanvas: Boolean(document.querySelector('canvas')),
-        hasWebGpuCopy: /webgpu/i.test(document.body.innerText),
+        hasBackendSelector: Boolean(document.querySelector('select[data-action="backend"]')),
         hasGameplaySeam: /ALE gameplay not connected yet/i.test(document.body.innerText),
       };
     });
@@ -75,7 +75,7 @@ try {
     if (layout.documentWidth > layout.viewportWidth + 1) {
       throw new Error(`${viewport.width}px viewport overflows horizontally: ${JSON.stringify(layout)}`);
     }
-    if (layout.hasCanvas || layout.hasWebGpuCopy || !layout.hasGameplaySeam) {
+    if (layout.hasCanvas || !layout.hasBackendSelector || !layout.hasGameplaySeam) {
       throw new Error(`${viewport.width}px structural seam check failed: ${JSON.stringify(layout)}`);
     }
     if (layout.buttonSizes.some(({ height }) => height < 44)) {

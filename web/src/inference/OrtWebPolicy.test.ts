@@ -15,10 +15,20 @@ describe('OrtWebPolicy input contract', () => {
     expect(normalized).not.toBe(input);
   });
 
-  it('declares WASM as the only requested policy backend before a session exists', () => {
+  it('declares the selected backend before a session exists', () => {
     const policy = new OrtWebPolicy();
     expect(policy.requestedBackend).toBe('wasm');
     expect(policy.actualBackend).toBeNull();
     expect(ACTION_MEANINGS).toEqual(['NOOP', 'FIRE', 'RIGHT', 'LEFT']);
+
+    expect(new OrtWebPolicy({ backend: 'webgpu' }).requestedBackend).toBe('webgpu');
+  });
+
+  it('fails a requested WebGPU session instead of falling back when the browser has no adapter', async () => {
+    Object.defineProperty(navigator, 'gpu', { configurable: true, value: undefined });
+    const policy = new OrtWebPolicy({ backend: 'webgpu' });
+
+    await expect(policy.load()).rejects.toThrow(/WebGPU is unavailable/);
+    expect(policy.actualBackend).toBeNull();
   });
 });
