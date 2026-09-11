@@ -41,7 +41,7 @@ LEFT   往左
 
 正式測試是在 Cloudflare Pages 上的 Chrome 裡執行，而且頁面會同時顯示「要求使用哪一種方式」以及「實際使用哪一種方式」。
 
-[![Cloudflare Pages 上的 WebGPU 驗證結果](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/6e90d3d/assets/day28/webgpu-validation.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/6e90d3d/assets/day28/webgpu-validation.png)
+[![Cloudflare Pages 上的 WebGPU 驗證結果](https://github.com/Tommyweige/breakout-rl-engineering/blob/0ca31fa/assets/day28/webgpu-validation.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/0ca31fa/assets/day28/webgpu-validation.png)
 
 這次 WebGPU 的結果是：
 
@@ -86,7 +86,7 @@ WASM 也重新跑了一次，同樣是 **60 / 60**。
 
 實際結果如下：
 
-[![WASM 與 WebGPU 的延遲比較](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/6e90d3d/assets/day28/wasm-vs-webgpu-latency.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/6e90d3d/assets/day28/wasm-vs-webgpu-latency.png)
+[![WASM 與 WebGPU 的延遲比較](https://github.com/Tommyweige/breakout-rl-engineering/blob/0ca31fa/assets/day28/wasm-vs-webgpu-latency.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/0ca31fa/assets/day28/wasm-vs-webgpu-latency.png)
 
 | 執行方式 | P50 | P95 | 平均 |
 | --- | ---: | ---: | ---: |
