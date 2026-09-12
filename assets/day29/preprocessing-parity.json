@@ -1,0 +1,1151 @@
+{
+  "schemaVersion": 2,
+  "artifactType": "day29_preprocessing_parity",
+  "source": {
+    "native": "assets/day29/native-preprocessing-fixture.json",
+    "browser": "assets/day29/browser-preprocessing-trace.json",
+    "nativeImplementation": "Gymnasium AtariPreprocessing 1.3.0 / ALE 0.12.0 / cv2.INTER_AREA",
+    "browserImplementation": "ALE WASM 0.12.0 / native ALE grayscale / grayscale max-pool / area resize"
+  },
+  "atariPreprocessing": {
+    "noop_max": 30,
+    "frame_skip": 4,
+    "screen_size": 84,
+    "terminal_on_life_loss": false,
+    "grayscale_obs": true,
+    "grayscale_newaxis": false,
+    "scale_obs": false,
+    "max_pool_space": "grayscale",
+    "resize_interpolation": "cv2.INTER_AREA",
+    "seed_semantics": {
+      "episode_seed": "Gymnasium AtariEnv.reset(seed)",
+      "seed_sequence": "np.random.SeedSequence(seed).generate_state(n_words=2)",
+      "np_seed": "first uint32 -> env.unwrapped.np_random for noop draw",
+      "ale_seed": "second uint32 -> ALE random_seed for game/sticky RNG"
+    }
+  },
+  "coverage": {
+    "seeds": [
+      101,
+      202,
+      303
+    ],
+    "actions": [
+      1,
+      1,
+      2
+    ],
+    "comparisonScope": "representative raw-frame fixture, not the complete 30-seed score run"
+  },
+  "comparison": {
+    "resetAndStepRawGrayscale": {
+      "sampleCount": 70,
+      "shapeMismatchCount": 0,
+      "maxAbsolutePixelDifference": 0,
+      "meanAbsolutePixelDifference": 0.0,
+      "differingPixelFraction": 0.0
+    },
+    "pooledGrayscale": {
+      "sampleCount": 9,
+      "shapeMismatchCount": 0,
+      "maxAbsolutePixelDifference": 0,
+      "meanAbsolutePixelDifference": 0.0,
+      "differingPixelFraction": 0.0
+    },
+    "processed84x84": {
+      "sampleCount": 12,
+      "shapeMismatchCount": 0,
+      "maxAbsolutePixelDifference": 0,
+      "meanAbsolutePixelDifference": 0.0,
+      "differingPixelFraction": 0.0
+    },
+    "frameStack": {
+      "sampleCount": 12,
+      "shapeMismatchCount": 0,
+      "maxAbsolutePixelDifference": 0,
+      "meanAbsolutePixelDifference": 0.0,
+      "differingPixelFraction": 0.0
+    }
+  },
+  "perSampleProcessed84x84": [
+    {
+      "seed": 101,
+      "phase": "reset",
+      "shapeMatch": true,
+      "nativeShape": [
+        7056
+      ],
+      "browserShape": [
+        7056
+      ],
+      "maxAbsolutePixelDifference": 0,
+      "meanAbsolutePixelDifference": 0.0,
+      "differingPixelFraction": 0.0
+    },
+    {
+      "seed": 101,
+      "step": 1,
+      "shapeMatch": true,
+      "nativeShape": [
+        7056
+      ],
+      "browserShape": [
+        7056
+      ],
+      "maxAbsolutePixelDifference": 0,
+      "meanAbsolutePixelDifference": 0.0,
+      "differingPixelFraction": 0.0
+    },
+    {
+      "seed": 101,
+      "step": 2,
+      "shapeMatch": true,
+      "nativeShape": [
+        7056
+      ],
+      "browserShape": [
+        7056
+      ],
+      "maxAbsolutePixelDifference": 0,
+      "meanAbsolutePixelDifference": 0.0,
+      "differingPixelFraction": 0.0
+    },
+    {
+      "seed": 101,
+      "step": 3,
+      "shapeMatch": true,
+      "nativeShape": [
+        7056
+      ],
+      "browserShape": [
+        7056
+      ],
+      "maxAbsolutePixelDifference": 0,
+      "meanAbsolutePixelDifference": 0.0,
+      "differingPixelFraction": 0.0
+    },
+    {
+      "seed": 202,
+      "phase": "reset",
+      "shapeMatch": true,
+      "nativeShape": [
+        7056
+      ],
+      "browserShape": [
+        7056
+      ],
+      "maxAbsolutePixelDifference": 0,
+      "meanAbsolutePixelDifference": 0.0,
+      "differingPixelFraction": 0.0
+    },
+    {
+      "seed": 202,
+      "step": 1,
+      "shapeMatch": true,
+      "nativeShape": [
+        7056
+      ],
+      "browserShape": [
+        7056
+      ],
+      "maxAbsolutePixelDifference": 0,
+      "meanAbsolutePixelDifference": 0.0,
+      "differingPixelFraction": 0.0
+    },
+    {
+      "seed": 202,
+      "step": 2,
+      "shapeMatch": true,
+      "nativeShape": [
+        7056
+      ],
+      "browserShape": [
+        7056
+      ],
+      "maxAbsolutePixelDifference": 0,
+      "meanAbsolutePixelDifference": 0.0,
+      "differingPixelFraction": 0.0
+    },
+    {
+      "seed": 202,
+      "step": 3,
+      "shapeMatch": true,
+      "nativeShape": [
+        7056
+      ],
+      "browserShape": [
+        7056
+      ],
+      "maxAbsolutePixelDifference": 0,
+      "meanAbsolutePixelDifference": 0.0,
+      "differingPixelFraction": 0.0
+    },
+    {
+      "seed": 303,
+      "phase": "reset",
+      "shapeMatch": true,
+      "nativeShape": [
+        7056
+      ],
+      "browserShape": [
+        7056
+      ],
+      "maxAbsolutePixelDifference": 0,
+      "meanAbsolutePixelDifference": 0.0,
+      "differingPixelFraction": 0.0
+    },
+    {
+      "seed": 303,
+      "step": 1,
+      "shapeMatch": true,
+      "nativeShape": [
+        7056
+      ],
+      "browserShape": [
+        7056
+      ],
+      "maxAbsolutePixelDifference": 0,
+      "meanAbsolutePixelDifference": 0.0,
+      "differingPixelFraction": 0.0
+    },
+    {
+      "seed": 303,
+      "step": 2,
+      "shapeMatch": true,
+      "nativeShape": [
+        7056
+      ],
+      "browserShape": [
+        7056
+      ],
+      "maxAbsolutePixelDifference": 0,
+      "meanAbsolutePixelDifference": 0.0,
+      "differingPixelFraction": 0.0
+    },
+    {
+      "seed": 303,
+      "step": 3,
+      "shapeMatch": true,
+      "nativeShape": [
+        7056
+      ],
+      "browserShape": [
+        7056
+      ],
+      "maxAbsolutePixelDifference": 0,
+      "meanAbsolutePixelDifference": 0.0,
+      "differingPixelFraction": 0.0
+    }
+  ],
+  "perSampleRawGrayscale": [
+    {
+      "seed": 101,
+      "resetNoop": [
+        {
+          "shapeMatch": true,
+          "nativeShape": [
+            33600
+          ],
+          "browserShape": [
+            33600
+          ],
+          "maxAbsolutePixelDifference": 0,
+          "meanAbsolutePixelDifference": 0.0,
+          "differingPixelFraction": 0.0
+        },
+        {
+          "shapeMatch": true,
+          "nativeShape": [
+            33600
+          ],
+          "browserShape": [
+            33600
+          ],
+          "maxAbsolutePixelDifference": 0,
+          "meanAbsolutePixelDifference": 0.0,
+          "differingPixelFraction": 0.0
+        },
+        {
+          "shapeMatch": true,
+          "nativeShape": [
+            33600
+          ],
+          "browserShape": [
+            33600
+          ],
+          "maxAbsolutePixelDifference": 0,
+          "meanAbsolutePixelDifference": 0.0,
+          "differingPixelFraction": 0.0
+        },
+        {
+          "shapeMatch": true,
+          "nativeShape": [
+            33600
+          ],
+          "browserShape": [
+            33600
+          ],
+          "maxAbsolutePixelDifference": 0,
+          "meanAbsolutePixelDifference": 0.0,
+          "differingPixelFraction": 0.0
+        },
+        {
+          "shapeMatch": true,
+          "nativeShape": [
+            33600
+          ],
+          "browserShape": [
+            33600
+          ],
+          "maxAbsolutePixelDifference": 0,
+          "meanAbsolutePixelDifference": 0.0,
+          "differingPixelFraction": 0.0
+        },
+        {
+          "shapeMatch": true,
+          "nativeShape": [
+            33600
+          ],
+          "browserShape": [
+            33600
+          ],
+          "maxAbsolutePixelDifference": 0,
+          "meanAbsolutePixelDifference": 0.0,
+          "differingPixelFraction": 0.0
+        },
+        {
+          "shapeMatch": true,
+          "nativeShape": [
+            33600
+          ],
+          "browserShape": [
+            33600
+          ],
+          "maxAbsolutePixelDifference": 0,
+          "meanAbsolutePixelDifference": 0.0,
+          "differingPixelFraction": 0.0
+        },
+        {
+          "shapeMatch": true,
+          "nativeShape": [
+            33600
+          ],
+          "browserShape": [
+            33600
+          ],
+          "maxAbsolutePixelDifference": 0,
+          "meanAbsolutePixelDifference": 0.0,
+          "differingPixelFraction": 0.0
+        },
+        {
+          "shapeMatch": true,
+          "nativeShape": [
+            33600
+          ],
+          "browserShape": [
+            33600
+          ],
+          "maxAbsolutePixelDifference": 0,
+          "meanAbsolutePixelDifference": 0.0,
+          "differingPixelFraction": 0.0
+        },
+        {
+          "shapeMatch": true,
+          "nativeShape": [
+            33600
+          ],
+          "browserShape": [
+            33600
+          ],
+          "maxAbsolutePixelDifference": 0,
+          "meanAbsolutePixelDifference": 0.0,
+          "differingPixelFraction": 0.0
+        }
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "raw": [
+            {
+              "shapeMatch": true,
+              "nativeShape": [
+                33600
+              ],
+              "browserShape": [
+                33600
+              ],
+              "maxAbsolutePixelDifference": 0,
+              "meanAbsolutePixelDifference": 0.0,
+              "differingPixelFraction": 0.0
+            },
+            {
+              "shapeMatch": true,
+              "nativeShape": [
+                33600
+              ],
+              "browserShape": [
+                33600
+              ],
+              "maxAbsolutePixelDifference": 0,
+              "meanAbsolutePixelDifference": 0.0,
+              "differingPixelFraction": 0.0
+            },
+            {
+              "shapeMatch": true,
+              "nativeShape": [
+                33600
+              ],
+              "browserShape": [
+                33600
+              ],
+              "maxAbsolutePixelDifference": 0,
+              "meanAbsolutePixelDifference": 0.0,
+              "differingPixelFraction": 0.0
+            },
+            {
+              "shapeMatch": true,
+              "nativeShape": [
+                33600
+              ],
+              "browserShape": [
+                33600
+              ],
+              "maxAbsolutePixelDifference": 0,
+              "meanAbsolutePixelDifference": 0.0,
+              "differingPixelFraction": 0.0
+            }
+          ]
+        },
+        {
+          "step": 2,
+          "raw": [
+            {
+              "shapeMatch": true,
+              "nativeShape": [
+                33600
+              ],
+              "browserShape": [
+                33600
+              ],
+              "maxAbsolutePixelDifference": 0,
+              "meanAbsolutePixelDifference": 0.0,
+              "differingPixelFraction": 0.0
+            },
+            {
+              "shapeMatch": true,
+              "nativeShape": [
+                33600
+              ],
+              "browserShape": [
+                33600
+              ],
+              "maxAbsolutePixelDifference": 0,
+              "meanAbsolutePixelDifference": 0.0,
+              "differingPixelFraction": 0.0
+            },
+            {
+              "shapeMatch": true,
+              "nativeShape": [
+                33600
+              ],
+              "browserShape": [
+                33600
+              ],
+              "maxAbsolutePixelDifference": 0,
+              "meanAbsolutePixelDifference": 0.0,
+              "differingPixelFraction": 0.0
+            },
+            {
+              "shapeMatch": true,
+              "nativeShape": [
+                33600
+              ],
+              "browserShape": [
+                33600
+              ],
+              "maxAbsolutePixelDifference": 0,
+              "meanAbsolutePixelDifference": 0.0,
+              "differingPixelFraction": 0.0
+            }
+          ]
+        },
+        {
+          "step": 3,
+          "raw": [
+            {
+              "shapeMatch": true,
+              "nativeShape": [
+                33600
+              ],
+              "browserShape": [
+                33600
+              ],
+              "maxAbsolutePixelDifference": 0,
+              "meanAbsolutePixelDifference": 0.0,
+              "differingPixelFraction": 0.0
+            },
+            {
+              "shapeMatch": true,
+              "nativeShape": [
+                33600
+              ],
+              "browserShape": [
+                33600
+              ],
+              "maxAbsolutePixelDifference": 0,
+              "meanAbsolutePixelDifference": 0.0,
+              "differingPixelFraction": 0.0
+            },
+            {
+              "shapeMatch": true,
+              "nativeShape": [
+                33600
+              ],
+              "browserShape": [
+                33600
+              ],
+              "maxAbsolutePixelDifference": 0,
+              "meanAbsolutePixelDifference": 0.0,
+              "differingPixelFraction": 0.0
+            },
+            {
+              "shapeMatch": true,
+              "nativeShape": [
+                33600
+              ],
+              "browserShape": [
+                33600
+              ],
+              "maxAbsolutePixelDifference": 0,
+              "meanAbsolutePixelDifference": 0.0,
+              "differingPixelFraction": 0.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "seed": 202,
+      "resetNoop": [
+        {
+          "shapeMatch": true,
+          "nativeShape": [
+            33600
+          ],
+          "browserShape": [
+            33600
+          ],
+          "maxAbsolutePixelDifference": 0,
+          "meanAbsolutePixelDifference": 0.0,
+          "differingPixelFraction": 0.0
+        },
+        {
+          "shapeMatch": true,
+          "nativeShape": [
+            33600
+          ],
+          "browserShape": [
+            33600
+          ],
+          "maxAbsolutePixelDifference": 0,
+          "meanAbsolutePixelDifference": 0.0,
+          "differingPixelFraction": 0.0
+        },
+        {
+          "shapeMatch": true,
+          "nativeShape": [
+            33600
+          ],
+          "browserShape": [
+            33600
+          ],
+          "maxAbsolutePixelDifference": 0,
+          "meanAbsolutePixelDifference": 0.0,
+          "differingPixelFraction": 0.0
+        },
+        {
+          "shapeMatch": true,
+          "nativeShape": [
+            33600
+          ],
+          "browserShape": [
+            33600
+          ],
+          "maxAbsolutePixelDifference": 0,
+          "meanAbsolutePixelDifference": 0.0,
+          "differingPixelFraction": 0.0
+        },
+        {
+          "shapeMatch": true,
+          "nativeShape": [
+            33600
+          ],
+          "browserShape": [
+            33600
+          ],
+          "maxAbsolutePixelDifference": 0,
+          "meanAbsolutePixelDifference": 0.0,
+          "differingPixelFraction": 0.0
+        },
+        {
+          "shapeMatch": true,
+          "nativeShape": [
+            33600
+          ],
+          "browserShape": [
+            33600
+          ],
+          "maxAbsolutePixelDifference": 0,
+          "meanAbsolutePixelDifference": 0.0,
+          "differingPixelFraction": 0.0
+        }
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "raw": [
+            {
+              "shapeMatch": true,
+              "nativeShape": [
+                33600
+              ],
+              "browserShape": [
+                33600
+              ],
+              "maxAbsolutePixelDifference": 0,
+              "meanAbsolutePixelDifference": 0.0,
+              "differingPixelFraction": 0.0
+            },
+            {
+              "shapeMatch": true,
+              "nativeShape": [
+                33600
+              ],
+              "browserShape": [
+                33600
+              ],
+              "maxAbsolutePixelDifference": 0,
+              "meanAbsolutePixelDifference": 0.0,
+              "differingPixelFraction": 0.0
+            },
+            {
+              "shapeMatch": true,
+              "nativeShape": [
+                33600
+              ],
+              "browserShape": [
+                33600
+              ],
+              "maxAbsolutePixelDifference": 0,
+              "meanAbsolutePixelDifference": 0.0,
+              "differingPixelFraction": 0.0
+            },
+            {
+              "shapeMatch": true,
+              "nativeShape": [
+                33600
+              ],
+              "browserShape": [
+                33600
+              ],
+              "maxAbsolutePixelDifference": 0,
+              "meanAbsolutePixelDifference": 0.0,
+              "differingPixelFraction": 0.0
+            }
+          ]
+        },
+        {
+          "step": 2,
+          "raw": [
+            {
+              "shapeMatch": true,
+              "nativeShape": [
+                33600
+              ],
+              "browserShape": [
+                33600
+              ],
+              "maxAbsolutePixelDifference": 0,
+              "meanAbsolutePixelDifference": 0.0,
+              "differingPixelFraction": 0.0
+            },
+            {
+              "shapeMatch": true,
+              "nativeShape": [
+                33600
+              ],
+              "browserShape": [
+                33600
+              ],
+              "maxAbsolutePixelDifference": 0,
+              "meanAbsolutePixelDifference": 0.0,
+              "differingPixelFraction": 0.0
+            },
+            {
+              "shapeMatch": true,
+              "nativeShape": [
+                33600
+              ],
+              "browserShape": [
+                33600
+              ],
+              "maxAbsolutePixelDifference": 0,
+              "meanAbsolutePixelDifference": 0.0,
+              "differingPixelFraction": 0.0
+            },
+            {
+              "shapeMatch": true,
+              "nativeShape": [
+                33600
+              ],
+              "browserShape": [
+                33600
+              ],
+              "maxAbsolutePixelDifference": 0,
+              "meanAbsolutePixelDifference": 0.0,
+              "differingPixelFraction": 0.0
+            }
+          ]
+        },
+        {
+          "step": 3,
+          "raw": [
+            {
+              "shapeMatch": true,
+              "nativeShape": [
+                33600
+              ],
+              "browserShape": [
+                33600
+              ],
+              "maxAbsolutePixelDifference": 0,
+              "meanAbsolutePixelDifference": 0.0,
+              "differingPixelFraction": 0.0
+            },
+            {
+              "shapeMatch": true,
+              "nativeShape": [
+                33600
+              ],
+              "browserShape": [
+                33600
+              ],
+              "maxAbsolutePixelDifference": 0,
+              "meanAbsolutePixelDifference": 0.0,
+              "differingPixelFraction": 0.0
+            },
+            {
+              "shapeMatch": true,
+              "nativeShape": [
+                33600
+              ],
+              "browserShape": [
+                33600
+              ],
+              "maxAbsolutePixelDifference": 0,
+              "meanAbsolutePixelDifference": 0.0,
+              "differingPixelFraction": 0.0
+            },
+            {
+              "shapeMatch": true,
+              "nativeShape": [
+                33600
+              ],
+              "browserShape": [
+                33600
+              ],
+              "maxAbsolutePixelDifference": 0,
+              "meanAbsolutePixelDifference": 0.0,
+              "differingPixelFraction": 0.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "seed": 303,
+      "resetNoop": [
+        {
+          "shapeMatch": true,
+          "nativeShape": [
+            33600
+          ],
+          "browserShape": [
+            33600
+          ],
+          "maxAbsolutePixelDifference": 0,
+          "meanAbsolutePixelDifference": 0.0,
+          "differingPixelFraction": 0.0
+        },
+        {
+          "shapeMatch": true,
+          "nativeShape": [
+            33600
+          ],
+          "browserShape": [
+            33600
+          ],
+          "maxAbsolutePixelDifference": 0,
+          "meanAbsolutePixelDifference": 0.0,
+          "differingPixelFraction": 0.0
+        },
+        {
+          "shapeMatch": true,
+          "nativeShape": [
+            33600
+          ],
+          "browserShape": [
+            33600
+          ],
+          "maxAbsolutePixelDifference": 0,
+          "meanAbsolutePixelDifference": 0.0,
+          "differingPixelFraction": 0.0
+        },
+        {
+          "shapeMatch": true,
+          "nativeShape": [
+            33600
+          ],
+          "browserShape": [
+            33600
+          ],
+          "maxAbsolutePixelDifference": 0,
+          "meanAbsolutePixelDifference": 0.0,
+          "differingPixelFraction": 0.0
+        },
+        {
+          "shapeMatch": true,
+          "nativeShape": [
+            33600
+          ],
+          "browserShape": [
+            33600
+          ],
+          "maxAbsolutePixelDifference": 0,
+          "meanAbsolutePixelDifference": 0.0,
+          "differingPixelFraction": 0.0
+        },
+        {
+          "shapeMatch": true,
+          "nativeShape": [
+            33600
+          ],
+          "browserShape": [
+            33600
+          ],
+          "maxAbsolutePixelDifference": 0,
+          "meanAbsolutePixelDifference": 0.0,
+          "differingPixelFraction": 0.0
+        },
+        {
+          "shapeMatch": true,
+          "nativeShape": [
+            33600
+          ],
+          "browserShape": [
+            33600
+          ],
+          "maxAbsolutePixelDifference": 0,
+          "meanAbsolutePixelDifference": 0.0,
+          "differingPixelFraction": 0.0
+        },
+        {
+          "shapeMatch": true,
+          "nativeShape": [
+            33600
+          ],
+          "browserShape": [
+            33600
+          ],
+          "maxAbsolutePixelDifference": 0,
+          "meanAbsolutePixelDifference": 0.0,
+          "differingPixelFraction": 0.0
+        },
+        {
+          "shapeMatch": true,
+          "nativeShape": [
+            33600
+          ],
+          "browserShape": [
+            33600
+          ],
+          "maxAbsolutePixelDifference": 0,
+          "meanAbsolutePixelDifference": 0.0,
+          "differingPixelFraction": 0.0
+        },
+        {
+          "shapeMatch": true,
+          "nativeShape": [
+            33600
+          ],
+          "browserShape": [
+            33600
+          ],
+          "maxAbsolutePixelDifference": 0,
+          "meanAbsolutePixelDifference": 0.0,
+          "differingPixelFraction": 0.0
+        },
+        {
+          "shapeMatch": true,
+          "nativeShape": [
+            33600
+          ],
+          "browserShape": [
+            33600
+          ],
+          "maxAbsolutePixelDifference": 0,
+          "meanAbsolutePixelDifference": 0.0,
+          "differingPixelFraction": 0.0
+        },
+        {
+          "shapeMatch": true,
+          "nativeShape": [
+            33600
+          ],
+          "browserShape": [
+            33600
+          ],
+          "maxAbsolutePixelDifference": 0,
+          "meanAbsolutePixelDifference": 0.0,
+          "differingPixelFraction": 0.0
+        },
+        {
+          "shapeMatch": true,
+          "nativeShape": [
+            33600
+          ],
+          "browserShape": [
+            33600
+          ],
+          "maxAbsolutePixelDifference": 0,
+          "meanAbsolutePixelDifference": 0.0,
+          "differingPixelFraction": 0.0
+        },
+        {
+          "shapeMatch": true,
+          "nativeShape": [
+            33600
+          ],
+          "browserShape": [
+            33600
+          ],
+          "maxAbsolutePixelDifference": 0,
+          "meanAbsolutePixelDifference": 0.0,
+          "differingPixelFraction": 0.0
+        },
+        {
+          "shapeMatch": true,
+          "nativeShape": [
+            33600
+          ],
+          "browserShape": [
+            33600
+          ],
+          "maxAbsolutePixelDifference": 0,
+          "meanAbsolutePixelDifference": 0.0,
+          "differingPixelFraction": 0.0
+        },
+        {
+          "shapeMatch": true,
+          "nativeShape": [
+            33600
+          ],
+          "browserShape": [
+            33600
+          ],
+          "maxAbsolutePixelDifference": 0,
+          "meanAbsolutePixelDifference": 0.0,
+          "differingPixelFraction": 0.0
+        },
+        {
+          "shapeMatch": true,
+          "nativeShape": [
+            33600
+          ],
+          "browserShape": [
+            33600
+          ],
+          "maxAbsolutePixelDifference": 0,
+          "meanAbsolutePixelDifference": 0.0,
+          "differingPixelFraction": 0.0
+        },
+        {
+          "shapeMatch": true,
+          "nativeShape": [
+            33600
+          ],
+          "browserShape": [
+            33600
+          ],
+          "maxAbsolutePixelDifference": 0,
+          "meanAbsolutePixelDifference": 0.0,
+          "differingPixelFraction": 0.0
+        }
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "raw": [
+            {
+              "shapeMatch": true,
+              "nativeShape": [
+                33600
+              ],
+              "browserShape": [
+                33600
+              ],
+              "maxAbsolutePixelDifference": 0,
+              "meanAbsolutePixelDifference": 0.0,
+              "differingPixelFraction": 0.0
+            },
+            {
+              "shapeMatch": true,
+              "nativeShape": [
+                33600
+              ],
+              "browserShape": [
+                33600
+              ],
+              "maxAbsolutePixelDifference": 0,
+              "meanAbsolutePixelDifference": 0.0,
+              "differingPixelFraction": 0.0
+            },
+            {
+              "shapeMatch": true,
+              "nativeShape": [
+                33600
+              ],
+              "browserShape": [
+                33600
+              ],
+              "maxAbsolutePixelDifference": 0,
+              "meanAbsolutePixelDifference": 0.0,
+              "differingPixelFraction": 0.0
+            },
+            {
+              "shapeMatch": true,
+              "nativeShape": [
+                33600
+              ],
+              "browserShape": [
+                33600
+              ],
+              "maxAbsolutePixelDifference": 0,
+              "meanAbsolutePixelDifference": 0.0,
+              "differingPixelFraction": 0.0
+            }
+          ]
+        },
+        {
+          "step": 2,
+          "raw": [
+            {
+              "shapeMatch": true,
+              "nativeShape": [
+                33600
+              ],
+              "browserShape": [
+                33600
+              ],
+              "maxAbsolutePixelDifference": 0,
+              "meanAbsolutePixelDifference": 0.0,
+              "differingPixelFraction": 0.0
+            },
+            {
+              "shapeMatch": true,
+              "nativeShape": [
+                33600
+              ],
+              "browserShape": [
+                33600
+              ],
+              "maxAbsolutePixelDifference": 0,
+              "meanAbsolutePixelDifference": 0.0,
+              "differingPixelFraction": 0.0
+            },
+            {
+              "shapeMatch": true,
+              "nativeShape": [
+                33600
+              ],
+              "browserShape": [
+                33600
+              ],
+              "maxAbsolutePixelDifference": 0,
+              "meanAbsolutePixelDifference": 0.0,
+              "differingPixelFraction": 0.0
+            },
+            {
+              "shapeMatch": true,
+              "nativeShape": [
+                33600
+              ],
+              "browserShape": [
+                33600
+              ],
+              "maxAbsolutePixelDifference": 0,
+              "meanAbsolutePixelDifference": 0.0,
+              "differingPixelFraction": 0.0
+            }
+          ]
+        },
+        {
+          "step": 3,
+          "raw": [
+            {
+              "shapeMatch": true,
+              "nativeShape": [
+                33600
+              ],
+              "browserShape": [
+                33600
+              ],
+              "maxAbsolutePixelDifference": 0,
+              "meanAbsolutePixelDifference": 0.0,
+              "differingPixelFraction": 0.0
+            },
+            {
+              "shapeMatch": true,
+              "nativeShape": [
+                33600
+              ],
+              "browserShape": [
+                33600
+              ],
+              "maxAbsolutePixelDifference": 0,
+              "meanAbsolutePixelDifference": 0.0,
+              "differingPixelFraction": 0.0
+            },
+            {
+              "shapeMatch": true,
+              "nativeShape": [
+                33600
+              ],
+              "browserShape": [
+                33600
+              ],
+              "maxAbsolutePixelDifference": 0,
+              "meanAbsolutePixelDifference": 0.0,
+              "differingPixelFraction": 0.0
+            },
+            {
+              "shapeMatch": true,
+              "nativeShape": [
+                33600
+              ],
+              "browserShape": [
+                33600
+              ],
+              "maxAbsolutePixelDifference": 0,
+              "meanAbsolutePixelDifference": 0.0,
+              "differingPixelFraction": 0.0
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "countMismatches": [],
+  "representativeComparisonImage": "assets/day29/preprocessing-parity-comparison.png",
+  "status": "full"
+}

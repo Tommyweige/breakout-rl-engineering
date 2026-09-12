@@ -414,7 +414,7 @@ Backend
 * Day 26 — TensorRT optimization experiment
 * Day 27 — ONNX Runtime Web
 * Day 28 — [WebGPU inference：在 Cloudflare Pages 驗證 WASM / WebGPU 正確性與延遲](docs/day28-webgpu-inference.md)
-* Day 29 — 互動式瀏覽器 demo
+* Day 29 — [Human vs RL 雙 Breakout Browser demo](docs/day29-interactive-browser-demo.md)
 * Day 30 — 最終 evaluation 與工程回顧
 
 ---

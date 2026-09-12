@@ -21,6 +21,13 @@ runs/
 # Temporary local gameplay renders; canonical Day 21 progression evidence lives under assets/day21/.
 outputs/gameplay-progression/
 .qa-redesign/
+.qa-redesign-day29/
+.qa-redesign-day29-final/
+
+# Browser build-time assets copied from @farama/ale-wasm and the canonical Contract v2.
+web/public/ale/
+web/public/configs/eval/breakout_contract_v2.json
+assets/day29/local-*
 
 # Secrets and local configuration
 .env

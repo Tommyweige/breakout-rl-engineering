@@ -1,0 +1,158 @@
+{
+  "schema_version": 2,
+  "artifact_type": "day29_native_noop_reset_manifest",
+  "source": "Gymnasium AtariPreprocessing reset / env.unwrapped.np_random.integers(1, noop_max+1), captured through ALE 0.12.0",
+  "noop_max": 30,
+  "seeds": {
+    "101": {
+      "noop_count": 10,
+      "np_seed": 4137311287,
+      "ale_seed": 240527215
+    },
+    "102": {
+      "noop_count": 6,
+      "np_seed": 905790052,
+      "ale_seed": 2735169830
+    },
+    "103": {
+      "noop_count": 22,
+      "np_seed": 504464362,
+      "ale_seed": 132296374
+    },
+    "104": {
+      "noop_count": 9,
+      "np_seed": 2095831967,
+      "ale_seed": 4124004960
+    },
+    "105": {
+      "noop_count": 1,
+      "np_seed": 3669447255,
+      "ale_seed": 1553702698
+    },
+    "202": {
+      "noop_count": 6,
+      "np_seed": 4027311834,
+      "ale_seed": 2628030692
+    },
+    "203": {
+      "noop_count": 13,
+      "np_seed": 887337287,
+      "ale_seed": 1731920061
+    },
+    "204": {
+      "noop_count": 29,
+      "np_seed": 866572330,
+      "ale_seed": 1119693017
+    },
+    "205": {
+      "noop_count": 5,
+      "np_seed": 1880767603,
+      "ale_seed": 1092779605
+    },
+    "206": {
+      "noop_count": 21,
+      "np_seed": 361787434,
+      "ale_seed": 1581959715
+    },
+    "303": {
+      "noop_count": 18,
+      "np_seed": 3877942764,
+      "ale_seed": 572649019
+    },
+    "304": {
+      "noop_count": 15,
+      "np_seed": 3829854379,
+      "ale_seed": 2298045998
+    },
+    "305": {
+      "noop_count": 4,
+      "np_seed": 644522548,
+      "ale_seed": 2866101598
+    },
+    "306": {
+      "noop_count": 12,
+      "np_seed": 1961429102,
+      "ale_seed": 1830014613
+    },
+    "307": {
+      "noop_count": 5,
+      "np_seed": 3137939691,
+      "ale_seed": 4171997014
+    },
+    "308": {
+      "noop_count": 19,
+      "np_seed": 3273138283,
+      "ale_seed": 1261837464
+    },
+    "309": {
+      "noop_count": 20,
+      "np_seed": 3852596590,
+      "ale_seed": 935933181
+    },
+    "310": {
+      "noop_count": 20,
+      "np_seed": 2489644854,
+      "ale_seed": 1486593461
+    },
+    "311": {
+      "noop_count": 21,
+      "np_seed": 3578611366,
+      "ale_seed": 46242673
+    },
+    "312": {
+      "noop_count": 3,
+      "np_seed": 3431649515,
+      "ale_seed": 1391291122
+    },
+    "313": {
+      "noop_count": 23,
+      "np_seed": 2225699504,
+      "ale_seed": 1087307676
+    },
+    "314": {
+      "noop_count": 9,
+      "np_seed": 1458936001,
+      "ale_seed": 333185666
+    },
+    "315": {
+      "noop_count": 5,
+      "np_seed": 1547065683,
+      "ale_seed": 3636331631
+    },
+    "316": {
+      "noop_count": 11,
+      "np_seed": 3342821754,
+      "ale_seed": 176426636
+    },
+    "317": {
+      "noop_count": 24,
+      "np_seed": 3369299466,
+      "ale_seed": 821726966
+    },
+    "318": {
+      "noop_count": 25,
+      "np_seed": 324457918,
+      "ale_seed": 807618511
+    },
+    "319": {
+      "noop_count": 10,
+      "np_seed": 3776121297,
+      "ale_seed": 1172377777
+    },
+    "320": {
+      "noop_count": 3,
+      "np_seed": 2296470606,
+      "ale_seed": 3113713495
+    },
+    "321": {
+      "noop_count": 21,
+      "np_seed": 2788429241,
+      "ale_seed": 4256905482
+    },
+    "322": {
+      "noop_count": 16,
+      "np_seed": 2648254876,
+      "ale_seed": 2675850382
+    }
+  }
+}

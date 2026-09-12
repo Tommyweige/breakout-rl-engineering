@@ -12,8 +12,8 @@ afterEach(() => {
   document.body.innerHTML = '';
 });
 
-describe('Day 27 browser shell', () => {
-  it('keeps the gameplay seam explicit and exposes both panels and shared controls', () => {
+describe('Day 29 dual ALE browser product', () => {
+  it('exposes both real-game canvases and the shared controls', () => {
     const root = document.createElement('div');
     document.body.append(root);
     app = new App(root);
@@ -21,8 +21,9 @@ describe('Day 27 browser shell', () => {
 
     expect(root.textContent).toContain('Human Panel');
     expect(root.textContent).toContain('Agent Panel');
-    expect(root.textContent).toContain('ALE gameplay not connected yet');
-    expect(root.querySelector('canvas')).toBeNull();
+    expect(root.textContent).toContain('ALE / HUMAN_01');
+    expect(root.textContent).toContain('ALE / RL_AGENT_01');
+    expect(root.querySelectorAll('canvas')).toHaveLength(7);
     expect(root.querySelector('[data-action="start"]')).not.toBeNull();
     expect(root.querySelector('[data-action="pause"]')).not.toBeNull();
     expect(root.querySelector('[data-action="reset"]')).not.toBeNull();

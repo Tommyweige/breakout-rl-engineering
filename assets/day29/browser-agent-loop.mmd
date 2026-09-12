@@ -1,0 +1,11 @@
+flowchart LR
+    ALE["ALE WASM<br/>raw RGB 160×210"] --> Repeat["outer repeat = 4<br/>raw frame skip = 1<br/>max-pool last 2"]
+    Repeat --> Prep["grayscale luma<br/>area resize 84×84"]
+    Prep --> Stack["FrameStack<br/>uint8 (4,84,84)"]
+    Stack --> Normalize["divide once by 255<br/>Float32 NCHW"]
+    Normalize --> ORT["ONNX Runtime Web<br/>explicit WASM / WebGPU"]
+    ORT --> Q["four raw Q-values"]
+    Q --> Select["argmax<br/>model 0/1/2/3"]
+    Select --> Map["ALE mapping<br/>0/1/4/3"]
+    Map --> Fire["Contract v2<br/>serve FIRE override"]
+    Fire --> ALE

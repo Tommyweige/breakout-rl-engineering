@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "artifactType": "day29_article_workflow",
+  "skill": "technical-blog-writer",
+  "skillSha256": "c34cd809ad4b2244e44cac797cf48765863d9e0449d7f9515b5a9c758ddd08e0",
+  "references": {
+    "visualizationPolicySha256": "99dfe6c2a557aa504367ab89761b670eb4a4badd367f4b94692993514bdab0d3",
+    "mermaidWorkflowSha256": "57cc21c721a266fcc52139bd5e3c7040f17e87da7f11f96535faa89566744f6f",
+    "reviewChecklistSha256": "0d99e8f52acfb82a230ba1bd9b0b151582beca2878df2ac5ccee564b71dc437e"
+  },
+  "evidenceFirstOrder": [
+    "Cloudflare Pages browser screenshots",
+    "machine-readable validation and multi-episode evaluation",
+    "agent-loop timing",
+    "verified structural Mermaid diagram",
+    "reader-facing Traditional Chinese article"
+  ],
+  "articlePromise": "Explain how a trained Breakout policy becomes a real browser agent, what the debug panel proves, and why partial environment parity limits score comparisons."
+}

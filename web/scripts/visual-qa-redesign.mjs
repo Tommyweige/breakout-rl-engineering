@@ -66,16 +66,16 @@ try {
         viewportWidth: document.documentElement.clientWidth,
         buttonSizes: buttons,
         panels,
-        hasCanvas: Boolean(document.querySelector('canvas')),
+        canvasCount: document.querySelectorAll('canvas').length,
         hasBackendSelector: Boolean(document.querySelector('select[data-action="backend"]')),
-        hasGameplaySeam: /ALE gameplay not connected yet/i.test(document.body.innerText),
+        hasDualGameplaySurface: document.querySelectorAll('canvas[data-role="human-canvas"], canvas[data-role="agent-canvas"]').length === 2,
       };
     });
 
     if (layout.documentWidth > layout.viewportWidth + 1) {
       throw new Error(`${viewport.width}px viewport overflows horizontally: ${JSON.stringify(layout)}`);
     }
-    if (layout.hasCanvas || !layout.hasBackendSelector || !layout.hasGameplaySeam) {
+    if (layout.canvasCount < 6 || !layout.hasBackendSelector || !layout.hasDualGameplaySurface) {
       throw new Error(`${viewport.width}px structural seam check failed: ${JSON.stringify(layout)}`);
     }
     if (layout.buttonSizes.some(({ height }) => height < 44)) {
@@ -88,10 +88,12 @@ try {
 
     if (viewport.width === 1440) {
       await page.locator('button[data-action="start"]').click();
+      await page.waitForFunction(() => Boolean(window.__day29Ready), undefined, { timeout: 180_000 });
       const runningStatus = await page.locator('[data-role="runtime-status-label"]').textContent();
       await page.locator('button[data-action="pause"]').click();
       const pausedStatus = await page.locator('[data-role="runtime-status-label"]').textContent();
       await page.locator('button[data-action="reset"]').click();
+      await page.waitForTimeout(100);
       const resetStatus = await page.locator('[data-role="runtime-status-label"]').textContent();
       if (runningStatus !== 'running' || pausedStatus !== 'paused' || resetStatus !== 'ready') {
         throw new Error(`shared control transition failed: ${runningStatus} -> ${pausedStatus} -> ${resetStatus}`);

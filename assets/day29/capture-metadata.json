@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 2,
+  "artifactType": "day29_browser_capture",
+  "url": "https://day29-human-vs-rl.breakout-rl-browser.pages.dev/?v=67f07290",
+  "browser": {
+    "name": "Chrome",
+    "version": "145.0.7632.117",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.0.0 Safari/537.36",
+    "platform": "Windows"
+  },
+  "modelSha256": "cf90c74b1d09d5d7e2e0c71014f2daef2b5e1833425d300da06e34d1e4ef7f12",
+  "actualBackend": "webgpu",
+  "environmentParity": {
+    "contractId": "day15-breakout-evaluation-v2-fire-reset",
+    "sourcePath": "configs/eval/breakout_contract_v2.json",
+    "sha256": "e9947fc3a1235100aa92f75a79cf33668b36b4f325f22a0bc8b9546a356b85ba",
+    "status": "partial",
+    "unsupportedFields": [
+      "ALE/Breakout-v5 environment stepping",
+      "frame_skip and sticky_action_probability during live stepping",
+      "serve/life-loss FIRE ownership",
+      "terminal_on_life_loss and TimeLimit semantics",
+      "concrete episode seeds and evaluation epsilon",
+      "raw episode reward aggregation"
+    ],
+    "note": "This Browser build validates fixed model inputs only; it does not execute ALE gameplay or score episodes."
+  },
+  "runtimeDiagnostics": {
+    "instanceId": 2,
+    "requestedEnvironment": "ALE/Breakout-v5",
+    "aleVersion": "0.12.0",
+    "rawAleFrameSkip": 1,
+    "outerActionRepeat": 4,
+    "expectedEmulatorFramesPerDecision": 4,
+    "stickyActionProbability": 0.25,
+    "noopMax": 30,
+    "resetNoopCount": 10,
+    "resetNoopSource": "native_manifest",
+    "nativeNpSeed": 4137311287,
+    "nativeAleSeed": 240527215,
+    "nativeAleSeedSource": "native_manifest",
+    "grayscaleBeforeMaxPool": true,
+    "resizeInterpolation": "cv2.INTER_AREA",
+    "fireReset": true,
+    "terminalOnLifeLoss": false,
+    "timeLimitSource": "ale.game_truncated",
+    "maxRawFramesPerEpisode": 108000,
+    "agentStepLimit": 27000,
+    "humanInstanceId": 1,
+    "agentInstanceId": 2,
+    "crossOriginIsolated": true,
+    "dualInstanceCount": 2
+  },
+  "productValidation": {
+    "dualCanvasCount": 2,
+    "keyboardAction": "LEFT",
+    "spaceAction": "FIRE",
+    "pauseObserved": true,
+    "pauseStatus": "paused",
+    "resumeObserved": true,
+    "resetBothObserved": true,
+    "crossOriginIsolated": true
+  },
+  "screenshots": {
+    "aiGameplay": "assets/day29/browser-ai-demo.png",
+    "humanVsRl": "assets/day29/human-vs-rl-dual-breakout.png",
+    "preprocessing": "assets/day29/browser-preprocessing-debug.png"
+  },
+  "consoleErrors": [],
+  "pageErrors": [],
+  "requestFailures": [],
+  "badResponses": []
+}

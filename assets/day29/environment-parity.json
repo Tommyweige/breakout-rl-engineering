@@ -1,0 +1,200 @@
+{
+  "schemaVersion": 2,
+  "artifactType": "day29_environment_parity",
+  "contract": {
+    "contractId": "day15-breakout-evaluation-v2-fire-reset",
+    "sourcePath": "configs/eval/breakout_contract_v2.json",
+    "sha256": "e9947fc3a1235100aa92f75a79cf33668b36b4f325f22a0bc8b9546a356b85ba",
+    "status": "partial",
+    "unsupportedFields": [
+      "Contract v2 JSON omits Gymnasium AtariPreprocessing noop_max and the derived NumPy seed-stream rule; Day 29 records an explicit adapter and fixed-seed manifest",
+      "Browser arbitrary interactive seeds use a deterministic seeded fallback rather than a full NumPy SeedSequence/PCG64 implementation"
+    ],
+    "note": "Fixed Day 29 evaluation seeds use native-derived NOOP/ALE seeds; the representative raw-frame/preprocessing fixture for seeds 101, 202, and 303 is byte-identical; general arbitrary-seed stream parity remains partial by design."
+  },
+  "runtime": {
+    "instanceId": 2,
+    "requestedEnvironment": "ALE/Breakout-v5",
+    "aleVersion": "0.12.0",
+    "rawAleFrameSkip": 1,
+    "outerActionRepeat": 4,
+    "expectedEmulatorFramesPerDecision": 4,
+    "stickyActionProbability": 0.25,
+    "noopMax": 30,
+    "resetNoopCount": 10,
+    "resetNoopSource": "native_manifest",
+    "nativeNpSeed": 4137311287,
+    "nativeAleSeed": 240527215,
+    "nativeAleSeedSource": "native_manifest",
+    "grayscaleBeforeMaxPool": true,
+    "resizeInterpolation": "cv2.INTER_AREA",
+    "fireReset": true,
+    "terminalOnLifeLoss": false,
+    "timeLimitSource": "ale.game_truncated",
+    "maxRawFramesPerEpisode": 108000,
+    "agentStepLimit": 27000,
+    "humanInstanceId": 1,
+    "agentInstanceId": 2,
+    "crossOriginIsolated": true,
+    "dualInstanceCount": 2
+  },
+  "actualBackends": [
+    "wasm",
+    "webgpu"
+  ],
+  "gameplaySmoke": {
+    "backend": "webgpu",
+    "completedEpisode": false,
+    "state": {
+      "humanStage": "IDLE",
+      "agentStage": "IDLE",
+      "action": "LEFT",
+      "episodeReturn": "0",
+      "latency": "49.920 ms",
+      "backend": "WEBGPU",
+      "parity": "PARTIAL / Contract v2"
+    },
+    "productValidation": {
+      "dualCanvasCount": 2,
+      "keyboardAction": "LEFT",
+      "spaceAction": "FIRE",
+      "pauseObserved": true,
+      "pauseStatus": "paused",
+      "resumeObserved": true,
+      "resetBothObserved": true,
+      "crossOriginIsolated": true
+    },
+    "runtimeDiagnostics": {
+      "instanceId": 2,
+      "requestedEnvironment": "ALE/Breakout-v5",
+      "aleVersion": "0.12.0",
+      "rawAleFrameSkip": 1,
+      "outerActionRepeat": 4,
+      "expectedEmulatorFramesPerDecision": 4,
+      "stickyActionProbability": 0.25,
+      "noopMax": 30,
+      "resetNoopCount": 10,
+      "resetNoopSource": "native_manifest",
+      "nativeNpSeed": 4137311287,
+      "nativeAleSeed": 240527215,
+      "nativeAleSeedSource": "native_manifest",
+      "grayscaleBeforeMaxPool": true,
+      "resizeInterpolation": "cv2.INTER_AREA",
+      "fireReset": true,
+      "terminalOnLifeLoss": false,
+      "timeLimitSource": "ale.game_truncated",
+      "maxRawFramesPerEpisode": 108000,
+      "agentStepLimit": 27000,
+      "humanInstanceId": 1,
+      "agentInstanceId": 2,
+      "crossOriginIsolated": true,
+      "dualInstanceCount": 2
+    },
+    "validation": {
+      "actualBackend": "webgpu",
+      "passed": true
+    }
+  },
+  "nativeAtariPreprocessing": {
+    "noop_max": 30,
+    "frame_skip": 4,
+    "screen_size": 84,
+    "terminal_on_life_loss": false,
+    "grayscale_obs": true,
+    "grayscale_newaxis": false,
+    "scale_obs": false,
+    "max_pool_space": "grayscale",
+    "resize_interpolation": "cv2.INTER_AREA",
+    "seed_semantics": {
+      "episode_seed": "Gymnasium AtariEnv.reset(seed)",
+      "seed_sequence": "np.random.SeedSequence(seed).generate_state(n_words=2)",
+      "np_seed": "first uint32 -> env.unwrapped.np_random for noop draw",
+      "ale_seed": "second uint32 -> ALE random_seed for game/sticky RNG"
+    },
+    "noopManifest": "assets/day29/native-noop-reset-manifest.json",
+    "resetSemantics": [
+      "AtariPreprocessing.reset calls raw env.reset(seed=seed)",
+      "Gymnasium AtariEnv derives np_seed and ale_seed with np.random.SeedSequence(seed).generate_state(2)",
+      "np_seed drives env.unwrapped.np_random.integers(1, noop_max+1), inclusive 1..30",
+      "raw NOOP action 0 is repeated until the sampled count; if terminal/truncated occurs, reset and continue",
+      "after NOOP reset, capture one current ALE grayscale frame and duplicate it across FrameStackObservation(4)"
+    ]
+  },
+  "browserAtariPreprocessing": {
+    "noopMax": 30,
+    "noopReset": "native manifest for fixed evaluation seeds; seeded fallback for other interactive seeds",
+    "frameSkip": 4,
+    "maxPoolSpace": "grayscale",
+    "grayscaleSource": "ALE getScreenGrayscale() per raw frame",
+    "resizeInterpolation": "area-coverage implementation audited against cv2.INTER_AREA",
+    "frameStack": 4,
+    "seedSemantics": "native-derived ale_seed for fixed evaluation seeds; documented fallback outside manifest",
+    "actionMapping": {
+      "modelIndex": [
+        "NOOP",
+        "FIRE",
+        "RIGHT",
+        "LEFT"
+      ],
+      "aleCode": [
+        0,
+        1,
+        3,
+        4
+      ]
+    },
+    "fireResetOwnership": "Browser environment owns initial serve and post-life-loss FIRE only",
+    "stickyActionProbability": 0.25
+  },
+  "preprocessingPixelParity": {
+    "resetAndStepRawGrayscale": {
+      "sampleCount": 70,
+      "shapeMismatchCount": 0,
+      "maxAbsolutePixelDifference": 0,
+      "meanAbsolutePixelDifference": 0.0,
+      "differingPixelFraction": 0.0
+    },
+    "pooledGrayscale": {
+      "sampleCount": 9,
+      "shapeMismatchCount": 0,
+      "maxAbsolutePixelDifference": 0,
+      "meanAbsolutePixelDifference": 0.0,
+      "differingPixelFraction": 0.0
+    },
+    "processed84x84": {
+      "sampleCount": 12,
+      "shapeMismatchCount": 0,
+      "maxAbsolutePixelDifference": 0,
+      "meanAbsolutePixelDifference": 0.0,
+      "differingPixelFraction": 0.0
+    },
+    "frameStack": {
+      "sampleCount": 12,
+      "shapeMismatchCount": 0,
+      "maxAbsolutePixelDifference": 0,
+      "meanAbsolutePixelDifference": 0.0,
+      "differingPixelFraction": 0.0
+    }
+  },
+  "preprocessingPixelParityStatus": "full",
+  "remainingDifferences": [
+    "Browser uses the exact native-derived noop/ale seed manifest for the fixed Day 29 30-seed evaluation; arbitrary interactive seeds use the documented seeded fallback instead of a full NumPy SeedSequence/PCG64 implementation.",
+    "Contract v2 JSON remains unchanged and does not itself contain noop_max or the derived seed-stream rule; this Day 29 parity artifact records those runtime semantics explicitly.",
+    "The terminal/truncated-during-NOOP recovery branch is structurally mirrored with ALE seed/load/reset, but has not been independently exercised in the representative fixture against Gymnasium's reset(seed, options) callback path."
+  ],
+  "fixedEvaluationEnvironmentParity": "full",
+  "overallStatus": "partial",
+  "preprocessingPixelParityCoverage": {
+    "seeds": [
+      101,
+      202,
+      303
+    ],
+    "actions": [
+      1,
+      1,
+      2
+    ],
+    "comparisonScope": "representative raw-frame fixture, not the complete 30-seed score run"
+  }
+}

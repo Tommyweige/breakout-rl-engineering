@@ -7,17 +7,25 @@
     "node": ">=20.19.0"
   },
   "scripts": {
+    "prepare:assets": "node scripts/prepare-web-assets.mjs",
+    "predev": "npm run prepare:assets",
     "dev": "vite",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "prebuild": "npm run prepare:assets",
     "build": "npm run typecheck && vite build",
     "preview": "vite preview",
     "deploy:preview": "wrangler pages deploy dist",
     "capture:evidence": "node scripts/capture-browser-evidence.mjs",
     "capture:day28": "node scripts/capture-day28-evidence.mjs",
+    "capture:day29": "node scripts/capture-day29-evidence.mjs",
+    "capture:day29:overlap": "node scripts/capture-day29-overlap-evaluation.mjs",
+    "capture:day29:preprocessing": "node scripts/capture-day29-preprocessing-parity.mjs",
+    "capture:day29:production": "node scripts/capture-day29-production-screenshots.mjs",
     "qa:visual": "node scripts/visual-qa-redesign.mjs"
   },
   "dependencies": {
+    "@farama/ale-wasm": "0.12.0",
     "onnxruntime-web": "1.29.0"
   },
   "devDependencies": {

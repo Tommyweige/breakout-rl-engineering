@@ -226,3 +226,55 @@ h1 em { color: var(--blue); font-style: normal; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
 }
+
+/* Day 29 gameplay surface: the existing Day 28 shell now owns real ALE canvases. */
+.controls { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.controls button.secondary { color: var(--ink); background: rgba(40, 87, 232, 0.08); border-color: var(--blue); }
+.game-stage { position: relative; min-height: 404px; margin: 20px 0; overflow: hidden; border: 1px solid var(--line); background: #101821; }
+.game-stage .stage-topline { position: absolute; z-index: 2; top: 0; right: 0; left: 0; padding: 12px; color: rgba(246, 241, 231, 0.72); font: 700 0.62rem/1 var(--mono); letter-spacing: 0.08em; }
+.game-stage .stage-state { color: var(--lime); }
+.game-stage canvas { position: absolute; top: 50%; left: 50%; width: min(76%, 320px); height: auto; aspect-ratio: 160 / 210; transform: translate(-50%, -50%); image-rendering: pixelated; background: #000; box-shadow: 0 0 0 1px rgba(246, 241, 231, 0.22), 0 14px 45px rgba(0, 0, 0, 0.36); }
+.agent-game-stage { background: #0e1731; }
+.agent-overlay { position: absolute; right: 12px; bottom: 12px; display: grid; gap: 5px; padding: 9px; color: var(--paper); background: rgba(24, 58, 168, 0.86); font: 700 0.58rem/1 var(--mono); letter-spacing: 0.08em; }
+.agent-overlay span { color: var(--lime); }
+.agent-overlay strong { font-size: 0.76rem; }
+.game-facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; margin: 0 0 18px; }
+.game-facts div { display: grid; gap: 6px; padding: 10px 12px 10px 0; border-top: 1px solid rgba(246, 241, 231, 0.22); }
+.game-facts dt { color: rgba(246, 241, 231, 0.62); font-size: 0.62rem; }
+.game-facts dd { margin: 0; color: var(--lime); font: 700 0.78rem/1.2 var(--mono); }
+.panel-agent .game-facts dd { color: var(--ink); }
+.q-row-selected { background: rgba(183, 243, 75, 0.2); }
+.panel-agent .q-row-selected .q-action { color: var(--blue-dark); }
+.preprocess-debug { margin-top: 20px; padding-top: 15px; border-top: 2px solid var(--ink); }
+.debug-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 12px; color: var(--ink-soft); font: 700 0.58rem/1.3 var(--mono); letter-spacing: 0.08em; }
+.debug-heading strong { color: var(--blue-dark); font-size: 0.58rem; text-align: right; }
+.debug-frame-row { display: flex; align-items: flex-start; gap: 15px; }
+.debug-frame-row > div:first-child { display: grid; flex: 0 0 94px; gap: 6px; }
+.debug-frame-row canvas { width: 84px; height: 84px; image-rendering: pixelated; border: 1px solid var(--ink); background: #000; }
+.debug-frame-row span { color: var(--ink-soft); font: 700 0.56rem/1.2 var(--mono); }
+.stack-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; flex: 1; }
+.stack-grid div { display: grid; gap: 6px; min-width: 0; }
+.stack-grid canvas { width: 100%; max-width: 84px; height: auto; }
+.evaluation-summary { margin-top: 18px; padding-top: 16px; border-top: 1px solid rgba(246, 241, 231, 0.25); }
+.evaluation-summary .benchmark-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.evaluation-summary > p { color: rgba(246, 241, 231, 0.72); font-size: 0.76rem; line-height: 1.5; }
+.panel-human .status-chip[data-status="running"], .panel-agent .status-chip[data-status="running"] { color: var(--ink); background: var(--lime); border-color: var(--lime); }
+
+@media (max-width: 960px) {
+  .controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .game-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .evaluation-summary .benchmark-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 700px) {
+  .controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .controls button.primary { grid-column: span 2; }
+  .game-stage { min-height: 350px; }
+  .game-stage canvas { width: min(72%, 250px); }
+  .debug-frame-row { gap: 8px; }
+  .debug-frame-row > div:first-child { flex-basis: 75px; }
+  .debug-frame-row canvas { width: 68px; height: 68px; }
+  .stack-grid { gap: 4px; }
+  .stack-grid canvas { width: 100%; }
+  .evaluation-summary .benchmark-grid { grid-template-columns: 1fr; }
+}

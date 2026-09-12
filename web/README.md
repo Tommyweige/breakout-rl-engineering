@@ -1,94 +1,66 @@
-# Day 28 WebGPU Inference
+# Day 29 Human vs RL Dual Breakout
 
-This directory is the same browser-side product continued from Day 27 for Issue #30.
+This is the same Browser page continued from Day 28. It now runs two independent
+`@farama/ale-wasm` Breakout environments: the Human panel receives keyboard
+input, while the RL panel preprocesses real ALE frames and sends a four-frame
+observation to the Day 21 canonical FP32 ONNX model through ONNX Runtime Web.
 
-Day 28 adds a truthful WASM/WebGPU selector, fixed-state correctness validation, a single in-flight inference scheduler, and a same-page batch=1 benchmark. It still does **not** implement fake Breakout gameplay; the Human and Agent panels remain the seam for the real ALE browser runtime in Day 29.
+The page keeps the explicit WASM / WebGPU selector. A requested WebGPU session
+must expose an actual ORT WebGPU device; initialization errors remain visible
+and are never silently relabeled as WASM.
 
-## Prerequisites
+## Local development
 
-- Node.js 20.19+ (or a newer supported Node release)
+Requirements:
+
+- Node.js 20.19+
 - npm
-- Python environment that can read the existing Day 22 NumPy fixtures
-- Cloudflare authentication only when deploying the preview
-
-## Prepare verified model + fixtures
+- Chrome with WebGPU support for the formal WebGPU smoke
+- Cloudflare authentication only when deploying the Pages preview
 
 From the repository root:
 
 ```bash
-python -m scripts.deployment.prepare_web_model
-```
-
-This must create browser assets under `web/public/` from the checked Day 22 FP32 ONNX and fixed fixtures. Do not manually replace the ONNX file with another checkpoint.
-
-## Install and run
-
-```bash
 cd web
-npm install
+npm ci
 npm run typecheck
 npm test
 npm run build
 npm run dev
 ```
 
-Open the local Vite URL and choose **WASM / CPU baseline** or **WebGPU / GPU** in the Agent Panel, then click **Load + Validate selected backend**.
+The `predev` and `prebuild` hooks copy the pinned ALE WASM/data assets from
+`@farama/ale-wasm@0.12.0` and copy the canonical
+`configs/eval/breakout_contract_v2.json` into the same-origin public tree.
+The generated browser assets are intentionally not committed; the package
+lockfile and preparation script are the reproducible source.
 
-A PASS is allowed only after the real `onnxruntime-web` session has loaded the packaged FP32 ONNX with the explicitly requested execution provider and executed all fixed fixtures. A WebGPU failure is shown as unavailable/error; it is never relabeled as WASM.
+## Browser capture and evaluation
 
-Click **Run WASM / WebGPU benchmark** to execute the full 60-state validation for both providers and measure 100 batch=1 samples per provider after 10 warm-ups. Timing starts from a prepared `Float32Array` and excludes session initialization.
-
-For repeatable responsive UI checks, run the Playwright visual QA matrix against localhost (or pass a deployed `--url`):
-
-```bash
-npm run qa:visual -- --output-dir ../.qa-redesign
-```
-
-The check covers 1440, 1280, 768, 390 and 375 pixel viewports, shared controls, keyboard input, the backend selector, the explicit no-gameplay seam, and the real WASM regression gate. It launches the installed Chrome channel without WebGPU-specific flags. The formal Day 28 evidence capture additionally requires a real WebGPU adapter and a successful `executionProviders: ['webgpu']` session.
-
-## Day 28 evidence to generate locally
-
-The implementation agent must generate real evidence rather than committing placeholders:
-
-- `assets/day28/webgpu-validation.json`
-- `assets/day28/web-benchmark.json`
-- `assets/day28/dual-panel-webgpu.png`
-- `assets/day28/webgpu-validation.png`
-- `assets/day28/wasm-vs-webgpu-latency.png`
-- `reports/day28-webgpu-inference.md`
-- `docs/day28-webgpu-inference.md`
-
-Run the real Browser capture from `web/` with a local or Pages URL:
+The repeatable capture flow validates both providers, starts the same-page
+Human + RL product, waits for a WebGPU episode to finish, captures the real
+gameplay and preprocessing canvases, then runs the fixed 30-seed Browser policy
+evaluation for WASM and WebGPU:
 
 ```bash
-npm run capture:day28 -- --url https://<preview>.breakout-rl-browser.pages.dev/
+npm run capture:day29 -- --url https://<preview>.breakout-rl-browser.pages.dev/
 ```
 
-The WebGPU validation artifact should record at least:
+The capture requires `actualBackend=webgpu` for the formal smoke and records
+the model SHA256, Chrome version, ORT Web version, Contract v2 parity status,
+validation artifacts, per-episode raw return/length/game-over/error fields,
+and preprocessing/inference/total decision timing.
 
-- ORT Web version
-- browser name/version
-- platform and user agent
-- requested backend = WebGPU
-- actual backend = WebGPU
-- WebGPU adapter support and secure-context status
-- fixed sample count
-- max / mean Q-value error
-- action agreement
-- Q-margin diagnostics
-- disagreement indices
-- model SHA256 from `web-model-manifest.json`
-- preview URL when available
+## Pages preview
 
-The benchmark artifact retains raw latency samples, P50/P95/mean/std, warm-up count, timing scope, both actual backends, and the embedded WASM/WebGPU validation summaries.
+Build and deploy to the existing `breakout-rl-browser` project:
 
-## Preview deployment
+```bash
+npm run build
+npx wrangler pages deploy dist --project-name breakout-rl-browser --branch day29-human-vs-rl
+npm run capture:day29 -- --url https://day29-human-vs-rl.breakout-rl-browser.pages.dev/
+```
 
-After a production build succeeds, deploy `web/dist` to the existing `breakout-rl-browser` Cloudflare Pages project and verify the deployed URL can load:
-
-- ONNX model
-- ORT Web WASM runtime assets
-- fixed fixtures
-- a real WebGPU session when the formal capture browser supports it
-
-Localhost-only validation is not the Day 28 Definition of Done.
+Cloudflare Pages is static hosting only. The Browser loads the model, ORT Web
+assets, ALE WASM runtime and preloaded Breakout ROM locally; no Python or GPU
+inference server is involved.

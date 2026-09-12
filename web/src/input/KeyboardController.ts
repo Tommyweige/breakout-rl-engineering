@@ -1,4 +1,5 @@
 export type HumanInput = 'LEFT' | 'RIGHT' | 'FIRE';
+import type { ActionMeaning } from '../inference/types';
 
 export class KeyboardController {
   private readonly pressed = new Set<HumanInput>();
@@ -18,10 +19,15 @@ export class KeyboardController {
     this.pressed.delete(input);
   };
 
+  private readonly onBlur = (): void => {
+    this.pressed.clear();
+  };
+
   attach(target: Window = window): void {
     if (this.attached) return;
     target.addEventListener('keydown', this.onKeyDown);
     target.addEventListener('keyup', this.onKeyUp);
+    target.addEventListener('blur', this.onBlur);
     this.attached = true;
   }
 
@@ -29,12 +35,24 @@ export class KeyboardController {
     if (!this.attached) return;
     target.removeEventListener('keydown', this.onKeyDown);
     target.removeEventListener('keyup', this.onKeyUp);
+    target.removeEventListener('blur', this.onBlur);
     this.pressed.clear();
     this.attached = false;
   }
 
   snapshot(): ReadonlySet<HumanInput> {
     return new Set(this.pressed);
+  }
+
+  /** Resolve held keys once per environment decision; both arrows deliberately cancel to NOOP. */
+  currentAction(): ActionMeaning {
+    if (this.pressed.has('FIRE')) return 'FIRE';
+    const left = this.pressed.has('LEFT');
+    const right = this.pressed.has('RIGHT');
+    if (left && right) return 'NOOP';
+    if (left) return 'LEFT';
+    if (right) return 'RIGHT';
+    return 'NOOP';
   }
 
   private toInput(code: string): HumanInput | null {

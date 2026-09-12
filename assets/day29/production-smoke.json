@@ -1,0 +1,53 @@
+{
+  "backend": "webgpu",
+  "completedEpisode": false,
+  "state": {
+    "humanStage": "IDLE",
+    "agentStage": "IDLE",
+    "action": "LEFT",
+    "episodeReturn": "0",
+    "latency": "49.920 ms",
+    "backend": "WEBGPU",
+    "parity": "PARTIAL / Contract v2"
+  },
+  "productValidation": {
+    "dualCanvasCount": 2,
+    "keyboardAction": "LEFT",
+    "spaceAction": "FIRE",
+    "pauseObserved": true,
+    "pauseStatus": "paused",
+    "resumeObserved": true,
+    "resetBothObserved": true,
+    "crossOriginIsolated": true
+  },
+  "runtimeDiagnostics": {
+    "instanceId": 2,
+    "requestedEnvironment": "ALE/Breakout-v5",
+    "aleVersion": "0.12.0",
+    "rawAleFrameSkip": 1,
+    "outerActionRepeat": 4,
+    "expectedEmulatorFramesPerDecision": 4,
+    "stickyActionProbability": 0.25,
+    "noopMax": 30,
+    "resetNoopCount": 10,
+    "resetNoopSource": "native_manifest",
+    "nativeNpSeed": 4137311287,
+    "nativeAleSeed": 240527215,
+    "nativeAleSeedSource": "native_manifest",
+    "grayscaleBeforeMaxPool": true,
+    "resizeInterpolation": "cv2.INTER_AREA",
+    "fireReset": true,
+    "terminalOnLifeLoss": false,
+    "timeLimitSource": "ale.game_truncated",
+    "maxRawFramesPerEpisode": 108000,
+    "agentStepLimit": 27000,
+    "humanInstanceId": 1,
+    "agentInstanceId": 2,
+    "crossOriginIsolated": true,
+    "dualInstanceCount": 2
+  },
+  "validation": {
+    "actualBackend": "webgpu",
+    "passed": true
+  }
+}
