@@ -19,7 +19,7 @@ Day 29 做的就是這件事。
 
 現在同一個頁面裡有兩個真正的 Breakout：左邊由玩家控制，右邊由 RL Agent 自己玩。兩邊各自擁有獨立的 ALE 遊戲環境，所以球的位置、生命、分數與遊戲狀態都互不影響。
 
-[![Human 與 RL Agent 在瀏覽器裡各自執行 Breakout](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/12c969485e3d86ebd2d19122b8ea9a45a1205ede/assets/day29/browser-ai-demo.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/12c969485e3d86ebd2d19122b8ea9a45a1205ede/assets/day29/browser-ai-demo.png)
+[![Human 與 RL Agent 在瀏覽器裡各自執行 Breakout](https://github.com/Tommyweige/breakout-rl-engineering/blob/4bed546/assets/day29/browser-ai-demo.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/4bed546/assets/day29/browser-ai-demo.png)
 
 
 ## 把模型放進瀏覽器，真正困難的是「環境也要一樣」
@@ -109,7 +109,7 @@ DQN 不能只看一張 Breakout 截圖。
 
 > **Python 與 Browser 最後送進模型的像素完全一致。**
 
-[![Python 與 Browser preprocessing 的逐像素比較](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/12c969485e3d86ebd2d19122b8ea9a45a1205ede/assets/day29/preprocessing-parity-comparison.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/12c969485e3d86ebd2d19122b8ea9a45a1205ede/assets/day29/preprocessing-parity-comparison.png)
+[![Python 與 Browser preprocessing 的逐像素比較](https://github.com/Tommyweige/breakout-rl-engineering/blob/4bed546/assets/day29/preprocessing-parity-comparison.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/4bed546/assets/day29/preprocessing-parity-comparison.png)
 
 這比「Browser 看起來也有灰階畫面」更有意義，因為 DQN 真正吃進去的就是這些數字。
 
@@ -222,7 +222,7 @@ reset
 
 兩邊的 score distribution 完全一致。
 
-[![WASM 與 WebGPU 的 30 局 Breakout 分數分布](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/12c969485e3d86ebd2d19122b8ea9a45a1205ede/assets/day29/browser-policy-score-distribution.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/12c969485e3d86ebd2d19122b8ea9a45a1205ede/assets/day29/browser-policy-score-distribution.png)
+[![WASM 與 WebGPU 的 30 局 Breakout 分數分布](https://github.com/Tommyweige/breakout-rl-engineering/blob/4bed546/assets/day29/browser-policy-score-distribution.png?raw=1)](https://github.com/Tommyweige/breakout-rl-engineering/blob/4bed546/assets/day29/browser-policy-score-distribution.png)
 
 這裡得到的結論很清楚：
 
