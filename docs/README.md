@@ -45,7 +45,7 @@
 ## Phase 5 — Browser deployment and final product
 
 - Day 27 — [ONNX Runtime Web](day27-onnx-runtime-web.md)
-- Day 28 — [WebGPU browser inference](day28-webgpu-browser-inference.md)
+- Day 28 — [WebGPU browser inference](day28-webgpu-inference.md)
 - Day 29 — [Human vs RL dual Breakout browser demo](day29-interactive-browser-demo.md)
 - Day 30 — [From trained policy to a playable Browser product](day30-final-evaluation-and-engineering-review.md)
 
