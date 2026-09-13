@@ -51,6 +51,11 @@ export interface PolicyResult {
   action: ActionMeaning;
   requestedBackend: InferenceBackend;
   actualBackend: InferenceBackend;
+  /** Optional gameplay-only metadata; formal evaluation remains greedy and unchanged. */
+  difficulty?: string;
+  mistakeRate?: number;
+  greedyActionIndex?: number;
+  mistakeInjected?: boolean;
 }
 
 export interface QMarginDiagnostics {

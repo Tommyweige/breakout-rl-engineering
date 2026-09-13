@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "artifactType": "issue69_mouse_relative_qa",
+  "timestamp": "2026-09-10T09:13:31.797Z",
+  "url": "https://breakout.tommypan.dev/",
+  "pointerLockSupported": true,
+  "pointerLockActive": true,
+  "pointerLockReleasedByEscape": true,
+  "threshold": 1,
+  "stationaryDurationMs": 3173,
+  "stationaryDecisionCount": 57,
+  "stationaryMovementX": 0,
+  "stationaryAction": "NOOP",
+  "noopTransitionMs": 83.17999999970198,
+  "oscillationObserved": false,
+  "rapidReversalPassed": true,
+  "modeSwitchPassed": true,
+  "pauseClearPassed": true,
+  "restartClearPassed": true,
+  "rightSample": {
+    "decision": 2,
+    "timestampMs": 3509.4799999967217,
+    "action": "RIGHT",
+    "movementX": 699,
+    "intent": "RIGHT"
+  },
+  "leftSample": {
+    "decision": 4,
+    "timestampMs": 3664.4499999955297,
+    "action": "LEFT",
+    "movementX": -800,
+    "intent": "LEFT"
+  },
+  "rapidRight": {
+    "decision": 5,
+    "timestampMs": 3729.634999997914,
+    "action": "RIGHT",
+    "movementX": 850,
+    "intent": "RIGHT"
+  },
+  "rapidLeft": {
+    "decision": 6,
+    "timestampMs": 3787.2699999958277,
+    "action": "LEFT",
+    "movementX": -900,
+    "intent": "LEFT"
+  },
+  "consoleErrors": [],
+  "pageErrors": [],
+  "requestFailures": [],
+  "badResponses": []
+}

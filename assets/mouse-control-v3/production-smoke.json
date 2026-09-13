@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "artifactType": "issue70_production_smoke",
+  "timestamp": "2026-09-11T08:03:25.553Z",
+  "url": "https://breakout.tommypan.dev/",
+  "customDomain": true,
+  "runs": [
+    {
+      "mode": "webgpu-preferred",
+      "url": "https://breakout.tommypan.dev/",
+      "layout": {
+        "viewportHeight": 768,
+        "documentHeight": 768,
+        "viewportWidth": 1366,
+        "documentWidth": 1366,
+        "canvasCount": 2,
+        "technicalDetailsPresent": false
+      },
+      "actualBackend": "WEBGPU",
+      "crossOriginIsolated": true,
+      "dualInstanceCount": 2,
+      "pointerLockUsed": false,
+      "systemCursorVisible": true,
+      "stationarySampleCount": 79,
+      "stationaryDirectionalActionCount": 1,
+      "leftRightReversalCount": 0,
+      "stationaryNoop": true,
+      "oscillationObserved": false,
+      "targetChangeResponsePassed": true,
+      "modeSwitchPassed": true,
+      "pauseClearPassed": true,
+      "restartClearPassed": true,
+      "screenshots": {
+        "production": "assets/mouse-control-v3/production-mouse-v3.png"
+      },
+      "diagnostics": {
+        "production": {
+          "consoleErrors": [],
+          "pageErrors": [],
+          "requestFailures": [],
+          "badResponses": []
+        },
+        "debug": {
+          "consoleErrors": [],
+          "pageErrors": [],
+          "requestFailures": [],
+          "badResponses": []
+        }
+      }
+    },
+    {
+      "mode": "wasm-fallback",
+      "url": "https://breakout.tommypan.dev/",
+      "layout": {
+        "viewportHeight": 768,
+        "documentHeight": 768,
+        "viewportWidth": 1366,
+        "documentWidth": 1366,
+        "canvasCount": 2,
+        "technicalDetailsPresent": false
+      },
+      "actualBackend": "WASM",
+      "crossOriginIsolated": true,
+      "dualInstanceCount": 2,
+      "pointerLockUsed": false,
+      "systemCursorVisible": true,
+      "stationarySampleCount": 76,
+      "stationaryDirectionalActionCount": 0,
+      "leftRightReversalCount": 0,
+      "stationaryNoop": true,
+      "oscillationObserved": false,
+      "targetChangeResponsePassed": true,
+      "modeSwitchPassed": true,
+      "pauseClearPassed": true,
+      "restartClearPassed": true,
+      "screenshots": {
+        "production": "assets/mouse-control-v3/production-mouse-v3-wasm-fallback.png"
+      },
+      "diagnostics": {
+        "production": {
+          "consoleErrors": [],
+          "pageErrors": [],
+          "requestFailures": [],
+          "badResponses": []
+        },
+        "debug": {
+          "consoleErrors": [],
+          "pageErrors": [],
+          "requestFailures": [],
+          "badResponses": []
+        }
+      }
+    }
+  ],
+  "screenshots": {
+    "production": "assets/mouse-control-v3/production-mouse-v3.png",
+    "wasmFallback": "assets/mouse-control-v3/production-mouse-v3-wasm-fallback.png"
+  }
+}

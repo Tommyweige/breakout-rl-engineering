@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "artifactType": "issue70_production_smoke",
+  "timestamp": "2026-09-11T07:20:22.686Z",
+  "url": "http://127.0.0.1:5173/",
+  "customDomain": false,
+  "runs": [
+    {
+      "mode": "webgpu-preferred",
+      "url": "http://127.0.0.1:5173/",
+      "layout": {
+        "viewportHeight": 768,
+        "documentHeight": 768,
+        "viewportWidth": 1366,
+        "documentWidth": 1366,
+        "canvasCount": 2,
+        "technicalDetailsPresent": false
+      },
+      "actualBackend": "WEBGPU",
+      "crossOriginIsolated": false,
+      "dualInstanceCount": 2,
+      "pointerLockUsed": false,
+      "systemCursorVisible": true,
+      "stationarySampleCount": 66,
+      "stationaryDirectionalActionCount": 5,
+      "leftRightReversalCount": 1,
+      "stationaryNoop": true,
+      "oscillationObserved": false,
+      "targetChangeResponsePassed": true,
+      "modeSwitchPassed": true,
+      "pauseClearPassed": true,
+      "restartClearPassed": true,
+      "screenshots": {
+        "production": "assets/mouse-control-v3/repro-correction/production-mouse-v3.png"
+      },
+      "diagnostics": {
+        "production": {
+          "consoleErrors": [],
+          "pageErrors": [],
+          "requestFailures": [],
+          "badResponses": []
+        },
+        "debug": {
+          "consoleErrors": [],
+          "pageErrors": [],
+          "requestFailures": [],
+          "badResponses": []
+        }
+      }
+    },
+    {
+      "mode": "wasm-fallback",
+      "url": "http://127.0.0.1:5173/",
+      "layout": {
+        "viewportHeight": 768,
+        "documentHeight": 768,
+        "viewportWidth": 1366,
+        "documentWidth": 1366,
+        "canvasCount": 2,
+        "technicalDetailsPresent": false
+      },
+      "actualBackend": "WASM",
+      "crossOriginIsolated": false,
+      "dualInstanceCount": 2,
+      "pointerLockUsed": false,
+      "systemCursorVisible": true,
+      "stationarySampleCount": 62,
+      "stationaryDirectionalActionCount": 2,
+      "leftRightReversalCount": 1,
+      "stationaryNoop": true,
+      "oscillationObserved": false,
+      "targetChangeResponsePassed": true,
+      "modeSwitchPassed": true,
+      "pauseClearPassed": true,
+      "restartClearPassed": true,
+      "screenshots": {
+        "production": "assets/mouse-control-v3/repro-correction/production-mouse-v3-wasm-fallback.png"
+      },
+      "diagnostics": {
+        "production": {
+          "consoleErrors": [],
+          "pageErrors": [],
+          "requestFailures": [],
+          "badResponses": []
+        },
+        "debug": {
+          "consoleErrors": [],
+          "pageErrors": [],
+          "requestFailures": [],
+          "badResponses": []
+        }
+      }
+    }
+  ],
+  "screenshots": {
+    "production": "assets/mouse-control-v3/repro-correction/production-mouse-v3.png",
+    "wasmFallback": "assets/mouse-control-v3/repro-correction/production-mouse-v3-wasm-fallback.png"
+  }
+}

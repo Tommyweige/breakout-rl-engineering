@@ -4,8 +4,10 @@ import type { ActionMeaning } from '../inference/types';
 export class KeyboardController {
   private readonly pressed = new Set<HumanInput>();
   private attached = false;
+  private enabled = true;
 
   private readonly onKeyDown = (event: KeyboardEvent): void => {
+    if (!this.enabled) return;
     const input = this.toInput(event.code);
     if (!input) return;
     event.preventDefault();
@@ -13,6 +15,7 @@ export class KeyboardController {
   };
 
   private readonly onKeyUp = (event: KeyboardEvent): void => {
+    if (!this.enabled) return;
     const input = this.toInput(event.code);
     if (!input) return;
     event.preventDefault();
@@ -40,12 +43,22 @@ export class KeyboardController {
     this.attached = false;
   }
 
+  setEnabled(enabled: boolean): void {
+    this.enabled = enabled;
+    if (!enabled) this.pressed.clear();
+  }
+
+  clear(): void {
+    this.pressed.clear();
+  }
+
   snapshot(): ReadonlySet<HumanInput> {
     return new Set(this.pressed);
   }
 
   /** Resolve held keys once per environment decision; both arrows deliberately cancel to NOOP. */
   currentAction(): ActionMeaning {
+    if (!this.enabled) return 'NOOP';
     if (this.pressed.has('FIRE')) return 'FIRE';
     const left = this.pressed.has('LEFT');
     const right = this.pressed.has('RIGHT');

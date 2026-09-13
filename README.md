@@ -1,5 +1,13 @@
 # Breakout RL Engineering 
 
+## Human vs AI Breakout
+
+[![Human and RL Breakout running side by side](assets/day30/final-human-vs-rl.png)](https://breakout.tommypan.dev)
+
+**Play:** [breakout.tommypan.dev](https://breakout.tommypan.dev)
+
+左邊由你自己玩，右邊是訓練好的 RL Agent；兩個 ALE 遊戲與推論都在你的瀏覽器裡執行，不需要安裝 Python，也不需要連到 GPU server。
+
 
 ---
 

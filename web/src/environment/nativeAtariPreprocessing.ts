@@ -16,8 +16,8 @@ export const NATIVE_ATARI_PREPROCESSING = {
 } as const;
 
 export interface NativeNoopResetManifest {
-  schema_version: 2;
-  artifact_type: 'day29_native_noop_reset_manifest';
+  schema_version: 2 | 3;
+  artifact_type: 'day29_native_noop_reset_manifest' | 'day30_native_noop_reset_manifest';
   source: string;
   noop_max: 30;
   seeds: Record<string, {

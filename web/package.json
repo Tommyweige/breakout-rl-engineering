@@ -22,6 +22,16 @@
     "capture:day29:overlap": "node scripts/capture-day29-overlap-evaluation.mjs",
     "capture:day29:preprocessing": "node scripts/capture-day29-preprocessing-parity.mjs",
     "capture:day29:production": "node scripts/capture-day29-production-screenshots.mjs",
+    "capture:day30": "node scripts/capture-day30-evidence.mjs",
+    "capture:day30:increment": "node scripts/capture-day30-increment.mjs",
+    "capture:day30:parallel-increment": "node scripts/capture-day30-parallel-increment.mjs",
+    "capture:day30:ui": "node scripts/capture-day30-ui-screenshots.mjs",
+    "smoke:day30": "node scripts/smoke-day30.mjs",
+    "qa:day30": "node scripts/visual-qa-day30.mjs",
+    "capture:gameplay-ux": "node scripts/capture-gameplay-ux-evidence.mjs",
+    "capture:mouse-v2": "node scripts/capture-mouse-control-v2-evidence.mjs",
+    "capture:mouse-v3": "node scripts/capture-mouse-control-v3-evidence.mjs",
+    "capture:human-runtime": "node scripts/capture-human-interactive-runtime.mjs",
     "qa:visual": "node scripts/visual-qa-redesign.mjs"
   },
   "dependencies": {

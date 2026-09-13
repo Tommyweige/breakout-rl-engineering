@@ -1,30 +1,23 @@
 import { ACTION_MEANINGS, type ActionMeaning, type FixtureValidationResult } from '../inference/types';
 
-export function renderAppShell(): string {
-  return [renderMasthead(), renderCommandDeck(), renderPanelGrid(), renderEvidence(), renderFooter()].join('');
+export function renderAppShell(debug = false): string {
+  return [
+    renderMasthead(),
+    renderCommandDeck(),
+    renderPanelGrid(),
+    debug ? renderTechnicalDetails() : '',
+    renderFooter(),
+  ].join('');
 }
 
 function renderMasthead(): string {
   return `
-    <header class="masthead">
-      <div class="brand-line">
-        <div class="brand-lockup"><span class="brand-mark">BRK / 29</span><span class="brand-name">Human vs RL / ALE Browser</span></div>
-        <span class="brand-note">client-side dual environment</span>
-      </div>
+    <header class="site-header">
       <div class="hero">
         <div class="hero-copy">
-          <h1>Two games.<br><em>One policy.</em></h1>
-          <p class="subtitle">同一個 Browser 頁面同時執行兩個真正的 ALE Breakout：左側由鍵盤控制，右側把 Day 21 Final Model 經過 ONNX Runtime Web 推論後交回 Atari 2600 emulator。</p>
+          <h1>BREAKOUT</h1>
         </div>
-        <div class="hero-facts" aria-label="runtime brief">
-          <div><span>ENVIRONMENT</span><strong>ALE / Breakout-v5</strong></div>
-          <div><span>MODEL</span><strong>Day 21 FP32 ONNX</strong></div>
-          <div><span>RUNTIME</span><strong>ALE WASM / ORT Web</strong></div>
-        </div>
-      </div>
-      <div class="masthead-foot">
-        <span>DAY 29 / HUMAN VS RL DUAL BREAKOUT</span>
-        <div class="runtime-badge" data-role="runtime-status" data-status="idle"><span class="status-dot"></span><span data-role="runtime-status-label">idle</span></div>
+        <p class="subtitle">YOU vs AI</p>
       </div>
     </header>
   `;
@@ -32,20 +25,23 @@ function renderMasthead(): string {
 
 function renderCommandDeck(): string {
   return `
-    <section class="command-deck" aria-label="shared controls">
-      <div class="deck-label"><span class="deck-index">01</span><div><strong>Shared controls</strong><small>One clock. Two independent ALE states.</small></div></div>
-      <div class="controls">
-        <button data-action="validate" type="button" class="secondary"><span class="button-key" aria-hidden="true">↳</span>Validate backend</button>
-        <button data-action="benchmark" type="button"><span class="button-key" aria-hidden="true">◫</span>Backend benchmark</button>
-        <button data-action="evaluate" type="button"><span class="button-key" aria-hidden="true">◎</span>Run 30-episode evaluation</button>
-        <button data-action="start" type="button" class="primary"><span class="button-key" aria-hidden="true">↗</span>Start Both</button>
-        <button data-action="pause" type="button"><span class="button-key" aria-hidden="true">Ⅱ</span>Pause Both</button>
-        <button data-action="reset" type="button"><span class="button-key" aria-hidden="true">↺</span>Reset Both</button>
+    <section class="game-controls" aria-label="game controls">
+      <div class="control-intro">
+        <strong>READY?</strong>
+        <span data-role="user-message" role="status" aria-live="polite">Start both games whenever you are ready.</span>
       </div>
-      <div class="deck-downloads">
-        <a data-role="download-validation" class="download-link" download hidden>Download validation JSON <span>↓</span></a>
-        <a data-role="download-benchmark" class="download-link" download="web-benchmark.json" hidden>Download benchmark JSON <span>↓</span></a>
-        <a data-role="download-evaluation" class="download-link" download="browser-policy-score-comparison.json" hidden>Download score evidence <span>↓</span></a>
+      <div class="toolbar-options">
+        <label class="input-picker toolbar-picker" for="input-mode-select">Control
+          <select id="input-mode-select" data-action="input-mode" aria-label="Choose human control mode">
+            <option value="keyboard" selected>Keyboard</option>
+            <option value="mouse">Mouse</option>
+          </select>
+        </label>
+        <div class="controls">
+        <button data-action="start" type="button" class="primary">Start</button>
+        <button data-action="pause" type="button">Pause</button>
+        <button data-action="reset" type="button">Restart</button>
+        </div>
       </div>
     </section>
   `;
@@ -53,7 +49,7 @@ function renderCommandDeck(): string {
 
 function renderPanelGrid(): string {
   return `
-    <section class="panel-grid" aria-label="human and agent breakout panels">
+    <section id="play-area" class="panel-grid" aria-label="Human and AI Breakout games">
       ${renderHumanPanel()}
       ${renderAgentPanel()}
     </section>
@@ -62,126 +58,177 @@ function renderPanelGrid(): string {
 
 function renderHumanPanel(): string {
   return `
-    <article class="panel panel-human" aria-labelledby="human-title">
+    <article class="game-card panel panel-human" aria-labelledby="human-title">
       <div class="panel-heading">
         <div>
-          <p class="panel-kicker"><span class="panel-index">02</span> YOU / HUMAN</p>
-          <h2 id="human-title">Human Panel</h2>
+          <p class="panel-kicker"><span class="panel-index">YOU</span></p>
+          <h2 id="human-title">YOU</h2>
         </div>
-        <span class="status-chip status-chip-muted" data-role="human-state">waiting</span>
+        <span class="status-chip status-chip-muted" data-role="human-state">Ready</span>
       </div>
-      <div class="game-stage human-game-stage">
-        <div class="stage-topline"><span>ALE / HUMAN_01</span><span class="stage-state" data-role="human-stage-state">READY</span></div>
-        <canvas data-role="human-canvas" width="160" height="210" aria-label="Human Breakout game canvas"></canvas>
-      </div>
-      <dl class="game-facts human-facts">
-        <div><dt>Score / return</dt><dd data-role="human-score">0</dd></div>
+      <dl class="score-row score-row-top" aria-label="Your score and lives">
+        <div><dt>Score</dt><dd data-role="human-score">0</dd></div>
         <div><dt>Lives</dt><dd data-role="human-lives">—</dd></div>
-        <div><dt>Frame / step</dt><dd data-role="human-frame">0 / 0</dd></div>
-        <div><dt>Action</dt><dd data-role="human-action">NOOP</dd></div>
       </dl>
-      <div class="key-grid" aria-label="keyboard controls">
-        <div class="key-card"><kbd>←</kbd><span>ArrowLeft</span></div>
-        <div class="key-card"><kbd>→</kbd><span>ArrowRight</span></div>
-        <div class="key-card key-card-wide"><kbd>SPACE</kbd><span>FIRE / serve</span></div>
+      <div class="game-stage human-game-stage">
+        <div class="stage-topline"><span>PLAYER 01</span><span class="stage-state" data-role="human-stage-state">READY</span></div>
+        <canvas data-role="human-canvas" width="160" height="210" aria-label="Your Breakout game canvas"></canvas>
+        <span class="mouse-target-marker" data-role="mouse-target-marker" aria-hidden="true" hidden></span>
       </div>
-      <div class="live-line"><span>LIVE INPUT</span><strong data-role="human-input">none</strong></div>
+      <div class="input-status">
+        <strong data-role="human-input-mode">Keyboard</strong>
+        <span class="input-hint" data-role="input-hint">← / → move · Space serves</span>
+        <div class="live-line"><span>INPUT</span><strong data-role="human-input">none</strong></div>
+      </div>
     </article>
   `;
 }
 
 function renderAgentPanel(): string {
   return `
-    <article class="panel panel-agent" aria-labelledby="agent-title">
+    <article class="game-card panel panel-agent" aria-labelledby="agent-title">
       <div class="panel-heading">
         <div>
-          <p class="panel-kicker"><span class="panel-index">03</span> RL AGENT</p>
-          <h2 id="agent-title">Agent Panel</h2>
+          <p class="panel-kicker"><span class="panel-index">AI</span></p>
+          <h2 id="agent-title">AI</h2>
         </div>
-        <div class="panel-actions">
-          <label class="backend-picker" for="backend-select"><span>AGENT BACKEND</span><select id="backend-select" data-action="backend" aria-label="Agent inference backend"><option value="wasm" selected>WASM / CPU baseline</option><option value="webgpu">WebGPU / GPU</option></select></label>
-          <span class="status-chip" data-role="validation-status">Not validated</span>
+        <div class="panel-heading-tools">
+          <label class="difficulty-picker" for="difficulty-select">AI Difficulty
+            <select id="difficulty-select" data-action="difficulty" aria-label="Choose AI difficulty">
+              <option value="easy">Easy</option>
+              <option value="medium">Medium</option>
+              <option value="hard" selected>Hard</option>
+              <option value="unbeatable">Unbeatable</option>
+            </select>
+          </label>
+          <span class="status-chip" data-role="agent-state">Ready</span>
         </div>
       </div>
-      <div class="game-stage agent-game-stage">
-        <div class="stage-topline"><span>ALE / RL_AGENT_01</span><span class="stage-state" data-role="agent-stage-state">READY</span></div>
-        <canvas data-role="agent-canvas" width="160" height="210" aria-label="RL Agent Breakout game canvas"></canvas>
-        <div class="agent-overlay"><span>ACTUAL BACKEND</span><strong data-role="gameplay-backend">—</strong></div>
-      </div>
-      <div class="agent-banner">
-        <div><span class="banner-label">MODEL CHANNEL</span><strong>DAY 21 FINAL MODEL / FP32 ONNX</strong></div>
-        <span class="banner-mark">ORT</span>
-      </div>
-      <dl class="facts compact-facts">
-        <div><dt>Model</dt><dd data-role="model-loaded">not loaded</dd></div>
-        <div><dt>Requested / actual</dt><dd><span data-role="requested-backend">WASM</span><span class="fact-slash">/</span><span data-role="actual-backend">—</span></dd></div>
-        <div><dt>WebGPU support</dt><dd data-role="webgpu-support" data-status="checking">checking…</dd></div>
-        <div><dt>ORT Web</dt><dd data-role="ort-version">—</dd></div>
-        <div><dt>Browser / platform</dt><dd data-role="browser-info">—</dd></div>
-        <div><dt>Environment parity</dt><dd data-role="environment-parity">—</dd></div>
-        <div><dt>Current action</dt><dd data-role="current-action">NOOP</dd></div>
-        <div><dt>Episode return</dt><dd data-role="episode-return">0</dd></div>
-        <div><dt>Inference latency</dt><dd data-role="inference-latency">—</dd></div>
-        <div><dt>Frame / step</dt><dd data-role="agent-frame">0 / 0</dd></div>
-        <div><dt>Auto-FIRE</dt><dd data-role="auto-fire">0</dd></div>
-        <div><dt>Action mapping</dt><dd data-role="action-mapping">0/1/2/3 → 0/1/3/4</dd></div>
-        <div><dt>Backend evidence</dt><dd data-role="backend-evidence">—</dd></div>
-        <div><dt>Action agreement</dt><dd data-role="action-agreement">—</dd></div>
-        <div><dt>Max / mean Q error</dt><dd><span data-role="max-error">—</span><span class="fact-slash">/</span><span data-role="mean-error">—</span></dd></div>
-        <div><dt>Q-margin min / mean</dt><dd data-role="q-margin">—</dd></div>
-        <div><dt>Max margin error</dt><dd data-role="margin-error">—</dd></div>
-        <div><dt>Disagreements</dt><dd data-role="disagreements">—</dd></div>
-        <div><dt>Inference scheduler</dt><dd data-role="scheduler-status">idle</dd></div>
-        <div><dt>Evidence artifact / page</dt><dd><span data-role="evidence-artifact">—</span><span class="fact-slash">/</span><span data-role="evidence-page">—</span></dd></div>
+      <dl class="score-row score-row-top" aria-label="AI score and lives">
+        <div><dt>Score</dt><dd data-role="agent-score">0</dd></div>
+        <div><dt>Lives</dt><dd data-role="agent-lives">—</dd></div>
       </dl>
-      <div class="q-values gameplay-q-values" data-role="gameplay-q-values" aria-label="current agent Q-values">
-        <p class="muted">Q-values appear after the first real agent decision.</p>
+      <div class="game-stage agent-game-stage">
+        <div class="stage-topline"><span>AI</span><span class="stage-state" data-role="agent-stage-state">READY</span></div>
+        <canvas data-role="agent-canvas" width="160" height="210" aria-label="AI Breakout game canvas"></canvas>
       </div>
-      <div class="preprocess-debug" data-role="preprocess-debug">
-        <div class="debug-heading"><span>MODEL INPUT / PREPROCESSING</span><strong data-role="preprocess-shape">uint8 (4, 84, 84) → float32 / 255</strong></div>
-        <div class="debug-frame-row">
-          <div><canvas data-role="preprocess-frame" width="84" height="84" aria-label="Latest processed grayscale frame"></canvas><span>latest 84×84</span></div>
-          <div class="stack-grid" aria-label="four-frame stack">
-            ${[0, 1, 2, 3].map((index) => `<div><canvas data-stack-index="${index}" width="84" height="84" aria-label="Frame stack ${index + 1}"></canvas><span>t-${3 - index}</span></div>`).join('')}
-          </div>
-        </div>
+      <div class="agent-copy">
+        <span class="agent-signal" aria-hidden="true"></span>
+        <p><strong data-role="ai-difficulty-label">HARD</strong><br>AI is playing automatically.</p>
       </div>
-      <p class="model-hash">Model SHA256: <code data-role="model-sha">—</code></p>
     </article>
   `;
 }
 
-function renderEvidence(): string {
+function renderTechnicalDetails(): string {
   return `
-    <section class="evidence-card" aria-live="polite">
-      <div class="evidence-heading">
-        <div>
-          <p class="panel-kicker"><span class="panel-index">04</span> RUNTIME EVIDENCE</p>
-          <h2>Validation / evaluation</h2>
-        </div>
-        <div class="evidence-count"><span data-role="sample-count">0 samples</span><span class="count-label">fixed states</span></div>
+    <details class="technical-details" data-role="technical-details">
+      <summary><span>Technical details</span><small>Validation, backend evidence, and raw evaluation</small></summary>
+      <div class="technical-content">
+        <section class="technical-controls" aria-label="technical controls">
+          <div class="technical-controls-copy">
+            <p class="eyebrow">ENGINEERING WORKBENCH</p>
+            <h2>Keep the evidence close, not in the way.</h2>
+            <p data-role="validation-message">尚未執行。這裡的驗證會對真實 Browser inference 使用明確的 execution provider。</p>
+          </div>
+          <div class="technical-actions">
+            <label class="backend-picker" for="backend-select">Formal backend
+              <select id="backend-select" data-action="backend" aria-label="Formal evaluation backend">
+                <option value="wasm" selected>WASM / CPU</option>
+                <option value="webgpu">WebGPU / GPU</option>
+              </select>
+            </label>
+            <div class="technical-button-row">
+              <button data-action="validate" type="button" class="secondary">Validate</button>
+              <button data-action="benchmark" type="button" class="secondary">Benchmark</button>
+              <button data-action="evaluate" type="button" class="secondary">Run 50 episodes</button>
+            </div>
+            <div class="deck-downloads">
+              <a data-role="download-validation" class="download-link" download hidden>Download validation JSON <span>↓</span></a>
+              <a data-role="download-benchmark" class="download-link" download="web-benchmark.json" hidden>Download benchmark JSON <span>↓</span></a>
+              <a data-role="download-evaluation" class="download-link" download="final-browser-policy-evaluation.json" hidden>Download score evidence <span>↓</span></a>
+            </div>
+          </div>
+        </section>
+        <section class="technical-evidence" aria-label="runtime evidence">
+          <div class="technical-heading"><div><p class="eyebrow">RUNTIME EVIDENCE</p><h2>What the browser actually ran</h2></div><div class="technical-heading-status"><span class="runtime-badge" data-role="runtime-status" data-status="idle"><span class="status-dot"></span><span data-role="runtime-status-label">ready</span></span><span class="status-chip" data-role="validation-status">Not validated</span></div></div>
+          <div class="technical-facts">
+            <div><span>Model</span><strong data-role="model-loaded">not loaded</strong></div>
+            <div><span>Requested / actual</span><strong><span data-role="requested-backend">WASM</span><span class="fact-slash">/</span><span data-role="actual-backend">—</span></strong></div>
+            <div><span>WebGPU support</span><strong data-role="webgpu-support" data-status="checking">checking…</strong></div>
+            <div><span>ORT Web</span><strong data-role="ort-version">—</strong></div>
+            <div><span>Browser / platform</span><strong data-role="browser-info">—</strong></div>
+            <div><span>Environment parity</span><strong data-role="environment-parity">—</strong></div>
+            <div><span>Gameplay backend</span><strong data-role="gameplay-backend">—</strong></div>
+            <div><span>Scheduler</span><strong data-role="scheduler-status">idle</strong></div>
+            <div><span>Current action</span><strong data-role="current-action">NOOP</strong></div>
+            <div><span>Cursor target X</span><strong data-role="cursor-target-x">—</strong></div>
+            <div><span>Paddle center X</span><strong data-role="paddle-center-x">—</strong></div>
+            <div><span>Motion state</span><strong data-role="motion-state">STOPPED</strong></div>
+            <div><span>Position error</span><strong data-role="position-error">—</strong></div>
+            <div><span>Mouse dead zone</span><strong data-role="mouse-deadzone-raw-px">6</strong><small>Atari px</small></div>
+            <div><span>Dead zone normalized</span><strong data-role="start-threshold">0.03750</strong></div>
+            <div><span>Dead zone normalized</span><strong data-role="stop-threshold">0.03750</strong></div>
+            <div><span>Human requested</span><strong data-role="human-requested-action">NOOP</strong></div>
+            <div><span>Human executed</span><strong data-role="human-executed-action">NOOP</strong></div>
+            <div><span>Human action</span><strong data-role="executed-human-action">NOOP</strong></div>
+            <div><span>Human raw FPS</span><strong data-role="human-raw-fps">0</strong></div>
+            <div><span>Human tick count</span><strong data-role="human-tick-count">0</strong></div>
+            <div><span>Human late / dropped</span><strong><span data-role="human-late-ticks">0</span><span class="fact-slash">/</span><span data-role="human-dropped-ticks">0</span></strong></div>
+            <div><span>Human catch-up bursts</span><strong data-role="human-catch-up-bursts">0</strong></div>
+            <div><span>Human tick P50 / P95</span><strong data-role="human-tick-p50-p95">0 / 0 ms</strong></div>
+            <div><span>Human response latency</span><strong data-role="human-response-latency">—</strong></div>
+            <div><span>Human frame repeat / sticky</span><strong><span data-role="human-frame-repeat">1</span><span class="fact-slash">/</span><span data-role="human-sticky">0</span></strong></div>
+            <div><span>Agent decisions / sec</span><strong data-role="agent-decision-rate">0</strong></div>
+            <div><span>Agent decision count</span><strong data-role="agent-decision-count">0</strong></div>
+            <div><span>Agent decision P50 / P95</span><strong data-role="agent-decision-p50-p95">0 / 0 ms</strong></div>
+            <div><span>Agent raw frame delta</span><strong data-role="agent-raw-frame-delta">0</strong></div>
+            <div><span>Difficulty</span><strong data-role="debug-difficulty">HARD</strong></div>
+            <div><span>Mistake rate</span><strong data-role="difficulty-rate">0%</strong></div>
+            <div><span>Greedy action</span><strong data-role="greedy-action">NOOP</strong></div>
+            <div><span>Mistake injected</span><strong data-role="mistake-injected">no</strong></div>
+            <div><span>Episode return</span><strong data-role="episode-return">0</strong></div>
+            <div><span>Inference latency</span><strong data-role="inference-latency">—</strong></div>
+            <div><span>Frame / step</span><strong data-role="agent-frame">0 / 0</strong></div>
+            <div><span>Auto-FIRE</span><strong data-role="auto-fire">0</strong></div>
+            <div><span>Backend evidence</span><strong data-role="backend-evidence">—</strong></div>
+            <div><span>Action agreement</span><strong data-role="action-agreement">—</strong></div>
+            <div><span>Max / mean Q error</span><strong><span data-role="max-error">—</span><span class="fact-slash">/</span><span data-role="mean-error">—</span></strong></div>
+            <div><span>Q-margin min / mean</span><strong data-role="q-margin">—</strong></div>
+            <div><span>Max margin error</span><strong data-role="margin-error">—</strong></div>
+            <div><span>Disagreements</span><strong data-role="disagreements">—</strong></div>
+            <div><span>Evidence artifact / page</span><strong><span data-role="evidence-artifact">—</span><span class="fact-slash">/</span><span data-role="evidence-page">—</span></strong></div>
+            <div><span>Fixed samples</span><strong data-role="sample-count">0 samples</strong></div>
+          </div>
+          <div class="q-values gameplay-q-values" data-role="gameplay-q-values" aria-label="current agent Q-values"><p class="muted">Q-values appear after the first real agent decision.</p></div>
+          <div class="preprocess-debug" data-role="preprocess-debug">
+            <div class="debug-heading"><span>MODEL INPUT / PREPROCESSING</span><strong data-role="preprocess-shape">uint8 (4, 84, 84) → float32 / 255</strong></div>
+            <div class="debug-frame-row">
+              <div><canvas data-role="preprocess-frame" width="84" height="84" aria-label="Latest processed grayscale frame"></canvas><span>latest 84×84</span></div>
+              <div class="stack-grid" aria-label="four-frame stack">
+                ${[0, 1, 2, 3].map((index) => `<div><canvas data-stack-index="${index}" width="84" height="84" aria-label="Frame stack ${index + 1}"></canvas><span>t-${3 - index}</span></div>`).join('')}
+              </div>
+            </div>
+          </div>
+          <p class="model-hash">Model SHA256: <code data-role="model-sha">—</code></p>
+        </section>
+        <section class="evidence-card" aria-live="polite">
+          <div class="evidence-heading"><div><p class="eyebrow">VALIDATION / EVALUATION</p><h2>Raw evidence</h2></div><div class="evidence-count"><span data-role="evaluation-status">idle</span><span class="count-label">status</span></div></div>
+          <div class="evidence-rule"><span>GAMEPLAY RULE</span><strong>Score is raw ALE reward; fixed-state parity and multi-episode evaluation are separate evidence.</strong></div>
+          <div class="benchmark-summary" data-role="benchmark-summary" hidden><div class="benchmark-heading"><span>BENCHMARK / BATCH=1</span><strong data-role="benchmark-status">idle</strong></div></div>
+          <div class="evaluation-summary" data-role="evaluation-summary" hidden>
+            <div class="benchmark-heading"><span>50 EPISODES / BROWSER POLICY</span><strong data-role="evaluation-result">idle</strong></div>
+            <div class="benchmark-grid"><div><span>MEAN / MEDIAN</span><strong data-role="evaluation-mean">—</strong></div><div><span>P10 / P90</span><strong data-role="evaluation-p10-p90">—</strong></div><div><span>MIN / MAX</span><strong data-role="evaluation-min-max">—</strong></div><div><span>SUCCESS / CRASH</span><strong data-role="evaluation-success">—</strong></div></div>
+            <p data-role="evaluation-message">尚未執行多局 evaluation。</p>
+          </div>
+        </section>
       </div>
-      <p data-role="validation-message">尚未執行。先驗證 selected backend，再用 Start Both 啟動兩個獨立的 ALE instance。</p>
-      <div class="evidence-rule"><span>GAMEPLAY RULE</span><strong>Score is raw ALE reward; fixed-state parity and multi-episode evaluation are separate evidence.</strong><span class="rule-mark" data-role="evaluation-status">idle</span></div>
-      <div class="benchmark-summary" data-role="benchmark-summary" hidden>
-        <div class="benchmark-heading"><span>BENCHMARK / BATCH=1</span><strong data-role="benchmark-status">idle</strong></div>
-      </div>
-      <div class="evaluation-summary" data-role="evaluation-summary" hidden>
-        <div class="benchmark-heading"><span>30 EPISODES / BROWSER POLICY</span><strong data-role="evaluation-result">idle</strong></div>
-        <div class="benchmark-grid">
-          <div><span>MEAN / MEDIAN</span><strong data-role="evaluation-mean">—</strong></div>
-          <div><span>P10 / P90</span><strong data-role="evaluation-p10-p90">—</strong></div>
-          <div><span>MIN / MAX</span><strong data-role="evaluation-min-max">—</strong></div>
-          <div><span>SUCCESS / CRASH</span><strong data-role="evaluation-success">—</strong></div>
-        </div>
-        <p data-role="evaluation-message">尚未執行多局 evaluation。</p>
-      </div>
-    </section>
+    </details>
   `;
 }
 
 function renderFooter(): string {
-  return '<footer class="page-foot"><span>BREAKOUT RL ENGINEERING</span><span>ALE WASM + ORT WEB / NO SERVER INFERENCE</span><span>DAY 29 / 2026</span></footer>';
+  return '<footer class="page-foot"><span>BREAKOUT</span></footer>';
 }
 
 export function renderQValuesMarkup(result: FixtureValidationResult): string {

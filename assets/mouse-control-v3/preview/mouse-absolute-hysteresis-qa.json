@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "artifactType": "issue70_mouse_absolute_hysteresis_qa",
+  "timestamp": "2026-09-11T06:45:16.045Z",
+  "url": "https://issue-70-mouse-control-v3.breakout-rl-browser.pages.dev/",
+  "pointerLockUsed": false,
+  "systemCursorVisible": true,
+  "startThreshold": 0.06,
+  "stopThreshold": 0.025,
+  "stationaryTargetDurationMs": 5171,
+  "leftRightReversalCount": 0,
+  "noopRatioAfterSettled": 1,
+  "maxSettledError": 0.050000000000000044,
+  "oscillationObserved": false,
+  "targetChangeResponsePassed": true,
+  "targetResponseSamples": [
+    {
+      "target": 0.2,
+      "action": "LEFT",
+      "decision": 115
+    },
+    {
+      "target": 0.8,
+      "action": "RIGHT",
+      "decision": 121
+    },
+    {
+      "target": 0.35,
+      "action": "LEFT",
+      "decision": 127
+    }
+  ],
+  "modeSwitchPassed": true,
+  "pauseClearPassed": true,
+  "restartClearPassed": true,
+  "targetMarkerVisible": true,
+  "consoleErrors": [],
+  "pageErrors": [],
+  "requestFailures": []
+}

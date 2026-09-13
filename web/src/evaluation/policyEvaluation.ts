@@ -6,11 +6,15 @@ import { loadBreakoutContract, type BreakoutContractV2 } from '../environment/br
 import { OrtWebPolicy } from '../inference/OrtWebPolicy';
 import { validateWebModelManifest, type WebModelManifest } from '../inference/manifest';
 
-export function browserEvaluationSeeds(contract: Pick<BreakoutContractV2, 'concrete_episode_seeds'>): number[] {
+export function browserEvaluationSeeds(
+  contract: Pick<BreakoutContractV2, 'concrete_episode_seeds'>,
+  targetCount = 30,
+): number[] {
+  if (!Number.isInteger(targetCount) || targetCount < 1) throw new Error('browser evaluation targetCount must be a positive integer');
   const seeds = [...contract.concrete_episode_seeds];
   const used = new Set(seeds);
   let candidate = (seeds.at(-1) ?? 0) + 1;
-  while (seeds.length < 30) {
+  while (seeds.length < targetCount) {
     if (!used.has(candidate)) {
       seeds.push(candidate);
       used.add(candidate);
@@ -64,7 +68,7 @@ export interface EvaluationEpisode {
 
 export interface BrowserPolicyEvaluationArtifact {
   schemaVersion: 1;
-  artifactType: 'day29_browser_policy_evaluation';
+  artifactType: 'day29_browser_policy_evaluation' | 'day30_browser_policy_evaluation';
   timestamp: string;
   pageUrl: string;
   previewUrl: string | null;
@@ -123,6 +127,7 @@ export interface PolicyEvaluationOptions {
   createEnvironment?: (options: { contract: BreakoutContractV2; seed: number }) => Promise<EvaluationEnvironment>;
   infer?: (policy: EvaluationPolicy, observation: Uint8Array) => Promise<PolicyResult>;
   onEpisode?: (episode: EvaluationEpisode, completed: number, total: number) => void;
+  artifactType?: BrowserPolicyEvaluationArtifact['artifactType'];
 }
 
 interface EvaluationPolicy {
@@ -173,7 +178,7 @@ export async function runPolicyEvaluation(options: PolicyEvaluationOptions): Pro
   const browser = options.browser ?? (await detectBrowser());
   return {
     schemaVersion: 1,
-    artifactType: 'day29_browser_policy_evaluation',
+    artifactType: options.artifactType ?? 'day29_browser_policy_evaluation',
     timestamp: new Date().toISOString(),
     pageUrl: currentPageUrl(),
     previewUrl: currentPreviewUrl(),

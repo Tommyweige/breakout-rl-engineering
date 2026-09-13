@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "artifactType": "issue70_mouse_absolute_hysteresis_qa",
+  "timestamp": "2026-09-11T07:20:06.522Z",
+  "url": "http://127.0.0.1:5173/",
+  "pointerLockUsed": false,
+  "systemCursorVisible": true,
+  "startThreshold": 0.06,
+  "stopThreshold": 0.025,
+  "stationaryTargetDurationMs": 5174,
+  "stationarySampleCount": 66,
+  "stationaryDirectionalActionCount": 5,
+  "leftRightReversalCount": 1,
+  "noopRatioAfterSettled": 0.9242424242424242,
+  "maxSettledError": 0.1312500000000001,
+  "oscillationObserved": false,
+  "targetChangeResponsePassed": true,
+  "targetResponseSamples": [
+    {
+      "target": 0.2,
+      "action": "LEFT",
+      "decision": 78
+    },
+    {
+      "target": 0.8,
+      "action": "RIGHT",
+      "decision": 83
+    },
+    {
+      "target": 0.35,
+      "action": "LEFT",
+      "decision": 88
+    }
+  ],
+  "modeSwitchPassed": true,
+  "pauseClearPassed": true,
+  "restartClearPassed": true,
+  "targetMarkerVisible": true,
+  "consoleErrors": [],
+  "pageErrors": [],
+  "requestFailures": []
+}

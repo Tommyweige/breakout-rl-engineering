@@ -56,4 +56,21 @@ describe('KeyboardController', () => {
     expect(controller.currentAction()).toBe('NOOP');
     controller.detach(target);
   });
+
+  it('does not accept directional input while mouse mode is active', () => {
+    const listeners = new Map<string, EventListener>();
+    const target = {
+      addEventListener: (type: string, listener: EventListener) => listeners.set(type, listener),
+      removeEventListener: (type: string) => listeners.delete(type),
+    } as unknown as Window;
+    const controller = new KeyboardController();
+    controller.attach(target);
+    controller.setEnabled(false);
+    listeners.get('keydown')!({ code: 'ArrowLeft', preventDefault: () => undefined } as unknown as KeyboardEvent);
+    expect(controller.currentAction()).toBe('NOOP');
+    controller.setEnabled(true);
+    listeners.get('keydown')!({ code: 'ArrowRight', preventDefault: () => undefined } as unknown as KeyboardEvent);
+    expect(controller.currentAction()).toBe('RIGHT');
+    controller.detach(target);
+  });
 });

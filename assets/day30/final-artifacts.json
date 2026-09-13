@@ -1,0 +1,428 @@
+{
+  "schemaVersion": 1,
+  "artifactType": "day30_final_artifacts",
+  "generatedAt": "2026-09-09T10:19:15.825793Z",
+  "contract": {
+    "id": "day15-breakout-evaluation-v2-fire-reset",
+    "path": "configs/eval/breakout_contract_v2.json",
+    "sha256": "e9947fc3a1235100aa92f75a79cf33668b36b4f325f22a0bc8b9546a356b85ba"
+  },
+  "productionUrl": "https://breakout-rl-browser.pages.dev/",
+  "requiredArtifacts": [
+    {
+      "key": "contract_v2",
+      "path": "configs/eval/breakout_contract_v2.json",
+      "purpose": "canonical RL task definition",
+      "exists": true,
+      "sha256": "e9947fc3a1235100aa92f75a79cf33668b36b4f325f22a0bc8b9546a356b85ba",
+      "sizeBytes": 1988
+    },
+    {
+      "key": "day21_final_holdout",
+      "path": "assets/day21/final-holdout.json",
+      "purpose": "final model holdout evidence",
+      "exists": true,
+      "sha256": "9c88f43e15a5132a065927dc8de5001f1989dc8197ab218052f55b603884d18b",
+      "sizeBytes": 94185
+    },
+    {
+      "key": "day21_final_model_metadata",
+      "path": "assets/day21/models/final_model/metadata.json",
+      "purpose": "frozen final model metadata",
+      "exists": true,
+      "sha256": "56851f39cb6f7eb7f7dcca9493b4f3c56038f7e742bd15a9f4b2e28f98ca88d8",
+      "sizeBytes": 18619
+    },
+    {
+      "key": "day22_onnx_model",
+      "path": "assets/day22/models/final_model/model.onnx",
+      "purpose": "PyTorch to ONNX export",
+      "exists": true,
+      "sha256": "cf90c74b1d09d5d7e2e0c71014f2daef2b5e1833425d300da06e34d1e4ef7f12",
+      "sizeBytes": 13175034
+    },
+    {
+      "key": "day22_onnx_metadata",
+      "path": "assets/day22/models/final_model/model.onnx.metadata.json",
+      "purpose": "ONNX export metadata",
+      "exists": true,
+      "sha256": "3b66b8135c501324b08fffa5a94a682c7c22db64d2fec2684d820591312d3e4f",
+      "sizeBytes": 6737
+    },
+    {
+      "key": "day23_onnx_runtime_parity",
+      "path": "assets/day23/onnx-runtime-parity.json",
+      "purpose": "ONNX Runtime parity",
+      "exists": true,
+      "sha256": "6ebcdad6eb5e0b06161723a7b72d131cb71a9285cd5a4937a0ad9e7ff637ef28",
+      "sizeBytes": 195763
+    },
+    {
+      "key": "day24_latency",
+      "path": "assets/day24/batch1-latency.json",
+      "purpose": "native inference timing",
+      "exists": true,
+      "sha256": "435c75b801af4b0b8015b041e03bb46599fc40e0a457b1a4bc928435a2c53b92",
+      "sizeBytes": 900
+    },
+    {
+      "key": "day25_precision_decision",
+      "path": "assets/day25/fp32-vs-fp16.json",
+      "purpose": "FP32/FP16 decision",
+      "exists": true,
+      "sha256": "97f05988b1363fd5ff3ae6d88b0db20324e34efef6e1629672b6544fccd156f8",
+      "sizeBytes": 1196
+    },
+    {
+      "key": "day26_tensorrt_comparison",
+      "path": "assets/day26/tensorrt-comparison.json",
+      "purpose": "TensorRT comparison",
+      "exists": true,
+      "sha256": "89d7c39164d5e91fd9ca4db1324dbd081ba558bbcde771d0cafcfdf91f47bd2e",
+      "sizeBytes": 519451
+    },
+    {
+      "key": "day27_browser_wasm",
+      "path": "assets/day27/browser-wasm-validation.json",
+      "purpose": "Browser WASM validation",
+      "exists": true,
+      "sha256": "439ecc4db87fa89970f1ac7c97561dc3d7dc8a5ed0f99a7c69975f2306216e21",
+      "sizeBytes": 1415
+    },
+    {
+      "key": "day28_browser_webgpu",
+      "path": "assets/day28/webgpu-validation.json",
+      "purpose": "Browser WebGPU validation",
+      "exists": true,
+      "sha256": "9c170da0bab4677bed385538e470e2f2dc00e263c16c0d90b7e0a4fc967f8a80",
+      "sizeBytes": 2854
+    },
+    {
+      "key": "day28_browser_benchmark",
+      "path": "assets/day28/web-benchmark.json",
+      "purpose": "Browser backend benchmark",
+      "exists": true,
+      "sha256": "65d98711f3bcba5a478000cf9ad1671673f63d32c99334b6a20c3ceb877b5c47",
+      "sizeBytes": 10423
+    },
+    {
+      "key": "day29_browser_comparison",
+      "path": "assets/day29/browser-policy-score-comparison.json",
+      "purpose": "dual Browser score comparison",
+      "exists": true,
+      "sha256": "3b5a3c803e715f0c443d979f433f0dd5a9ddfe9beb806b41a48a90059f1ca0c4",
+      "sizeBytes": 37016089
+    },
+    {
+      "key": "day29_environment_parity",
+      "path": "assets/day29/environment-parity.json",
+      "purpose": "Browser environment parity",
+      "exists": true,
+      "sha256": "76f47661283b765d05417f8f6f553538fc14488d2015e0cf8a67c07d2d5e5c6b",
+      "sizeBytes": 7449
+    },
+    {
+      "key": "day30_final_screenshot",
+      "path": "assets/day30/final-human-vs-rl.png",
+      "purpose": "real final product screenshot",
+      "exists": true,
+      "sha256": "f3d1b4f9e6a4fe6185b8fefa2510051661d9c5738373e6eca5d41317cf64f22d",
+      "sizeBytes": 216755
+    },
+    {
+      "key": "day30_score_comparison",
+      "path": "assets/day30/final-browser-score-comparison.json",
+      "purpose": "at least 50-episode Browser scores",
+      "exists": true,
+      "sha256": "0264b4f41f97273f2c8921249101f9a4b31f92e22aa92c07dcff7104a2558233",
+      "sizeBytes": 47682225
+    },
+    {
+      "key": "day30_final_validation",
+      "path": "assets/day30/final-validation.json",
+      "purpose": "final validation summary",
+      "exists": true,
+      "sha256": "fc1a648941088dd29cf52c3aedc2c4cf1528dd805797cb2d701da10a103dffbe",
+      "sizeBytes": 14353
+    },
+    {
+      "key": "day30_score_distribution",
+      "path": "assets/day30/final-browser-score-distribution.png",
+      "purpose": "score distribution figure",
+      "exists": true,
+      "sha256": "718e414cf8c2bde26cf211b028874150f3464b1fedc61fe5667bbad8b4252bce",
+      "sizeBytes": 46190
+    }
+  ],
+  "checks": [
+    {
+      "name": "artifact present: contract_v2",
+      "passed": true,
+      "detail": "configs/eval/breakout_contract_v2.json"
+    },
+    {
+      "name": "artifact present: day21_final_holdout",
+      "passed": true,
+      "detail": "assets/day21/final-holdout.json"
+    },
+    {
+      "name": "artifact present: day21_final_model_metadata",
+      "passed": true,
+      "detail": "assets/day21/models/final_model/metadata.json"
+    },
+    {
+      "name": "artifact present: day22_onnx_model",
+      "passed": true,
+      "detail": "assets/day22/models/final_model/model.onnx"
+    },
+    {
+      "name": "artifact present: day22_onnx_metadata",
+      "passed": true,
+      "detail": "assets/day22/models/final_model/model.onnx.metadata.json"
+    },
+    {
+      "name": "artifact present: day23_onnx_runtime_parity",
+      "passed": true,
+      "detail": "assets/day23/onnx-runtime-parity.json"
+    },
+    {
+      "name": "artifact present: day24_latency",
+      "passed": true,
+      "detail": "assets/day24/batch1-latency.json"
+    },
+    {
+      "name": "artifact present: day25_precision_decision",
+      "passed": true,
+      "detail": "assets/day25/fp32-vs-fp16.json"
+    },
+    {
+      "name": "artifact present: day26_tensorrt_comparison",
+      "passed": true,
+      "detail": "assets/day26/tensorrt-comparison.json"
+    },
+    {
+      "name": "artifact present: day27_browser_wasm",
+      "passed": true,
+      "detail": "assets/day27/browser-wasm-validation.json"
+    },
+    {
+      "name": "artifact present: day28_browser_webgpu",
+      "passed": true,
+      "detail": "assets/day28/webgpu-validation.json"
+    },
+    {
+      "name": "artifact present: day28_browser_benchmark",
+      "passed": true,
+      "detail": "assets/day28/web-benchmark.json"
+    },
+    {
+      "name": "artifact present: day29_browser_comparison",
+      "passed": true,
+      "detail": "assets/day29/browser-policy-score-comparison.json"
+    },
+    {
+      "name": "artifact present: day29_environment_parity",
+      "passed": true,
+      "detail": "assets/day29/environment-parity.json"
+    },
+    {
+      "name": "artifact present: day30_final_screenshot",
+      "passed": true,
+      "detail": "assets/day30/final-human-vs-rl.png"
+    },
+    {
+      "name": "artifact present: day30_score_comparison",
+      "passed": true,
+      "detail": "assets/day30/final-browser-score-comparison.json"
+    },
+    {
+      "name": "artifact present: day30_final_validation",
+      "passed": true,
+      "detail": "assets/day30/final-validation.json"
+    },
+    {
+      "name": "artifact present: day30_score_distribution",
+      "passed": true,
+      "detail": "assets/day30/final-browser-score-distribution.png"
+    },
+    {
+      "name": "final artifact type",
+      "passed": true,
+      "detail": "day30_browser_policy_score_comparison"
+    },
+    {
+      "name": "Contract v2 identity",
+      "passed": true,
+      "detail": "{'contractId': 'day15-breakout-evaluation-v2-fire-reset', 'contractPath': 'configs/eval/breakout_contract_v2.json', 'contractSha256': 'e9947fc3a1235100aa92f75a79cf33668b36b4f325f22a0bc8b9546a356b85ba', 'environmentId': 'ALE/Breakout-v5', 'fireReset': True, 'terminalOnLifeLoss': False, 'frameSkip': 4, 'frameStack': 4, 'stickyActionProbability': 0.25, 'timeLimitSemantics': {'source': 'ale.game_truncated', 'max_num_frames_per_episode': 108000, 'agent_step_limit': 27000, 'truncated_is_finished': True, 'external_time_limit_wrapper': False}, 'rawRewardRule': 'sum environment rewards without clipping', 'evaluationEpsilon': 0, 'finalHoldoutConcreteSeeds': [101, 102, 103, 104, 105, 202, 203, 204, 205, 206, 303, 304, 305, 306, 307]}"
+    },
+    {
+      "name": "Contract v2 path",
+      "passed": true,
+      "detail": "configs/eval/breakout_contract_v2.json"
+    },
+    {
+      "name": "Contract v2 SHA256",
+      "passed": true,
+      "detail": "expected e9947fc3a1235100aa92f75a79cf33668b36b4f325f22a0bc8b9546a356b85ba, got e9947fc3a1235100aa92f75a79cf33668b36b4f325f22a0bc8b9546a356b85ba"
+    },
+    {
+      "name": "Contract fire reset",
+      "passed": true,
+      "detail": "True"
+    },
+    {
+      "name": "Contract life-loss semantics",
+      "passed": true,
+      "detail": "False"
+    },
+    {
+      "name": "Contract frame semantics",
+      "passed": true,
+      "detail": "{'contractId': 'day15-breakout-evaluation-v2-fire-reset', 'contractPath': 'configs/eval/breakout_contract_v2.json', 'contractSha256': 'e9947fc3a1235100aa92f75a79cf33668b36b4f325f22a0bc8b9546a356b85ba', 'environmentId': 'ALE/Breakout-v5', 'fireReset': True, 'terminalOnLifeLoss': False, 'frameSkip': 4, 'frameStack': 4, 'stickyActionProbability': 0.25, 'timeLimitSemantics': {'source': 'ale.game_truncated', 'max_num_frames_per_episode': 108000, 'agent_step_limit': 27000, 'truncated_is_finished': True, 'external_time_limit_wrapper': False}, 'rawRewardRule': 'sum environment rewards without clipping', 'evaluationEpsilon': 0, 'finalHoldoutConcreteSeeds': [101, 102, 103, 104, 105, 202, 203, 204, 205, 206, 303, 304, 305, 306, 307]}"
+    },
+    {
+      "name": "Contract sticky action",
+      "passed": true,
+      "detail": "0.25"
+    },
+    {
+      "name": "Contract raw reward",
+      "passed": true,
+      "detail": "sum environment rewards without clipping"
+    },
+    {
+      "name": "Contract final seeds",
+      "passed": true,
+      "detail": "[101, 102, 103, 104, 105, 202, 203, 204, 205, 206, 303, 304, 305, 306, 307]"
+    },
+    {
+      "name": "final unique seed count",
+      "passed": true,
+      "detail": "50"
+    },
+    {
+      "name": "wasm episode count",
+      "passed": true,
+      "detail": "30 episodes; required exactly 30"
+    },
+    {
+      "name": "wasm unique seed count",
+      "passed": true,
+      "detail": "observed=30, reconstructed=30"
+    },
+    {
+      "name": "wasm raw score reconstruction",
+      "passed": true,
+      "detail": "observed={'count': 30, 'uniqueSeedCount': 30, 'mean': 41.86666666666667, 'median': 37.5, 'std': 14.863228301938836, 'p10': 25.9, 'p90': 61.000000000000014, 'min': 15, 'max': 74, 'successCount': 30, 'crashCount': 0, 'pairedScoreDifference': None}, reconstructed={'count': 30, 'mean': 41.86666666666667, 'median': 37.5, 'std': 14.863228301938834, 'p10': 25.9, 'p90': 61.000000000000014, 'min': 15.0, 'max': 74.0, 'uniqueSeedCount': 30, 'successCount': 30, 'crashCount': 0}"
+    },
+    {
+      "name": "wasm successful episodes",
+      "passed": true,
+      "detail": "0"
+    },
+    {
+      "name": "wasm contract hash",
+      "passed": true,
+      "detail": "e9947fc3a1235100aa92f75a79cf33668b36b4f325f22a0bc8b9546a356b85ba"
+    },
+    {
+      "name": "webgpu episode count",
+      "passed": true,
+      "detail": "50 episodes; required exactly 50"
+    },
+    {
+      "name": "webgpu unique seed count",
+      "passed": true,
+      "detail": "observed=50, reconstructed=50"
+    },
+    {
+      "name": "webgpu raw score reconstruction",
+      "passed": true,
+      "detail": "observed={'count': 50, 'uniqueSeedCount': 50, 'mean': 42.12, 'median': 38, 'std': 15.263865827502546, 'p10': 25.9, 'p90': 60.2, 'min': 15, 'max': 94, 'successCount': 50, 'crashCount': 0, 'pairedScoreDifference': None}, reconstructed={'count': 50, 'mean': 42.12, 'median': 38.0, 'std': 15.263865827502547, 'p10': 25.9, 'p90': 60.2, 'min': 15.0, 'max': 94.0, 'uniqueSeedCount': 50, 'successCount': 50, 'crashCount': 0}"
+    },
+    {
+      "name": "webgpu successful episodes",
+      "passed": true,
+      "detail": "0"
+    },
+    {
+      "name": "webgpu contract hash",
+      "passed": true,
+      "detail": "e9947fc3a1235100aa92f75a79cf33668b36b4f325f22a0bc8b9546a356b85ba"
+    },
+    {
+      "name": "backend strategy",
+      "passed": true,
+      "detail": "{'preferred': 'webgpu', 'fallback': 'wasm', 'selectedForFormalEvaluation': 'webgpu', 'reason': 'Day 29 established equal WASM/WebGPU policy scores; full-loop timing favored WebGPU, while WASM remains the truthful product fallback.', 'evaluationReuse': 'WASM retains the Day 29 30-episode artifact; WebGPU adds the 20 new native-derived seeds 323-342 to reach 50 unique seeds.'}"
+    },
+    {
+      "name": "production URL recorded",
+      "passed": true,
+      "detail": "https://breakout-rl-browser.pages.dev/"
+    },
+    {
+      "name": "final validation contract",
+      "passed": true,
+      "detail": "{'contractId': 'day15-breakout-evaluation-v2-fire-reset', 'contractPath': 'configs/eval/breakout_contract_v2.json', 'contractSha256': 'e9947fc3a1235100aa92f75a79cf33668b36b4f325f22a0bc8b9546a356b85ba', 'environmentId': 'ALE/Breakout-v5', 'fireReset': True, 'terminalOnLifeLoss': False, 'frameSkip': 4, 'frameStack': 4, 'stickyActionProbability': 0.25, 'timeLimitSemantics': {'source': 'ale.game_truncated', 'max_num_frames_per_episode': 108000, 'agent_step_limit': 27000, 'truncated_is_finished': True, 'external_time_limit_wrapper': False}, 'rawRewardRule': 'sum environment rewards without clipping', 'evaluationEpsilon': 0, 'finalHoldoutConcreteSeeds': [101, 102, 103, 104, 105, 202, 203, 204, 205, 206, 303, 304, 305, 306, 307]}"
+    },
+    {
+      "name": "final validation unique seed count",
+      "passed": true,
+      "detail": "{'top': 50, 'webgpu': {'count': 50, 'uniqueSeedCount': 50, 'mean': 42.12, 'median': 38, 'std': 15.263865827502546, 'p10': 25.9, 'p90': 60.2, 'min': 15, 'max': 94, 'successCount': 50, 'crashCount': 0, 'pairedScoreDifference': None}}"
+    },
+    {
+      "name": "production URL",
+      "passed": true,
+      "detail": "https://breakout-rl-browser.pages.dev/"
+    }
+  ],
+  "passed": true,
+  "reconstructedFinalAggregates": {
+    "wasm": {
+      "episodeCount": 30,
+      "aggregate": {
+        "count": 30,
+        "mean": 41.86666666666667,
+        "median": 37.5,
+        "std": 14.863228301938834,
+        "p10": 25.9,
+        "p90": 61.000000000000014,
+        "min": 15.0,
+        "max": 74.0,
+        "uniqueSeedCount": 30,
+        "successCount": 30,
+        "crashCount": 0
+      }
+    },
+    "webgpu": {
+      "episodeCount": 50,
+      "aggregate": {
+        "count": 50,
+        "mean": 42.12,
+        "median": 38.0,
+        "std": 15.263865827502547,
+        "p10": 25.9,
+        "p90": 60.2,
+        "min": 15.0,
+        "max": 94.0,
+        "uniqueSeedCount": 50,
+        "successCount": 50,
+        "crashCount": 0
+      }
+    }
+  },
+  "finalEvaluation": {
+    "backend": "webgpu",
+    "episodeCount": 50,
+    "uniqueSeedCount": 50,
+    "successCount": 50,
+    "crashCount": 0,
+    "mean": 42.12,
+    "median": 38.0,
+    "std": 15.263865827502547,
+    "p10": 25.9,
+    "p90": 60.2,
+    "min": 15.0,
+    "max": 94.0
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "artifactType": "issue69_production_smoke",
+  "timestamp": "2026-09-10T09:11:11.921Z",
+  "url": "https://issue-69-mouse-control-v2.breakout-rl-browser.pages.dev/",
+  "debugUrl": "https://issue-69-mouse-control-v2.breakout-rl-browser.pages.dev/?debug=1",
+  "customDomain": false,
+  "layout": {
+    "viewportHeight": 768,
+    "documentHeight": 768,
+    "viewportWidth": 1366,
+    "documentWidth": 1366,
+    "canvasCount": 2,
+    "controlCount": 3,
+    "technicalDetailsPresent": false
+  },
+  "controls": {
+    "pointerLockSupported": true,
+    "pointerLockActiveObserved": true,
+    "stationaryNoop": true,
+    "oscillationObserved": false,
+    "rapidReversalPassed": true,
+    "escapeReleasePassed": true,
+    "modeSwitchPassed": true,
+    "pauseClearPassed": true,
+    "restartClearPassed": true
+  },
+  "preservedRuntime": {
+    "difficultyBefore": "hard",
+    "difficultyAfter": "hard",
+    "actualBackend": "WEBGPU",
+    "dualInstanceCount": 2,
+    "crossOriginIsolated": true
+  },
+  "screenshot": "assets/mouse-control-v2/preview/production-mouse-relative.png",
+  "diagnostics": {
+    "production": {
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [],
+      "badResponses": []
+    },
+    "debug": {
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [],
+      "badResponses": []
+    }
+  }
+}

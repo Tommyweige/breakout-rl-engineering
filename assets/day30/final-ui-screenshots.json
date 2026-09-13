@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "artifactType": "day30_ui_screenshots",
+  "timestamp": "2026-09-09T09:51:25.990Z",
+  "product": {
+    "url": "https://breakout-rl-browser.pages.dev/",
+    "route": "product",
+    "screenshotPath": "C:\\Users\\tommy\\.codex\\worktrees\\8605\\breakout-rl-engineering\\assets\\day30\\final-production-ui.png",
+    "canvasCount": 2,
+    "technicalDetailsPresent": false,
+    "diagnostics": {
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [],
+      "badResponses": []
+    }
+  },
+  "debug": {
+    "url": "https://breakout-rl-browser.pages.dev/?debug=1",
+    "route": "debug",
+    "screenshotPath": "C:\\Users\\tommy\\.codex\\worktrees\\8605\\breakout-rl-engineering\\assets\\day30\\final-debug-ui.png",
+    "canvasCount": 2,
+    "technicalDetailsPresent": true,
+    "diagnostics": {
+      "consoleErrors": [],
+      "pageErrors": [],
+      "requestFailures": [],
+      "badResponses": []
+    }
+  }
+}

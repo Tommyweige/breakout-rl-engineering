@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   createBrowserBreakoutEnvironmentForTest,
+  createHumanBreakoutEnvironmentForTest,
   type AleLike,
 } from './aleEnvironment';
 import type { BreakoutContractV2 } from './breakoutContract';
@@ -100,5 +101,50 @@ describe('ALE Browser environment contract', () => {
     expect(third.requestedAleAction).toBe(3);
     expect(third.executedAleAction).toBe(3);
     expect(ale.actions).toEqual([1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3]);
+  });
+
+  it('keeps the gameplay async Agent step at four raw frames while yielding between frames', async () => {
+    const ale = new FakeAle();
+    const environment = createBrowserBreakoutEnvironmentForTest(ale as unknown as AleLike, contract, 101);
+
+    const result = await environment.stepAsync(2);
+
+    expect(result.actualEmulatorFrames).toBe(4);
+    expect(result.outerActionRepeat).toBe(4);
+    expect(ale.actions).toEqual([1, 1, 1, 1]);
+  });
+
+  it('keeps Human runtime at one raw frame with sticky actions disabled and exposes the latest RGB frame', () => {
+    const ale = new FakeAle();
+    const environment = createHumanBreakoutEnvironmentForTest(ale as unknown as AleLike, contract, 101);
+
+    const first = environment.step(2);
+    const second = environment.step(2);
+    const third = environment.step(2);
+    const fourth = environment.step(0);
+    const fifth = environment.step(3);
+    const sixth = environment.step(0);
+
+    expect(ale.getFloat('repeat_action_probability')).toBe(0);
+    expect(first.actualEmulatorFrames).toBe(1);
+    expect(second.actualEmulatorFrames).toBe(1);
+    expect(first.outerActionRepeat).toBe(1);
+    expect(first.rawFrameNumber).toBe(1);
+    expect(first.rawRgb[0]).toBe(1);
+    expect(first.autoFire).toBe(true);
+    expect(second.autoFire).toBe(true);
+    expect(third.autoFire).toBe(false);
+    expect(third.requestedAction).toBe('RIGHT');
+    expect(third.executedAction).toBe('RIGHT');
+    expect(fourth.executedAction).toBe('NOOP');
+    expect(fifth.executedAction).toBe('LEFT');
+    expect(sixth.executedAction).toBe('NOOP');
+    expect(ale.actions).toEqual([1, 1, 3, 0, 4, 0]);
+    expect(environment.runtimeDiagnostics).toMatchObject({
+      runtimeMode: 'interactive-human',
+      rawFrameRepeat: 1,
+      stickyActionProbability: 0,
+      usesModelPreprocessing: false,
+    });
   });
 });

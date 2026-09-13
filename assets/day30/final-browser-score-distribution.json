@@ -1,0 +1,86 @@
+{
+  "artifactType": "day30_browser_policy_score_distribution",
+  "sourceArtifact": "assets/day30/final-browser-score-comparison.json",
+  "output": "assets/day30/final-browser-score-distribution.png",
+  "generationCommand": "python -m scripts.visualization.visualize_day30_browser_scores --input assets/day30/final-browser-score-comparison.json --output assets/day30/final-browser-score-distribution.png",
+  "backends": [
+    "wasm",
+    "webgpu"
+  ],
+  "episodeCountPerBackend": {
+    "wasm": 30,
+    "webgpu": 50
+  },
+  "uniqueSeedCountPerBackend": {
+    "wasm": 30,
+    "webgpu": 50
+  },
+  "aggregatePerBackend": {
+    "wasm": {
+      "count": 30,
+      "uniqueSeedCount": 30,
+      "mean": 41.86666666666667,
+      "median": 37.5,
+      "std": 14.863228301938836,
+      "p10": 25.9,
+      "p90": 61.000000000000014,
+      "min": 15,
+      "max": 74,
+      "successCount": 30,
+      "crashCount": 0,
+      "pairedScoreDifference": null
+    },
+    "webgpu": {
+      "count": 50,
+      "uniqueSeedCount": 50,
+      "mean": 42.12,
+      "median": 38,
+      "std": 15.263865827502546,
+      "p10": 25.9,
+      "p90": 60.2,
+      "min": 15,
+      "max": 94,
+      "successCount": 50,
+      "crashCount": 0,
+      "pairedScoreDifference": null
+    }
+  },
+  "modelSha256": "cf90c74b1d09d5d7e2e0c71014f2daef2b5e1833425d300da06e34d1e4ef7f12",
+  "contract": {
+    "contractId": "day15-breakout-evaluation-v2-fire-reset",
+    "contractPath": "configs/eval/breakout_contract_v2.json",
+    "contractSha256": "e9947fc3a1235100aa92f75a79cf33668b36b4f325f22a0bc8b9546a356b85ba",
+    "environmentId": "ALE/Breakout-v5",
+    "fireReset": true,
+    "terminalOnLifeLoss": false,
+    "frameSkip": 4,
+    "frameStack": 4,
+    "stickyActionProbability": 0.25,
+    "timeLimitSemantics": {
+      "source": "ale.game_truncated",
+      "max_num_frames_per_episode": 108000,
+      "agent_step_limit": 27000,
+      "truncated_is_finished": true,
+      "external_time_limit_wrapper": false
+    },
+    "rawRewardRule": "sum environment rewards without clipping",
+    "evaluationEpsilon": 0,
+    "finalHoldoutConcreteSeeds": [
+      101,
+      102,
+      103,
+      104,
+      105,
+      202,
+      203,
+      204,
+      205,
+      206,
+      303,
+      304,
+      305,
+      306,
+      307
+    ]
+  }
+}

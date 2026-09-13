@@ -20,8 +20,14 @@ function parseArgs(argv) {
 }
 
 const args = parseArgs(process.argv.slice(2));
-const url = String(args.get('url') ?? 'https://day29-human-vs-rl.breakout-rl-engineering.pages.dev/');
+const url = withDebug(String(args.get('url') ?? 'https://day29-human-vs-rl.breakout-rl-engineering.pages.dev/'));
 const outputDirectory = resolve(String(args.get('output-dir') ?? '../assets/day29'));
+
+function withDebug(value) {
+  const parsed = new URL(value);
+  parsed.searchParams.set('debug', '1');
+  return parsed.toString();
+}
 await mkdir(outputDirectory, { recursive: true });
 const browser = await chromium.launch({ channel: 'chrome', headless: args.get('headed') !== true });
 const context = await browser.newContext({ viewport: { width: 1440, height: 1100 }, deviceScaleFactor: 1 });

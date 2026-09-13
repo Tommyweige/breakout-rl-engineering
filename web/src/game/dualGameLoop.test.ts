@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import type { EnvironmentStep, HumanEnvironmentStep } from '../environment/aleEnvironment';
 import type { PolicyResult } from '../inference/types';
-import type { EnvironmentStep } from '../environment/aleEnvironment';
-import { DualGameLoop, type LoopEnvironment } from './dualGameLoop';
+import { DualGameLoop, type HumanLoopEnvironment, type LoopEnvironment } from './dualGameLoop';
 
-function fakeStep(action: number): EnvironmentStep {
+function fakeAgentStep(action: number): EnvironmentStep {
   return {
     observation: new Uint8Array(4 * 84 * 84),
     processedFrame: new Uint8Array(84 * 84),
@@ -34,13 +34,61 @@ function fakeStep(action: number): EnvironmentStep {
   };
 }
 
-class FakeEnvironment implements LoopEnvironment {
+function fakeHumanStep(action: number, frame: number): HumanEnvironmentStep {
+  const meaning = ['NOOP', 'FIRE', 'RIGHT', 'LEFT'][action] as HumanEnvironmentStep['requestedAction'];
+  return {
+    rawRgb: new Uint8Array(160 * 210 * 3),
+    requestedModelAction: action,
+    requestedAction: meaning,
+    requestedAleAction: action as 0 | 1 | 3 | 4,
+    executedModelAction: action,
+    executedAction: meaning,
+    executedAleAction: action as 0 | 1 | 3 | 4,
+    autoFire: false,
+    autoFireReason: null,
+    fireConfirmation: null,
+    reward: 0,
+    episodeReturn: 0,
+    lives: 5,
+    frameNumber: frame,
+    rawFrameNumber: frame,
+    humanStep: frame,
+    actualEmulatorFrames: 1,
+    rawFrameSkip: 1,
+    outerActionRepeat: 1,
+    stickyActionProbability: 0,
+    terminated: false,
+    truncated: false,
+    gameOverReason: null,
+    timing: { aleStepMs: 1, totalMs: 1 },
+  };
+}
+
+class FakeHumanEnvironment implements HumanLoopEnvironment {
+  isFinished = false;
+  currentSeed = 1;
+  actions: number[] = [];
+  private frame = 0;
+
+  reset(seed = this.currentSeed): void {
+    this.currentSeed = seed;
+    this.isFinished = false;
+    this.actions = [];
+    this.frame = 0;
+  }
+
+  step(action: number): HumanEnvironmentStep {
+    this.actions.push(action);
+    this.frame += 1;
+    return fakeHumanStep(action, this.frame);
+  }
+}
+
+class FakeAgentEnvironment implements LoopEnvironment {
   observation = new Uint8Array(4 * 84 * 84);
   isFinished = false;
   currentSeed = 1;
   actions: number[] = [];
-
-  constructor(private readonly finishAfter: number | null = null) {}
 
   reset(seed = this.currentSeed): void {
     this.currentSeed = seed;
@@ -50,8 +98,7 @@ class FakeEnvironment implements LoopEnvironment {
 
   step(action: number): EnvironmentStep {
     this.actions.push(action);
-    if (this.finishAfter !== null && this.actions.length >= this.finishAfter) this.isFinished = true;
-    return fakeStep(action);
+    return fakeAgentStep(action);
   }
 }
 
@@ -63,14 +110,19 @@ const policyResult = (actionIndex: number): PolicyResult => ({
   actualBackend: 'wasm',
 });
 
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 describe('dual game loop', () => {
-  it('steps independent sides and keeps requested human action separate from agent inference', async () => {
-    const human = new FakeEnvironment();
-    const agent = new FakeEnvironment();
+  it('steps independent sides through the deterministic test seam', async () => {
+    const human = new FakeHumanEnvironment();
+    const agent = new FakeAgentEnvironment();
     const onAgentStep = vi.fn();
     const loop = new DualGameLoop({
       human,
       agent,
+      agentRuntime: { outerActionRepeat: 4, stickyActionProbability: 0.25 },
       humanAction: () => 3,
       infer: async () => policyResult(2),
       onAgentStep,
@@ -83,24 +135,68 @@ describe('dual game loop', () => {
     expect(onAgentStep).toHaveBeenCalledOnce();
   });
 
-  it('does not infer concurrently and lets the other side continue after game over', async () => {
-    const human = new FakeEnvironment();
-    const agent = new FakeEnvironment(1);
-    let release!: () => void;
-    const infer = vi.fn(() => new Promise<PolicyResult>((resolve) => {
-      release = () => resolve(policyResult(1));
-    }));
-    const loop = new DualGameLoop({ human, agent, humanAction: () => 0, infer });
+  it('continues Human raw ticks while Agent inference is slow', async () => {
+    const human = new FakeHumanEnvironment();
+    const agent = new FakeAgentEnvironment();
+    let inferenceCount = 0;
+    let inFlight = 0;
+    let maxInFlight = 0;
+    const loop = new DualGameLoop({
+      human,
+      agent,
+      agentRuntime: { outerActionRepeat: 4, stickyActionProbability: 0.25 },
+      humanAction: () => 0,
+      humanTargetFps: 60,
+      agentTargetFps: 15,
+      infer: () => new Promise((resolve) => {
+        inferenceCount += 1;
+        inFlight += 1;
+        maxInFlight = Math.max(maxInFlight, inFlight);
+        setTimeout(() => {
+          inFlight -= 1;
+          resolve(policyResult(1));
+        }, 50);
+      }),
+    });
 
-    const first = loop.stepOnce();
-    const second = loop.stepOnce();
-    expect(infer).toHaveBeenCalledOnce();
-    release();
-    await first;
-    await second;
-    await loop.stepOnce();
+    loop.start();
+    await wait(260);
+    loop.pause();
 
-    expect(agent.actions).toEqual([1]);
-    expect(human.actions).toEqual([0, 0]);
+    expect(human.actions.length).toBeGreaterThanOrEqual(6);
+    expect(agent.actions.length).toBeGreaterThanOrEqual(2);
+    expect(inferenceCount).toBeGreaterThanOrEqual(agent.actions.length);
+    expect(inferenceCount - agent.actions.length).toBeLessThanOrEqual(1);
+    expect(maxInFlight).toBe(1);
+    expect(loop.runtimeDiagnostics.humanRawFrameDelta).toBe(human.actions.length);
+  });
+
+  it('stops both simulation clocks on pause and clears work on destroy', async () => {
+    const human = new FakeHumanEnvironment();
+    const agent = new FakeAgentEnvironment();
+    const loop = new DualGameLoop({
+      human,
+      agent,
+      agentRuntime: { outerActionRepeat: 4, stickyActionProbability: 0.25 },
+      humanAction: () => 0,
+      infer: async () => policyResult(0),
+    });
+
+    loop.start();
+    await wait(70);
+    loop.pause();
+    const humanCount = human.actions.length;
+    const agentCount = agent.actions.length;
+    await wait(70);
+    expect(human.actions.length).toBe(humanCount);
+    expect(agent.actions.length).toBe(agentCount);
+
+    loop.start();
+    await wait(30);
+    loop.destroy();
+    const destroyedHumanCount = human.actions.length;
+    await wait(70);
+    expect(human.actions.length).toBe(destroyedHumanCount);
+    expect(loop.currentStatus).toBe('paused');
   });
 });

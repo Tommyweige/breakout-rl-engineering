@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "artifactType": "issue68_mouse_control_qa",
+  "timestamp": "2026-09-11T06:48:50.075Z",
+  "url": "https://breakout.tommypan.dev/",
+  "implementation": "Visible-cursor absolute target with paddle-relative hysteresis; no emulator or paddle state mutation",
+  "startThreshold": 0.06,
+  "stopThreshold": 0.025,
+  "pointerLockUsed": false,
+  "latestPaddleStateReadBy": "DualGameLoop humanAction callback from fixed bottom raw-RGB ROI",
+  "frameEvidence": {
+    "redPixelCount": 103,
+    "paddleCenterNormalized": 0.70625
+  },
+  "rapidDirectionTest": {
+    "leftAction": "LEFT",
+    "rightAction": "RIGHT",
+    "passed": true
+  },
+  "diagnostics": {
+    "consoleErrors": [],
+    "pageErrors": [],
+    "requestFailures": [],
+    "badResponses": []
+  }
+}

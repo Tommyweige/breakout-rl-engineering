@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { runFixtureValidationMock, runWebGpuSmokeMock } = vi.hoisted(() => ({
   runFixtureValidationMock: vi.fn(),
@@ -83,6 +83,11 @@ afterEach(() => {
   app = undefined;
   document.body.innerHTML = '';
   vi.clearAllMocks();
+  window.history.replaceState({}, '', '/');
+});
+
+beforeEach(() => {
+  window.history.replaceState({}, '', '/?debug=1');
 });
 
 describe('Day 28 backend validation boundary', () => {

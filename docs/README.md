@@ -30,6 +30,7 @@
 - Day 25 — [FP32 vs. FP16 precision](day25-fp32-vs-fp16.md)
 - Day 26 — [TensorRT optional optimization experiment](day26-tensorrt-optimization-experiment.md)
 - Day 29 — [Human vs RL dual Breakout browser demo](day29-interactive-browser-demo.md)
+- Day 30 — [From trained policy to a playable Browser product](day30-final-evaluation-and-engineering-review.md)
 
 Day 20 onward should continue the same naming and article rules defined in `AGENTS.md`.
 

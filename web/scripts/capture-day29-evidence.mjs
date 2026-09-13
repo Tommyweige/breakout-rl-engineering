@@ -20,12 +20,18 @@ function parseArgs(argv) {
 }
 
 const args = parseArgs(process.argv.slice(2));
-const url = String(args.get('url') ?? 'http://127.0.0.1:5173/');
+const url = withDebug(String(args.get('url') ?? 'http://127.0.0.1:5173/'));
 const outputDirectory = resolve(String(args.get('output-dir') ?? '../assets/day29'));
 const headless = args.get('headless') === true;
 const evaluationCount = args.has('episodes') ? Number(args.get('episodes')) : 30;
 const gameplayTimeoutMs = Number(args.get('gameplay-timeout-ms') ?? 360_000);
 if (!Number.isInteger(evaluationCount) || evaluationCount < 1 || evaluationCount > 30) throw new Error('--episodes must be an integer between 1 and 30');
+
+function withDebug(value) {
+  const parsed = new URL(value);
+  parsed.searchParams.set('debug', '1');
+  return parsed.toString();
+}
 
 const paths = {
   aiScreenshot: resolve(outputDirectory, 'browser-ai-demo.png'),

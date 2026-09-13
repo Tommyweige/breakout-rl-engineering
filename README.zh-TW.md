@@ -1,5 +1,13 @@
 # Breakout RL Engineering
 
+[![Human 與 RL Agent 並排執行 Breakout](assets/day30/final-human-vs-rl.png)](https://breakout.tommypan.dev)
+
+## Human vs AI Breakout
+
+**直接遊玩：** [breakout.tommypan.dev](https://breakout.tommypan.dev)
+
+左邊由你自己玩，右邊是訓練好的 RL Agent；兩個遊戲與推論都在瀏覽器 client-side 執行，不需要安裝 Python，也不需要連到我的 GPU server。
+
 [Day 1 文章](README.md) | **繁體中文專案總覽**
 
 ## 開發環境
@@ -415,7 +423,7 @@ Backend
 * Day 27 — ONNX Runtime Web
 * Day 28 — [WebGPU inference：在 Cloudflare Pages 驗證 WASM / WebGPU 正確性與延遲](docs/day28-webgpu-inference.md)
 * Day 29 — [Human vs RL 雙 Breakout Browser demo](docs/day29-interactive-browser-demo.md)
-* Day 30 — 最終 evaluation 與工程回顧
+* Day 30 — [從訓練好的 policy 到可玩的 Browser 產品](docs/day30-final-evaluation-and-engineering-review.md)；[直接遊玩](https://breakout.tommypan.dev)
 
 ---
 

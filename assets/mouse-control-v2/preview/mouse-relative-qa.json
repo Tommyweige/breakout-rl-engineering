@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "artifactType": "issue69_mouse_relative_qa",
+  "timestamp": "2026-09-10T09:11:11.920Z",
+  "url": "https://issue-69-mouse-control-v2.breakout-rl-browser.pages.dev/",
+  "pointerLockSupported": true,
+  "pointerLockActive": true,
+  "pointerLockReleasedByEscape": true,
+  "threshold": 1,
+  "stationaryDurationMs": 3174,
+  "stationaryDecisionCount": 54,
+  "stationaryMovementX": 0,
+  "stationaryAction": "NOOP",
+  "noopTransitionMs": 70.69999999552965,
+  "oscillationObserved": false,
+  "rapidReversalPassed": true,
+  "modeSwitchPassed": true,
+  "pauseClearPassed": true,
+  "restartClearPassed": true,
+  "rightSample": {
+    "decision": 2,
+    "timestampMs": 3281.4950000047684,
+    "action": "RIGHT",
+    "movementX": 699,
+    "intent": "RIGHT"
+  },
+  "leftSample": {
+    "decision": 4,
+    "timestampMs": 3423.515000000596,
+    "action": "LEFT",
+    "movementX": -800,
+    "intent": "LEFT"
+  },
+  "rapidRight": {
+    "decision": 5,
+    "timestampMs": 3500.695000000298,
+    "action": "RIGHT",
+    "movementX": 850,
+    "intent": "RIGHT"
+  },
+  "rapidLeft": {
+    "decision": 6,
+    "timestampMs": 3572.115000002086,
+    "action": "LEFT",
+    "movementX": -900,
+    "intent": "LEFT"
+  },
+  "consoleErrors": [],
+  "pageErrors": [],
+  "requestFailures": [],
+  "badResponses": []
+}
