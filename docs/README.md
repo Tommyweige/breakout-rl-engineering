@@ -6,7 +6,7 @@
 
 ## Phase 1 — Environment and RL foundations
 
-- Day 01 — Project introduction and roadmap: see the root [`README.md`](../README.md)
+- Day 01 — [Project introduction and roadmap](day01-project-introduction.md)
 - Day 02 — [Atari Breakout, ALE, and Gymnasium](day02-breakout-ale-gymnasium.md)
 - Day 03 — [State, Action, Reward, and transition data](day03-state-action-reward-data.md)
 - Day 04 — [Atari preprocessing and frame stacking](day04-atari-preprocessing-frame-stacking.md)
