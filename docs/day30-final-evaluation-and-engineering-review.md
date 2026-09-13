@@ -30,7 +30,7 @@
 
 **[https://breakout.tommypan.dev](https://breakout.tommypan.dev)**
 
-[![Breakout Human vs AI](https://github.com/Tommyweige/breakout-rl-engineering-private/blob/4dde577dbddc775b22e1807c1e681aea4d0371c0/assets/human-interactive-runtime/production-human-runtime.png?raw=1)](https://breakout.tommypan.dev)
+[![Breakout Human vs AI](https://github.com/Tommyweige/breakout-rl-engineering/blob/06e6e2d/assets/human-interactive-runtime/production-human-runtime.png?raw=1)](https://breakout.tommypan.dev)
 
 ## 30 天後最大的收穫
 
