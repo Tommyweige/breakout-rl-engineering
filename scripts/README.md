@@ -1,6 +1,8 @@
-# Executable tooling
+# Executable Tooling
 
-All command-line entry points live under `scripts/`. Reusable implementation belongs in `breakout_rl/`; these modules should stay thin and orchestrate library code, configs, artifacts, and reports.
+All command-line entry points live under `scripts/`. Reusable implementation belongs in `breakout_rl/`; script modules should stay thin and orchestrate library code, configs, artifacts, and reports.
+
+> Repository-wide placement rules: [`PROJECT_STRUCTURE.md`](../PROJECT_STRUCTURE.md)
 
 Run commands from the repository root with module syntax:
 
@@ -12,12 +14,17 @@ python -m scripts.analysis.analyze_q_values --help
 
 ## Categories
 
-- `training/` — training and controlled experiment runners.
-- `evaluation/` — fixed-protocol policy evaluation and baselines.
-- `analysis/` — diagnostics, inspection, summaries, probe generation, and report generation.
-- `benchmarks/` — throughput, profiling, replay, and systems-performance experiments.
-- `visualization/` — figures, plots, GIF/gameplay recording, and rendered evidence generation.
-- `demos/` — small educational or interactive demonstrations that are not formal model-quality experiments.
+| Directory | Responsibility |
+| --- | --- |
+| `training/` | Training jobs and controlled training runners |
+| `evaluation/` | Fixed-protocol policy evaluation and baselines |
+| `analysis/` | Diagnostics, inspection, summaries, probes, report generation |
+| `benchmarks/` | Throughput, profiling, replay, and systems-performance experiments |
+| `visualization/` | Figures, plots, GIF/gameplay recording, rendered evidence generation |
+| `deployment/` | Export, packaging, parity checks, and deployment preparation |
+| `demos/` | Small educational or interactive demonstrations |
+
+Choose a directory by **responsibility**, not by Day number. A script named after a Day is acceptable when it is inherently tied to a one-off experiment, but shared behavior should move into `breakout_rl/`.
 
 ## Canonical handoff
 
@@ -37,8 +44,17 @@ A script may expose additional CLI flags, but formal Day 17+ experiments must va
 
 ## Formal experiments vs. diagnostics
 
-A benchmark, smoke run, probe, toy demo, or visualization is evidence about a specific mechanism; it is not automatically a model-quality comparison. Formal DQN-family comparisons must use the frozen environment contract, the canonical training backend, controlled training budgets/seeds, and the fixed evaluation protocol.
+A benchmark, smoke run, probe, toy demo, or visualization is evidence about a specific mechanism; it is not automatically a model-quality comparison.
+
+Formal DQN-family comparisons must use the frozen environment contract, canonical training backend, controlled training budgets/seeds, and fixed evaluation protocol. Preserve the resulting records under `experiments/` or `evaluations/` according to their role.
 
 ## Adding a new script
 
-Choose the directory by responsibility, not by Day number. If logic becomes reusable or is imported by multiple scripts, move that logic into `breakout_rl/` and keep the CLI thin. Do not add new root-level Python CLIs unless there is a documented architectural reason.
+1. Pick the category above that matches what the executable does.
+2. Keep argument parsing and orchestration in `scripts/`.
+3. Move logic imported by multiple tools into `breakout_rl/`.
+4. Load canonical configs rather than retyping task-defining constants.
+5. Write disposable output to ignored local locations first; only commit selected reproducible evidence.
+6. Do not add a new root-level Python CLI unless there is a documented architectural reason.
+
+Do not repair imports with machine-specific paths or `sys.path.append(...)`. Use package/module imports.

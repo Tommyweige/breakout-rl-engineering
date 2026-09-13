@@ -1,491 +1,137 @@
-# Breakout RL Engineering 
+# Breakout RL Engineering
 
-## Human vs AI Breakout
+A 30-day reinforcement-learning engineering project that takes Atari Breakout from **environment understanding → DQN training → algorithm comparison → ONNX inference → browser deployment**.
+
+## Play the final result
 
 [![Human and RL Breakout running side by side](assets/day30/final-human-vs-rl.png)](https://breakout.tommypan.dev)
 
-**Play:** [breakout.tommypan.dev](https://breakout.tommypan.dev)
+**Live demo:** [breakout.tommypan.dev](https://breakout.tommypan.dev)
 
-左邊由你自己玩，右邊是訓練好的 RL Agent；兩個 ALE 遊戲與推論都在你的瀏覽器裡執行，不需要安裝 Python，也不需要連到 GPU server。
+The left game is controlled by the player; the right game is controlled by the trained RL agent. ALE and model inference both run in the browser, so the demo does not require a Python backend or GPU server.
 
+## What this repository contains
 
----
-
-## 為什麼會有這個系列？
-
-會開始這個專案，其實沒有什麼很複雜的理由。
-
-前陣子我看到 YouTube 頻道 **Yosh** 的影片。
-
-他的影片主要在做一件很有趣的事情：
-
-**用 Reinforcement Learning（強化學習）讓 AI 自己學會玩 Trackmania。**
-
-如果有興趣，可以先看看他的頻道：
-
-> https://www.youtube.com/@yoshtm
-
-我第一次看的時候，最吸引我的並不是「AI 最後可以跑多快」，而是 AI 從一開始幾乎什麼都不會，到慢慢開始出現一些看起來有意義的行為。
-
-一開始可能亂開、撞牆，甚至學到一些我們根本沒預期到的策略。
-
-接著再透過訓練、修改方法、重新測試，慢慢把 Agent 調整得更好。
-
-這種：
+This is not only a trained Breakout model. The repository records the complete engineering path:
 
 ```text
-什麼都不會
-    ↓
-亂試
-    ↓
-得到回饋
-    ↓
-慢慢學會
-    ↓
-開始出現有意思的行為
-```
-
-的過程，讓我覺得非常有趣。
-
-所以我也產生了一個很直接的想法：
-
-> **那我能不能自己做一個？**
-
-這就是這個系列最一開始的原因。
-
----
-
-## 不過，我不打算挑戰 Trackmania
-
-Trackmania 很有趣，但如果目標是第一次完整實作一個 Reinforcement Learning 專案，我希望先把問題控制在比較容易處理的範圍。
-
-并且我的運算資源也是非常的有限，只有一個游戲本，12500H + 4060Laptop的組合，所以最後能不能做出成果我也不清楚，但是這也是一個經驗。
-
-所以最後選擇的是另一款非常經典的遊戲：
-
-**Atari Breakout，也就是打磚塊。**
-
-遊戲規則應該不需要太多介紹。
-
-下面有一個可以左右移動的板子，一顆球會在畫面裡反彈，而目標就是不要讓球掉下去，並盡可能打掉上方的磚塊。
-
-這個游戲難度，就畫面上的複雜度而言，我想應該是比Trackmania簡單不少（吧
-
-反正對人來說，這件事情很直覺。
-
-看到球往右下方掉，我們會把板子往右移。
-
-但如果今天控制板子的不是人，而是一個剛開始什麼都不知道的 AI 呢？
-
-它必須透過與遊戲反覆互動，慢慢學會：
-
-```text
-現在的狀態
-   ↓
-做一個動作
-   ↓
-看看發生什麼事
-   ↓
-得到 Reward
-   ↓
-調整之後的行為
-```
-
-這就是這次要玩的東西。
-
----
-
-# 什麼是 Reinforcement Learning？
-
-如果以前沒有接觸過強化學習，現在其實不用急著記任何公式。
-
-先抓住一個概念就好：
-
-**Agent 會在一個 Environment 裡採取 Action，Environment 再把結果和 Reward 回傳給它。**
-
-也就是：
-
-```text
-Agent
-  │
-  │ Action
-  ▼
-Environment
-  │
-  │ State + Reward
-  ▼
-Agent
-```
-
-例如放到 Breakout：
-
-```text
-AI 看到目前遊戲狀態
-        ↓
-決定板子往左或往右
-        ↓
-遊戲繼續執行
-        ↓
-得到新的狀態與分數
-        ↓
-再決定下一個動作
-```
-
-Agent 就是在大量這樣的互動中逐漸學習。
-
-DeepMind 早期的 DQN 工作，就是讓神經網路直接從 Atari 遊戲畫面學習該採取什麼行動，這也是後來 Deep Reinforcement Learning 很經典的一條發展路線。
-
-這也是為什麼我覺得 Atari 很適合拿來當第一次完整實作 RL 的題目。
-
----
-
-# 為什麼是 Breakout？
-
-除了遊戲本身簡單之外，我選 Breakout 還有另一個原因：
-
-**它雖然容易理解，但要真的讓 AI 學會，並沒有看起來那麼簡單。**
-
-AI 不會直接收到：
-
-```text
-球的位置 = (x, y)
-板子的位置 = (x, y)
-球的方向 = 右下
-```
-
-在這個專案裡，我們會讓它從 Atari 的畫面開始處理。
-
-也就是說，之後還會碰到：
-
-* 遊戲畫面怎麼變成模型輸入？
-* 單張圖片看得出球往哪裡飛嗎？
-* AI 可以做哪些 Action？
-* Reward 到底是什麼？
-* 訓練資料從哪裡產生？
-
-這些問題都會在後面的文章一個一個拆開。
-
-所以如果現在完全沒有做過 Reinforcement Learning，其實沒關係。
-
-我自己也希望利用這 30 天，把整條流程真正走過一次，而不是只把某個現成範例跑起來。
-
----
-
-# 環境的來源
-
-這個系列使用的不是我自己做的 Breakout clone。
-
-預計使用的環境是：
-
-```text
-ALE/Breakout-v5
-```
-
-主要會接觸兩個東西：
-
-**Gymnasium**
-
-以及
-
-**Arcade Learning Environment（ALE）**
-
-ALE 是一個常被用來研究 Atari 強化學習的環境；原始 DQN 研究同樣使用 Atari 2600 遊戲作為測試環境。
-
-使用既有的標準環境，也代表我們不用先花時間自己處理：
-
-```text
-遊戲物理
-碰撞
-球的速度
-板子移動
-計分規則
-```
-
-可以直接把重點放在：
-
-**怎麼讓 Agent 學習。**
-
-至於 Gymnasium、ALE 和 Atari 三者到底是什麼關係，會留到 Day 2 再慢慢拆。
-
----
-
-# 這個系列不只是「讓 AI 打贏 Breakout」
-
-最一開始讓我想做這件事的原因，其實很單純：
-
-**我就是覺得看 AI 自己慢慢學會玩遊戲很好玩。**
-
-但既然要花 30 天做，我希望不要只做到：
-
-```text
-模型訓練完成
+ALE / Gymnasium
       ↓
-AI 會打磚塊
+State, Action, Reward
       ↓
-結束
+DQN training loop
+      ↓
+Replay Buffer + Target Network
+      ↓
+Vectorized CUDA training
+      ↓
+DQN / Double DQN / Dueling Double DQN
+      ↓
+Evaluation contract + reproducible experiments
+      ↓
+PyTorch → ONNX → ONNX Runtime
+      ↓
+FP32 / FP16 / TensorRT experiments
+      ↓
+ONNX Runtime Web / WebGPU
+      ↓
+Playable browser product
 ```
 
-所以後來我決定把這個專案再往前延伸一些。
+The original Day 1 story and motivation are preserved in [`docs/day01-project-introduction.md`](docs/day01-project-introduction.md).
 
-除了學 Reinforcement Learning，我也想順便完整走一次模型從開發到部署的流程。
+## Start here
 
-最後大概會變成：
+- **30-day article index:** [`docs/README.md`](docs/README.md)
+- **Repository layout and file-placement rules:** [`PROJECT_STRUCTURE.md`](PROJECT_STRUCTURE.md)
+- **Coding-agent / article rules:** [`AGENTS.md`](AGENTS.md)
+- **Executable tooling:** [`scripts/README.md`](scripts/README.md)
+- **Configuration map:** [`configs/README.md`](configs/README.md)
+- **Final browser app:** [`web/`](web/)
+
+## Repository map
+
+| Path | Purpose |
+| --- | --- |
+| [`breakout_rl/`](breakout_rl/) | Reusable RL, training, evaluation, inference, and deployment implementation |
+| [`scripts/`](scripts/) | Executable CLIs grouped by training, evaluation, analysis, benchmarks, visualization, demos, and deployment |
+| [`configs/`](configs/) | Canonical environment, training, experiment, inference, and deployment definitions |
+| [`tests/`](tests/) | Regression and correctness tests |
+| [`docs/`](docs/) | Reader-facing 30-day technical articles |
+| [`assets/`](assets/) | Curated evidence used by the articles |
+| [`experiments/`](experiments/) | Preserved controlled experiment records |
+| [`evaluations/`](evaluations/) | Fixed-protocol policy evaluation results |
+| [`reports/`](reports/) | Derived engineering summaries |
+| [`web/`](web/) | Browser demo and ONNX Runtime Web / WebGPU integration |
+| [`design-system/`](design-system/) | UI design-system support for the browser demo |
+
+`breakout_env.py` is a documented historical exception kept at the root for compatibility; new reusable Python implementation should go under `breakout_rl/`.
+
+## Environment
+
+The Python environment is defined by:
 
 ```text
-Breakout Environment
-        ↓
-Reinforcement Learning
-        ↓
-DQN
-        ↓
-模型比較
-        ↓
-Evaluation
-        ↓
-ONNX
-        ↓
-Inference
-        ↓
-Optimization
-        ↓
-Web Deployment
+environment.yml
 ```
 
-也因此這個專案最後取名為：
-
-# Breakout RL Engineering
-
-前半段的重點是：
-
-**怎麼讓 AI 學會玩 Breakout。**
-
-後半段則是：
-
-**模型學會之後，怎麼把它真正拿出來使用。**
-
----
-
-# 第一個目標：先做出 DQN
-
-這個系列第一個主要模型會是：
-
-**DQN，Deep Q-Network。**
-
-現在不需要先理解它的公式。
-
-暫時可以把它想成：
-
-> 我們希望訓練一個神經網路，讓它根據目前看到的狀態，判斷不同 Action 哪一個比較值得做。
-
-例如：
+A locked snapshot is also preserved as:
 
 ```text
-目前的 Breakout 畫面
-        ↓
-       DQN
-        ↓
-左邊值多少？
-右邊值多少？
-不動值多少？
-        ↓
-選擇 Action
+environment.lock.yml
 ```
 
-實際上當然沒有這麼簡單。
+Typical setup:
 
-後面會陸續碰到：
+```bash
+conda env create -f environment.yml
+conda activate breakout-rl-engineering
+```
 
-* Q-Learning
-* Neural Network
-* Experience Replay
-* Exploration
-* Target Network
+Run executable tools from the repository root with module syntax:
 
-但我不打算在 Day 1 把這些東西全部塞進來。
+```bash
+python -m scripts.training.train_vectorized_dqn --help
+python -m scripts.evaluation.evaluate_dqn --help
+python -m scripts.analysis.analyze_q_values --help
+```
 
-後面碰到的時候，再從「為什麼需要它」開始介紹。
+## Canonical Breakout task contract
 
----
-
-# 做完 DQN 之後呢？
-
-當基本的 DQN 可以訓練之後，我還會繼續嘗試：
+From Day 16 onward, training, evaluation, gameplay recording, and deployment parity checks share the machine-readable contract:
 
 ```text
-DQN
- ↓
-Double DQN
- ↓
-Dueling Double DQN
+configs/eval/breakout_contract_v2.json
 ```
 
-然後實際跑實驗比較結果。
+This freezes the task-defining semantics such as frame skip/stack, sticky actions, FIRE ownership, life-loss handling, evaluation seeds, reward handling, and episode limits so that algorithm comparisons remain meaningful.
 
-這部分我覺得也會是整個系列比較有趣的地方。
+## 30-day roadmap
 
-因為 Reinforcement Learning 並不是：
+| Phase | Days | Focus |
+| --- | ---: | --- |
+| RL foundations | 1–6 | ALE, Gymnasium, observations, rewards, MDP, Q-Learning |
+| Build DQN | 7–15 | CNN, replay buffer, exploration, target network, training/debugging |
+| Improve training | 16–21 | Vectorized CUDA training, Double DQN, Dueling DQN, long training |
+| Model engineering | 22–26 | ONNX export, runtime inference, benchmarking, precision, TensorRT |
+| Browser product | 27–30 | ONNX Runtime Web, WebGPU, interactive demo, final validation |
 
-```text
-程式寫完
-↓
-train()
-↓
-一定成功
-```
+See [`docs/README.md`](docs/README.md) for links to every article.
 
-實際訓練很可能會遇到很多奇怪的結果。
+## Artifact policy
 
-甚至有 Breakout 實作經驗指出，真正麻煩的部分往往不是把網路寫出來，而是後面的訓練與除錯。
+The repository intentionally keeps reproducible evidence, but different output types have different homes:
 
-所以如果中間 Agent：
+- local disposable runs → `runs/` (ignored by default)
+- controlled experiments worth preserving → `experiments/`
+- fixed-protocol policy evaluations → `evaluations/`
+- figures/traces used by articles → `assets/dayXX/`
+- summaries derived from evidence → `reports/`
 
-* 完全學不起來
-* 表現突然變差
-* 學到奇怪的行為
-* 實驗結果跟預期不同
+This prevents the project root from becoming a second experiment-output directory.
 
-我也會把這些過程放進文章。
+## Project goal
 
-我反而覺得這些東西比單純貼一張「最後成功了」的結果更值得記錄。
+The main goal was to understand the full lifecycle rather than stop at `train()`:
 
----
-
-# 模型學會玩之後，我還想繼續做下去
-
-到了系列後半段，我會開始離開單純的 RL 演算法。
-
-例如把 PyTorch 訓練好的模型轉成：
-
-**ONNX**
-
-再使用：
-
-**ONNX Runtime**
-
-執行模型。
-
-接著嘗試比較不同推論方式，並看看 FP16、TensorRT 等最佳化方法到底能帶來什麼差異。
-
-最後希望使用：
-
-**ONNX Runtime Web / WebGPU**
-
-讓模型直接在瀏覽器裡執行。
-
-因此理想中的最終成果會是一個可以展示的 Breakout AI，而不只是留下一個模型權重檔。
-
----
-
-# 這 30 天大概會怎麼走？
-
-目前把整個系列分成五個階段。
-
-## Phase 1 — 先搞懂遊戲和強化學習
-
-Day 1～6 會先處理基礎：
-
-* Atari、ALE、Gymnasium
-* State、Action、Reward
-* 遊戲畫面怎麼處理
-* Q-Learning
-* Deep Q-Learning
-
----
-
-## Phase 2 — 把 DQN 組起來
-
-Day 7～15 開始真正寫模型：
-
-* CNN
-* DQN Network
-* Experience Replay
-* Exploration
-* Target Network
-* Training Loop
-* 訓練與除錯
-
-最後希望得到第一個真的開始學習 Breakout 的 Agent。
-
----
-
-## Phase 3 — 訓練系統與 DQN 改進
-
-Day 16～20 會先改善訓練系統，再比較 DQN 變體：
-
-* Vectorized DQN Training
-* Double DQN
-* [Dueling Network](docs/day19-dueling-network-architecture.md)
-* [DQN family 實驗比較](docs/day20-dqn-family-comparison.md)
-
-看看修改演算法之後，實際結果到底差多少。
-
----
-
-## Phase 4 — 模型工程
-
-Day 21～25 開始處理：
-
-```text
-PyTorch
-   ↓
-ONNX
-   ↓
-ONNX Runtime
-```
-
-以及推論效能測試。
-
----
-
-## Phase 5 — 部署
-
-最後 Day 26～30：
-
-* FP16 / TensorRT 實驗
-* ONNX Runtime Web
-* WebGPU
-* Browser Demo
-* 最終 Evaluation
-
-如果一切順利，第 30 天應該可以回頭看看：
-
-**一個原本只會亂動的 Agent，最後到底能走到哪裡。**
-
----
-
-# 這個系列適合誰？
-
-這個系列預計會從 Reinforcement Learning 的基本概念開始。
-
-所以不需要已經有 RL 的實作經驗。
-
-如果本身有一些：
-
-* Python
-* 基本的 Machine Learning
-* Neural Network
-
-概念，後面的程式應該會比較容易閱讀。
-
-但碰到新的 RL 概念時，我也會盡量先說明：
-
-> **我們現在遇到了什麼問題？**
-
-接著才介紹：
-
-> **為了解決這個問題，所以需要什麼方法？**
-
-而不是一開始就假設所有名詞大家都已經知道。
-
----
-
-# 專案原始碼
-
-這次的程式碼、實驗紀錄以及相關文件，都會持續放在 GitHub：
-
-https://github.com/Tommyweige/breakout-rl-engineering
-
-Repository 目前還在開發初期，也會跟著這 30 天的文章慢慢長出來。
-
----
-
+> make an agent learn Breakout, measure whether it actually learned, compare algorithm changes fairly, export the model, optimize inference, and finally ship the policy as something people can use in a browser.

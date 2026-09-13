@@ -1,477 +1,149 @@
 # Breakout RL Engineering
 
-[![Human 與 RL Agent 並排執行 Breakout](assets/day30/final-human-vs-rl.png)](https://breakout.tommypan.dev)
+這是一個 30 天的強化學習工程專案，從 Atari Breakout 的環境理解一路做到 **DQN 訓練、演算法比較、ONNX 推論與瀏覽器部署**。
 
-## Human vs AI Breakout
+## 最終成果：Human vs AI Breakout
 
-**直接遊玩：** [breakout.tommypan.dev](https://breakout.tommypan.dev)
+[![Human and RL Breakout running side by side](assets/day30/final-human-vs-rl.png)](https://breakout.tommypan.dev)
 
-左邊由你自己玩，右邊是訓練好的 RL Agent；兩個遊戲與推論都在瀏覽器 client-side 執行，不需要安裝 Python，也不需要連到我的 GPU server。
+**直接玩：** [breakout.tommypan.dev](https://breakout.tommypan.dev)
 
-[Day 1 文章](README.md) | **繁體中文專案總覽**
+左邊是你自己控制，右邊是訓練好的 RL Agent。兩邊的 ALE 遊戲與模型推論都直接跑在瀏覽器裡，不需要 Python 後端，也不需要連 GPU server。
 
-## 開發環境
+## 這個 repo 在做什麼？
 
-請參閱[環境設定](docs/environment.md)，了解 Conda 環境建立方式與可重現的套件版本紀錄。
-
-> 從 DQN 到部署：打造、評估、最佳化並部署一個能夠遊玩 Atari Breakout 的強化學習代理人。
-
-## 專案概述
-
-這是一個以 **Atari Breakout** 為核心的端到端強化學習工程專案。
-
-本專案的目標不只是訓練出一個能遊玩 Breakout 的代理人，更要探索完整的 AI 模型生命週期：
-
-**環境 → 資料收集 → 訓練 → 評估 → 最佳化 → 模型匯出 → 推論效能基準測試 → Web 部署**
-
-本專案將作為 **2026 iThome 鐵人賽** 30 天技術系列的一部分持續開發。
-
-## 專案目標
-
-本專案預計：
-
-1. 使用 PyTorch 從零實作 Deep Q-Network（DQN）代理人。
-2. 理解並實作深度強化學習的核心元件。
-3. 比較多種 DQN 變體：
-   * DQN
-   * Double DQN
-   * Dueling Double DQN
-4. 分析訓練穩定性與 Q-value 行為。
-5. 使用多個隨機種子進行可重現的實驗。
-6. 將 PyTorch policy 匯出為 ONNX。
-7. 比較不同推論執行環境的效能。
-8. 評估 FP32 與 FP16 推論。
-9. 在適合的情況下探索 TensorRT 最佳化。
-10. 使用 ONNX Runtime Web / WebGPU 將訓練好的代理人部署到瀏覽器。
-11. 同時評估模型品質與部署效能。
-
----
-
-## 執行環境
-
-主要使用的環境：
+這不只是一個「把 DQN train 出來」的專案，而是完整記錄整條工程流程：
 
 ```text
-ALE/Breakout-v5
-```
-
-透過以下工具提供：
-
-* Gymnasium
-* Arcade Learning Environment（ALE）
-
-本專案不會自行建立一個客製化的 Breakout clone，而是使用標準化的 Atari 環境，讓實驗更容易重現，也更方便與既有強化學習研究比較。
-
-### Observation Pipeline
-
-原始 Atari 畫面會經過以下預處理：
-
-```text
-ALE/Breakout-v5
-210 × 160 × 3 RGB / uint8
+ALE / Gymnasium
       ↓
-AtariPreprocessing
-  - Frame Skip = 4
-  - Max Pooling
-  - Grayscale
-  - Resize = 84 × 84
+State、Action、Reward
       ↓
-84 × 84 / uint8
+DQN Training Loop
       ↓
-FrameStackObservation(stack_size=4)
+Replay Buffer + Target Network
       ↓
-4 × 84 × 84 / uint8
+Vectorized CUDA Training
+      ↓
+DQN / Double DQN / Dueling Double DQN
+      ↓
+Evaluation Contract + 可重現實驗
+      ↓
+PyTorch → ONNX → ONNX Runtime
+      ↓
+FP32 / FP16 / TensorRT
+      ↓
+ONNX Runtime Web / WebGPU
+      ↓
+可直接玩的 Browser Product
 ```
 
-底層 ALE environment 使用 `frameskip=1`，由 `AtariPreprocessing` 統一負責 frame skipping，避免重複 skip。Frame stacking 則讓代理人能夠從連續畫面推斷球的移動方向與速度等資訊。
+原本放在根 README 的 Day 1 故事與動機已完整保留在 [`docs/day01-project-introduction.md`](docs/day01-project-introduction.md)。
 
----
+## 建議從這裡開始看
 
-## 訓練資料從哪裡來？
+- **30 天文章索引：** [`docs/README.md`](docs/README.md)
+- **Repo 結構與檔案放置規則：** [`PROJECT_STRUCTURE.md`](PROJECT_STRUCTURE.md)
+- **Coding agent / 技術文章規則：** [`AGENTS.md`](AGENTS.md)
+- **可執行工具分類：** [`scripts/README.md`](scripts/README.md)
+- **Config 地圖：** [`configs/README.md`](configs/README.md)
+- **最終瀏覽器 App：** [`web/`](web/)
 
-與監督式學習不同，本專案不使用固定且已標註的資料集。
+## Repo 結構
 
-訓練樣本是代理人與環境互動時動態產生的。
+| 路徑 | 用途 |
+| --- | --- |
+| [`breakout_rl/`](breakout_rl/) | 可重用的 RL、訓練、評估、推論與部署程式 |
+| [`scripts/`](scripts/) | Training / Evaluation / Analysis / Benchmark / Visualization / Deployment CLI |
+| [`configs/`](configs/) | 環境、訓練、實驗、推論與部署設定 |
+| [`tests/`](tests/) | Regression / correctness tests |
+| [`docs/`](docs/) | 30 天讀者向技術文章 |
+| [`assets/`](assets/) | 文章真正使用的精選證據與圖表 |
+| [`experiments/`](experiments/) | 值得保留的受控實驗紀錄 |
+| [`evaluations/`](evaluations/) | 固定協議的 policy 評估結果 |
+| [`reports/`](reports/) | 從實驗 / 評估證據衍生出的工程報告 |
+| [`web/`](web/) | ONNX Runtime Web / WebGPU 與最終互動 Demo |
+| [`design-system/`](design-system/) | Web Demo 的 UI design-system 支援 |
 
-每次互動會產生一筆 transition：
+`breakout_env.py` 是目前刻意保留的歷史相容性例外；新的可重用 Python 程式不應再直接丟到 repo 根目錄。
+
+## Python 環境
+
+主要 Conda 環境：
 
 ```text
-(state, action, reward, next_state, terminated, truncated)
+environment.yml
 ```
 
-這些 transition 會被存放到 **Experience Replay Buffer**，並在訓練時抽樣使用。
+另外保留 locked snapshot：
 
 ```text
-Agent
-  ↓
-Action
-  ↓
-ALE/Breakout
-  ↓
-Reward + Next State + Episode Status
-  ↓
-Replay Buffer
-  ↓
-Neural Network Training
+environment.lock.yml
 ```
 
----
+一般建立方式：
 
-## 基準獎勵策略
+```bash
+conda env create -f environment.yml
+conda activate breakout-rl-engineering
+```
 
-初始實驗會使用標準 Atari reward，而不是一開始就加入自訂 reward shaping。
+所有 script 建議從 repo root 用 module syntax 執行：
 
-訓練時會評估以下 reward clipping 方式：
+```bash
+python -m scripts.training.train_vectorized_dqn --help
+python -m scripts.evaluation.evaluate_dqn --help
+python -m scripts.analysis.analyze_q_values --help
+```
+
+## Canonical Breakout Contract
+
+Day 16 之後，training、evaluation、gameplay recording 與 deployment parity 都應共同使用：
 
 ```text
-正 reward → +1
-零 reward →  0
-負 reward → -1
+configs/eval/breakout_contract_v2.json
 ```
 
-評估時則使用原始 Atari 遊戲分數。
+它固定了 frame skip / stack、sticky action、FIRE ownership、life-loss handling、evaluation seeds、reward 與 episode limit 等會直接改變 RL 任務定義的設定。
 
-自訂 reward shaping 只會作為受控實驗加入，確保 baseline 仍然具備可比較性與可重現性。
+這樣 DQN、Double DQN、Dueling DQN 之間的比較才是真的公平比較，而不是偷偷換了遊戲規則。
 
----
+## 30 天路線
 
-## 模型
+| Phase | Day | 內容 |
+| --- | ---: | --- |
+| RL 基礎 | 1–6 | ALE、Gymnasium、State/Action/Reward、MDP、Q-Learning |
+| 組出 DQN | 7–15 | CNN、Replay Buffer、Exploration、Target Network、Training / Debugging |
+| 訓練系統與演算法 | 16–21 | Vectorized CUDA、Double DQN、Dueling DQN、長時間訓練 |
+| 模型工程 | 22–26 | ONNX、ONNX Runtime、Benchmark、FP16、TensorRT |
+| Browser Product | 27–30 | ONNX Runtime Web、WebGPU、互動 Demo、最終驗證 |
 
-### DQN
+完整文章入口請看 [`docs/README.md`](docs/README.md)。
+
+## Artifact 怎麼分？
+
+這個 repo 會保存可重現證據，但不同輸出不再全部混在一起：
+
+- 本機一次性 run → `runs/`（預設 ignore）
+- 值得保留的 controlled experiment → `experiments/`
+- 固定 evaluation protocol 的 policy score → `evaluations/`
+- 文章真正引用的圖表 / trace → `assets/dayXX/`
+- 從證據整理出的 summary → `reports/`
+
+更完整的規則在 [`PROJECT_STRUCTURE.md`](PROJECT_STRUCTURE.md)。
+
+## 這個專案真正想完成的事
+
+目標不是停在：
 
 ```text
-State
- ↓
-CNN
- ↓
-Q(NOOP)
-Q(FIRE)
-Q(RIGHT)
-Q(LEFT)
- ↓
-argmax
- ↓
-Action
+train()
+↓
+模型有權重
+↓
+結束
 ```
 
-### Double DQN
+而是完整走過：
 
-Double DQN 會將 action selection 與 target evaluation 分離，用來研究 Q-value overestimation 問題。
-
-### Dueling Double DQN
-
-此網路會進一步將狀態價值與動作優勢分離：
-
-```text
-          ┌─ Value V(s)
-Features ─┤
-          └─ Advantage A(s, a)
-                ↓
-              Q(s, a)
-```
-
----
-
-## 訓練策略
-
-訓練會分成多個階段，而不是一開始就直接執行非常長的實驗。
-
-### Development
-
-```text
-10K–50K steps
-```
-
-用於 smoke test、除錯與確認整個 pipeline 可以正常運作。
-
-### Pilot Experiments
-
-```text
-100K–1M steps
-```
-
-用於確認代理人確實開始學習，以及訓練指標是否合理。
-
-### Model Comparison
-
-目標：
-
-```text
-3M steps × multiple seeds
-```
-
-用來比較：
-
-* DQN
-* Double DQN
-* Dueling Double DQN
-
-### Final Training
-
-根據實際測得的訓練速度，最佳設定可能會延長至約：
-
-```text
-10M environment steps
-```
-
----
-
-## 訓練加速
-
-訓練時不會顯示人類觀看用的遊戲畫面。
-
-可能採用的最佳化方式包括：
-
-* Headless Atari 執行
-* Frame skipping
-* Vectorized Atari environments
-* Batched GPU inference
-* 使用高效率的 `uint8` replay buffer 儲存方式
-* CPU environment 與 GPU training overlap
-* 依據 profiling 結果進行最佳化
-
-平行環境數量會根據實際測得的 **steps per second（SPS）** 選擇。
-
-候選設定：
-
-```text
-1 environment
-2 environments
-4 environments
-8 environments
-```
-
----
-
-## 評估指標
-
-訓練會追蹤以下指標：
-
-```text
-Episode Return
-Average Return
-TD Loss
-Q-value Mean
-Q-value Maximum
-Gradient Norm
-Epsilon
-Steps Per Second
-```
-
-在可行的情況下，模型比較會使用多個隨機種子進行。
-
----
-
-## 部署流程
-
-最終訓練好的 policy 會經過以下 AI engineering pipeline：
-
-```text
-PyTorch
-   ↓
-ONNX
-   ↓
-ONNX Runtime
-   ├── CPU
-   ├── CUDA
-   └── Web
-```
-
-可選的 NVIDIA 部署實驗：
-
-```text
-ONNX
- ↓
-TensorRT
- ↓
-FP32 / FP16 inference
-```
-
----
-
-## 推論效能基準測試
-
-可能比較的執行環境包括：
-
-```text
-PyTorch CPU
-PyTorch CUDA
-ONNX Runtime CPU
-ONNX Runtime CUDA
-TensorRT FP32
-TensorRT FP16
-ONNX Runtime Web WASM
-ONNX Runtime Web WebGPU
-```
-
-測量項目包括：
-
-* 平均延遲
-* P50 latency
-* P95 latency
-* Throughput
-* Model size
-* GPU memory usage
-
----
-
-## 部署一致性
-
-如果最佳化後的模型行為不再正確，效能提升就沒有意義。
-
-因此，本專案會使用以下指標比較不同 runtime 的輸出：
-
-```text
-Numerical Error
-Action Agreement Rate
-Average Episode Return
-```
-
-例如：
-
-```text
-PyTorch FP32
-      vs
-ONNX Runtime FP32
-      vs
-FP16
-      vs
-TensorRT
-      vs
-ONNX Runtime Web
-```
-
----
-
-## Web Demo
-
-最終目標是建立一個互動式瀏覽器 demo，讓訓練好的強化學習代理人能直接遊玩 Breakout。
-
-預計架構：
-
-```text
-Browser
-   │
-   ├── Atari / Breakout Environment
-   │
-   ├── Frame Preprocessing
-   │
-   ├── ONNX Runtime Web
-   │
-   ├── WASM / WebGPU
-   │
-   └── Interactive UI
-```
-
-介面可能顯示：
-
-```text
-Current Model
-Current Action
-Q Values
-Episode Reward
-Inference Latency
-Backend
-```
-
-未來的 demo 也可能允許使用者在 AI 控制與人類控制之間切換。
-
----
-
-## 30 天開發路線
-
-### Phase 1 — 環境與強化學習基礎
-
-* Day 1 — [專案動機與開發路線](README.md)
-* Day 2 — [Atari Breakout、ALE 與 Gymnasium](docs/day02-breakout-ale-gymnasium.md)
-* Day 3 — [State、Action、Reward 與強化學習產生的資料](docs/day03-state-action-reward-data.md)
-* Day 4 — [Atari 預處理與 frame stacking](docs/day04-atari-preprocessing-frame-stacking.md)
-* Day 5 — [MDP、Return 與 Bellman Equation](docs/day05-mdp-bellman-equation.md)
-* Day 6 — [從 Bellman Equation 到 Q-Learning，再理解為什麼 Breakout 需要 Deep Q-Learning](docs/day06-q-learning-to-deep-q-learning.md)
-
-### Phase 2 — 建立 DQN
-
-* Day 7 — [CNN 架構與 tensor 維度](docs/day07-cnn-and-tensor-dimensions.md)
-* Day 8 — [實作 DQN network](docs/day08-dqn-network.md)
-* Day 9 — [Experience Replay](docs/day09-experience-replay.md)
-* Day 10 — [Exploration vs. Exploitation：Epsilon-Greedy 與探索排程](docs/day10-exploration-vs-exploitation.md)
-* Day 11 — [Target Network：讓 Bellman 目標暫時固定下來](docs/day11-target-network.md)
-* Day 12 — [完整 DQN training loop：從一筆 transition 到一次參數更新](docs/day12-complete-dqn-training-loop.md)
-* Day 13 — [除錯不穩定的 RL 訓練：從 sanity check 到 training diagnostics](docs/day13-debugging-unstable-rl-training.md)
-* Day 14 — [超參數實驗：用受控比較取代「改一個數字試試看」](docs/day14-hyperparameter-experiments.md)
-* Day 15 — [DQN milestone 與 evaluation](docs/day15-dqn-milestone-and-evaluation.md)
-
-### Phase 3 — 訓練系統與 DQN 改進
-
-* Day 16 — [Vectorized DQN Training：多環境、批次 action inference 與批次 GPU Replay](docs/day16-vectorized-dqn-training.md)
-* Day 17 — [Q-value overestimation 與 Double DQN](docs/day17-q-overestimation-and-double-dqn.md)
-* Day 18 — DQN vs. Double DQN
-* Day 19 — [Dueling Network Architecture：把 State Value 與 Action Advantage 分開學](docs/day19-dueling-network-architecture.md)
-* Day 20 — 完整 DQN family comparison
-
-### Phase 4 — AI Engineering
-
-* Day 21 — [Final Long Training：固定最後模型](docs/day21-final-long-training.md)
-* Day 22 — [PyTorch to ONNX：凍結 inference contract](docs/day22-pytorch-to-onnx.md)
-* Day 23 — [ONNX Runtime inference：驗證 Q-value 與 action parity](docs/day23-onnx-runtime-inference.md)
-* Day 24 — 正確的 inference benchmarking
-* Day 25 — FP32 vs. FP16
-
-### Phase 5 — 部署
-
-* Day 26 — TensorRT optimization experiment
-* Day 27 — ONNX Runtime Web
-* Day 28 — [WebGPU inference：在 Cloudflare Pages 驗證 WASM / WebGPU 正確性與延遲](docs/day28-webgpu-inference.md)
-* Day 29 — [Human vs RL 雙 Breakout Browser demo](docs/day29-interactive-browser-demo.md)
-* Day 30 — [從訓練好的 policy 到可玩的 Browser 產品](docs/day30-final-evaluation-and-engineering-review.md)；[直接遊玩](https://breakout.tommypan.dev)
-
----
-
-## 預計使用的技術棧
-
-### Training
-
-* Python
-* PyTorch
-* Gymnasium
-* Arcade Learning Environment
-* NumPy
-
-### Experimentation
-
-* TensorBoard
-* Pandas
-* Matplotlib
-
-### Model Deployment
-
-* ONNX
-* ONNX Runtime
-* NVIDIA TensorRT
-
-### Web
-
-* TypeScript / JavaScript
-* ONNX Runtime Web
-* WebGPU
-
----
-
-## 專案狀態
-
-🚧 **規劃中／初始開發階段**
-
-目前 repository 正在初始化，之後會在 30 天計畫中逐步加入實作與實驗結果。
-
----
-
-## 參考資料
-
-本專案主要參考以下強化學習研究：
-
-* *Playing Atari with Deep Reinforcement Learning* — Mnih et al.
-* *Human-level control through deep reinforcement learning* — Mnih et al.
-* *Deep Reinforcement Learning with Double Q-learning* — van Hasselt et al.
-* *Dueling Network Architectures for Deep Reinforcement Learning* — Wang et al.
-
-其他實作與工程相關參考資料，會隨專案進度持續補充。
+> 讓 Agent 學會 Breakout → 確認它是不是真的學會 → 公平比較演算法 → 匯出模型 → 驗證與最佳化推論 → 最後把 policy 真的做成瀏覽器裡可以玩的產品。
