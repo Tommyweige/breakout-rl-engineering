@@ -6,31 +6,29 @@ __pycache__/
 .ruff_cache/
 .ipynb_checkpoints/
 
-# Cloudflare Wrangler local cache.
+# Local tooling / build caches
 .wrangler/
-
-# Conda and local experiment outputs
 *.conda
+
+# Generated training and analysis output
 checkpoints/
 logs/
 results/
-
-# Local DQN training runs; selected reproducible evidence may still be tracked.
 runs/
+outputs/
 
-# Temporary local gameplay renders; canonical Day 21 progression evidence lives under assets/day21/.
-outputs/gameplay-progression/
-.qa-redesign/
-.qa-redesign-day29/
-.qa-redesign-day29-final/
+# Historical material belongs on docs/archive branches, not main.
+docs/
+assets/
+experiments/
+evaluations/
+reports/
 
-# Browser build-time assets copied from @farama/ale-wasm and the canonical Contract v2.
+# Browser assets generated at build time
 web/public/ale/
 web/public/configs/eval/breakout_contract_v2.json
-assets/day29/local-*
 
 # Secrets and local configuration
 .env
 .env.*
 !.env.example
-

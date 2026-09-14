@@ -1,48 +1,39 @@
 # Breakout RL Engineering
 
-Atari Breakout 的端到端強化學習工程專案：從 DQN 訓練、演算法比較，到 ONNX 與瀏覽器部署。
+Atari Breakout 的端到端強化學習工程專案：DQN 訓練、Double / Dueling DQN、CUDA 訓練、ONNX 推論，以及瀏覽器部署。
 
-## Demo
+## Live demo
 
-直接玩：<https://breakout.tommypan.dev>
+<https://breakout.tommypan.dev>
 
-左側由玩家控制，右側由訓練好的 RL Agent 控制；遊戲與模型推論都直接在瀏覽器中執行。
+遊戲與訓練完成的 RL Agent 都直接在瀏覽器執行，不需要 Python backend。
 
-## Main branch 內容
+## Repository
 
-`main` 只保留目前仍值得維護與執行的核心程式：
+`main` 只保留目前值得維護的程式碼與最終產品：
 
 ```text
-breakout_rl/   reusable RL / training / inference code
-configs/       environment、training、evaluation、deployment configs
-scripts/       training、evaluation、analysis、benchmark、deployment CLIs
-tests/         correctness / regression tests
-web/           browser demo
+breakout_rl/   reusable RL / training / inference implementation
+configs/       active training, evaluation, and inference configs
+scripts/       maintained training, evaluation, analysis, benchmark CLIs
+tests/         core correctness / regression tests
+web/           browser demo + runtime model assets
 ```
 
-其他 30 天鐵人賽文章、圖表、歷史實驗輸出、evaluation 結果與工程報告已移出主分支，保留在：
+30 天鐵人賽文章與對應圖表已移到 `docs-ironman-series` 分支。
+精簡前的完整 repository snapshot 保留在 `archive/full-history-before-main-cleanup`。
 
-- `archive/full-history-before-main-cleanup` — 精簡前的完整 repository snapshot
-
-這樣 `main` 可以維持成真正的程式碼主線，不再同時充當文章倉庫與實驗資料庫。
-
-## Python 環境
+## Python
 
 ```bash
 conda env create -f environment.yml
 conda activate breakout-rl-engineering
-```
 
-鎖定版本保留在 `environment.lock.yml`。
-
-## 常用入口
-
-```bash
 python -m scripts.training.train_vectorized_dqn --help
 python -m scripts.evaluation.evaluate_dqn --help
 ```
 
-Day 16 之後的 Breakout task semantics 以這份 contract 為準：
+Breakout 的 canonical environment / evaluation semantics：
 
 ```text
 configs/eval/breakout_contract_v2.json
@@ -56,4 +47,8 @@ npm install
 npm run dev
 ```
 
-瀏覽器端包含 ONNX Runtime Web / WebGPU 與最終 Human vs RL demo。
+Production build：
+
+```bash
+npm run build
+```

@@ -2,34 +2,33 @@
 
 ## Scope of `main`
 
-`main` is the maintained code branch. Keep it focused on runnable implementation, tests, configs, and the browser application.
+Keep `main` focused on maintained implementation, active configs, tests, and the browser application.
 
-Do not reintroduce the 30-day article archive, article screenshots, historical experiment dumps, evaluation result archives, or generated reports into `main`. Historical material is preserved on `archive/full-history-before-main-cleanup`.
+Do not add the 30-day articles, screenshots, generated reports, historical experiment dumps, or evaluation archives back to `main`. Reader-facing series material belongs on `docs-ironman-series`; the complete pre-cleanup snapshot is preserved on `archive/full-history-before-main-cleanup`.
 
 ## Layout
 
 ```text
 breakout_rl/   reusable Python implementation
-configs/       task, training, evaluation, inference, deployment configs
-scripts/       executable CLIs grouped by responsibility
-tests/         regression and correctness tests
-web/           browser application
+configs/       active task / training / evaluation / inference configuration
+scripts/       maintained executable CLIs
+tests/         correctness and regression tests
+web/           browser application and required runtime assets
 ```
 
-`breakout_env.py` is a compatibility exception at repository root. Do not add new root-level Python CLIs.
+`breakout_env.py` remains at repository root for compatibility. Do not add new root-level Python CLIs.
 
 ## Code placement
 
-- shared model/training/evaluation/inference logic -> `breakout_rl/`
+- reusable model, replay, training, evaluation, and inference logic -> `breakout_rl/`
 - training entry points -> `scripts/training/`
 - evaluation entry points -> `scripts/evaluation/`
-- diagnostics/inspection -> `scripts/analysis/`
-- performance/profiling -> `scripts/benchmarks/`
-- export/deployment helpers -> `scripts/deployment/`
+- reusable diagnostics -> `scripts/analysis/`
+- reusable performance checks -> `scripts/benchmarks/`
 
-Keep scripts thin. Reusable logic belongs in `breakout_rl/`.
+Keep scripts thin; shared logic belongs in `breakout_rl/`.
 
-Run scripts from repository root using module syntax, e.g.:
+Run tools from the repository root using module syntax, for example:
 
 ```bash
 python -m scripts.training.train_vectorized_dqn --help
@@ -40,7 +39,7 @@ Do not use machine-specific `sys.path` hacks.
 
 ## Canonical Breakout contract
 
-From Day 16 onward, task-defining environment/evaluation semantics come from:
+Task-defining environment and evaluation semantics come from:
 
 ```text
 configs/eval/breakout_contract_v2.json
@@ -54,5 +53,5 @@ When the environment overrides a requested policy action with mandatory serve `F
 
 - preserve training/evaluation parity;
 - update tests with behavior changes;
-- avoid adding generated outputs to the repository;
-- keep temporary runs, checkpoints, screenshots, benchmark dumps, and article artifacts ignored unless they are required runtime assets under `web/`.
+- keep generated runs, checkpoints, screenshots, benchmark dumps, and article artifacts out of `main`;
+- only commit large assets when they are required by the runtime under `web/`.
