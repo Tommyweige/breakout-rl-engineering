@@ -18,17 +18,37 @@
 
 ## 系統架構
 
+### 訓練與評估
+
 ```mermaid
-flowchart LR
-    A[Atari Breakout\nALE + Gymnasium] --> B[Preprocessing\n84x84 + Frame Stack]
-    B --> C[Vectorized DQN Training]
-    C --> D[Replay Buffer\nCPU / GPU]
-    D --> E[DQN Family\nDQN / Double / Dueling]
-    E --> F[Fixed-Contract Evaluation]
-    F --> G[ONNX Export / Inference]
-    G --> H[ONNX Runtime Web\nWebGPU / WASM]
-    H --> I[Browser Demo]
+flowchart TB
+    A["Atari Breakout<br/>ALE + Gymnasium"]
+    B["前處理<br/>84 × 84 畫面 + frame stack"]
+    C["Vectorized environment rollout"]
+    D["Replay Buffer<br/>CPU / GPU"]
+    E["DQN 最佳化<br/>PyTorch + CUDA"]
+    F["固定條件評估"]
+
+    A --> B --> C --> D --> E --> F
 ```
+
+Vanilla DQN、Double DQN 與 Dueling Double DQN 都使用相同的環境與評估 contract，方便在一致條件下比較。
+
+### 部署流程
+
+```mermaid
+flowchart TB
+    A["訓練完成的 PyTorch checkpoint"]
+    B["匯出 ONNX"]
+    C["ONNX Runtime Web<br/>WebGPU / WASM"]
+    D["瀏覽器應用<br/>玩家 vs RL Agent"]
+    E["ALE WASM<br/>Atari 環境"]
+
+    A --> B --> C --> D
+    E --> D
+```
+
+瀏覽器端會同時執行 Atari emulator 與 ONNX policy，因此遊戲與模型推論都不需要 Python backend。
 
 ## 專案結構
 
