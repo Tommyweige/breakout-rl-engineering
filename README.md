@@ -18,17 +18,37 @@ The final application runs both the Atari environment and the trained RL policy 
 
 ## Architecture
 
+### Training and evaluation
+
 ```mermaid
-flowchart LR
-    A[Atari Breakout\nALE + Gymnasium] --> B[Preprocessing\n84x84 + Frame Stack]
-    B --> C[Vectorized DQN Training]
-    C --> D[Replay Buffer\nCPU / GPU]
-    D --> E[DQN Family\nDQN / Double / Dueling]
-    E --> F[Fixed-Contract Evaluation]
-    F --> G[ONNX Export / Inference]
-    G --> H[ONNX Runtime Web\nWebGPU / WASM]
-    H --> I[Browser Demo]
+flowchart TB
+    A["Atari Breakout<br/>ALE + Gymnasium"]
+    B["Preprocessing<br/>84 × 84 frames + frame stack"]
+    C["Vectorized environment rollout"]
+    D["Replay Buffer<br/>CPU / GPU"]
+    E["DQN optimization<br/>PyTorch + CUDA"]
+    F["Fixed-contract evaluation"]
+
+    A --> B --> C --> D --> E --> F
 ```
+
+The training path supports Vanilla DQN, Double DQN, and Dueling Double DQN under the same environment and evaluation contract.
+
+### Deployment
+
+```mermaid
+flowchart TB
+    A["Trained PyTorch checkpoint"]
+    B["ONNX export"]
+    C["ONNX Runtime Web<br/>WebGPU / WASM"]
+    D["Browser application<br/>Human vs RL agent"]
+    E["ALE WASM<br/>Atari environment"]
+
+    A --> B --> C --> D
+    E --> D
+```
+
+The deployed browser application combines the Atari emulator and the ONNX policy locally, so gameplay and inference do not require a Python backend.
 
 ## Project Structure
 
