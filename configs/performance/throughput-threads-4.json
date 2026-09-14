@@ -1,8 +1,0 @@
-{
-  "name": "threads-4",
-  "base_config": "throughput-after.json",
-  "overrides": {
-    "cpu_threads": 4
-  },
-  "stage": "performance"
-}

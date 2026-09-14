@@ -1,8 +1,0 @@
-flowchart TB
-    A["① 固定比較條件<br/>同一個 Breakout Contract v2<br/>同一套 CUDA 訓練設定"]
-    B["② 100K：先看有沒有學<br/>只確認 DQN / Double DQN 都出現 learning signal<br/>不在這裡選 winner"]
-    C["③ 250K：把訓練拉長<br/>觀察早期差距是否還存在<br/>仍然不急著下結論"]
-    D["④ 500K：正式 multi-seed 比較<br/>training seeds 11 / 22 / 33<br/>3 個 DQN vs 3 個 Double DQN"]
-    E["⑤ 每個 checkpoint 固定測 15 局<br/>同一套 evaluation 規則<br/>三組 seed 都是 Double DQN 平均分較高"]
-
-    A --> B --> C --> D --> E

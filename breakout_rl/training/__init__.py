@@ -1,25 +1,16 @@
-"""Training configuration, update, logging, and trainer entry points.
+"""Training configuration, logging, and trainer entry points.
 
-The trainer imports PyTorch. Keep it lazy so CSV-only diagnostics and plotting
-can run in a clean process without loading the training runtime first.
+PyTorch-heavy trainer modules stay lazy so lightweight configuration and metrics
+utilities can be imported without loading the full training runtime.
 """
 
-from breakout_rl.training.config import (
-    DQNConfig,
-    SUPPORTED_ALGORITHMS,
-    normalize_algorithm,
-)
-from breakout_rl.training.backend_manifest import (
-    load_day16_backend_manifest,
-    validate_day16_backend_manifest,
-)
+from breakout_rl.training.config import DQNConfig, SUPPORTED_ALGORITHMS, normalize_algorithm
 from breakout_rl.training.metrics import METRIC_FIELDS, MetricsLogger
 
 __all__ = [
     "DQNConfig",
     "SUPPORTED_ALGORITHMS",
     "normalize_algorithm",
-    "load_day16_backend_manifest",
     "DQNTrainer",
     "DQNTrainingStepResult",
     "METRIC_FIELDS",
@@ -30,7 +21,6 @@ __all__ = [
     "dqn_training_step",
     "resolve_device",
     "seed_everything",
-    "validate_day16_backend_manifest",
     "ACTION_SELECTION_BATCH_SEMANTICS",
     "STRICT_ACTION_SELECTION_PARITY_RULE",
     "VectorScheduleEventKind",
@@ -43,7 +33,17 @@ __all__ = [
 
 
 def __getattr__(name: str):
-    if name not in {
+    vectorized_names = {
+        "VectorScheduleEventKind",
+        "VectorizedDQNTrainer",
+        "VectorizedTrainingStepCallback",
+        "VectorizedTrainingStepSnapshot",
+        "crossed_transition_boundaries",
+        "ACTION_SELECTION_BATCH_SEMANTICS",
+        "STRICT_ACTION_SELECTION_PARITY_RULE",
+        "strict_action_selection_parity_satisfied",
+    }
+    trainer_names = {
         "DQNTrainer",
         "DQNTrainingStepResult",
         "NonFiniteTrainingError",
@@ -52,33 +52,14 @@ def __getattr__(name: str):
         "dqn_training_step",
         "resolve_device",
         "seed_everything",
-        "VectorScheduleEventKind",
-        "VectorizedDQNTrainer",
-        "VectorizedTrainingStepCallback",
-        "VectorizedTrainingStepSnapshot",
-        "crossed_transition_boundaries",
-        "ACTION_SELECTION_BATCH_SEMANTICS",
-        "STRICT_ACTION_SELECTION_PARITY_RULE",
-        "strict_action_selection_parity_satisfied",
-    }:
-        raise AttributeError(name)
-
-    if name in {
-        "VectorScheduleEventKind",
-        "VectorizedDQNTrainer",
-        "VectorizedTrainingStepCallback",
-        "VectorizedTrainingStepSnapshot",
-        "crossed_transition_boundaries",
-        "ACTION_SELECTION_BATCH_SEMANTICS",
-        "STRICT_ACTION_SELECTION_PARITY_RULE",
-        "strict_action_selection_parity_satisfied",
-    }:
+    }
+    if name in vectorized_names:
         from breakout_rl.training import vectorized
-
         value = getattr(vectorized, name)
-    else:
+    elif name in trainer_names:
         from breakout_rl.training import dqn_trainer
-
         value = getattr(dqn_trainer, name)
+    else:
+        raise AttributeError(name)
     globals()[name] = value
     return value
