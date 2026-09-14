@@ -207,6 +207,29 @@ def validate_episode_rows(
             raise ValueError(
                 f"{source_path}: episode {identity} has neither terminated nor truncated"
             )
+        raw_life_loss_count = raw_row.get("life_loss_count", 0)
+        if isinstance(raw_life_loss_count, bool):
+            raise ValueError(f"{source_path}: life_loss_count must be a non-negative integer")
+        try:
+            life_loss_count = int(raw_life_loss_count)
+        except (TypeError, ValueError) as error:
+            raise ValueError(
+                f"{source_path}: life_loss_count must be a non-negative integer"
+            ) from error
+        if life_loss_count < 0:
+            raise ValueError(f"{source_path}: life_loss_count must be a non-negative integer")
+        if isinstance(raw_life_loss_count, str):
+            if str(life_loss_count) != raw_life_loss_count.strip():
+                raise ValueError(
+                    f"{source_path}: life_loss_count must be a non-negative integer"
+                )
+        elif isinstance(raw_life_loss_count, float):
+            if not math.isfinite(raw_life_loss_count) or raw_life_loss_count != life_loss_count:
+                raise ValueError(
+                    f"{source_path}: life_loss_count must be a non-negative integer"
+                )
+        elif not isinstance(raw_life_loss_count, int):
+            raise ValueError(f"{source_path}: life_loss_count must be a non-negative integer")
         rows.append(
             {
                 "evaluation_seed": evaluation_seed,
@@ -219,6 +242,7 @@ def validate_episode_rows(
                 "time_limit": time_limit,
                 "complete": complete,
                 "stop_reason": expected_stop_reason,
+                "life_loss_count": life_loss_count,
             }
         )
 
@@ -256,6 +280,9 @@ def summary_from_episode_rows(
     summary["mean_episode_length"] = float(
         fmean([int(row["episode_length"]) for row in rows])
     )
+    life_loss_counts = [int(row.get("life_loss_count", 0)) for row in rows]
+    summary["life_loss_count"] = int(sum(life_loss_counts))
+    summary["mean_life_loss_count"] = float(fmean(life_loss_counts))
     summary["complete_episodes"] = sum(bool(row["complete"]) for row in rows)
     summary.update(
         {

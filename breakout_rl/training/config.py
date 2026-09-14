@@ -9,6 +9,7 @@ from numbers import Integral, Real
 from typing import Any, Mapping
 
 from breakout_rl.models.factory import SUPPORTED_ARCHITECTURES, normalize_architecture
+from breakout_rl.training.reward_shaping import validate_life_loss_penalty
 
 
 SUPPORTED_ALGORITHMS = ("dqn", "double_dqn")
@@ -127,6 +128,7 @@ class DQNConfig:
     epsilon_decay_steps: int = 100_000
     gradient_clip_norm: float | None = 10.0
     reward_clip: bool = True
+    life_loss_penalty: float = 0.0
     device: str = "cpu"
     precision: str = "float32"
     checkpoint_interval: int = 1_000
@@ -193,6 +195,11 @@ class DQNConfig:
 
         if not isinstance(self.reward_clip, bool):
             raise TypeError("reward_clip must be a boolean")
+        object.__setattr__(
+            self,
+            "life_loss_penalty",
+            validate_life_loss_penalty(self.life_loss_penalty),
+        )
         object.__setattr__(self, "device", _device_request(self.device, name="device"))
         if not isinstance(self.precision, str) or not self.precision.strip():
             raise ValueError("precision must be a non-empty string")

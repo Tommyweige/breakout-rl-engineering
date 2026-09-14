@@ -55,6 +55,10 @@ from breakout_rl.training.dqn_trainer import (
     seed_everything,
 )
 from breakout_rl.training.metrics import MetricsLogger
+from breakout_rl.training.reward_shaping import (
+    LIFE_LOSS_INFO_KEY,
+    reward_design_metadata,
+)
 
 
 VectorScheduleEventKind = Literal[
@@ -112,6 +116,12 @@ class VectorizedTrainingStepSnapshot:
     optimizer_updated: bool
     optimizer_updates: int
     target_sync_count: int
+    training_reward: float = 0.0
+    current_training_episode_return: float = 0.0
+    life_loss: bool = False
+    current_life_loss_count: int = 0
+    life_loss_count: int = 0
+    life_loss_penalty_total: float = 0.0
 
 
 VectorizedTrainingStepCallback = Callable[[VectorizedTrainingStepSnapshot], None]
@@ -269,6 +279,22 @@ def _info_at(
     if isinstance(values, (list, tuple)):
         return values[index] if index < len(values) else default
     return values
+
+
+def _life_loss_flags(
+    infos: Mapping[str, Any] | Any,
+    *,
+    num_envs: int,
+) -> np.ndarray:
+    """Read the wrapper-provided life-loss signal for every environment."""
+
+    return np.asarray(
+        [
+            bool(_info_at(infos, LIFE_LOSS_INFO_KEY, index, False))
+            for index in range(num_envs)
+        ],
+        dtype=np.bool_,
+    )
 
 
 def _final_observation_for(
@@ -536,6 +562,13 @@ class VectorizedDQNTrainer:
         self._episode_returns = np.zeros(self.num_envs, dtype=np.float64)
         self._episode_training_returns = np.zeros(self.num_envs, dtype=np.float64)
         self._episode_lengths = np.zeros(self.num_envs, dtype=np.int64)
+        self._episode_life_loss_counts = np.zeros(self.num_envs, dtype=np.int64)
+        self._episode_life_loss_penalty_totals = np.zeros(
+            self.num_envs,
+            dtype=np.float64,
+        )
+        self._life_loss_counts = np.zeros(self.num_envs, dtype=np.int64)
+        self._life_loss_penalty_totals = np.zeros(self.num_envs, dtype=np.float64)
         self.episode = 0
         self._action_counts = [0 for _ in range(self.action_count)]
         self._random_decision_count = 0
@@ -569,6 +602,9 @@ class VectorizedDQNTrainer:
                 "environment_id": self._environment_id,
                 "algorithm": self.config.algorithm,
                 "architecture": self.config.architecture,
+                **reward_design_metadata(
+                    life_loss_penalty=self.config.life_loss_penalty,
+                ),
                 "vectorized": True,
                 "num_envs": self.num_envs,
                 "observation_shape": list(self.observation_shape),
@@ -911,9 +947,18 @@ class VectorizedDQNTrainer:
         epsilon: float,
         raw_reward: float,
         training_reward: float,
+        life_loss: bool,
+        life_loss_count: int,
+        life_loss_penalty_total: float,
         current_raw_episode_return: float,
+        current_training_episode_return: float,
+        current_life_loss_count: int,
+        current_life_loss_penalty_total: float,
         completed_return: float | None,
+        completed_training_return: float | None,
         completed_length: int | None,
+        completed_life_loss_count: int | None,
+        completed_life_loss_penalty_total: float | None,
         terminated: bool,
         truncated: bool,
         transition_batch_size: int,
@@ -931,11 +976,14 @@ class VectorizedDQNTrainer:
             "architecture": self.config.architecture,
             "episode": self.episode,
             "raw_episode_return": completed_return,
+            "training_episode_return": completed_training_return,
             "episode_length": completed_length,
+            "episode_life_loss_count": completed_life_loss_count,
+            "episode_life_loss_penalty_total": completed_life_loss_penalty_total,
             "current_raw_episode_return": current_raw_episode_return,
-            "current_training_episode_return": float(
-                self._episode_training_returns[environment_index]
-            ),
+            "current_training_episode_return": current_training_episode_return,
+            "current_life_loss_count": current_life_loss_count,
+            "current_life_loss_penalty_total": current_life_loss_penalty_total,
             "epsilon": epsilon,
             "loss": None if result is None else result.loss,
             "q_mean": None if result is None else result.q_mean,
@@ -957,6 +1005,9 @@ class VectorizedDQNTrainer:
             "last_target_sync_step": self.last_target_sync_step,
             "raw_reward": raw_reward,
             "training_reward": training_reward,
+            "life_loss": life_loss,
+            "life_loss_count": life_loss_count,
+            "life_loss_penalty_total": life_loss_penalty_total,
             "terminated": terminated,
             "truncated": truncated,
             "requested_action": requested_action,
@@ -1039,7 +1090,14 @@ class VectorizedDQNTrainer:
                 "environment_id": self._environment_id,
                 "algorithm": self.config.algorithm,
                 "architecture": self.config.architecture,
+                **reward_design_metadata(
+                    life_loss_penalty=self.config.life_loss_penalty,
+                ),
                 "training_steps": self.global_step,
+                "life_loss_count": int(self._life_loss_counts.sum()),
+                "life_loss_penalty_total": float(
+                    self._life_loss_penalty_totals.sum()
+                ),
                 "vectorized": True,
                 "num_envs": self.num_envs,
                 "observation_shape": list(self.observation_shape),
@@ -1110,6 +1168,9 @@ class VectorizedDQNTrainer:
             "seed": self.config.seed,
             "algorithm": self.config.algorithm,
             "architecture": self.config.architecture,
+            **reward_design_metadata(
+                life_loss_penalty=self.config.life_loss_penalty,
+            ),
             "num_envs": self.num_envs,
             "model_config": {
                 "architecture": self.config.architecture,
@@ -1126,6 +1187,10 @@ class VectorizedDQNTrainer:
             "physical_environment_steps": self.physical_environment_steps,
             "vector_iterations": self.vector_iterations,
             "episodes": self.episode,
+            "life_loss_count": int(self._life_loss_counts.sum()),
+            "life_loss_penalty_total": float(
+                self._life_loss_penalty_totals.sum()
+            ),
             "per_environment_episode_counts": self._episode_counts.tolist(),
             "optimizer_updates": self.optimizer_updates,
             "target_sync_count": self.target_sync_count,
@@ -1259,6 +1324,9 @@ class VectorizedDQNTrainer:
             "run_id": self.run_dir.name,
             "algorithm": self.config.algorithm,
             "architecture": self.config.architecture,
+            "reward_design": reward_design_metadata(
+                life_loss_penalty=self.config.life_loss_penalty,
+            ),
             "device": self._resolved_device_name(),
             "requested_device": self.requested_device,
             "contract_id": self.config.contract_id,
@@ -1292,6 +1360,12 @@ class VectorizedDQNTrainer:
             "episode_returns": self._episode_returns.tolist(),
             "episode_training_returns": self._episode_training_returns.tolist(),
             "episode_lengths": self._episode_lengths.tolist(),
+            "episode_life_loss_counts": self._episode_life_loss_counts.tolist(),
+            "episode_life_loss_penalty_totals": (
+                self._episode_life_loss_penalty_totals.tolist()
+            ),
+            "life_loss_counts": self._life_loss_counts.tolist(),
+            "life_loss_penalty_totals": self._life_loss_penalty_totals.tolist(),
             "target_sync_count": self.target_sync_count,
             "last_target_sync_step": self.last_target_sync_step,
             "action_counts": list(self._action_counts),
@@ -1385,6 +1459,13 @@ class VectorizedDQNTrainer:
             ("episode_returns", self._episode_returns),
             ("episode_training_returns", self._episode_training_returns),
             ("episode_lengths", self._episode_lengths),
+            ("episode_life_loss_counts", self._episode_life_loss_counts),
+            (
+                "episode_life_loss_penalty_totals",
+                self._episode_life_loss_penalty_totals,
+            ),
+            ("life_loss_counts", self._life_loss_counts),
+            ("life_loss_penalty_totals", self._life_loss_penalty_totals),
         ):
             values = payload.get(key)
             if values is not None:
@@ -1618,12 +1699,35 @@ class VectorizedDQNTrainer:
                     infos,
                     active_count=self.num_envs,
                 )
+                life_loss = _life_loss_flags(infos, num_envs=self.num_envs)
+                life_loss_count_before = int(self._life_loss_counts.sum())
+                life_loss_penalty_total_before = float(
+                    self._life_loss_penalty_totals.sum()
+                )
                 training_rewards = np.asarray(
                     [
-                        _training_reward(float(reward), clip=self.config.reward_clip)
-                        for reward in raw_rewards
+                        _training_reward(
+                            float(reward),
+                            clip=self.config.reward_clip,
+                            life_loss=bool(life_loss[index]),
+                            life_loss_penalty=self.config.life_loss_penalty,
+                        )
+                        for index, reward in enumerate(raw_rewards)
                     ],
                     dtype=np.float32,
+                )
+                row_life_loss_counts = life_loss_count_before + np.cumsum(
+                    life_loss.astype(np.int64)
+                )
+                row_life_loss_penalty_totals = (
+                    life_loss_penalty_total_before
+                    + np.cumsum(
+                        np.where(
+                            life_loss,
+                            self.config.life_loss_penalty,
+                            0.0,
+                        )
+                    )
                 )
 
                 self.vector_iterations = vector_iteration
@@ -1631,15 +1735,32 @@ class VectorizedDQNTrainer:
                 self._episode_returns += raw_rewards
                 self._episode_training_returns += training_rewards
                 self._episode_lengths += 1
+                life_loss_as_int = life_loss.astype(np.int64)
+                life_loss_penalties = np.where(
+                    life_loss,
+                    self.config.life_loss_penalty,
+                    0.0,
+                )
+                self._life_loss_counts += life_loss_as_int
+                self._life_loss_penalty_totals += life_loss_penalties
+                self._episode_life_loss_counts += life_loss_as_int
+                self._episode_life_loss_penalty_totals += life_loss_penalties
                 done = np.logical_or(terminated, truncated)
                 active_done = done
                 completed_returns = self._episode_returns.copy()
+                completed_training_returns = self._episode_training_returns.copy()
                 completed_lengths = self._episode_lengths.copy()
+                completed_life_loss_counts = self._episode_life_loss_counts.copy()
+                completed_life_loss_penalty_totals = (
+                    self._episode_life_loss_penalty_totals.copy()
+                )
                 self.episode += int(active_done.sum())
                 self._episode_counts[active_done] += 1
                 self._episode_returns[active_done] = 0.0
                 self._episode_training_returns[active_done] = 0.0
                 self._episode_lengths[active_done] = 0
+                self._episode_life_loss_counts[active_done] = 0
+                self._episode_life_loss_penalty_totals[active_done] = 0.0
 
                 reset_observations = self._reset_done(done)
                 observations = np.array(final_next_observations, copy=True)
@@ -1684,9 +1805,38 @@ class VectorizedDQNTrainer:
                         epsilon=float(epsilons[index]),
                         raw_reward=float(raw_rewards[index]),
                         training_reward=float(training_rewards[index]),
+                        life_loss=bool(life_loss[index]),
+                        life_loss_count=int(row_life_loss_counts[index]),
+                        life_loss_penalty_total=float(
+                            row_life_loss_penalty_totals[index]
+                        ),
                         current_raw_episode_return=float(self._episode_returns[index]),
+                        current_training_episode_return=float(
+                            self._episode_training_returns[index]
+                        ),
+                        current_life_loss_count=int(
+                            self._episode_life_loss_counts[index]
+                        ),
+                        current_life_loss_penalty_total=float(
+                            self._episode_life_loss_penalty_totals[index]
+                        ),
                         completed_return=completed_return,
+                        completed_training_return=(
+                            float(completed_training_returns[index])
+                            if active_done[index]
+                            else None
+                        ),
                         completed_length=completed_length,
+                        completed_life_loss_count=(
+                            int(completed_life_loss_counts[index])
+                            if active_done[index]
+                            else None
+                        ),
+                        completed_life_loss_penalty_total=(
+                            float(completed_life_loss_penalty_totals[index])
+                            if active_done[index]
+                            else None
+                        ),
                         terminated=bool(terminated[index]),
                         truncated=bool(truncated[index]),
                         transition_batch_size=self.num_envs,
@@ -1715,6 +1865,18 @@ class VectorizedDQNTrainer:
                                 ),
                                 epsilon=float(epsilons[index]),
                                 raw_reward=float(raw_rewards[index]),
+                                training_reward=float(training_rewards[index]),
+                                current_training_episode_return=float(
+                                    self._episode_training_returns[index]
+                                ),
+                                life_loss=bool(life_loss[index]),
+                                current_life_loss_count=int(
+                                    self._episode_life_loss_counts[index]
+                                ),
+                                life_loss_count=int(row_life_loss_counts[index]),
+                                life_loss_penalty_total=float(
+                                    row_life_loss_penalty_totals[index]
+                                ),
                                 current_raw_episode_return=float(
                                     self._episode_returns[index]
                                 ),

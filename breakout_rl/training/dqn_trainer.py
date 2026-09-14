@@ -39,6 +39,11 @@ from breakout_rl.training.diagnostics import (
     replay_occupancy,
 )
 from breakout_rl.training.metrics import MetricsLogger
+from breakout_rl.training.reward_shaping import (
+    LIFE_LOSS_INFO_KEY,
+    reward_design_metadata,
+    shape_training_reward,
+)
 
 
 class NonFiniteTrainingError(RuntimeError):
@@ -182,6 +187,12 @@ class TrainingStepSnapshot:
     requested_action: int | None = None
     action_overridden: bool = False
     fire_reset_reason: str | None = None
+    training_reward: float = 0.0
+    current_training_episode_return: float = 0.0
+    life_loss: bool = False
+    current_life_loss_count: int = 0
+    life_loss_count: int = 0
+    life_loss_penalty_total: float = 0.0
 
 
 TrainingStepCallback = Callable[
@@ -458,12 +469,28 @@ def _as_uint8_observation(observation: Any, *, expected_shape: tuple[int, ...]) 
     return np.ascontiguousarray(array)
 
 
-def _training_reward(raw_reward: float, *, clip: bool) -> float:
+def _training_reward(
+    raw_reward: float,
+    *,
+    clip: bool,
+    life_loss: bool = False,
+    life_loss_penalty: float = 0.0,
+) -> float:
+    """Backward-compatible seam for constructing one replay reward."""
+
     if not math.isfinite(float(raw_reward)):
         raise NonFiniteTrainingError("environment reward is non-finite")
-    if clip:
-        return float(np.sign(raw_reward))
-    return float(raw_reward)
+    try:
+        return shape_training_reward(
+            raw_reward,
+            reward_clip=clip,
+            life_loss=life_loss,
+            life_loss_penalty=life_loss_penalty,
+        )
+    except ValueError as error:
+        if "raw_reward" in str(error) or "training reward" in str(error):
+            raise NonFiniteTrainingError(str(error)) from error
+        raise
 
 
 def seed_everything(seed: int) -> None:
@@ -648,6 +675,10 @@ class DQNTrainer:
         self._current_raw_episode_return = 0.0
         self._current_training_episode_return = 0.0
         self._current_episode_length = 0
+        self._current_life_loss_count = 0
+        self._current_life_loss_penalty_total = 0.0
+        self._life_loss_count = 0
+        self._life_loss_penalty_total = 0.0
         self._last_result: DQNTrainingStepResult | None = None
         self._action_counts = [0 for _ in range(self.action_count)]
         self._random_decision_count = 0
@@ -664,6 +695,9 @@ class DQNTrainer:
                 "environment_id": self._environment_id,
                 "algorithm": self.config.algorithm,
                 "architecture": self.config.architecture,
+                **reward_design_metadata(
+                    life_loss_penalty=self.config.life_loss_penalty,
+                ),
                 "num_envs": 1,
                 "observation_shape": list(self.observation_shape),
                 "action_count": self.action_count,
@@ -794,6 +828,8 @@ class DQNTrainer:
         fire_reset_reason: str | None,
         epsilon: float,
         raw_reward: float,
+        training_reward: float,
+        life_loss: bool,
         terminated: bool,
         truncated: bool,
         result: DQNTrainingStepResult | None,
@@ -820,6 +856,12 @@ class DQNTrainer:
             requested_action=requested_action,
             action_overridden=action_overridden,
             fire_reset_reason=fire_reset_reason,
+            training_reward=training_reward,
+            current_training_episode_return=self._current_training_episode_return,
+            life_loss=life_loss,
+            current_life_loss_count=self._current_life_loss_count,
+            life_loss_count=self._life_loss_count,
+            life_loss_penalty_total=self._life_loss_penalty_total,
         )
         self.on_step(snapshot, self._render_callback_frame())
 
@@ -834,8 +876,12 @@ class DQNTrainer:
         fire_reset_reason: str | None,
         raw_reward: float,
         training_reward: float,
+        life_loss: bool,
         completed_return: float | None,
+        completed_training_return: float | None,
         completed_length: int | None,
+        completed_life_loss_count: int | None,
+        completed_life_loss_penalty_total: float | None,
         result: DQNTrainingStepResult | None,
     ) -> dict[str, Any]:
         elapsed = max(time.perf_counter() - self._started_at, 1e-9)
@@ -846,9 +892,14 @@ class DQNTrainer:
             "architecture": self.config.architecture,
             "episode": self.episode,
             "raw_episode_return": completed_return,
+            "training_episode_return": completed_training_return,
             "episode_length": completed_length,
+            "episode_life_loss_count": completed_life_loss_count,
+            "episode_life_loss_penalty_total": completed_life_loss_penalty_total,
             "current_raw_episode_return": self._current_raw_episode_return,
             "current_training_episode_return": self._current_training_episode_return,
+            "current_life_loss_count": self._current_life_loss_count,
+            "current_life_loss_penalty_total": self._current_life_loss_penalty_total,
             "epsilon": epsilon,
             "loss": None if result is None else result.loss,
             "q_mean": None if result is None else result.q_mean,
@@ -872,6 +923,9 @@ class DQNTrainer:
             "last_target_sync_step": self.last_target_sync_step,
             "raw_reward": raw_reward,
             "training_reward": training_reward,
+            "life_loss": life_loss,
+            "life_loss_count": self._life_loss_count,
+            "life_loss_penalty_total": self._life_loss_penalty_total,
             "requested_action": requested_action,
             "requested_action_name": ATARI_ACTION_NAMES.get(
                 requested_action,
@@ -935,8 +989,13 @@ class DQNTrainer:
                 "environment_id": self._environment_id,
                 "algorithm": self.config.algorithm,
                 "architecture": self.config.architecture,
+                **reward_design_metadata(
+                    life_loss_penalty=self.config.life_loss_penalty,
+                ),
                 "num_envs": 1,
                 "training_steps": self.global_step,
+                "life_loss_count": self._life_loss_count,
+                "life_loss_penalty_total": self._life_loss_penalty_total,
                 "observation_shape": list(self.observation_shape),
                 "action_count": self.action_count,
                 "hidden_dim": self.hidden_dim,
@@ -974,6 +1033,9 @@ class DQNTrainer:
             "seed": self.config.seed,
             "algorithm": self.config.algorithm,
             "architecture": self.config.architecture,
+            **reward_design_metadata(
+                life_loss_penalty=self.config.life_loss_penalty,
+            ),
             "num_envs": 1,
             "model_config": {
                 "architecture": self.config.architecture,
@@ -987,6 +1049,8 @@ class DQNTrainer:
             "total_steps": self.global_step,
             "training_steps": self.global_step,
             "episodes": self.episode,
+            "life_loss_count": self._life_loss_count,
+            "life_loss_penalty_total": self._life_loss_penalty_total,
             "optimizer_updates": self.optimizer_updates,
             "replay_backend": self.config.replay_backend,
             "replay_transfer": self.config.replay_transfer,
@@ -1088,6 +1152,9 @@ class DQNTrainer:
             "run_id": self.run_dir.name,
             "algorithm": self.config.algorithm,
             "architecture": self.config.architecture,
+            "reward_design": reward_design_metadata(
+                life_loss_penalty=self.config.life_loss_penalty,
+            ),
             "device": self._resolved_device_name(),
             "requested_device": self.requested_device,
             "contract_id": self.config.contract_id,
@@ -1114,6 +1181,8 @@ class DQNTrainer:
             "action_counts": list(self._action_counts),
             "action_overridden_count": self._action_overridden_count,
             "fire_reset_auto_count": self._fire_reset_auto_count,
+            "life_loss_count": self._life_loss_count,
+            "life_loss_penalty_total": self._life_loss_penalty_total,
             "random_decision_count": self._random_decision_count,
             "greedy_decision_count": self._greedy_decision_count,
             "config": self.config.to_dict(),
@@ -1176,6 +1245,10 @@ class DQNTrainer:
             self._action_counts = [int(count) for count in saved_action_counts]
         self._action_overridden_count = int(payload.get("action_overridden_count", 0))
         self._fire_reset_auto_count = int(payload.get("fire_reset_auto_count", 0))
+        self._life_loss_count = int(payload.get("life_loss_count", 0))
+        self._life_loss_penalty_total = float(
+            payload.get("life_loss_penalty_total", 0.0)
+        )
         self._random_decision_count = int(payload.get("random_decision_count", 0))
         self._greedy_decision_count = int(payload.get("greedy_decision_count", 0))
         replay_saved = bool(payload.get("replay_saved", False))
@@ -1270,9 +1343,20 @@ class DQNTrainer:
                     expected_shape=self.observation_shape,
                 )
                 raw_reward = float(raw_reward)
+                life_loss = False
+                if isinstance(step_info, Mapping):
+                    raw_life_loss = step_info.get(LIFE_LOSS_INFO_KEY, False)
+                    try:
+                        life_loss = bool(raw_life_loss)
+                    except (TypeError, ValueError) as error:
+                        raise ValueError(
+                            f"{LIFE_LOSS_INFO_KEY} must be boolean-like"
+                        ) from error
                 training_reward = _training_reward(
                     raw_reward,
                     clip=self.config.reward_clip,
+                    life_loss=life_loss,
+                    life_loss_penalty=self.config.life_loss_penalty,
                 )
                 terminated = bool(terminated)
                 truncated = bool(truncated)
@@ -1299,6 +1383,13 @@ class DQNTrainer:
                 self._current_raw_episode_return += raw_reward
                 self._current_training_episode_return += training_reward
                 self._current_episode_length += 1
+                if life_loss:
+                    self._life_loss_count += 1
+                    self._life_loss_penalty_total += self.config.life_loss_penalty
+                    self._current_life_loss_count += 1
+                    self._current_life_loss_penalty_total += (
+                        self.config.life_loss_penalty
+                    )
 
                 result: DQNTrainingStepResult | None = None
                 if (
@@ -1319,20 +1410,32 @@ class DQNTrainer:
                     fire_reset_reason=fire_reset_reason,
                     epsilon=epsilon,
                     raw_reward=raw_reward,
+                    training_reward=training_reward,
+                    life_loss=life_loss,
                     terminated=terminated,
                     truncated=truncated,
                     result=result,
                 )
 
                 completed_return: float | None = None
+                completed_training_return: float | None = None
                 completed_length: int | None = None
+                completed_life_loss_count: int | None = None
+                completed_life_loss_penalty_total: float | None = None
                 if terminated or truncated:
                     completed_return = self._current_raw_episode_return
+                    completed_training_return = self._current_training_episode_return
                     completed_length = self._current_episode_length
+                    completed_life_loss_count = self._current_life_loss_count
+                    completed_life_loss_penalty_total = (
+                        self._current_life_loss_penalty_total
+                    )
                     self.episode += 1
                     self._current_raw_episode_return = 0.0
                     self._current_training_episode_return = 0.0
                     self._current_episode_length = 0
+                    self._current_life_loss_count = 0
+                    self._current_life_loss_penalty_total = 0.0
                     reset_observation, _ = self._stage_profiler.measure(
                         "env_reset",
                         lambda: self.env.reset(),
@@ -1356,8 +1459,14 @@ class DQNTrainer:
                             fire_reset_reason=fire_reset_reason,
                             raw_reward=raw_reward,
                             training_reward=training_reward,
+                            life_loss=life_loss,
                             completed_return=completed_return,
+                            completed_training_return=completed_training_return,
                             completed_length=completed_length,
+                            completed_life_loss_count=completed_life_loss_count,
+                            completed_life_loss_penalty_total=(
+                                completed_life_loss_penalty_total
+                            ),
                             result=result,
                         )
                     ),
@@ -1402,5 +1511,6 @@ __all__ = [
     "TrainingStepSnapshot",
     "resolve_device",
     "seed_everything",
+    "shape_training_reward",
     "dqn_training_step",
 ]

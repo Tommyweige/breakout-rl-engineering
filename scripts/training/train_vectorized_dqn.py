@@ -60,6 +60,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--train-frequency", type=int, default=None)
     parser.add_argument("--target-update-interval", type=int, default=None)
     parser.add_argument("--checkpoint-interval", type=int, default=None)
+    parser.add_argument(
+        "--life-loss-penalty",
+        type=float,
+        default=None,
+        help="additional training-reward term when fire_reset_life_loss is true",
+    )
     parser.add_argument("--cpu-threads", type=int, default=None)
     parser.add_argument("--profile-stages", action="store_true")
     parser.add_argument(
@@ -155,6 +161,8 @@ def _config_from_args(args: argparse.Namespace) -> DQNConfig:
         value = getattr(args, name)
         if value is not None:
             overrides[name] = value
+    if args.life_loss_penalty is not None:
+        overrides["life_loss_penalty"] = args.life_loss_penalty
     if args.profile_stages:
         overrides["profile_stages"] = True
     if args.strict_action_selection_parity is not None:

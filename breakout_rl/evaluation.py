@@ -170,6 +170,7 @@ class EpisodeResult:
     executed_action_distribution: Mapping[str, int] | None = None
     auto_fire_count: int = 0
     auto_fire_reason_counts: Mapping[str, int] | None = None
+    life_loss_count: int = 0
 
     @property
     def complete(self) -> bool:
@@ -215,6 +216,7 @@ class EpisodeResult:
             "executed_action_distribution": executed_distribution,
             "auto_fire_count": int(self.auto_fire_count),
             "auto_fire_reason_counts": dict(self.auto_fire_reason_counts or {}),
+            "life_loss_count": int(self.life_loss_count),
         }
 
 
@@ -281,6 +283,12 @@ class EvaluationResult:
             )
         return dict(sorted(counts.items()))
 
+    @property
+    def life_loss_count(self) -> int:
+        """Return the number of wrapper-reported life losses."""
+
+        return sum(int(episode.life_loss_count) for episode in self.episodes)
+
     def to_dict(self) -> dict[str, Any]:
         returns = [episode.episode_return for episode in self.episodes]
         lengths = [episode.episode_length for episode in self.episodes]
@@ -323,6 +331,7 @@ class EvaluationResult:
             "executed_action_distribution": self.executed_action_distribution,
             "auto_fire_count": self.auto_fire_count,
             "auto_fire_reason_counts": self.auto_fire_reason_counts,
+            "life_loss_count": self.life_loss_count,
             "summary": summary,
             "metadata": dict(self.metadata or {}),
         }
@@ -644,6 +653,7 @@ def evaluate_policy(
                     executed_action_values: list[int] = []
                     auto_fire_count = 0
                     auto_fire_reason_counts: Counter[str] = Counter()
+                    life_loss_count = 0
                     terminated = False
                     truncated = False
                     while True:
@@ -679,6 +689,10 @@ def evaluate_policy(
                             auto_fire_count += 1
                             if fire_reason is not None:
                                 auto_fire_reason_counts[fire_reason] += 1
+                        if isinstance(info, Mapping) and bool(
+                            info.get("fire_reset_life_loss", False)
+                        ):
+                            life_loss_count += 1
                         reward_value = float(reward)
                         if not math.isfinite(reward_value):
                             raise ValueError("environment reward must be finite")
@@ -718,6 +732,7 @@ def evaluate_policy(
                             auto_fire_reason_counts=dict(
                                 sorted(auto_fire_reason_counts.items())
                             ),
+                            life_loss_count=life_loss_count,
                         )
                     )
     finally:
@@ -821,6 +836,7 @@ def write_evaluation_artifacts(
         "executed_action_distribution_json",
         "auto_fire_count",
         "auto_fire_reason_counts_json",
+        "life_loss_count",
     ]
     with episodes_path.open("w", newline="", encoding="utf-8") as stream:
         writer = csv.DictWriter(stream, fieldnames=fieldnames)
@@ -869,6 +885,7 @@ def write_evaluation_artifacts(
                     ensure_ascii=False,
                     sort_keys=True,
                 ),
+                "life_loss_count": int(episode.life_loss_count),
             }
             for action_name, column, requested_column, executed_column in zip(
                 result.action_names,

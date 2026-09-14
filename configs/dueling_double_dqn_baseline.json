@@ -22,6 +22,7 @@
     "epsilon_decay_steps": 10000,
     "gradient_clip_norm": 10.0,
     "reward_clip": true,
+    "life_loss_penalty": 0.0,
     "device": "cuda",
     "precision": "float32",
     "checkpoint_interval": 10000,

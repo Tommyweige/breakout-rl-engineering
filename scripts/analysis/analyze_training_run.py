@@ -149,10 +149,19 @@ def _write_plots_local(
     destination.mkdir(parents=True, exist_ok=True)
     plot_specs = {
         "return_curve": (
-            (("raw_episode_return", "Raw episode return"),),
-            "Episode return over training",
-            "Raw episode return",
+            (
+                ("raw_episode_return", "Raw episode return"),
+                ("training_episode_return", "Training episode return"),
+            ),
+            "Raw and training return over training",
+            "Return",
             "return-curve.png",
+        ),
+        "life_loss_curve": (
+            (("life_loss_count", "Cumulative life losses"),),
+            "Life losses over training",
+            "Life-loss count",
+            "life-loss-curve.png",
         ),
         "loss_curve": (
             (("loss", "Huber loss"),),

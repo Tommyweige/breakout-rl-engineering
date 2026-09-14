@@ -91,7 +91,14 @@ Available baseline configurations include:
 configs/dqn_baseline.json
 configs/double_dqn_baseline.json
 configs/dueling_double_dqn_baseline.json
+configs/dueling_double_dqn_life_loss_penalty.json
 ```
+
+The Issue #9 reward-shaping experiment keeps the raw Atari reward separate
+from the replay/training reward. The baseline uses `life_loss_penalty: 0.0`
+and the experiment uses `-1.0`, applied only when
+`info["fire_reset_life_loss"]` is true. Evaluation always reports the raw
+Breakout score.
 
 ## Evaluation
 
@@ -101,6 +108,7 @@ Maintained evaluation entry points:
 scripts/evaluation/baseline_random_agent.py
 scripts/evaluation/evaluate_dqn.py
 scripts/evaluation/evaluate_vectorized_dqn.py
+scripts/evaluation/evaluate_reward_shaping.py
 ```
 
 Evaluation is separated from training so model comparisons can run under consistent task semantics.

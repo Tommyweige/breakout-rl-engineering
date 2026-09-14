@@ -346,6 +346,11 @@ def aggregate_training_metrics(rows: Iterable[Mapping[str, Any]]) -> dict[str, A
     step_values = [value for value in _series(materialized, "global_step") if math.isfinite(value)]
     episode_values = [value for value in _series(materialized, "episode") if math.isfinite(value)]
     returns = _series(materialized, "raw_episode_return")
+    training_returns = _series(materialized, "training_episode_return")
+    life_loss_events = _series(materialized, "life_loss")
+    episode_life_loss_counts = _series(materialized, "episode_life_loss_count")
+    life_loss_counts = _series(materialized, "life_loss_count")
+    life_loss_penalty_totals = _series(materialized, "life_loss_penalty_total")
     actions = [
         int(value)
         for value in _series(materialized, "action")
@@ -418,6 +423,21 @@ def aggregate_training_metrics(rows: Iterable[Mapping[str, Any]]) -> dict[str, A
         ],
         "episodes_completed": completed_episode_count,
         "return_summary": episode_return_trend(returns),
+        "training_return_summary": episode_return_trend(training_returns),
+        "life_loss_summary": {
+            "event_count": int(round(sum(life_loss_events)))
+            if life_loss_events
+            else int(round(life_loss_counts[-1])) if life_loss_counts else 0,
+            "per_episode": numeric_stats(
+                episode_life_loss_counts,
+                name="episode life-loss counts",
+            ),
+            "penalty_total": (
+                float(life_loss_penalty_totals[-1])
+                if life_loss_penalty_totals
+                else 0.0
+            ),
+        },
         "loss_summary": numeric_stats(_series(materialized, "loss"), name="loss"),
         "q_value_summary": q_summary,
         "td_error_summary": {
@@ -666,6 +686,7 @@ def collect_runtime_metadata(
         "git_commit_sha": _git_commit_sha(Path(run_dir)),
         "git_dirty": git_dirty,
         "git_diff_sha256": git_diff_sha256,
+        "git_diff_scope": "tracked-worktree-HEAD",
     }
     if extra:
         metadata.update(dict(extra))

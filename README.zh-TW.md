@@ -91,7 +91,13 @@ Baseline 設定包含：
 configs/dqn_baseline.json
 configs/double_dqn_baseline.json
 configs/dueling_double_dqn_baseline.json
+configs/dueling_double_dqn_life_loss_penalty.json
 ```
+
+Issue #9 的 reward shaping 實驗會把 raw Atari reward 與 replay/training
+reward 分開保存。Baseline 使用 `life_loss_penalty: 0.0`，實驗版本使用
+`-1.0`，而且只在 `info["fire_reset_life_loss"]` 為 true 時套用。評估時
+仍然只回報原始 Breakout 分數。
 
 ## 評估
 
@@ -101,6 +107,7 @@ configs/dueling_double_dqn_baseline.json
 scripts/evaluation/baseline_random_agent.py
 scripts/evaluation/evaluate_dqn.py
 scripts/evaluation/evaluate_vectorized_dqn.py
+scripts/evaluation/evaluate_reward_shaping.py
 ```
 
 評估流程與訓練流程分離，讓不同模型能在一致的 task semantics 下進行比較。
