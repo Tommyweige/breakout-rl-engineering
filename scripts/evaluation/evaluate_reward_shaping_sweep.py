@@ -131,6 +131,9 @@ def _evaluate_checkpoint(
             "reward_shaping_variant": label,
             "checkpoint_step": step,
             "evaluation_score_uses_raw_reward": True,
+            "evaluation_score_definition": (
+                "raw Atari game reward sum; no clipping and no life-loss penalty"
+            ),
         },
         checkpoint_metadata={
             **dict(loaded.checkpoint_metadata),
@@ -144,6 +147,10 @@ def _evaluate_checkpoint(
             "reward_shaping_variant": label,
             "checkpoint_step": step,
             "raw_reward": True,
+            "score_definition": (
+                "raw Atari game reward sum; no clipping and no life-loss penalty"
+            ),
+            "life_loss_penalty_is_not_evaluation_score": True,
             "evaluation_contract": contract.to_dict(),
             "evaluation_config": evaluation_config.to_dict(),
         },
@@ -163,7 +170,13 @@ def _write_results_table(path: Path, rows: Sequence[Mapping[str, Any]]) -> None:
         "penalty",
         "mean_raw_score",
         "median_raw_score",
+        "std_raw_score",
+        "p10_raw_score",
         "p90_raw_score",
+        "min_raw_score",
+        "max_raw_score",
+        "mean_episode_length",
+        "mean_life_loss_count",
         "score_per_life",
         "frames_between_life_losses",
         "time_to_first_life_loss",
@@ -257,9 +270,15 @@ def run_sweep(args: argparse.Namespace) -> dict[str, Any]:
                     "penalty": penalty,
                     "mean_raw_score": summary["mean_return"],
                     "median_raw_score": summary["median_return"],
+                    "std_raw_score": summary["std_return"],
+                    "p10_raw_score": summary["p10_return"],
                     "p90_raw_score": summary["p90_return"]
                     if "p90_return" in summary
                     else None,
+                    "min_raw_score": summary["min_return"],
+                    "max_raw_score": summary["max_return"],
+                    "mean_episode_length": summary.get("mean_episode_length"),
+                    "mean_life_loss_count": summary.get("mean_life_loss_count"),
                     "score_per_life": summary.get("mean_score_per_life"),
                     "frames_between_life_losses": summary.get(
                         "mean_frames_between_life_losses"
@@ -290,6 +309,9 @@ def run_sweep(args: argparse.Namespace) -> dict[str, Any]:
         "training_transitions": manifest["training_transitions"],
         "checkpoint_steps": list(checkpoint_steps),
         "evaluation_seed_count": evaluation_config.total_episodes,
+        "evaluation_score_definition": (
+            "raw Atari game reward sum; no clipping and no life-loss penalty"
+        ),
         "selection_status": "candidate screening; not final model promotion",
         "variants": variants,
         "training_summaries": training_summaries,
