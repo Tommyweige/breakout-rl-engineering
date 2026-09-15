@@ -735,7 +735,11 @@ class DQNTrainer:
         )
 
         if resume_from is not None:
-            self.load_checkpoint(resume_from)
+            try:
+                self.load_checkpoint(resume_from)
+            except Exception:
+                self.metrics.close()
+                raise
 
     def _select_action(self, observation: np.ndarray, epsilon: float) -> tuple[int, str]:
         state_tensor = observation_to_tensor(observation, device=self.device)

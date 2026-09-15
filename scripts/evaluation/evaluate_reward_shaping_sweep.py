@@ -459,10 +459,15 @@ def run_sweep(args: argparse.Namespace) -> dict[str, Any]:
         json.dumps(sweep_summary, indent=2, ensure_ascii=False, default=str),
         encoding="utf-8",
     )
-    _write_results_table(output_dir / "stage2-results.csv", table_rows)
+    results_table_path = output_dir / (
+        "stage3-results.csv"
+        if int(manifest["training_transitions"]) == 1_000_000
+        else "stage2-results.csv"
+    )
+    _write_results_table(results_table_path, table_rows)
     return {
         "summary": str(summary_path),
-        "results_table": str(output_dir / "stage2-results.csv"),
+        "results_table": str(results_table_path),
         "evaluation_count": len(variants) * len(checkpoint_steps),
         "paired_comparison_count": (len(variants) - 1) * len(checkpoint_steps),
     }

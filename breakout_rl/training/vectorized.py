@@ -660,7 +660,11 @@ class VectorizedDQNTrainer:
         )
 
         if resume_from is not None:
-            self.load_checkpoint(resume_from)
+            try:
+                self.load_checkpoint(resume_from)
+            except Exception:
+                self.metrics.close()
+                raise
 
     def _resolved_device_name(self) -> str:
         if self.device.type != "cuda":
