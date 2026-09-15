@@ -16,12 +16,14 @@ from breakout_rl.evaluation import evaluate_policy, write_evaluation_artifacts
 from breakout_rl.reward_shaping_experiment import (
     compare_evaluation_payloads,
     score_statistics,
+    summarize_training_run,
 )
 from breakout_rl.training.survival import compute_episode_survival_metrics
 from breakout_rl.training.config import DQNConfig
 from breakout_rl.training.dqn_trainer import DQNTrainer
 from breakout_rl.training.reward_shaping import shape_training_reward
 from breakout_rl.training.vectorized import VectorizedDQNTrainer
+from scripts.training.run_reward_shaping_sweep import build_parser, run_sweep
 
 
 OBSERVATION_SHAPE = (4, 84, 84)
@@ -122,6 +124,117 @@ class _EvaluationEnv:
 
 
 class RewardShapingTests(unittest.TestCase):
+    def test_training_summary_keeps_q_and_td_statistics_at_milestones(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            run_dir = Path(directory) / "run"
+            run_dir.mkdir()
+            config = DQNConfig(total_steps=100, device="cpu").to_dict()
+            config["run_id"] = "test-run"
+            (run_dir / "config.json").write_text(
+                json.dumps(config),
+                encoding="utf-8",
+            )
+            (run_dir / "summary.json").write_text(
+                json.dumps({"status": "completed"}),
+                encoding="utf-8",
+            )
+            with (run_dir / "metrics.csv").open(
+                "w",
+                newline="",
+                encoding="utf-8",
+            ) as stream:
+                writer = csv.DictWriter(
+                    stream,
+                    fieldnames=(
+                        "global_step",
+                        "raw_episode_return",
+                        "training_episode_return",
+                        "episode_length",
+                        "episode_life_loss_count",
+                        "q_mean",
+                        "q_max",
+                        "q_min",
+                        "target_mean",
+                        "target_max",
+                        "td_error_mean_abs",
+                        "td_error_max_abs",
+                    ),
+                )
+                writer.writeheader()
+                writer.writerow(
+                    {
+                        "global_step": 25,
+                        "raw_episode_return": 3,
+                        "training_episode_return": 2,
+                        "episode_length": 10,
+                        "episode_life_loss_count": 1,
+                        "q_mean": 0.5,
+                        "q_max": 1.0,
+                        "q_min": 0.0,
+                        "target_mean": 0.4,
+                        "target_max": 0.8,
+                        "td_error_mean_abs": 0.2,
+                        "td_error_max_abs": 0.6,
+                    }
+                )
+            report = summarize_training_run(run_dir)
+
+        milestone = report["milestones"]["25_percent"]
+        self.assertEqual(
+            milestone["recent_q_value_statistics"]["q_mean"]["mean"],
+            0.5,
+        )
+        self.assertEqual(
+            milestone["recent_td_error_statistics"]["td_error_mean_abs"]["mean"],
+            0.2,
+        )
+
+    def test_sweep_rejects_non_empty_rerun_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            output_dir = Path(directory) / "sweep"
+            run_dir = output_dir / "runs" / "penalty-0.0"
+            run_dir.mkdir(parents=True)
+            (run_dir / "metrics.csv").write_text("existing\n", encoding="utf-8")
+            args = build_parser().parse_args(
+                [
+                    "--output-dir",
+                    str(output_dir),
+                    "--config",
+                    "configs/issue9_reward_shaping_250k_baseline.json",
+                    "--config",
+                    "configs/issue9_reward_shaping_250k_penalty_minus1.json",
+                ]
+            )
+            with self.assertRaises(FileExistsError):
+                run_sweep(args)
+
+    def test_sweep_rejects_explicit_config_hyperparameter_drift(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            altered_config = Path(directory) / "altered.json"
+            payload = json.loads(
+                Path("configs/issue9_reward_shaping_250k_penalty_minus1.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            payload["training_config"]["learning_rate"] = 0.0002
+            altered_config.write_text(
+                json.dumps(payload),
+                encoding="utf-8",
+            )
+            args = build_parser().parse_args(
+                [
+                    "--dry-run",
+                    "--output-dir",
+                    str(Path(directory) / "sweep"),
+                    "--config",
+                    "configs/issue9_reward_shaping_250k_baseline.json",
+                    "--config",
+                    str(altered_config),
+                ]
+            )
+            with self.assertRaises(ValueError):
+                run_sweep(args)
+
     def test_survival_metrics_use_life_loss_timing_not_only_episode_count(self) -> None:
         metrics = compute_episode_survival_metrics(
             raw_score=10.0,

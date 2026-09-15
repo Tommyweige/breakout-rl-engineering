@@ -7,10 +7,10 @@ import json
 import math
 from datetime import datetime, timezone
 from pathlib import Path
-from statistics import fmean, median, pstdev
+from statistics import fmean
 from typing import Any, Iterable, Mapping, Sequence
 
-from breakout_rl.evaluation_artifacts import validate_episode_rows
+from breakout_rl.evaluation_artifacts import summarize_returns, validate_episode_rows
 from breakout_rl.training.config import DQNConfig
 
 
@@ -21,6 +21,17 @@ MILESTONES: tuple[tuple[str, float], ...] = (
     ("50_percent", 0.50),
     ("75_percent", 0.75),
     ("100_percent", 1.00),
+)
+Q_VALUE_FIELDS: tuple[str, ...] = (
+    "q_mean",
+    "q_max",
+    "q_min",
+    "target_mean",
+    "target_max",
+)
+TD_ERROR_FIELDS: tuple[str, ...] = (
+    "td_error_mean_abs",
+    "td_error_max_abs",
 )
 
 
@@ -55,28 +66,16 @@ def score_statistics(values: Iterable[float]) -> dict[str, Any]:
             "min": None,
             "max": None,
         }
-    if not all(math.isfinite(value) for value in parsed):
-        raise ValueError("statistics require finite values")
-    ordered = sorted(parsed)
-
-    def percentile(fraction: float) -> float:
-        position = (len(ordered) - 1) * fraction
-        lower = math.floor(position)
-        upper = math.ceil(position)
-        if lower == upper:
-            return float(ordered[lower])
-        weight = position - lower
-        return float(ordered[lower] + (ordered[upper] - ordered[lower]) * weight)
-
+    summary = summarize_returns(parsed)
     return {
-        "count": len(parsed),
-        "mean": float(fmean(parsed)),
-        "median": float(median(parsed)),
-        "std": float(pstdev(parsed)),
-        "p10": percentile(0.10),
-        "p90": percentile(0.90),
-        "min": float(min(parsed)),
-        "max": float(max(parsed)),
+        "count": summary["count"],
+        "mean": summary["mean_return"],
+        "median": summary["median_return"],
+        "std": summary["std_return"],
+        "p10": summary["p10_return"],
+        "p90": summary["p90_return"],
+        "min": summary["min_return"],
+        "max": summary["max_return"],
     }
 
 
@@ -249,41 +248,43 @@ def _completed_training_rows(rows: Sequence[Mapping[str, Any]]) -> list[dict[str
         time_to_first = _float(row.get("episode_time_to_first_life_loss"))
         life_loss_rate = _float(row.get("episode_life_losses_per_1000_steps"))
         parsed_life_losses = 0.0 if episode_life_losses is None else episode_life_losses
-        completed.append(
-            {
-                "global_step": step,
-                "raw_episode_return": raw_score,
-                "training_episode_return": (
-                    raw_score if training_return is None else training_return
-                ),
-                "episode_length": (
-                    0.0 if episode_length is None else episode_length
-                ),
-                "episode_life_loss_count": (
-                    0.0 if episode_life_losses is None else episode_life_losses
-                ),
-                "score_per_life": (
-                    raw_score / max(1.0, parsed_life_losses)
-                    if score_per_life is None
-                    else score_per_life
-                ),
-                "frames_between_life_losses": (
-                    float("nan") if frames_between is None else frames_between
-                ),
-                "time_to_first_life_loss": (
-                    float("nan") if time_to_first is None else time_to_first
-                ),
-                "life_losses_per_1000_steps": (
-                    (
-                        0.0
-                        if episode_length in (None, 0)
-                        else parsed_life_losses / episode_length * 1000.0
-                    )
-                    if life_loss_rate is None
-                    else life_loss_rate
-                ),
-            }
-        )
+        parsed_episode = {
+            "global_step": step,
+            "raw_episode_return": raw_score,
+            "training_episode_return": (
+                raw_score if training_return is None else training_return
+            ),
+            "episode_length": 0.0 if episode_length is None else episode_length,
+            "episode_life_loss_count": (
+                0.0 if episode_life_losses is None else episode_life_losses
+            ),
+            "score_per_life": (
+                raw_score / max(1.0, parsed_life_losses)
+                if score_per_life is None
+                else score_per_life
+            ),
+            "frames_between_life_losses": (
+                float("nan") if frames_between is None else frames_between
+            ),
+            "time_to_first_life_loss": (
+                float("nan") if time_to_first is None else time_to_first
+            ),
+            "life_losses_per_1000_steps": (
+                (
+                    0.0
+                    if episode_length in (None, 0)
+                    else parsed_life_losses / episode_length * 1000.0
+                )
+                if life_loss_rate is None
+                else life_loss_rate
+            ),
+        }
+        for field in (*Q_VALUE_FIELDS, *TD_ERROR_FIELDS):
+            parsed_value = _float(row.get(field))
+            parsed_episode[field] = (
+                float("nan") if parsed_value is None else parsed_value
+            )
+        completed.append(parsed_episode)
     return completed
 
 
@@ -301,6 +302,20 @@ def _recent_stats(
     return score_statistics(values)
 
 
+def _metric_rows(rows: Sequence[Mapping[str, Any]]) -> list[dict[str, float]]:
+    parsed_rows: list[dict[str, float]] = []
+    for row in rows:
+        step = _float(row.get("global_step"))
+        if step is None:
+            continue
+        parsed = {"global_step": step}
+        for field in (*Q_VALUE_FIELDS, *TD_ERROR_FIELDS):
+            value = _float(row.get(field))
+            parsed[field] = float("nan") if value is None else value
+        parsed_rows.append(parsed)
+    return parsed_rows
+
+
 def summarize_training_run(
     run_dir: str | Path,
     *,
@@ -312,6 +327,7 @@ def summarize_training_run(
         raise ValueError("recent_window must be positive")
     config, summary, rows = _read_run(run_dir)
     completed = _completed_training_rows(rows)
+    metric_rows = _metric_rows(rows)
     expected_steps = _float(config.get("total_steps"))
     if expected_steps is None:
         expected_steps = _float(summary.get("total_steps"))
@@ -341,6 +357,11 @@ def summarize_training_run(
         target = expected_steps * fraction if expected_steps is not None else None
         eligible = [
             row for row in completed if target is None or row["global_step"] <= target
+        ]
+        metric_eligible = [
+            row
+            for row in metric_rows
+            if target is None or row["global_step"] <= target
         ]
         recent_eligible = eligible[-recent_window:]
         milestones[name] = {
@@ -389,6 +410,22 @@ def summarize_training_run(
                 field="episode_length",
                 window=recent_window,
             ),
+            "recent_q_value_statistics": {
+                field: _recent_stats(
+                    metric_eligible,
+                    field=field,
+                    window=recent_window,
+                )
+                for field in Q_VALUE_FIELDS
+            },
+            "recent_td_error_statistics": {
+                field: _recent_stats(
+                    metric_eligible,
+                    field=field,
+                    window=recent_window,
+                )
+                for field in TD_ERROR_FIELDS
+            },
         }
 
     return {
@@ -407,6 +444,22 @@ def summarize_training_run(
         "raw_score": score_statistics(raw_values),
         "training_return": score_statistics(training_values),
         "score_per_life": score_statistics(score_per_life_values),
+        "q_value_statistics": {
+            field: _recent_stats(
+                metric_rows,
+                field=field,
+                window=max(1, len(metric_rows)),
+            )
+            for field in Q_VALUE_FIELDS
+        },
+        "td_error_statistics": {
+            field: _recent_stats(
+                metric_rows,
+                field=field,
+                window=max(1, len(metric_rows)),
+            )
+            for field in TD_ERROR_FIELDS
+        },
         "recent_raw_score": _recent_stats(
             recent,
             field="raw_episode_return",
@@ -485,6 +538,14 @@ def compare_training_runs(
         shaped_rate = shaped_milestone["recent_life_losses_per_1000_steps"]["mean"]
         base_length = base_milestone["recent_episode_length"]["mean"]
         shaped_length = shaped_milestone["recent_episode_length"]["mean"]
+        base_q_mean = base_milestone["recent_q_value_statistics"]["q_mean"]["mean"]
+        shaped_q_mean = shaped_milestone["recent_q_value_statistics"]["q_mean"]["mean"]
+        base_td_error = base_milestone["recent_td_error_statistics"][
+            "td_error_mean_abs"
+        ]["mean"]
+        shaped_td_error = shaped_milestone["recent_td_error_statistics"][
+            "td_error_mean_abs"
+        ]["mean"]
         milestone_comparison[name] = {
             "baseline": base_milestone,
             "shaped": shaped_milestone,
@@ -518,6 +579,16 @@ def compare_training_runs(
                 None
                 if base_length is None or shaped_length is None
                 else shaped_length - base_length
+            ),
+            "q_mean_delta": (
+                None
+                if base_q_mean is None or shaped_q_mean is None
+                else shaped_q_mean - base_q_mean
+            ),
+            "td_error_mean_abs_delta": (
+                None
+                if base_td_error is None or shaped_td_error is None
+                else shaped_td_error - base_td_error
             ),
         }
     return {

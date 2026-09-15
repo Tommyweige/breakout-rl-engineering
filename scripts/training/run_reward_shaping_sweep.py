@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import subprocess
 import sys
@@ -12,6 +13,7 @@ from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 from scripts.analysis.analyze_training_run import analyze_run
+from breakout_rl.evaluation_contract import load_evaluation_contract
 from breakout_rl.training.config import DQNConfig
 
 
@@ -57,6 +59,33 @@ def _label(path: Path, config: DQNConfig) -> str:
     return f"penalty-{config.life_loss_penalty:g}"
 
 
+def _contract_path(path: Path, payload: Mapping[str, Any]) -> Path:
+    raw_config = payload.get("training_config", payload)
+    if isinstance(raw_config, Mapping):
+        raw = raw_config.get("contract_path")
+        if isinstance(raw, str) and raw.strip():
+            return Path(raw)
+    for key in ("contract", "environment_contract", "contract_path"):
+        raw = payload.get(key)
+        if isinstance(raw, str) and raw.strip():
+            return Path(raw)
+        if isinstance(raw, Mapping) and isinstance(raw.get("path"), str):
+            return Path(raw["path"])
+    return Path("configs/eval/breakout_contract_v2.json")
+
+
+def _contract_fingerprint(path: Path, payload: Mapping[str, Any]) -> tuple[str, str]:
+    contract_path = _contract_path(path, payload)
+    contract_payload = load_evaluation_contract(contract_path).to_dict()
+    canonical = json.dumps(
+        contract_payload,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+    ).encode("utf-8")
+    return contract_path.as_posix(), hashlib.sha256(canonical).hexdigest()
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Run the fixed-condition Issue #9 250k penalty sweep."
@@ -92,20 +121,65 @@ def run_sweep(args: argparse.Namespace) -> dict[str, Any]:
     runs_dir = output_dir / "runs"
     output_dir.mkdir(parents=True, exist_ok=True)
     variants: list[dict[str, Any]] = []
+    labels: set[str] = set()
+    comparison_config: dict[str, Any] | None = None
+    comparison_contract_sha256: str | None = None
     for config_path in config_paths:
+        payload = _load_payload(config_path)
         config = _resolved_config(config_path)
+        normalized_config = {
+            key: value
+            for key, value in config.to_dict().items()
+            if key not in {"life_loss_penalty", "contract_id", "contract_path"}
+        }
+        contract_path, contract_sha256 = _contract_fingerprint(config_path, payload)
+        if comparison_config is None:
+            comparison_config = normalized_config
+            comparison_contract_sha256 = contract_sha256
+        else:
+            differing_fields = sorted(
+                key
+                for key in set(comparison_config) | set(normalized_config)
+                if comparison_config.get(key) != normalized_config.get(key)
+            )
+            if differing_fields:
+                raise ValueError(
+                    f"{config_path}: Stage 2 configs may differ only in "
+                    f"life_loss_penalty; differing fields={differing_fields}"
+                )
+            if contract_sha256 != comparison_contract_sha256:
+                raise ValueError(
+                    f"{config_path}: Stage 2 configs must use the same environment contract"
+                )
+        label = _label(config_path, config)
+        if label in labels:
+            raise ValueError(f"duplicate sweep variant label: {label}")
+        labels.add(label)
         variants.append(
             {
-                "label": _label(config_path, config),
+                "label": label,
                 "config_path": config_path.as_posix(),
                 "config": config.to_dict(),
-                "run_dir": str(runs_dir / _label(config_path, config)),
+                "contract_path": contract_path,
+                "contract_sha256": contract_sha256,
+                "run_dir": str(runs_dir / label),
                 "status": "pending",
                 "command": None,
             }
         )
 
     manifest_path = output_dir / "training-sweep.json"
+    if manifest_path.exists():
+        raise FileExistsError(
+            f"{manifest_path} already exists; choose a new --output-dir for a rerun"
+        )
+    if not args.dry_run:
+        for variant in variants:
+            run_dir = Path(str(variant["run_dir"]))
+            if run_dir.exists() and any(run_dir.iterdir()):
+                raise FileExistsError(
+                    f"{run_dir} is not empty; choose a new --output-dir for a rerun"
+                )
     manifest: dict[str, Any] = {
         "schema_version": 1,
         "artifact_type": "issue9_reward_shaping_250k_training_sweep",
@@ -151,7 +225,20 @@ def run_sweep(args: argparse.Namespace) -> dict[str, Any]:
         """Persist diagnostics and plots as part of the sweep artifact."""
 
         run_dir = Path(str(variant["run_dir"]))
+        final_checkpoint = (
+            run_dir / "checkpoints" / "step-00250000.pt"
+        )
+        if not final_checkpoint.is_file():
+            raise FileNotFoundError(final_checkpoint)
         report = analyze_run(run_dir)
+        step_range = report.get("step_range")
+        if not isinstance(step_range, list) or step_range[-1:] != [250000]:
+            raise ValueError(
+                f"{run_dir}: metrics do not end at the required 250000 transitions"
+            )
+        run_summary = report.get("run_summary")
+        if not isinstance(run_summary, Mapping) or run_summary.get("status") != "completed":
+            raise ValueError(f"{run_dir}: training summary is not completed")
         report_path = run_dir / "analysis-report.json"
         report_path.write_text(
             json.dumps(
@@ -248,7 +335,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
         manifest = run_sweep(args)
-    except (FileNotFoundError, TypeError, ValueError, subprocess.CalledProcessError) as error:
+    except (
+        FileExistsError,
+        FileNotFoundError,
+        TypeError,
+        ValueError,
+        subprocess.CalledProcessError,
+    ) as error:
         print(f"Reward-shaping sweep failed: {error}", file=sys.stderr)
         return 2
     print(json.dumps(manifest, indent=2, ensure_ascii=False))

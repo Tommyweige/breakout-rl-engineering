@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import sys
 from datetime import datetime, timezone
@@ -88,6 +89,42 @@ def _load_manifest(stage_dir: Path) -> dict[str, Any]:
     return payload
 
 
+def _validate_manifest_fairness(variants: Sequence[Mapping[str, Any]]) -> None:
+    if not variants:
+        raise ValueError("Stage 2 sweep manifest has no variants")
+    labels = [str(variant.get("label")) for variant in variants]
+    if len(set(labels)) != len(labels):
+        raise ValueError("Stage 2 sweep manifest has duplicate variant labels")
+    first_config = variants[0].get("config")
+    if not isinstance(first_config, Mapping):
+        raise ValueError("Stage 2 sweep manifest has an invalid variant config")
+    comparable = {
+        key: value
+        for key, value in first_config.items()
+        if key not in {"life_loss_penalty", "contract_id", "contract_path"}
+    }
+    first_contract_sha256 = variants[0].get("contract_sha256")
+    for variant in variants[1:]:
+        config = variant.get("config")
+        if not isinstance(config, Mapping):
+            raise ValueError("Stage 2 sweep manifest has an invalid variant config")
+        candidate = {
+            key: value
+            for key, value in config.items()
+            if key not in {"life_loss_penalty", "contract_id", "contract_path"}
+        }
+        if candidate != comparable:
+            raise ValueError(
+                "Stage 2 sweep variants differ in a training field other than "
+                "life_loss_penalty"
+            )
+        if (
+            first_contract_sha256 is not None
+            and variant.get("contract_sha256") != first_contract_sha256
+        ):
+            raise ValueError("Stage 2 sweep variants use different contracts")
+
+
 def _variant_checkpoint(
     variant: Mapping[str, Any],
     *,
@@ -100,11 +137,64 @@ def _variant_checkpoint(
     return checkpoint
 
 
+def _validate_checkpoint_provenance(
+    loaded: Any,
+    *,
+    variant: Mapping[str, Any],
+    label: str,
+    step: int,
+    contract: BreakoutEvaluationContractV2,
+) -> None:
+    expected_config = variant.get("config")
+    if not isinstance(expected_config, Mapping):
+        raise ValueError(f"{label}@{step}: sweep manifest config is invalid")
+    training_metadata = loaded.training_metadata
+    checkpoint_metadata = loaded.checkpoint_metadata
+    observed_config = training_metadata.get("training_config")
+    if not isinstance(observed_config, Mapping):
+        raise ValueError(f"{label}@{step}: checkpoint is missing training config provenance")
+    for field, expected in expected_config.items():
+        if field in {"contract_id", "contract_path"}:
+            continue
+        if observed_config.get(field) != expected:
+            raise ValueError(
+                f"{label}@{step}: checkpoint config field {field!r} does not "
+                f"match the sweep manifest (expected={expected!r}, "
+                f"observed={observed_config.get(field)!r})"
+            )
+    if training_metadata.get("training_seed") != expected_config.get("seed"):
+        raise ValueError(f"{label}@{step}: checkpoint training seed does not match")
+    if training_metadata.get("training_budget") != expected_config.get("total_steps"):
+        raise ValueError(f"{label}@{step}: checkpoint training budget does not match")
+    if checkpoint_metadata.get("training_steps") != step:
+        raise ValueError(f"{label}@{step}: checkpoint step provenance does not match path")
+    if checkpoint_metadata.get("source_day14_run_id") != label:
+        raise ValueError(
+            f"{label}@{step}: checkpoint run id does not match the sweep variant"
+        )
+    if training_metadata.get("contract_id") != contract.contract_id:
+        raise ValueError(f"{label}@{step}: checkpoint contract id does not match")
+    expected_contract_sha256 = variant.get("contract_sha256")
+    if expected_contract_sha256 is not None:
+        canonical_contract = json.dumps(
+            contract.to_dict(),
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+        ).encode("utf-8")
+        observed_contract_sha256 = hashlib.sha256(canonical_contract).hexdigest()
+        if observed_contract_sha256 != expected_contract_sha256:
+            raise ValueError(
+                f"{label}@{step}: checkpoint contract provenance is inconsistent"
+            )
+
+
 def _evaluate_checkpoint(
     checkpoint: Path,
     *,
     label: str,
     step: int,
+    variant: Mapping[str, Any],
     evaluation_config: Any,
     contract: BreakoutEvaluationContractV2,
     device: str,
@@ -115,6 +205,13 @@ def _evaluate_checkpoint(
         checkpoint,
         device=device,
         env_factory=env_factory,
+    )
+    _validate_checkpoint_provenance(
+        loaded,
+        variant=variant,
+        label=label,
+        step=step,
+        contract=contract,
     )
     checkpoint_contract_id = loaded.training_metadata.get("contract_id")
     if checkpoint_contract_id != contract.contract_id:
@@ -177,6 +274,8 @@ def _write_results_table(path: Path, rows: Sequence[Mapping[str, Any]]) -> None:
         "max_raw_score",
         "mean_episode_length",
         "mean_life_loss_count",
+        "training_q_mean",
+        "training_td_error_mean_abs",
         "score_per_life",
         "frames_between_life_losses",
         "time_to_first_life_loss",
@@ -204,6 +303,7 @@ def run_sweep(args: argparse.Namespace) -> dict[str, Any]:
     evaluation_config = load_evaluation_config(args.config)
     _validate_eval_config(evaluation_config, contract)
     variants = [variant for variant in manifest["variants"] if isinstance(variant, Mapping)]
+    _validate_manifest_fairness(variants)
     if len(variants) < 2:
         raise ValueError("Stage 2 sweep needs baseline and at least one shaped variant")
     baseline_variant = next(
@@ -227,6 +327,7 @@ def run_sweep(args: argparse.Namespace) -> dict[str, Any]:
                 checkpoint,
                 label=label,
                 step=step,
+                variant=variant,
                 evaluation_config=evaluation_config,
                 contract=contract,
                 device=args.device,
@@ -258,6 +359,17 @@ def run_sweep(args: argparse.Namespace) -> dict[str, Any]:
                 )
             comparisons[step_key][label] = comparison
             summary = payloads[label][step]["summary"]
+            milestone_name = {
+                62_500: "25_percent",
+                125_000: "50_percent",
+                187_500: "75_percent",
+                250_000: "100_percent",
+            }.get(step)
+            training_milestone = (
+                training_summaries[label]["milestones"].get(milestone_name, {})
+                if milestone_name is not None
+                else {}
+            )
             if label == baseline_variant["label"]:
                 wins = ties = losses = None
             else:
@@ -279,6 +391,12 @@ def run_sweep(args: argparse.Namespace) -> dict[str, Any]:
                     "max_raw_score": summary["max_return"],
                     "mean_episode_length": summary.get("mean_episode_length"),
                     "mean_life_loss_count": summary.get("mean_life_loss_count"),
+                    "training_q_mean": training_milestone.get(
+                        "recent_q_value_statistics", {}
+                    ).get("q_mean", {}).get("mean"),
+                    "training_td_error_mean_abs": training_milestone.get(
+                        "recent_td_error_statistics", {}
+                    ).get("td_error_mean_abs", {}).get("mean"),
                     "score_per_life": summary.get("mean_score_per_life"),
                     "frames_between_life_losses": summary.get(
                         "mean_frames_between_life_losses"
