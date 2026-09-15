@@ -556,12 +556,16 @@ class DQNTrainer:
         target_network: nn.Module | None = None,
         optimizer: torch.optim.Optimizer | None = None,
         resume_from: str | Path | None = None,
+        allow_replay_rewarm: bool = False,
         on_step: TrainingStepCallback | None = None,
     ) -> None:
         if not isinstance(config, DQNConfig):
             raise TypeError("config must be a DQNConfig")
         self.env = env
         self.config = config
+        if not isinstance(allow_replay_rewarm, bool):
+            raise TypeError("allow_replay_rewarm must be a boolean")
+        self.allow_replay_rewarm = allow_replay_rewarm
         if on_step is not None and not callable(on_step):
             raise TypeError("on_step must be callable or None")
         self.on_step = on_step
@@ -672,8 +676,8 @@ class DQNTrainer:
         self.episode = 0
         self.global_step = 0
         self.optimizer_updates = 0
-        # Checkpoints deliberately do not serialize replay arrays. A resumed
-        # run must collect a fresh warmup window before issuing updates.
+        # Legacy checkpoints do not serialize replay arrays. Such a checkpoint
+        # is not an exact continuation and requires explicit opt-in.
         self._resume_rewarm_steps_remaining = 0
         # Count the initial synchronization so the summary describes the
         # complete target-network lifecycle. Subsequent values are env steps.
@@ -1255,6 +1259,12 @@ class DQNTrainer:
             payload = torch.load(checkpoint_path, map_location=self.device)
         if not isinstance(payload, dict):
             raise ValueError("checkpoint must contain a mapping")
+        if not bool(payload.get("replay_saved", False)) and not self.allow_replay_rewarm:
+            raise ValueError(
+                "checkpoint does not contain replay state; exact continuation is "
+                "unavailable. Pass allow_replay_rewarm=True only for an explicit "
+                "non-equivalent warm-start."
+            )
 
         saved_algorithm = payload.get("algorithm")
         if saved_algorithm is None and isinstance(payload.get("config"), Mapping):

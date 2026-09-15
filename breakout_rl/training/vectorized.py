@@ -394,6 +394,7 @@ class VectorizedDQNTrainer:
         target_network: nn.Module | None = None,
         optimizer: torch.optim.Optimizer | None = None,
         resume_from: str | Path | None = None,
+        allow_replay_rewarm: bool = False,
         metadata: Mapping[str, Any] | None = None,
         environment_contract: Mapping[str, Any] | None = None,
         on_step: VectorizedTrainingStepCallback | None = None,
@@ -412,6 +413,9 @@ class VectorizedDQNTrainer:
 
         self.env = env
         self.config = config
+        if not isinstance(allow_replay_rewarm, bool):
+            raise TypeError("allow_replay_rewarm must be a boolean")
+        self.allow_replay_rewarm = allow_replay_rewarm
         self.on_step = on_step
         self.metadata = dict(metadata or {})
         self.environment_contract = (
@@ -1445,6 +1449,12 @@ class VectorizedDQNTrainer:
             payload = torch.load(checkpoint_path, map_location=self.device)
         if not isinstance(payload, dict):
             raise ValueError("checkpoint must contain a mapping")
+        if not bool(payload.get("replay_saved", False)) and not self.allow_replay_rewarm:
+            raise ValueError(
+                "checkpoint does not contain replay state; exact continuation is "
+                "unavailable. Pass allow_replay_rewarm=True only for an explicit "
+                "non-equivalent warm-start."
+            )
         saved_algorithm = payload.get("algorithm")
         config_payload = payload.get("config")
         if saved_algorithm is None and isinstance(config_payload, Mapping):
@@ -1575,6 +1585,8 @@ class VectorizedDQNTrainer:
                 if bool(payload.get("replay_saved", False))
                 else "fresh_replay_with_learning_starts_rewarm"
             ),
+            "exact_continuation": bool(payload.get("replay_saved", False)),
+            "allow_replay_rewarm": self.allow_replay_rewarm,
             "source_resume_provenance": saved_resume,
         }
 

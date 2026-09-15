@@ -52,7 +52,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--resume",
         type=Path,
         default=None,
-        help="checkpoint to restore; replay data is warmed up again",
+        help="checkpoint to restore; exact replay restore is required by default",
+    )
+    parser.add_argument(
+        "--allow-replay-rewarm",
+        action="store_true",
+        help="explicitly allow a non-equivalent fresh-replay warm-start",
     )
     parser.add_argument("--batch-size", type=int, default=None)
     parser.add_argument("--replay-capacity", type=int, default=None)
@@ -204,6 +209,7 @@ def main(argv: list[str] | None = None) -> int:
             config,
             run_dir=run_path,
             resume_from=args.resume,
+            allow_replay_rewarm=args.allow_replay_rewarm,
         )
         summary = trainer.train()
     except NonFiniteTrainingError as error:

@@ -54,6 +54,17 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--replay-backend", choices=("cpu", "gpu"), default=None)
     parser.add_argument("--run-dir", type=Path, default=None)
     parser.add_argument("--run-id", default=None)
+    parser.add_argument(
+        "--resume",
+        type=Path,
+        default=None,
+        help="checkpoint to restore; exact replay restore is required by default",
+    )
+    parser.add_argument(
+        "--allow-replay-rewarm",
+        action="store_true",
+        help="explicitly allow a non-equivalent fresh-replay warm-start",
+    )
     parser.add_argument("--batch-size", type=int, default=None)
     parser.add_argument("--replay-capacity", type=int, default=None)
     parser.add_argument("--learning-starts", type=int, default=None)
@@ -231,7 +242,13 @@ def main(argv: list[str] | None = None) -> int:
         **breakout_environment_kwargs(contract),
     )
     try:
-        trainer = VectorizedDQNTrainer(env, config, run_dir=run_path)
+        trainer = VectorizedDQNTrainer(
+            env,
+            config,
+            run_dir=run_path,
+            resume_from=args.resume,
+            allow_replay_rewarm=args.allow_replay_rewarm,
+        )
         summary = trainer.train()
     except (RuntimeError, ValueError) as error:
         print(f"Vectorized training could not start or was stopped: {error}")

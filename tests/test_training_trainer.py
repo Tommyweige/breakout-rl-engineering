@@ -570,12 +570,22 @@ class DQNTrainerTests(unittest.TestCase):
             first_summary = first_trainer.train()
             checkpoint = Path(first_summary["last_checkpoint"])
 
+            with self.assertRaisesRegex(ValueError, "exact continuation"):
+                DQNTrainer(
+                    ShortEpisodeEnv(),
+                    DQNConfig(total_steps=16, **base_values),
+                    run_dir=run_dir,
+                    online_network=TinyImageQNetwork(),
+                    resume_from=checkpoint,
+                )
+
             resumed_trainer = DQNTrainer(
                 ShortEpisodeEnv(),
                 DQNConfig(total_steps=16, **base_values),
                 run_dir=run_dir,
                 online_network=TinyImageQNetwork(),
                 resume_from=checkpoint,
+                allow_replay_rewarm=True,
             )
             resumed_summary = resumed_trainer.train()
 
