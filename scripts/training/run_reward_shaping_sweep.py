@@ -1,4 +1,4 @@
-"""Run the Issue #9 Stage 2 250k penalty sweep without changing budgets."""
+"""Run a fixed-condition Issue #9 reward-shaping penalty sweep."""
 
 from __future__ import annotations
 
@@ -88,7 +88,7 @@ def _contract_fingerprint(path: Path, payload: Mapping[str, Any]) -> tuple[str, 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Run the fixed-condition Issue #9 250k penalty sweep."
+        description="Run a fixed-condition Issue #9 reward-shaping penalty sweep."
     )
     parser.add_argument(
         "--config",
@@ -96,7 +96,7 @@ def build_parser() -> argparse.ArgumentParser:
         action="append",
         dest="configs",
         default=None,
-        help="repeat for explicit configs; defaults to the four Stage 2 configs",
+        help="repeat for explicit configs; defaults to the Stage 2 configs",
     )
     parser.add_argument(
         "--output-dir",
@@ -104,7 +104,18 @@ def build_parser() -> argparse.ArgumentParser:
         default=Path("experiments/issue-9-reward-shaping/stage2-250k"),
     )
     parser.add_argument("--device", default="cuda")
-    parser.add_argument("--expected-steps", type=int, default=250_000)
+    parser.add_argument(
+        "--expected-steps",
+        type=int,
+        default=250_000,
+        help="required total transitions for every config (250000 for Stage 2)",
+    )
+    parser.add_argument(
+        "--resume-validation",
+        type=Path,
+        default=None,
+        help="resume-validation artifact to record in the sweep manifest",
+    )
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument(
         "--parallel",
@@ -153,7 +164,7 @@ def run_sweep(args: argparse.Namespace) -> dict[str, Any]:
             )
             if differing_fields:
                 raise ValueError(
-                    f"{config_path}: Stage 2 configs may differ only in "
+                    f"{config_path}: sweep configs may differ only in "
                     f"life_loss_penalty; differing fields={differing_fields}"
                 )
             if contract_sha256 != comparison_contract_sha256:
@@ -185,6 +196,11 @@ def run_sweep(args: argparse.Namespace) -> dict[str, Any]:
         range(checkpoint_interval, expected_steps + 1, checkpoint_interval)
     )
     stage_name = "stage3_1m" if expected_steps == 1_000_000 else "stage2_250k"
+    resume_validation_path = args.resume_validation
+    if resume_validation_path is None:
+        candidate = output_dir / "resume-validation.json"
+        if candidate.is_file():
+            resume_validation_path = candidate
 
     manifest_path = output_dir / "training-sweep.json"
     if manifest_path.exists():
@@ -210,6 +226,13 @@ def run_sweep(args: argparse.Namespace) -> dict[str, Any]:
         "algorithm": "double_dqn",
         "architecture": "dueling",
         "selection_status": "candidate screening; not final model promotion",
+        "training_origin": "from_scratch",
+        "resume_mode": "train_from_scratch",
+        "resume_validation": (
+            None
+            if resume_validation_path is None
+            else str(resume_validation_path)
+        ),
         "variants": variants,
     }
     manifest_path.write_text(

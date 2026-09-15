@@ -7,9 +7,12 @@ import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any, Mapping, Sequence
 
 import torch
+
+
+RESUME_CONTRACT_VERSION = 1
 
 
 def _load(path: Path) -> dict[str, Any]:
@@ -26,27 +29,58 @@ def _load(path: Path) -> dict[str, Any]:
 
 def inspect_checkpoint(path: Path) -> dict[str, Any]:
     payload = _load(path)
-    replay_saved = bool(payload.get("replay_saved", False))
-    has_replay_arrays = all(
-        key in payload
+    resume_contract_version = payload.get("resume_contract_version")
+    replay_state = payload.get("replay_state")
+    has_replay_state = isinstance(replay_state, Mapping) and all(
+        key in replay_state
         for key in (
-            "replay_states",
-            "replay_next_states",
-            "replay_actions",
-            "replay_rewards",
-            "replay_terminated",
-            "replay_truncated",
+            "states",
+            "next_states",
+            "actions",
+            "rewards",
+            "terminated",
+            "truncated",
+            "capacity",
+            "size",
+            "write_index",
         )
     )
-    has_environment_state = any(
-        key in payload
-        for key in ("environment_state", "environment_states", "ale_state")
+    has_environment_state = bool(
+        isinstance(payload.get("environment_state"), Mapping)
+        and payload["environment_state"]
     )
+    rng_state = payload.get("rng_state")
+    required_rng_keys = {"python", "numpy_global", "torch_cpu", "action_rng"}
+    has_rng_state = isinstance(rng_state, Mapping) and required_rng_keys <= set(
+        rng_state
+    )
+    has_model_state = all(
+        bool(isinstance(payload.get(key), Mapping) and payload[key])
+        for key in ("online_network", "target_network", "optimizer")
+    )
+    has_step_state = all(
+        isinstance(value, int) and not isinstance(value, bool)
+        for value in (
+            payload.get("global_step"),
+            payload.get("training_steps", payload.get("global_step")),
+        )
+    )
+    replay_saved = bool(payload.get("replay_saved", False))
     blockers: list[str] = []
-    if not replay_saved or not has_replay_arrays:
+    if resume_contract_version != RESUME_CONTRACT_VERSION:
+        blockers.append(
+            f"resume contract version must be {RESUME_CONTRACT_VERSION}"
+        )
+    if not replay_saved or not has_replay_state:
         blockers.append("replay buffer contents are not checkpointed")
     if not has_environment_state:
         blockers.append("environment/ALE state is not checkpointed")
+    if not has_rng_state:
+        blockers.append("complete RNG state is not checkpointed")
+    if not has_model_state:
+        blockers.append("model and optimizer state is incomplete")
+    if not has_step_state:
+        blockers.append("global/training step state is incomplete")
     return {
         "path": str(path),
         "format_version": payload.get("format_version"),
@@ -58,10 +92,13 @@ def inspect_checkpoint(path: Path) -> dict[str, Any]:
             if isinstance(payload.get("config"), dict)
             else None
         ),
+        "resume_contract_version": resume_contract_version,
         "replay_saved": replay_saved,
-        "has_replay_arrays": has_replay_arrays,
-        "has_rng_state": isinstance(payload.get("rng_state"), dict),
+        "has_replay_state": has_replay_state,
+        "has_rng_state": has_rng_state,
         "has_environment_state": has_environment_state,
+        "has_model_state": has_model_state,
+        "has_step_state": has_step_state,
         "exact_continuation_available": not blockers,
         "blockers": blockers,
     }

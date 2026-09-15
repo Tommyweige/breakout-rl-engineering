@@ -89,6 +89,14 @@ def _load_manifest(stage_dir: Path) -> dict[str, Any]:
     return payload
 
 
+def _prepare_output_dir(path: Path) -> None:
+    if path.exists() and any(path.iterdir()):
+        raise FileExistsError(
+            f"{path} is not empty; choose a new --output-dir for a new evaluation"
+        )
+    path.mkdir(parents=True, exist_ok=True)
+
+
 def _validate_manifest_fairness(variants: Sequence[Mapping[str, Any]]) -> None:
     if not variants:
         raise ValueError("Stage 2 sweep manifest has no variants")
@@ -293,7 +301,7 @@ def _write_results_table(path: Path, rows: Sequence[Mapping[str, Any]]) -> None:
 def run_sweep(args: argparse.Namespace) -> dict[str, Any]:
     stage_dir = args.stage_dir
     output_dir = args.output_dir or stage_dir / "evaluation"
-    output_dir.mkdir(parents=True, exist_ok=True)
+    _prepare_output_dir(output_dir)
     manifest = _load_manifest(stage_dir)
     manifest_steps = tuple(
         int(step) for step in manifest.get(
@@ -441,14 +449,27 @@ def run_sweep(args: argparse.Namespace) -> dict[str, Any]:
         "created_at_utc": datetime.now(timezone.utc).isoformat().replace(
             "+00:00", "Z"
         ),
+        "stage": (
+            "stage3_1m"
+            if int(manifest["training_transitions"]) == 1_000_000
+            else "stage2_250k"
+        ),
         "training_seed": manifest["training_seed"],
         "training_transitions": manifest["training_transitions"],
         "checkpoint_steps": list(checkpoint_steps),
+        "eval_seeds": list(evaluation_config.seeds),
+        "evaluation_episodes_per_seed": evaluation_config.episodes_per_seed,
         "evaluation_seed_count": evaluation_config.total_episodes,
+        "contract_id": contract.contract_id,
+        "contract_path": str(args.contract),
+        "evaluation_config_path": str(args.config),
         "evaluation_score_definition": (
             "raw Atari game reward sum; no clipping and no life-loss penalty"
         ),
         "selection_status": "candidate screening; not final model promotion",
+        "training_origin": manifest.get("training_origin"),
+        "resume_mode": manifest.get("resume_mode"),
+        "resume_validation": manifest.get("resume_validation"),
         "variants": variants,
         "training_summaries": training_summaries,
         "comparisons": comparisons,
@@ -477,7 +498,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
         report = run_sweep(args)
-    except (FileNotFoundError, TypeError, ValueError, RuntimeError) as error:
+    except (
+        FileExistsError,
+        FileNotFoundError,
+        TypeError,
+        ValueError,
+        RuntimeError,
+    ) as error:
         print(f"Reward-shaping sweep evaluation failed: {error}", file=sys.stderr)
         return 2
     print(json.dumps(report, indent=2, ensure_ascii=False))
