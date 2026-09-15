@@ -99,6 +99,22 @@ reward 分開保存。Baseline 使用 `life_loss_penalty: 0.0`，實驗版本使
 `-1.0`，而且只在 `info["fire_reset_life_loss"]` 為 true 時套用。評估時
 仍然只回報原始 Breakout 分數。
 
+Stage 2 的可重現 screening sweep 使用 Dueling Double DQN、training seed
+`2022`、`250000` 個 environment transitions；除了 penalty 之外的條件
+完全一致，比較 `0.0`、`-0.25`、`-0.5`、`-1.0`：
+
+```bash
+python -m scripts.training.run_reward_shaping_sweep \
+  --output-dir experiments/issue-9-reward-shaping/stage2-250k --parallel
+python -m scripts.evaluation.evaluate_reward_shaping_sweep \
+  --stage-dir experiments/issue-9-reward-shaping/stage2-250k
+```
+
+每個 run 都會保存 config、checkpoint、metrics、runtime summary、Q/TD-error
+diagnostics、survival metrics、analysis report 與 learning curves。評估使用
+預先宣告的 50 組 seed，且只比較 raw score。Stage 2 只是 candidate screening，
+不會提升任何模型，也不會覆蓋既有 Day 30 formal artifacts。
+
 ## 評估
 
 目前保留的評估入口：
@@ -108,6 +124,7 @@ scripts/evaluation/baseline_random_agent.py
 scripts/evaluation/evaluate_dqn.py
 scripts/evaluation/evaluate_vectorized_dqn.py
 scripts/evaluation/evaluate_reward_shaping.py
+scripts/evaluation/evaluate_reward_shaping_sweep.py
 ```
 
 評估流程與訓練流程分離，讓不同模型能在一致的 task semantics 下進行比較。

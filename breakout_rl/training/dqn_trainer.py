@@ -44,6 +44,10 @@ from breakout_rl.training.reward_shaping import (
     reward_design_metadata,
     shape_training_reward,
 )
+from breakout_rl.training.survival import (
+    compute_episode_survival_metrics,
+    life_losses_per_1000_steps,
+)
 
 
 class NonFiniteTrainingError(RuntimeError):
@@ -193,6 +197,10 @@ class TrainingStepSnapshot:
     current_life_loss_count: int = 0
     life_loss_count: int = 0
     life_loss_penalty_total: float = 0.0
+    frames_between_life_losses: int | None = None
+    time_to_first_life_loss: int | None = None
+    score_per_life: float | None = None
+    life_losses_per_1000_steps: float = 0.0
 
 
 TrainingStepCallback = Callable[
@@ -677,6 +685,7 @@ class DQNTrainer:
         self._current_episode_length = 0
         self._current_life_loss_count = 0
         self._current_life_loss_penalty_total = 0.0
+        self._current_life_loss_steps: list[int] = []
         self._life_loss_count = 0
         self._life_loss_penalty_total = 0.0
         self._last_result: DQNTrainingStepResult | None = None
@@ -830,6 +839,7 @@ class DQNTrainer:
         raw_reward: float,
         training_reward: float,
         life_loss: bool,
+        frames_between_life_losses: int | None,
         terminated: bool,
         truncated: bool,
         result: DQNTrainingStepResult | None,
@@ -862,6 +872,11 @@ class DQNTrainer:
             current_life_loss_count=self._current_life_loss_count,
             life_loss_count=self._life_loss_count,
             life_loss_penalty_total=self._life_loss_penalty_total,
+            frames_between_life_losses=frames_between_life_losses,
+            life_losses_per_1000_steps=life_losses_per_1000_steps(
+                self._life_loss_count,
+                self.global_step,
+            ),
         )
         self.on_step(snapshot, self._render_callback_frame())
 
@@ -882,10 +897,13 @@ class DQNTrainer:
         completed_length: int | None,
         completed_life_loss_count: int | None,
         completed_life_loss_penalty_total: float | None,
+        frames_between_life_losses: int | None,
+        completed_survival_metrics: Mapping[str, Any] | None,
         result: DQNTrainingStepResult | None,
     ) -> dict[str, Any]:
         elapsed = max(time.perf_counter() - self._started_at, 1e-9)
         sps = float(self.global_step / elapsed)
+        survival = dict(completed_survival_metrics or {})
         return {
             "global_step": self.global_step,
             "algorithm": self.config.algorithm,
@@ -896,6 +914,16 @@ class DQNTrainer:
             "episode_length": completed_length,
             "episode_life_loss_count": completed_life_loss_count,
             "episode_life_loss_penalty_total": completed_life_loss_penalty_total,
+            "score_per_life": survival.get("score_per_life"),
+            "episode_frames_between_life_losses": survival.get(
+                "frames_between_life_losses"
+            ),
+            "episode_time_to_first_life_loss": survival.get(
+                "time_to_first_life_loss"
+            ),
+            "episode_life_losses_per_1000_steps": survival.get(
+                "life_losses_per_1000_steps"
+            ),
             "current_raw_episode_return": self._current_raw_episode_return,
             "current_training_episode_return": self._current_training_episode_return,
             "current_life_loss_count": self._current_life_loss_count,
@@ -924,8 +952,15 @@ class DQNTrainer:
             "raw_reward": raw_reward,
             "training_reward": training_reward,
             "life_loss": life_loss,
+            "frames_between_life_losses": frames_between_life_losses,
+            "time_to_first_life_loss": survival.get("time_to_first_life_loss"),
+            "life_losses_per_1000_steps": life_losses_per_1000_steps(
+                self._life_loss_count,
+                self.global_step,
+            ),
             "life_loss_count": self._life_loss_count,
             "life_loss_penalty_total": self._life_loss_penalty_total,
+            "current_life_loss_steps": list(self._current_life_loss_steps),
             "requested_action": requested_action,
             "requested_action_name": ATARI_ACTION_NAMES.get(
                 requested_action,
@@ -996,6 +1031,10 @@ class DQNTrainer:
                 "training_steps": self.global_step,
                 "life_loss_count": self._life_loss_count,
                 "life_loss_penalty_total": self._life_loss_penalty_total,
+                "life_losses_per_1000_steps": life_losses_per_1000_steps(
+                    self._life_loss_count,
+                    self.global_step,
+                ),
                 "observation_shape": list(self.observation_shape),
                 "action_count": self.action_count,
                 "hidden_dim": self.hidden_dim,
@@ -1051,6 +1090,10 @@ class DQNTrainer:
             "episodes": self.episode,
             "life_loss_count": self._life_loss_count,
             "life_loss_penalty_total": self._life_loss_penalty_total,
+            "life_losses_per_1000_steps": life_losses_per_1000_steps(
+                self._life_loss_count,
+                self.global_step,
+            ),
             "optimizer_updates": self.optimizer_updates,
             "replay_backend": self.config.replay_backend,
             "replay_transfer": self.config.replay_transfer,
@@ -1383,7 +1426,17 @@ class DQNTrainer:
                 self._current_raw_episode_return += raw_reward
                 self._current_training_episode_return += training_reward
                 self._current_episode_length += 1
+                frames_between_life_losses: int | None = None
                 if life_loss:
+                    previous_life_loss_step = (
+                        self._current_life_loss_steps[-1]
+                        if self._current_life_loss_steps
+                        else 0
+                    )
+                    frames_between_life_losses = (
+                        self._current_episode_length - previous_life_loss_step
+                    )
+                    self._current_life_loss_steps.append(self._current_episode_length)
                     self._life_loss_count += 1
                     self._life_loss_penalty_total += self.config.life_loss_penalty
                     self._current_life_loss_count += 1
@@ -1412,6 +1465,7 @@ class DQNTrainer:
                     raw_reward=raw_reward,
                     training_reward=training_reward,
                     life_loss=life_loss,
+                    frames_between_life_losses=frames_between_life_losses,
                     terminated=terminated,
                     truncated=truncated,
                     result=result,
@@ -1422,6 +1476,7 @@ class DQNTrainer:
                 completed_length: int | None = None
                 completed_life_loss_count: int | None = None
                 completed_life_loss_penalty_total: float | None = None
+                completed_survival_metrics: Mapping[str, Any] | None = None
                 if terminated or truncated:
                     completed_return = self._current_raw_episode_return
                     completed_training_return = self._current_training_episode_return
@@ -1430,12 +1485,18 @@ class DQNTrainer:
                     completed_life_loss_penalty_total = (
                         self._current_life_loss_penalty_total
                     )
+                    completed_survival_metrics = compute_episode_survival_metrics(
+                        raw_score=completed_return,
+                        episode_length=completed_length,
+                        life_loss_steps=self._current_life_loss_steps,
+                    )
                     self.episode += 1
                     self._current_raw_episode_return = 0.0
                     self._current_training_episode_return = 0.0
                     self._current_episode_length = 0
                     self._current_life_loss_count = 0
                     self._current_life_loss_penalty_total = 0.0
+                    self._current_life_loss_steps = []
                     reset_observation, _ = self._stage_profiler.measure(
                         "env_reset",
                         lambda: self.env.reset(),
@@ -1467,6 +1528,8 @@ class DQNTrainer:
                             completed_life_loss_penalty_total=(
                                 completed_life_loss_penalty_total
                             ),
+                            frames_between_life_losses=frames_between_life_losses,
+                            completed_survival_metrics=completed_survival_metrics,
                             result=result,
                         )
                     ),

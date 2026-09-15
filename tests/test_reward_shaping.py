@@ -17,6 +17,7 @@ from breakout_rl.reward_shaping_experiment import (
     compare_evaluation_payloads,
     score_statistics,
 )
+from breakout_rl.training.survival import compute_episode_survival_metrics
 from breakout_rl.training.config import DQNConfig
 from breakout_rl.training.dqn_trainer import DQNTrainer
 from breakout_rl.training.reward_shaping import shape_training_reward
@@ -121,6 +122,30 @@ class _EvaluationEnv:
 
 
 class RewardShapingTests(unittest.TestCase):
+    def test_survival_metrics_use_life_loss_timing_not_only_episode_count(self) -> None:
+        metrics = compute_episode_survival_metrics(
+            raw_score=10.0,
+            episode_length=100,
+            life_loss_steps=[20, 70],
+        )
+
+        self.assertEqual(metrics["score_per_life"], 5.0)
+        self.assertEqual(metrics["frames_between_life_losses"], 50.0)
+        self.assertEqual(metrics["time_to_first_life_loss"], 20)
+        self.assertEqual(metrics["life_losses_per_1000_steps"], 20.0)
+
+    def test_survival_metrics_handle_an_episode_without_life_loss(self) -> None:
+        metrics = compute_episode_survival_metrics(
+            raw_score=4.0,
+            episode_length=100,
+            life_loss_steps=[],
+        )
+
+        self.assertEqual(metrics["score_per_life"], 4.0)
+        self.assertIsNone(metrics["frames_between_life_losses"])
+        self.assertIsNone(metrics["time_to_first_life_loss"])
+        self.assertEqual(metrics["life_losses_per_1000_steps"], 0.0)
+
     def test_score_statistics_and_paired_comparison_are_raw_score_based(self) -> None:
         self.assertEqual(score_statistics([0.0, 1.0, 2.0])["p10"], 0.2)
         baseline = {
@@ -256,6 +281,11 @@ class RewardShapingTests(unittest.TestCase):
         self.assertEqual(int(rows[-1]["episode_life_loss_count"]), 2)
         self.assertEqual(int(rows[-1]["life_loss_count"]), 2)
         self.assertEqual(float(rows[-1]["life_loss_penalty_total"]), -2.0)
+        self.assertEqual(float(rows[-1]["score_per_life"]), 1.0)
+        self.assertEqual(float(rows[-1]["episode_frames_between_life_losses"]), 1.0)
+        self.assertEqual(int(rows[-1]["time_to_first_life_loss"]), 2)
+        self.assertEqual(float(rows[-1]["episode_life_losses_per_1000_steps"]), 500.0)
+        self.assertEqual(float(rows[-1]["life_losses_per_1000_steps"]), 500.0)
         self.assertEqual(summary["life_loss_count"], 2)
         self.assertEqual(summary["life_loss_penalty_total"], -2.0)
 
@@ -295,6 +325,9 @@ class RewardShapingTests(unittest.TestCase):
         self.assertEqual(float(rows[0]["raw_reward"]), 0.0)
         self.assertEqual(float(rows[1]["raw_reward"]), 2.0)
         self.assertEqual(float(rows[1]["training_reward"]), 1.0)
+        self.assertEqual(float(rows[0]["score_per_life"]), 0.0)
+        self.assertEqual(int(rows[0]["time_to_first_life_loss"]), 1)
+        self.assertEqual(float(rows[1]["life_losses_per_1000_steps"]), 500.0)
 
     def test_evaluation_keeps_raw_score_when_life_loss_is_reported(self) -> None:
         result = evaluate_policy(
@@ -306,6 +339,10 @@ class RewardShapingTests(unittest.TestCase):
         )
         self.assertEqual(result.episodes[0].episode_return, 2.0)
         self.assertEqual(result.episodes[0].life_loss_count, 1)
+        self.assertEqual(result.episodes[0].score_per_life, 2.0)
+        self.assertEqual(result.episodes[0].time_to_first_life_loss, 1)
+        self.assertIsNone(result.episodes[0].frames_between_life_losses)
+        self.assertEqual(result.episodes[0].life_losses_per_1000_steps, 1000.0)
         self.assertEqual(result.life_loss_count, 1)
         with tempfile.TemporaryDirectory() as directory:
             results_path, episodes_path = write_evaluation_artifacts(

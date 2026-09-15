@@ -351,6 +351,16 @@ def aggregate_training_metrics(rows: Iterable[Mapping[str, Any]]) -> dict[str, A
     episode_life_loss_counts = _series(materialized, "episode_life_loss_count")
     life_loss_counts = _series(materialized, "life_loss_count")
     life_loss_penalty_totals = _series(materialized, "life_loss_penalty_total")
+    score_per_life = _series(materialized, "score_per_life")
+    frames_between_life_losses = _series(
+        materialized,
+        "episode_frames_between_life_losses",
+    )
+    time_to_first_life_loss = _series(
+        materialized,
+        "episode_time_to_first_life_loss",
+    )
+    life_loss_rates = _series(materialized, "life_losses_per_1000_steps")
     actions = [
         int(value)
         for value in _series(materialized, "action")
@@ -436,6 +446,20 @@ def aggregate_training_metrics(rows: Iterable[Mapping[str, Any]]) -> dict[str, A
                 float(life_loss_penalty_totals[-1])
                 if life_loss_penalty_totals
                 else 0.0
+            ),
+        },
+        "survival_summary": {
+            "score_per_life": numeric_stats(score_per_life, name="score per life"),
+            "frames_between_life_losses": numeric_stats(
+                frames_between_life_losses,
+                name="frames between life losses",
+            ),
+            "time_to_first_life_loss": numeric_stats(
+                time_to_first_life_loss,
+                name="time to first life loss",
+            ),
+            "life_losses_per_1000_steps": (
+                float(life_loss_rates[-1]) if life_loss_rates else 0.0
             ),
         },
         "loss_summary": numeric_stats(_series(materialized, "loss"), name="loss"),

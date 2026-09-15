@@ -59,6 +59,10 @@ from breakout_rl.training.reward_shaping import (
     LIFE_LOSS_INFO_KEY,
     reward_design_metadata,
 )
+from breakout_rl.training.survival import (
+    compute_episode_survival_metrics,
+    life_losses_per_1000_steps,
+)
 
 
 VectorScheduleEventKind = Literal[
@@ -122,6 +126,10 @@ class VectorizedTrainingStepSnapshot:
     current_life_loss_count: int = 0
     life_loss_count: int = 0
     life_loss_penalty_total: float = 0.0
+    frames_between_life_losses: int | None = None
+    time_to_first_life_loss: int | None = None
+    score_per_life: float | None = None
+    life_losses_per_1000_steps: float = 0.0
 
 
 VectorizedTrainingStepCallback = Callable[[VectorizedTrainingStepSnapshot], None]
@@ -567,6 +575,10 @@ class VectorizedDQNTrainer:
             self.num_envs,
             dtype=np.float64,
         )
+        self._episode_steps_since_life_loss = np.zeros(self.num_envs, dtype=np.int64)
+        self._episode_life_loss_steps: list[list[int]] = [
+            [] for _ in range(self.num_envs)
+        ]
         self._life_loss_counts = np.zeros(self.num_envs, dtype=np.int64)
         self._life_loss_penalty_totals = np.zeros(self.num_envs, dtype=np.float64)
         self.episode = 0
@@ -959,6 +971,8 @@ class VectorizedDQNTrainer:
         completed_length: int | None,
         completed_life_loss_count: int | None,
         completed_life_loss_penalty_total: float | None,
+        frames_between_life_losses: int | None,
+        completed_survival_metrics: Mapping[str, Any] | None,
         terminated: bool,
         truncated: bool,
         transition_batch_size: int,
@@ -970,6 +984,7 @@ class VectorizedDQNTrainer:
         rates = accounting["stage_rates"]
         environment_sps = rates["environment_transitions_per_second"]
         vector_sps = rates["vector_iterations_per_second"]
+        survival = dict(completed_survival_metrics or {})
         return {
             "global_step": global_step,
             "algorithm": self.config.algorithm,
@@ -980,6 +995,16 @@ class VectorizedDQNTrainer:
             "episode_length": completed_length,
             "episode_life_loss_count": completed_life_loss_count,
             "episode_life_loss_penalty_total": completed_life_loss_penalty_total,
+            "score_per_life": survival.get("score_per_life"),
+            "episode_frames_between_life_losses": survival.get(
+                "frames_between_life_losses"
+            ),
+            "episode_time_to_first_life_loss": survival.get(
+                "time_to_first_life_loss"
+            ),
+            "episode_life_losses_per_1000_steps": survival.get(
+                "life_losses_per_1000_steps"
+            ),
             "current_raw_episode_return": current_raw_episode_return,
             "current_training_episode_return": current_training_episode_return,
             "current_life_loss_count": current_life_loss_count,
@@ -1008,6 +1033,12 @@ class VectorizedDQNTrainer:
             "life_loss": life_loss,
             "life_loss_count": life_loss_count,
             "life_loss_penalty_total": life_loss_penalty_total,
+            "frames_between_life_losses": frames_between_life_losses,
+            "time_to_first_life_loss": survival.get("time_to_first_life_loss"),
+            "life_losses_per_1000_steps": life_losses_per_1000_steps(
+                life_loss_count,
+                global_step,
+            ),
             "terminated": terminated,
             "truncated": truncated,
             "requested_action": requested_action,
@@ -1097,6 +1128,10 @@ class VectorizedDQNTrainer:
                 "life_loss_count": int(self._life_loss_counts.sum()),
                 "life_loss_penalty_total": float(
                     self._life_loss_penalty_totals.sum()
+                ),
+                "life_losses_per_1000_steps": life_losses_per_1000_steps(
+                    int(self._life_loss_counts.sum()),
+                    self.global_step,
                 ),
                 "vectorized": True,
                 "num_envs": self.num_envs,
@@ -1190,6 +1225,10 @@ class VectorizedDQNTrainer:
             "life_loss_count": int(self._life_loss_counts.sum()),
             "life_loss_penalty_total": float(
                 self._life_loss_penalty_totals.sum()
+            ),
+            "life_losses_per_1000_steps": life_losses_per_1000_steps(
+                int(self._life_loss_counts.sum()),
+                self.global_step,
             ),
             "per_environment_episode_counts": self._episode_counts.tolist(),
             "optimizer_updates": self.optimizer_updates,
@@ -1364,6 +1403,10 @@ class VectorizedDQNTrainer:
             "episode_life_loss_penalty_totals": (
                 self._episode_life_loss_penalty_totals.tolist()
             ),
+            "episode_steps_since_life_loss": self._episode_steps_since_life_loss.tolist(),
+            "episode_life_loss_steps": [
+                list(steps) for steps in self._episode_life_loss_steps
+            ],
             "life_loss_counts": self._life_loss_counts.tolist(),
             "life_loss_penalty_totals": self._life_loss_penalty_totals.tolist(),
             "target_sync_count": self.target_sync_count,
@@ -1473,6 +1516,27 @@ class VectorizedDQNTrainer:
                 if array.shape != target.shape:
                     raise ValueError(f"checkpoint {key} shape does not match num_envs")
                 target[...] = array
+        raw_life_loss_steps = payload.get("episode_life_loss_steps")
+        if raw_life_loss_steps is not None:
+            if (
+                not isinstance(raw_life_loss_steps, (list, tuple))
+                or len(raw_life_loss_steps) != self.num_envs
+            ):
+                raise ValueError("checkpoint episode_life_loss_steps must match num_envs")
+            self._episode_life_loss_steps = []
+            for steps in raw_life_loss_steps:
+                if not isinstance(steps, (list, tuple)):
+                    raise ValueError("checkpoint episode_life_loss_steps must be sequences")
+                parsed_steps = [int(step) for step in steps]
+                self._episode_life_loss_steps.append(parsed_steps)
+        raw_steps_since_loss = payload.get("episode_steps_since_life_loss")
+        if raw_steps_since_loss is not None:
+            parsed_steps_since_loss = np.asarray(raw_steps_since_loss)
+            if parsed_steps_since_loss.shape != self._episode_steps_since_life_loss.shape:
+                raise ValueError(
+                    "checkpoint episode_steps_since_life_loss must match num_envs"
+                )
+            self._episode_steps_since_life_loss[...] = parsed_steps_since_loss
         saved_action_counts = payload.get("action_counts")
         if isinstance(saved_action_counts, list) and len(saved_action_counts) == self.action_count:
             self._action_counts = [int(count) for count in saved_action_counts]
@@ -1735,6 +1799,20 @@ class VectorizedDQNTrainer:
                 self._episode_returns += raw_rewards
                 self._episode_training_returns += training_rewards
                 self._episode_lengths += 1
+                self._episode_steps_since_life_loss += 1
+                frames_between_life_losses = np.full(
+                    self.num_envs,
+                    -1,
+                    dtype=np.int64,
+                )
+                for index in np.flatnonzero(life_loss):
+                    parsed_index = int(index)
+                    interval = int(self._episode_steps_since_life_loss[parsed_index])
+                    frames_between_life_losses[parsed_index] = interval
+                    self._episode_life_loss_steps[parsed_index].append(
+                        int(self._episode_lengths[parsed_index])
+                    )
+                    self._episode_steps_since_life_loss[parsed_index] = 0
                 life_loss_as_int = life_loss.astype(np.int64)
                 life_loss_penalties = np.where(
                     life_loss,
@@ -1754,6 +1832,20 @@ class VectorizedDQNTrainer:
                 completed_life_loss_penalty_totals = (
                     self._episode_life_loss_penalty_totals.copy()
                 )
+                completed_survival_metrics: list[Mapping[str, Any] | None] = [
+                    None for _ in range(self.num_envs)
+                ]
+                for index in np.flatnonzero(active_done):
+                    parsed_index = int(index)
+                    completed_survival_metrics[parsed_index] = (
+                        compute_episode_survival_metrics(
+                            raw_score=float(completed_returns[parsed_index]),
+                            episode_length=int(completed_lengths[parsed_index]),
+                            life_loss_steps=self._episode_life_loss_steps[
+                                parsed_index
+                            ],
+                        )
+                    )
                 self.episode += int(active_done.sum())
                 self._episode_counts[active_done] += 1
                 self._episode_returns[active_done] = 0.0
@@ -1761,6 +1853,9 @@ class VectorizedDQNTrainer:
                 self._episode_lengths[active_done] = 0
                 self._episode_life_loss_counts[active_done] = 0
                 self._episode_life_loss_penalty_totals[active_done] = 0.0
+                self._episode_steps_since_life_loss[active_done] = 0
+                for index in np.flatnonzero(active_done):
+                    self._episode_life_loss_steps[int(index)] = []
 
                 reset_observations = self._reset_done(done)
                 observations = np.array(final_next_observations, copy=True)
@@ -1837,6 +1932,12 @@ class VectorizedDQNTrainer:
                             if active_done[index]
                             else None
                         ),
+                        frames_between_life_losses=(
+                            int(frames_between_life_losses[index])
+                            if life_loss[index]
+                            else None
+                        ),
+                        completed_survival_metrics=completed_survival_metrics[index],
                         terminated=bool(terminated[index]),
                         truncated=bool(truncated[index]),
                         transition_batch_size=self.num_envs,
@@ -1876,6 +1977,29 @@ class VectorizedDQNTrainer:
                                 life_loss_count=int(row_life_loss_counts[index]),
                                 life_loss_penalty_total=float(
                                     row_life_loss_penalty_totals[index]
+                                ),
+                                frames_between_life_losses=(
+                                    int(frames_between_life_losses[index])
+                                    if life_loss[index]
+                                    else None
+                                ),
+                                time_to_first_life_loss=(
+                                    None
+                                    if completed_survival_metrics[index] is None
+                                    else completed_survival_metrics[index].get(
+                                        "time_to_first_life_loss"
+                                    )
+                                ),
+                                score_per_life=(
+                                    None
+                                    if completed_survival_metrics[index] is None
+                                    else completed_survival_metrics[index].get(
+                                        "score_per_life"
+                                    )
+                                ),
+                                life_losses_per_1000_steps=life_losses_per_1000_steps(
+                                    int(row_life_loss_counts[index]),
+                                    previous_step + index + 1,
                                 ),
                                 current_raw_episode_return=float(
                                     self._episode_returns[index]

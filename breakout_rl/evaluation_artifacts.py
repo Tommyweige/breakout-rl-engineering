@@ -100,14 +100,39 @@ def summarize_returns(values: Sequence[float]) -> dict[str, float | int]:
     parsed = [float(value) for value in values]
     if not all(math.isfinite(value) for value in parsed):
         raise ValueError("episode returns must be finite")
+    ordered = sorted(parsed)
+
+    def _percentile(fraction: float) -> float:
+        position = (len(ordered) - 1) * fraction
+        lower = math.floor(position)
+        upper = math.ceil(position)
+        if lower == upper:
+            return float(ordered[lower])
+        weight = position - lower
+        return float(ordered[lower] + (ordered[upper] - ordered[lower]) * weight)
+
     return {
         "count": len(parsed),
         "mean_return": float(fmean(parsed)),
         "median_return": float(median(parsed)),
         "std_return": float(pstdev(parsed)),
+        "p10_return": _percentile(0.10),
+        "p90_return": _percentile(0.90),
         "min_return": float(min(parsed)),
         "max_return": float(max(parsed)),
     }
+
+
+def _optional_finite_float(value: Any, *, name: str, source: str | Path) -> float | None:
+    if value is None or value == "":
+        return None
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError) as error:
+        raise ValueError(f"{source}: {name} must be finite when present") from error
+    if not math.isfinite(parsed):
+        raise ValueError(f"{source}: {name} must be finite when present")
+    return parsed
 
 
 def validate_episode_rows(
@@ -230,6 +255,50 @@ def validate_episode_rows(
                 )
         elif not isinstance(raw_life_loss_count, int):
             raise ValueError(f"{source_path}: life_loss_count must be a non-negative integer")
+        score_per_life = _optional_finite_float(
+            raw_row.get("score_per_life"),
+            name="score_per_life",
+            source=source_path,
+        )
+        expected_score_per_life = episode_return / max(1, life_loss_count)
+        if score_per_life is None:
+            score_per_life = expected_score_per_life
+        elif not math.isclose(score_per_life, expected_score_per_life):
+            raise ValueError(f"{source_path}: score_per_life disagrees with raw score")
+        frames_between_life_losses = _optional_finite_float(
+            raw_row.get("frames_between_life_losses"),
+            name="frames_between_life_losses",
+            source=source_path,
+        )
+        time_to_first_life_loss = raw_row.get("time_to_first_life_loss")
+        if time_to_first_life_loss not in (None, ""):
+            try:
+                time_to_first_life_loss = int(time_to_first_life_loss)
+            except (TypeError, ValueError) as error:
+                raise ValueError(
+                    f"{source_path}: time_to_first_life_loss must be an integer"
+                ) from error
+            if time_to_first_life_loss < 1 or time_to_first_life_loss > episode_length:
+                raise ValueError(
+                    f"{source_path}: time_to_first_life_loss is outside episode bounds"
+                )
+        else:
+            time_to_first_life_loss = None
+        life_losses_per_1000_steps = _optional_finite_float(
+            raw_row.get("life_losses_per_1000_steps"),
+            name="life_losses_per_1000_steps",
+            source=source_path,
+        )
+        expected_life_loss_rate = life_loss_count / episode_length * 1000.0
+        if life_losses_per_1000_steps is None:
+            life_losses_per_1000_steps = expected_life_loss_rate
+        elif not math.isclose(
+            life_losses_per_1000_steps,
+            expected_life_loss_rate,
+        ):
+            raise ValueError(
+                f"{source_path}: life_losses_per_1000_steps disagrees with life-loss count"
+            )
         rows.append(
             {
                 "evaluation_seed": evaluation_seed,
@@ -243,6 +312,10 @@ def validate_episode_rows(
                 "complete": complete,
                 "stop_reason": expected_stop_reason,
                 "life_loss_count": life_loss_count,
+                "score_per_life": score_per_life,
+                "frames_between_life_losses": frames_between_life_losses,
+                "time_to_first_life_loss": time_to_first_life_loss,
+                "life_losses_per_1000_steps": life_losses_per_1000_steps,
             }
         )
 
@@ -283,6 +356,30 @@ def summary_from_episode_rows(
     life_loss_counts = [int(row.get("life_loss_count", 0)) for row in rows]
     summary["life_loss_count"] = int(sum(life_loss_counts))
     summary["mean_life_loss_count"] = float(fmean(life_loss_counts))
+    summary["mean_score_per_life"] = float(
+        fmean(float(row.get("score_per_life", 0.0)) for row in rows)
+    )
+    frames_between = [
+        float(row["frames_between_life_losses"])
+        for row in rows
+        if row.get("frames_between_life_losses") is not None
+    ]
+    first_loss_times = [
+        float(row["time_to_first_life_loss"])
+        for row in rows
+        if row.get("time_to_first_life_loss") is not None
+    ]
+    summary["mean_frames_between_life_losses"] = (
+        float(fmean(frames_between)) if frames_between else None
+    )
+    summary["mean_time_to_first_life_loss"] = (
+        float(fmean(first_loss_times)) if first_loss_times else None
+    )
+    summary["life_losses_per_1000_steps"] = float(
+        sum(life_loss_counts)
+        / max(1, sum(int(row["episode_length"]) for row in rows))
+        * 1000.0
+    )
     summary["complete_episodes"] = sum(bool(row["complete"]) for row in rows)
     summary.update(
         {

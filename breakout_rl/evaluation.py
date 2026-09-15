@@ -36,6 +36,7 @@ from breakout_rl.evaluation_artifacts import (
 )
 from breakout_rl.training.diagnostics import ATARI_ACTION_NAMES
 from breakout_rl.training.dqn_trainer import resolve_device
+from breakout_rl.training.survival import compute_episode_survival_metrics
 
 
 EVALUATION_CONFIG_SCHEMA_VERSION = 1
@@ -171,6 +172,10 @@ class EpisodeResult:
     auto_fire_count: int = 0
     auto_fire_reason_counts: Mapping[str, int] | None = None
     life_loss_count: int = 0
+    score_per_life: float = 0.0
+    frames_between_life_losses: float | None = None
+    time_to_first_life_loss: int | None = None
+    life_losses_per_1000_steps: float = 0.0
 
     @property
     def complete(self) -> bool:
@@ -217,6 +222,10 @@ class EpisodeResult:
             "auto_fire_count": int(self.auto_fire_count),
             "auto_fire_reason_counts": dict(self.auto_fire_reason_counts or {}),
             "life_loss_count": int(self.life_loss_count),
+            "score_per_life": float(self.score_per_life),
+            "frames_between_life_losses": self.frames_between_life_losses,
+            "time_to_first_life_loss": self.time_to_first_life_loss,
+            "life_losses_per_1000_steps": float(self.life_losses_per_1000_steps),
         }
 
 
@@ -332,6 +341,40 @@ class EvaluationResult:
             "auto_fire_count": self.auto_fire_count,
             "auto_fire_reason_counts": self.auto_fire_reason_counts,
             "life_loss_count": self.life_loss_count,
+            "mean_score_per_life": float(
+                fmean(episode.score_per_life for episode in self.episodes)
+            ),
+            "mean_frames_between_life_losses": (
+                float(
+                    fmean(
+                        episode.frames_between_life_losses
+                        for episode in self.episodes
+                        if episode.frames_between_life_losses is not None
+                    )
+                )
+                if any(
+                    episode.frames_between_life_losses is not None
+                    for episode in self.episodes
+                )
+                else None
+            ),
+            "mean_time_to_first_life_loss": (
+                float(
+                    fmean(
+                        episode.time_to_first_life_loss
+                        for episode in self.episodes
+                        if episode.time_to_first_life_loss is not None
+                    )
+                )
+                if any(
+                    episode.time_to_first_life_loss is not None
+                    for episode in self.episodes
+                )
+                else None
+            ),
+            "life_losses_per_1000_steps": float(
+                self.life_loss_count / max(1, self.total_steps) * 1000.0
+            ),
             "summary": summary,
             "metadata": dict(self.metadata or {}),
         }
@@ -654,6 +697,7 @@ def evaluate_policy(
                     auto_fire_count = 0
                     auto_fire_reason_counts: Counter[str] = Counter()
                     life_loss_count = 0
+                    life_loss_steps: list[int] = []
                     terminated = False
                     truncated = False
                     while True:
@@ -693,6 +737,7 @@ def evaluate_policy(
                             info.get("fire_reset_life_loss", False)
                         ):
                             life_loss_count += 1
+                            life_loss_steps.append(len(executed_action_values))
                         reward_value = float(reward)
                         if not math.isfinite(reward_value):
                             raise ValueError("environment reward must be finite")
@@ -713,6 +758,11 @@ def evaluate_policy(
                         requested_counts[action_names[action]] += 1
                     for action in executed_action_values:
                         executed_counts[action_names[action]] += 1
+                    survival_metrics = compute_episode_survival_metrics(
+                        raw_score=episode_return,
+                        episode_length=len(executed_action_values),
+                        life_loss_steps=life_loss_steps,
+                    )
                     episode_results.append(
                         EpisodeResult(
                             evaluation_seed=evaluation_seed,
@@ -733,6 +783,20 @@ def evaluate_policy(
                                 sorted(auto_fire_reason_counts.items())
                             ),
                             life_loss_count=life_loss_count,
+                            score_per_life=float(survival_metrics["score_per_life"]),
+                            frames_between_life_losses=(
+                                None
+                                if survival_metrics["frames_between_life_losses"] is None
+                                else float(survival_metrics["frames_between_life_losses"])
+                            ),
+                            time_to_first_life_loss=(
+                                None
+                                if survival_metrics["time_to_first_life_loss"] is None
+                                else int(survival_metrics["time_to_first_life_loss"])
+                            ),
+                            life_losses_per_1000_steps=float(
+                                survival_metrics["life_losses_per_1000_steps"]
+                            ),
                         )
                     )
     finally:
@@ -837,6 +901,10 @@ def write_evaluation_artifacts(
         "auto_fire_count",
         "auto_fire_reason_counts_json",
         "life_loss_count",
+        "score_per_life",
+        "frames_between_life_losses",
+        "time_to_first_life_loss",
+        "life_losses_per_1000_steps",
     ]
     with episodes_path.open("w", newline="", encoding="utf-8") as stream:
         writer = csv.DictWriter(stream, fieldnames=fieldnames)
@@ -886,6 +954,12 @@ def write_evaluation_artifacts(
                     sort_keys=True,
                 ),
                 "life_loss_count": int(episode.life_loss_count),
+                "score_per_life": float(episode.score_per_life),
+                "frames_between_life_losses": episode.frames_between_life_losses,
+                "time_to_first_life_loss": episode.time_to_first_life_loss,
+                "life_losses_per_1000_steps": float(
+                    episode.life_losses_per_1000_steps
+                ),
             }
             for action_name, column, requested_column, executed_column in zip(
                 result.action_names,

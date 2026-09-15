@@ -163,6 +163,18 @@ def _write_plots_local(
             "Life-loss count",
             "life-loss-curve.png",
         ),
+        "score_per_life_curve": (
+            (("score_per_life", "Score per life"),),
+            "Raw score per life over training",
+            "Raw score / life",
+            "score-per-life-curve.png",
+        ),
+        "life_loss_rate_curve": (
+            (("life_losses_per_1000_steps", "Life losses / 1,000 steps"),),
+            "Life-loss rate over training",
+            "Life losses / 1,000 steps",
+            "life-loss-rate-curve.png",
+        ),
         "loss_curve": (
             (("loss", "Huber loss"),),
             "Training loss over environment steps",

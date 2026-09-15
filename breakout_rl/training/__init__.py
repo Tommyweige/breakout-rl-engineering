@@ -12,6 +12,10 @@ from breakout_rl.training.reward_shaping import (
     shape_training_reward,
     validate_life_loss_penalty,
 )
+from breakout_rl.training.survival import (
+    compute_episode_survival_metrics,
+    life_losses_per_1000_steps,
+)
 
 __all__ = [
     "DQNConfig",
@@ -25,6 +29,8 @@ __all__ = [
     "reward_design_metadata",
     "shape_training_reward",
     "validate_life_loss_penalty",
+    "compute_episode_survival_metrics",
+    "life_losses_per_1000_steps",
     "NonFiniteTrainingError",
     "TrainingStepCallback",
     "TrainingStepSnapshot",

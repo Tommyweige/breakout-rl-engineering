@@ -100,6 +100,22 @@ and the experiment uses `-1.0`, applied only when
 `info["fire_reset_life_loss"]` is true. Evaluation always reports the raw
 Breakout score.
 
+The reproducible Stage 2 screening sweep uses Dueling Double DQN, seed `2022`,
+`250000` environment transitions, and otherwise identical configs for penalties
+`0.0`, `-0.25`, `-0.5`, and `-1.0`:
+
+```bash
+python -m scripts.training.run_reward_shaping_sweep \
+  --output-dir experiments/issue-9-reward-shaping/stage2-250k --parallel
+python -m scripts.evaluation.evaluate_reward_shaping_sweep \
+  --stage-dir experiments/issue-9-reward-shaping/stage2-250k
+```
+
+Each run saves its config, checkpoints, metrics, runtime summary, Q/TD-error
+diagnostics, survival metrics, analysis report, and learning curves. The
+evaluation uses the predeclared 50-seed raw-score protocol. Stage 2 is candidate
+screening; it does not promote a model or replace the formal Day 30 artifacts.
+
 ## Evaluation
 
 Maintained evaluation entry points:
@@ -109,6 +125,7 @@ scripts/evaluation/baseline_random_agent.py
 scripts/evaluation/evaluate_dqn.py
 scripts/evaluation/evaluate_vectorized_dqn.py
 scripts/evaluation/evaluate_reward_shaping.py
+scripts/evaluation/evaluate_reward_shaping_sweep.py
 ```
 
 Evaluation is separated from training so model comparisons can run under consistent task semantics.

@@ -87,6 +87,17 @@ def _episode_summary(
     scores = [float(row["episode_return"]) for row in rows]
     life_losses = [int(row.get("life_loss_count", 0)) for row in rows]
     lengths = [int(row["episode_length"]) for row in rows]
+    score_per_life = [float(row["score_per_life"]) for row in rows]
+    frames_between = [
+        float(row["frames_between_life_losses"])
+        for row in rows
+        if row.get("frames_between_life_losses") is not None
+    ]
+    first_loss_times = [
+        float(row["time_to_first_life_loss"])
+        for row in rows
+        if row.get("time_to_first_life_loss") is not None
+    ]
     score_summary = score_statistics(scores)
     return {
         "model_id": payload.get("model_id"),
@@ -105,6 +116,17 @@ def _episode_summary(
         "life_loss_statistics": score_statistics(life_losses),
         "mean_episode_length": float(fmean(lengths)),
         "episode_length_statistics": score_statistics(lengths),
+        "score_per_life": score_statistics(score_per_life),
+        "mean_score_per_life": float(fmean(score_per_life)),
+        "mean_frames_between_life_losses": (
+            float(fmean(frames_between)) if frames_between else None
+        ),
+        "mean_time_to_first_life_loss": (
+            float(fmean(first_loss_times)) if first_loss_times else None
+        ),
+        "life_losses_per_1000_steps": float(
+            sum(life_losses) / max(1, sum(lengths)) * 1000.0
+        ),
         "score_definition": "raw Atari game reward sum; no training shaping",
     }
 
@@ -152,6 +174,26 @@ def compare_evaluation_payloads(
                 "score_delta": delta,
                 "baseline_life_loss_count": int(baseline.get("life_loss_count", 0)),
                 "shaped_life_loss_count": int(shaped.get("life_loss_count", 0)),
+                "baseline_score_per_life": float(baseline["score_per_life"]),
+                "shaped_score_per_life": float(shaped["score_per_life"]),
+                "baseline_frames_between_life_losses": baseline.get(
+                    "frames_between_life_losses"
+                ),
+                "shaped_frames_between_life_losses": shaped.get(
+                    "frames_between_life_losses"
+                ),
+                "baseline_time_to_first_life_loss": baseline.get(
+                    "time_to_first_life_loss"
+                ),
+                "shaped_time_to_first_life_loss": shaped.get(
+                    "time_to_first_life_loss"
+                ),
+                "baseline_life_losses_per_1000_steps": float(
+                    baseline["life_losses_per_1000_steps"]
+                ),
+                "shaped_life_losses_per_1000_steps": float(
+                    shaped["life_losses_per_1000_steps"]
+                ),
                 "baseline_episode_length": int(baseline["episode_length"]),
                 "shaped_episode_length": int(shaped["episode_length"]),
             }
@@ -202,6 +244,11 @@ def _completed_training_rows(rows: Sequence[Mapping[str, Any]]) -> list[dict[str
         training_return = _float(row.get("training_episode_return"))
         episode_length = _float(row.get("episode_length"))
         episode_life_losses = _float(row.get("episode_life_loss_count"))
+        score_per_life = _float(row.get("score_per_life"))
+        frames_between = _float(row.get("episode_frames_between_life_losses"))
+        time_to_first = _float(row.get("episode_time_to_first_life_loss"))
+        life_loss_rate = _float(row.get("episode_life_losses_per_1000_steps"))
+        parsed_life_losses = 0.0 if episode_life_losses is None else episode_life_losses
         completed.append(
             {
                 "global_step": step,
@@ -215,6 +262,26 @@ def _completed_training_rows(rows: Sequence[Mapping[str, Any]]) -> list[dict[str
                 "episode_life_loss_count": (
                     0.0 if episode_life_losses is None else episode_life_losses
                 ),
+                "score_per_life": (
+                    raw_score / max(1.0, parsed_life_losses)
+                    if score_per_life is None
+                    else score_per_life
+                ),
+                "frames_between_life_losses": (
+                    float("nan") if frames_between is None else frames_between
+                ),
+                "time_to_first_life_loss": (
+                    float("nan") if time_to_first is None else time_to_first
+                ),
+                "life_losses_per_1000_steps": (
+                    (
+                        0.0
+                        if episode_length in (None, 0)
+                        else parsed_life_losses / episode_length * 1000.0
+                    )
+                    if life_loss_rate is None
+                    else life_loss_rate
+                ),
             }
         )
     return completed
@@ -226,7 +293,11 @@ def _recent_stats(
     field: str,
     window: int,
 ) -> dict[str, Any]:
-    values = [float(row[field]) for row in rows[-window:]]
+    values = [
+        float(row[field])
+        for row in rows[-window:]
+        if math.isfinite(float(row[field]))
+    ]
     return score_statistics(values)
 
 
@@ -262,6 +333,7 @@ def summarize_training_run(
 
     raw_values = [row["raw_episode_return"] for row in completed]
     training_values = [row["training_episode_return"] for row in completed]
+    score_per_life_values = [row["score_per_life"] for row in completed]
     recent = completed[-recent_window:]
     curve = [dict(row) for row in completed]
     milestones: dict[str, Any] = {}
@@ -292,6 +364,26 @@ def summarize_training_run(
                 field="episode_life_loss_count",
                 window=recent_window,
             ),
+            "recent_score_per_life": _recent_stats(
+                recent_eligible,
+                field="score_per_life",
+                window=recent_window,
+            ),
+            "recent_frames_between_life_losses": _recent_stats(
+                recent_eligible,
+                field="frames_between_life_losses",
+                window=recent_window,
+            ),
+            "recent_time_to_first_life_loss": _recent_stats(
+                recent_eligible,
+                field="time_to_first_life_loss",
+                window=recent_window,
+            ),
+            "recent_life_losses_per_1000_steps": _recent_stats(
+                recent_eligible,
+                field="life_losses_per_1000_steps",
+                window=recent_window,
+            ),
             "recent_episode_length": _recent_stats(
                 recent_eligible,
                 field="episode_length",
@@ -314,6 +406,7 @@ def summarize_training_run(
         "episode_count": len(completed),
         "raw_score": score_statistics(raw_values),
         "training_return": score_statistics(training_values),
+        "score_per_life": score_statistics(score_per_life_values),
         "recent_raw_score": _recent_stats(
             recent,
             field="raw_episode_return",
@@ -326,6 +419,9 @@ def summarize_training_run(
         ),
         "life_loss_count": final_life_loss_count,
         "life_loss_penalty_total": final_penalty_total,
+        "life_losses_per_1000_steps": float(
+            final_life_loss_count / max(1, int(expected_steps or 0)) * 1000.0
+        ),
         "learning_curve": curve,
         "milestones": milestones,
         "runtime": config.get("runtime", {}),
@@ -379,6 +475,14 @@ def compare_training_runs(
         shaped_raw = shaped_milestone["recent_raw_score"]["mean"]
         base_life = base_milestone["recent_life_loss_count"]["mean"]
         shaped_life = shaped_milestone["recent_life_loss_count"]["mean"]
+        base_score_per_life = base_milestone["recent_score_per_life"]["mean"]
+        shaped_score_per_life = shaped_milestone["recent_score_per_life"]["mean"]
+        base_frames = base_milestone["recent_frames_between_life_losses"]["mean"]
+        shaped_frames = shaped_milestone["recent_frames_between_life_losses"]["mean"]
+        base_first_loss = base_milestone["recent_time_to_first_life_loss"]["mean"]
+        shaped_first_loss = shaped_milestone["recent_time_to_first_life_loss"]["mean"]
+        base_rate = base_milestone["recent_life_losses_per_1000_steps"]["mean"]
+        shaped_rate = shaped_milestone["recent_life_losses_per_1000_steps"]["mean"]
         base_length = base_milestone["recent_episode_length"]["mean"]
         shaped_length = shaped_milestone["recent_episode_length"]["mean"]
         milestone_comparison[name] = {
@@ -389,6 +493,26 @@ def compare_training_runs(
             ),
             "life_loss_mean_delta": (
                 None if base_life is None or shaped_life is None else shaped_life - base_life
+            ),
+            "score_per_life_mean_delta": (
+                None
+                if base_score_per_life is None or shaped_score_per_life is None
+                else shaped_score_per_life - base_score_per_life
+            ),
+            "frames_between_life_losses_mean_delta": (
+                None
+                if base_frames is None or shaped_frames is None
+                else shaped_frames - base_frames
+            ),
+            "time_to_first_life_loss_mean_delta": (
+                None
+                if base_first_loss is None or shaped_first_loss is None
+                else shaped_first_loss - base_first_loss
+            ),
+            "life_losses_per_1000_steps_mean_delta": (
+                None
+                if base_rate is None or shaped_rate is None
+                else shaped_rate - base_rate
             ),
             "episode_length_mean_delta": (
                 None
