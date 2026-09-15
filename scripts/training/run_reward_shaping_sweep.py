@@ -32,20 +32,20 @@ def _load_payload(path: Path) -> Mapping[str, Any]:
     return payload
 
 
-def _resolved_config(path: Path) -> DQNConfig:
+def _resolved_config(path: Path, *, expected_steps: int) -> DQNConfig:
     payload = _load_payload(path)
     raw_config = payload.get("training_config", payload)
     if not isinstance(raw_config, Mapping):
         raise ValueError(f"{path}: training_config must be a JSON object")
     config = DQNConfig.from_dict(raw_config)
     if (
-        config.total_steps != 250_000
+        config.total_steps != expected_steps
         or config.seed != 2022
         or config.algorithm != "double_dqn"
         or config.architecture != "dueling"
     ):
         raise ValueError(
-            f"{path}: Stage 2 requires total_steps=250000, seed=2022, "
+            f"{path}: sweep requires total_steps={expected_steps}, seed=2022, "
             "algorithm=double_dqn, architecture=dueling"
         )
     return config
@@ -104,6 +104,7 @@ def build_parser() -> argparse.ArgumentParser:
         default=Path("experiments/issue-9-reward-shaping/stage2-250k"),
     )
     parser.add_argument("--device", default="cuda")
+    parser.add_argument("--expected-steps", type=int, default=250_000)
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument(
         "--parallel",
@@ -119,14 +120,22 @@ def run_sweep(args: argparse.Namespace) -> dict[str, Any]:
         raise ValueError("at least one sweep config is required")
     output_dir = args.output_dir
     runs_dir = output_dir / "runs"
+    expected_steps = int(args.expected_steps)
+    if expected_steps < 1:
+        raise ValueError("expected-steps must be positive")
     output_dir.mkdir(parents=True, exist_ok=True)
     variants: list[dict[str, Any]] = []
     labels: set[str] = set()
     comparison_config: dict[str, Any] | None = None
     comparison_contract_sha256: str | None = None
+    checkpoint_interval: int | None = None
     for config_path in config_paths:
         payload = _load_payload(config_path)
-        config = _resolved_config(config_path)
+        config = _resolved_config(config_path, expected_steps=expected_steps)
+        if checkpoint_interval is None:
+            checkpoint_interval = config.checkpoint_interval
+        elif checkpoint_interval != config.checkpoint_interval:
+            raise ValueError("sweep configs must use the same checkpoint_interval")
         normalized_config = {
             key: value
             for key, value in config.to_dict().items()
@@ -168,6 +177,15 @@ def run_sweep(args: argparse.Namespace) -> dict[str, Any]:
             }
         )
 
+    if checkpoint_interval is None or expected_steps % checkpoint_interval != 0:
+        raise ValueError(
+            "expected-steps must be divisible by the shared checkpoint_interval"
+        )
+    checkpoint_steps = tuple(
+        range(checkpoint_interval, expected_steps + 1, checkpoint_interval)
+    )
+    stage_name = "stage3_1m" if expected_steps == 1_000_000 else "stage2_250k"
+
     manifest_path = output_dir / "training-sweep.json"
     if manifest_path.exists():
         raise FileExistsError(
@@ -182,12 +200,13 @@ def run_sweep(args: argparse.Namespace) -> dict[str, Any]:
                 )
     manifest: dict[str, Any] = {
         "schema_version": 1,
-        "artifact_type": "issue9_reward_shaping_250k_training_sweep",
+        "artifact_type": f"issue9_reward_shaping_{stage_name}_training_sweep",
         "created_at_utc": datetime.now(timezone.utc).isoformat().replace(
             "+00:00", "Z"
         ),
         "training_seed": 2022,
-        "training_transitions": 250_000,
+        "training_transitions": expected_steps,
+        "checkpoint_steps": list(checkpoint_steps),
         "algorithm": "double_dqn",
         "architecture": "dueling",
         "selection_status": "candidate screening; not final model promotion",
@@ -225,16 +244,14 @@ def run_sweep(args: argparse.Namespace) -> dict[str, Any]:
         """Persist diagnostics and plots as part of the sweep artifact."""
 
         run_dir = Path(str(variant["run_dir"]))
-        final_checkpoint = (
-            run_dir / "checkpoints" / "step-00250000.pt"
-        )
+        final_checkpoint = run_dir / "checkpoints" / f"step-{expected_steps:08d}.pt"
         if not final_checkpoint.is_file():
             raise FileNotFoundError(final_checkpoint)
         report = analyze_run(run_dir)
         step_range = report.get("step_range")
-        if not isinstance(step_range, list) or step_range[-1:] != [250000]:
+        if not isinstance(step_range, list) or step_range[-1:] != [expected_steps]:
             raise ValueError(
-                f"{run_dir}: metrics do not end at the required 250000 transitions"
+                f"{run_dir}: metrics do not end at the required {expected_steps} transitions"
             )
         run_summary = report.get("run_summary")
         if not isinstance(run_summary, Mapping) or run_summary.get("status") != "completed":
@@ -294,7 +311,7 @@ def run_sweep(args: argparse.Namespace) -> dict[str, Any]:
                 variant["final_checkpoint"] = str(
                     Path(variant["run_dir"])
                     / "checkpoints"
-                    / "step-00250000.pt"
+                    / f"step-{expected_steps:08d}.pt"
                 )
                 finalize_variant(variant)
             active = remaining
@@ -322,7 +339,7 @@ def run_sweep(args: argparse.Namespace) -> dict[str, Any]:
         variant["final_checkpoint"] = str(
             Path(variant["run_dir"])
             / "checkpoints"
-            / "step-00250000.pt"
+            / f"step-{expected_steps:08d}.pt"
         )
         finalize_variant(variant)
         write_manifest()

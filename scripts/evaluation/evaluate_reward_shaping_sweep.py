@@ -57,7 +57,7 @@ def build_parser() -> argparse.ArgumentParser:
         action="append",
         dest="checkpoint_steps",
         default=None,
-        help="repeat for explicit checkpoints; defaults to 62500/125000/187500/250000",
+        help="repeat for explicit checkpoints; defaults to the training manifest",
     )
     return parser
 
@@ -294,10 +294,16 @@ def run_sweep(args: argparse.Namespace) -> dict[str, Any]:
     stage_dir = args.stage_dir
     output_dir = args.output_dir or stage_dir / "evaluation"
     output_dir.mkdir(parents=True, exist_ok=True)
-    checkpoint_steps = tuple(args.checkpoint_steps or (62_500, 125_000, 187_500, 250_000))
+    manifest = _load_manifest(stage_dir)
+    manifest_steps = tuple(
+        int(step) for step in manifest.get(
+            "checkpoint_steps",
+            (62_500, 125_000, 187_500, 250_000),
+        )
+    )
+    checkpoint_steps = tuple(args.checkpoint_steps or manifest_steps)
     if any(step < 1 for step in checkpoint_steps):
         raise ValueError("checkpoint steps must be positive")
-    manifest = _load_manifest(stage_dir)
     contract = load_evaluation_contract(args.contract)
     validate_breakout_runtime_contract(contract)
     evaluation_config = load_evaluation_config(args.config)
@@ -359,12 +365,20 @@ def run_sweep(args: argparse.Namespace) -> dict[str, Any]:
                 )
             comparisons[step_key][label] = comparison
             summary = payloads[label][step]["summary"]
-            milestone_name = {
-                62_500: "25_percent",
-                125_000: "50_percent",
-                187_500: "75_percent",
-                250_000: "100_percent",
-            }.get(step)
+            training_transitions = int(manifest["training_transitions"])
+            milestone_name = next(
+                (
+                    name
+                    for name, fraction in (
+                        ("25_percent", 0.25),
+                        ("50_percent", 0.50),
+                        ("75_percent", 0.75),
+                        ("100_percent", 1.00),
+                    )
+                    if step == int(training_transitions * fraction)
+                ),
+                None,
+            )
             training_milestone = (
                 training_summaries[label]["milestones"].get(milestone_name, {})
                 if milestone_name is not None
@@ -419,7 +433,11 @@ def run_sweep(args: argparse.Namespace) -> dict[str, Any]:
 
     sweep_summary = {
         "schema_version": 1,
-        "artifact_type": "issue9_reward_shaping_stage2_sweep",
+        "artifact_type": (
+            "issue9_reward_shaping_stage3_1m_sweep"
+            if int(manifest["training_transitions"]) == 1_000_000
+            else "issue9_reward_shaping_stage2_sweep"
+        ),
         "created_at_utc": datetime.now(timezone.utc).isoformat().replace(
             "+00:00", "Z"
         ),
