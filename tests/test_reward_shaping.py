@@ -24,6 +24,7 @@ from breakout_rl.training.dqn_trainer import DQNTrainer
 from breakout_rl.training.reward_shaping import shape_training_reward
 from breakout_rl.training.vectorized import VectorizedDQNTrainer
 from scripts.training.run_reward_shaping_sweep import build_parser, run_sweep
+from scripts.analysis.audit_reward_shaping_schedule import build_parity_audit
 
 
 OBSERVATION_SHAPE = (4, 84, 84)
@@ -124,6 +125,153 @@ class _EvaluationEnv:
 
 
 class RewardShapingTests(unittest.TestCase):
+    def test_schedule_audit_separates_learning_parity_from_full_run_parity(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            contract_path = Path("configs/eval/breakout_contract_v2.json").resolve()
+
+            def write_config(
+                name: str,
+                *,
+                total_steps: int,
+                checkpoint_interval: int,
+                penalty: float,
+            ) -> Path:
+                path = root / f"{name}.json"
+                config = DQNConfig(
+                    total_steps=total_steps,
+                    seed=2022,
+                    algorithm="double_dqn",
+                    architecture="dueling",
+                    checkpoint_interval=checkpoint_interval,
+                    life_loss_penalty=penalty,
+                    device="cpu",
+                ).to_dict()
+                path.write_text(
+                    json.dumps(
+                        {
+                            "training_config": config,
+                            "contract": str(contract_path),
+                        }
+                    ),
+                    encoding="utf-8",
+                )
+                return path
+
+            stage2_config = write_config(
+                "stage2",
+                total_steps=1000,
+                checkpoint_interval=250,
+                penalty=0.0,
+            )
+            stage3_baseline = write_config(
+                "stage3-baseline",
+                total_steps=2000,
+                checkpoint_interval=500,
+                penalty=0.0,
+            )
+            stage3_penalty = write_config(
+                "stage3-penalty",
+                total_steps=2000,
+                checkpoint_interval=500,
+                penalty=-1.0,
+            )
+            stage2_manifest = root / "stage2-manifest.json"
+            stage2_manifest.write_text(
+                json.dumps(
+                    {
+                        "variants": [
+                            {
+                                "label": "penalty-0.0",
+                                "config_path": str(stage2_config),
+                                "status": "completed",
+                            }
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+            stage3_manifest = root / "stage3-manifest.json"
+            stage3_manifest.write_text(
+                json.dumps(
+                    {
+                        "parallel_execution": True,
+                        "variants": [
+                            {
+                                "label": "penalty-0.0",
+                                "config_path": str(stage3_baseline),
+                                "status": "completed",
+                            },
+                            {
+                                "label": "penalty-minus-1.0",
+                                "config_path": str(stage3_penalty),
+                                "status": "completed",
+                            },
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            resume_validation = root / "resume-validation.json"
+            resume_validation.write_text(
+                json.dumps(
+                    {
+                        "exact_continuation_available": False,
+                        "checkpoints": [
+                            {
+                                "exact_continuation_available": False,
+                                "blockers": ["replay buffer contents are not checkpointed"],
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            audit = build_parity_audit(
+                stage2_config_path=stage2_config,
+                stage3_config_path=stage3_baseline,
+                stage2_manifest_path=stage2_manifest,
+                stage3_manifest_path=stage3_manifest,
+                resume_validation_path=resume_validation,
+            )
+
+        self.assertTrue(
+            audit["schedule_audit"]["stage2_vs_stage3_250k_schedule_equivalent"]
+        )
+        self.assertFalse(audit["full_runtime_reproduction_equivalent"])
+        self.assertFalse(
+            audit["does_this_invalidate_stage3_internal_baseline_vs_minus1"]
+        )
+
+    def test_sweep_supports_non_default_training_seed_for_replication(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            output_dir = Path(directory) / "stage3b"
+            args = build_parser().parse_args(
+                [
+                    "--dry-run",
+                    "--parallel",
+                    "--training-seed",
+                    "2023",
+                    "--expected-steps",
+                    "1000000",
+                    "--output-dir",
+                    str(output_dir),
+                    "--config",
+                    "configs/issue9_reward_shaping_stage3b_seed2023_baseline.json",
+                    "--config",
+                    "configs/issue9_reward_shaping_stage3b_seed2023_penalty_minus1.json",
+                ]
+            )
+            manifest = run_sweep(args)
+
+        self.assertEqual(manifest["training_seed"], 2023)
+        self.assertEqual(
+            manifest["artifact_type"],
+            "issue9_reward_shaping_stage3b_1m_training_sweep",
+        )
+        self.assertTrue(manifest["parallel_execution"])
+
     def test_training_summary_keeps_q_and_td_statistics_at_milestones(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             run_dir = Path(directory) / "run"

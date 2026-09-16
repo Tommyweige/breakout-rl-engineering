@@ -32,7 +32,12 @@ def _load_payload(path: Path) -> Mapping[str, Any]:
     return payload
 
 
-def _resolved_config(path: Path, *, expected_steps: int) -> DQNConfig:
+def _resolved_config(
+    path: Path,
+    *,
+    expected_steps: int,
+    expected_seed: int,
+) -> DQNConfig:
     payload = _load_payload(path)
     raw_config = payload.get("training_config", payload)
     if not isinstance(raw_config, Mapping):
@@ -40,12 +45,12 @@ def _resolved_config(path: Path, *, expected_steps: int) -> DQNConfig:
     config = DQNConfig.from_dict(raw_config)
     if (
         config.total_steps != expected_steps
-        or config.seed != 2022
+        or config.seed != expected_seed
         or config.algorithm != "double_dqn"
         or config.architecture != "dueling"
     ):
         raise ValueError(
-            f"{path}: sweep requires total_steps={expected_steps}, seed=2022, "
+            f"{path}: sweep requires total_steps={expected_steps}, seed={expected_seed}, "
             "algorithm=double_dqn, architecture=dueling"
         )
     return config
@@ -108,7 +113,13 @@ def build_parser() -> argparse.ArgumentParser:
         "--expected-steps",
         type=int,
         default=250_000,
-        help="required total transitions for every config (250000 for Stage 2)",
+        help="required total transitions for every config",
+    )
+    parser.add_argument(
+        "--training-seed",
+        type=int,
+        default=2022,
+        help="required training seed for every config (default: 2022)",
     )
     parser.add_argument(
         "--resume-validation",
@@ -132,8 +143,11 @@ def run_sweep(args: argparse.Namespace) -> dict[str, Any]:
     output_dir = args.output_dir
     runs_dir = output_dir / "runs"
     expected_steps = int(args.expected_steps)
+    training_seed = int(args.training_seed)
     if expected_steps < 1:
         raise ValueError("expected-steps must be positive")
+    if training_seed < 0:
+        raise ValueError("training-seed must be non-negative")
     output_dir.mkdir(parents=True, exist_ok=True)
     variants: list[dict[str, Any]] = []
     labels: set[str] = set()
@@ -142,7 +156,11 @@ def run_sweep(args: argparse.Namespace) -> dict[str, Any]:
     checkpoint_interval: int | None = None
     for config_path in config_paths:
         payload = _load_payload(config_path)
-        config = _resolved_config(config_path, expected_steps=expected_steps)
+        config = _resolved_config(
+            config_path,
+            expected_steps=expected_steps,
+            expected_seed=training_seed,
+        )
         if checkpoint_interval is None:
             checkpoint_interval = config.checkpoint_interval
         elif checkpoint_interval != config.checkpoint_interval:
@@ -195,7 +213,14 @@ def run_sweep(args: argparse.Namespace) -> dict[str, Any]:
     checkpoint_steps = tuple(
         range(checkpoint_interval, expected_steps + 1, checkpoint_interval)
     )
-    stage_name = "stage3_1m" if expected_steps == 1_000_000 else "stage2_250k"
+    if expected_steps == 1_000_000 and training_seed != 2022:
+        stage_name = "stage3b_1m"
+    elif expected_steps == 1_000_000:
+        stage_name = "stage3_1m"
+    elif expected_steps == 250_000:
+        stage_name = "stage2_250k"
+    else:
+        stage_name = f"{expected_steps}_step"
     resume_validation_path = args.resume_validation
     if resume_validation_path is None:
         candidate = output_dir / "resume-validation.json"
@@ -220,7 +245,7 @@ def run_sweep(args: argparse.Namespace) -> dict[str, Any]:
         "created_at_utc": datetime.now(timezone.utc).isoformat().replace(
             "+00:00", "Z"
         ),
-        "training_seed": 2022,
+        "training_seed": training_seed,
         "training_transitions": expected_steps,
         "checkpoint_steps": list(checkpoint_steps),
         "algorithm": "double_dqn",
@@ -228,6 +253,7 @@ def run_sweep(args: argparse.Namespace) -> dict[str, Any]:
         "selection_status": "candidate screening; not final model promotion",
         "training_origin": "from_scratch",
         "resume_mode": "train_from_scratch",
+        "parallel_execution": bool(args.parallel),
         "resume_validation": (
             None
             if resume_validation_path is None
