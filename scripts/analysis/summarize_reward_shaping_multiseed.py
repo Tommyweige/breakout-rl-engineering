@@ -345,6 +345,7 @@ def _validate_common_evaluation_contract(
         raise ValueError(f"{paths[first_seed]}: evaluation is not raw-score-only")
     if first.get("checkpoint_steps") != list(CHECKPOINT_STEPS):
         raise ValueError(f"{paths[first_seed]}: checkpoint steps are not 250/500/750/1M")
+    runtime_validation: dict[str, Any] = {}
     for seed, payload in payloads.items():
         for field in (
             "eval_seeds",
@@ -362,6 +363,53 @@ def _validate_common_evaluation_contract(
             )
         if payload.get("training_transitions") != 1_000_000:
             raise ValueError(f"{paths[seed]}: training budget must be 1M")
+        detail_checks = 0
+        for label in (BASELINE_LABEL, SHAPED_LABEL):
+            for step in CHECKPOINT_STEPS:
+                detail_path = (
+                    paths[seed].parent
+                    / "evaluations"
+                    / label
+                    / str(step)
+                    / "results.json"
+                )
+                detail = _read_json(detail_path)
+                if detail.get("evaluation_epsilon") != 0.0:
+                    raise ValueError(f"{detail_path}: evaluation_epsilon must be 0.0")
+                if detail.get("evaluation_seeds") != eval_seeds:
+                    raise ValueError(f"{detail_path}: evaluation seeds differ")
+                if detail.get("episodes_per_seed") != 1:
+                    raise ValueError(f"{detail_path}: episodes_per_seed must be 1")
+                if detail.get("total_episodes") != 50:
+                    raise ValueError(f"{detail_path}: total_episodes must be 50")
+                training_detail = detail.get("training")
+                checkpoint_detail = detail.get("checkpoint")
+                if not isinstance(training_detail, Mapping) or not isinstance(
+                    checkpoint_detail, Mapping
+                ):
+                    raise ValueError(f"{detail_path}: provenance objects are missing")
+                if checkpoint_detail.get("contract_id") != first["contract_id"]:
+                    raise ValueError(f"{detail_path}: contract_id differs")
+                if (
+                    training_detail.get("training_seed") != seed
+                    or checkpoint_detail.get("step") != step
+                ):
+                    raise ValueError(f"{detail_path}: training/checkpoint provenance differs")
+                metadata_detail = detail.get("metadata")
+                score_definition = training_detail.get("evaluation_score_definition")
+                if isinstance(metadata_detail, Mapping):
+                    score_definition = score_definition or metadata_detail.get(
+                        "score_definition"
+                    )
+                if score_definition != EXPECTED_SCORE_DEFINITION:
+                    raise ValueError(f"{detail_path}: evaluation is not raw-score-only")
+                detail_checks += 1
+        runtime_validation[str(seed)] = {
+            "evaluation_epsilon": 0.0,
+            "validated_result_files": detail_checks,
+            "expected_result_files": len((BASELINE_LABEL, SHAPED_LABEL))
+            * len(CHECKPOINT_STEPS),
+        }
     return {
         "evaluation_seed_count": 50,
         "evaluation_episodes_per_seed": 1,
@@ -370,6 +418,7 @@ def _validate_common_evaluation_contract(
         "contract_path": first.get("contract_path"),
         "evaluation_score_definition": first["evaluation_score_definition"],
         "checkpoint_steps": list(CHECKPOINT_STEPS),
+        "runtime_result_validation": runtime_validation,
     }
 
 
