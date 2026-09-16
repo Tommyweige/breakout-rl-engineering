@@ -25,6 +25,9 @@ from breakout_rl.training.reward_shaping import shape_training_reward
 from breakout_rl.training.vectorized import VectorizedDQNTrainer
 from scripts.training.run_reward_shaping_sweep import build_parser, run_sweep
 from scripts.analysis.audit_reward_shaping_schedule import build_parity_audit
+from scripts.analysis.summarize_reward_shaping_multiseed import (
+    _learning_curve_interpretation,
+)
 
 
 OBSERVATION_SHAPE = (4, 84, 84)
@@ -125,6 +128,23 @@ class _EvaluationEnv:
 
 
 class RewardShapingTests(unittest.TestCase):
+    def test_multiseed_learning_curve_interpretation_is_explicit_about_late_degradation(
+        self,
+    ) -> None:
+        curve = [
+            {"checkpoint_step": 250000, "mean_of_paired_delta_mean": 1.0},
+            {"checkpoint_step": 500000, "mean_of_paired_delta_mean": 4.0},
+            {"checkpoint_step": 750000, "mean_of_paired_delta_mean": 2.0},
+            {"checkpoint_step": 1000000, "mean_of_paired_delta_mean": -1.0},
+        ]
+
+        interpretation = _learning_curve_interpretation(curve)
+
+        self.assertTrue(
+            interpretation["early_faster_mid_advantage_late_degradation_pattern"]
+        )
+        self.assertFalse(interpretation["late_recovery_after_mid_advantage"])
+
     def test_schedule_audit_separates_learning_parity_from_full_run_parity(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
