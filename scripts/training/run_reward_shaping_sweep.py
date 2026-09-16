@@ -43,6 +43,15 @@ def _resolved_config(
     if not isinstance(raw_config, Mapping):
         raise ValueError(f"{path}: training_config must be a JSON object")
     config = DQNConfig.from_dict(raw_config)
+    declared_seed = payload.get("training_seed_replication")
+    if declared_seed is not None and (
+        isinstance(declared_seed, bool)
+        or not isinstance(declared_seed, int)
+        or declared_seed != expected_seed
+    ):
+        raise ValueError(
+            f"{path}: training_seed_replication must match training-seed={expected_seed}"
+        )
     if (
         config.total_steps != expected_steps
         or config.seed != expected_seed
@@ -198,6 +207,9 @@ def run_sweep(args: argparse.Namespace) -> dict[str, Any]:
                 "label": label,
                 "config_path": config_path.as_posix(),
                 "config": config.to_dict(),
+                "training_seed_replication": payload.get(
+                    "training_seed_replication", training_seed
+                ),
                 "contract_path": contract_path,
                 "contract_sha256": contract_sha256,
                 "run_dir": str(runs_dir / label),

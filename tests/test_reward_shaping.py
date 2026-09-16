@@ -195,16 +195,25 @@ class RewardShapingTests(unittest.TestCase):
             stage3_manifest.write_text(
                 json.dumps(
                     {
+                        "training_seed": 2022,
+                        "training_transitions": 2000,
+                        "checkpoint_steps": [500, 1000, 1500, 2000],
                         "parallel_execution": True,
                         "variants": [
                             {
                                 "label": "penalty-0.0",
                                 "config_path": str(stage3_baseline),
+                                "config": json.loads(
+                                    stage3_baseline.read_text(encoding="utf-8")
+                                )["training_config"],
                                 "status": "completed",
                             },
                             {
                                 "label": "penalty-minus-1.0",
                                 "config_path": str(stage3_penalty),
+                                "config": json.loads(
+                                    stage3_penalty.read_text(encoding="utf-8")
+                                )["training_config"],
                                 "status": "completed",
                             },
                         ],
@@ -244,6 +253,191 @@ class RewardShapingTests(unittest.TestCase):
             audit["does_this_invalidate_stage3_internal_baseline_vs_minus1"]
         )
 
+    def test_schedule_audit_fails_closed_on_learning_rate_drift(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            stage2_config = Path(
+                "configs/issue9_reward_shaping_250k_baseline.json"
+            )
+            stage3_penalty = Path(
+                "configs/issue9_reward_shaping_1m_penalty_minus1.json"
+            )
+            altered_payload = json.loads(
+                Path("configs/issue9_reward_shaping_1m_baseline.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            altered_payload["training_config"]["learning_rate"] = 0.0002
+            altered_stage3 = root / "altered-stage3.json"
+            altered_stage3.write_text(
+                json.dumps(altered_payload),
+                encoding="utf-8",
+            )
+            stage2_manifest = root / "stage2.json"
+            stage2_manifest.write_text(
+                json.dumps(
+                    {
+                        "parallel_execution": True,
+                        "variants": [
+                            {
+                                "config_path": str(stage2_config),
+                                "status": "completed",
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            penalty_payload = json.loads(
+                stage3_penalty.read_text(encoding="utf-8")
+            )
+            stage3_manifest = root / "stage3.json"
+            stage3_manifest.write_text(
+                json.dumps(
+                    {
+                        "training_seed": 2022,
+                        "training_transitions": 1000000,
+                        "checkpoint_steps": [250000, 500000, 750000, 1000000],
+                        "parallel_execution": True,
+                        "variants": [
+                            {
+                                "config_path": str(altered_stage3),
+                                "config": altered_payload["training_config"],
+                                "status": "completed",
+                            },
+                            {
+                                "config_path": str(stage3_penalty),
+                                "config": penalty_payload["training_config"],
+                                "status": "completed",
+                            },
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            resume = root / "resume.json"
+            resume.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "artifact_type": "issue9_reward_shaping_resume_validation",
+                        "exact_continuation_available": False,
+                        "checkpoints": [],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            audit = build_parity_audit(
+                stage2_config_path=stage2_config,
+                stage3_config_path=altered_stage3,
+                stage2_manifest_path=stage2_manifest,
+                stage3_manifest_path=stage3_manifest,
+                resume_validation_path=resume,
+            )
+
+        self.assertFalse(
+            audit["schedule_audit"][
+                "stage2_vs_stage3_250k_schedule_equivalent"
+            ]
+        )
+        self.assertFalse(
+            audit["schedule_audit"]["learning_rate_schedule_equivalent"]
+        )
+
+    def test_schedule_audit_rejects_unverified_parallel_and_resume_provenance(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            contract_path = Path("configs/eval/breakout_contract_v2.json").resolve()
+            configs: list[Path] = []
+            for name, penalty in (("baseline", 0.0), ("penalty", -1.0)):
+                path = root / f"{name}.json"
+                path.write_text(
+                    json.dumps(
+                        {
+                            "training_config": DQNConfig(
+                                total_steps=2000,
+                                seed=2022,
+                                algorithm="double_dqn",
+                                architecture="dueling",
+                                checkpoint_interval=500,
+                                life_loss_penalty=penalty,
+                                device="cpu",
+                            ).to_dict(),
+                            "contract": str(contract_path),
+                        }
+                    ),
+                    encoding="utf-8",
+                )
+                configs.append(path)
+            stage2 = root / "stage2.json"
+            stage2.write_text(
+                json.dumps(
+                    {
+                        "variants": [
+                            {
+                                "config_path": str(configs[0]),
+                                "config": json.loads(
+                                    configs[0].read_text(encoding="utf-8")
+                                )["training_config"],
+                                "status": "completed",
+                            }
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+            stage3 = root / "stage3.json"
+            stage3.write_text(
+                json.dumps(
+                    {
+                        "variants": [
+                            {
+                                "config_path": str(configs[0]),
+                                "config": json.loads(
+                                    configs[0].read_text(encoding="utf-8")
+                                )["training_config"],
+                                "status": "completed",
+                            },
+                            {
+                                "config_path": str(configs[1]),
+                                "config": json.loads(
+                                    configs[1].read_text(encoding="utf-8")
+                                )["training_config"],
+                                "status": "completed",
+                            },
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+            resume = root / "resume.json"
+            resume.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "artifact_type": "issue9_reward_shaping_resume_validation",
+                        "exact_continuation_available": True,
+                        "checkpoints": [{}],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            audit = build_parity_audit(
+                stage2_config_path=configs[0],
+                stage3_config_path=configs[0],
+                stage2_manifest_path=stage2,
+                stage3_manifest_path=stage3,
+                resume_validation_path=resume,
+            )
+
+        self.assertFalse(
+            audit["stage3"]["execution"]["parallel_provenance_verified"]
+        )
+        self.assertFalse(audit["checkpoint_semantics"]["exact_resume_available"])
+        self.assertTrue(
+            audit["does_this_invalidate_stage3_internal_baseline_vs_minus1"]
+        )
+
     def test_sweep_supports_non_default_training_seed_for_replication(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             output_dir = Path(directory) / "stage3b"
@@ -271,6 +465,32 @@ class RewardShapingTests(unittest.TestCase):
             "issue9_reward_shaping_stage3b_1m_training_sweep",
         )
         self.assertTrue(manifest["parallel_execution"])
+
+    def test_sweep_rejects_mismatched_training_seed_replication_metadata(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            altered_config = Path(directory) / "altered.json"
+            payload = json.loads(
+                Path(
+                    "configs/issue9_reward_shaping_stage3b_seed2023_baseline.json"
+                ).read_text(encoding="utf-8")
+            )
+            payload["training_seed_replication"] = 2024
+            altered_config.write_text(json.dumps(payload), encoding="utf-8")
+            args = build_parser().parse_args(
+                [
+                    "--dry-run",
+                    "--training-seed",
+                    "2023",
+                    "--expected-steps",
+                    "1000000",
+                    "--output-dir",
+                    str(Path(directory) / "sweep"),
+                    "--config",
+                    str(altered_config),
+                ]
+            )
+            with self.assertRaises(ValueError):
+                run_sweep(args)
 
     def test_training_summary_keeps_q_and_td_statistics_at_milestones(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

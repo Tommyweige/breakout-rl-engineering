@@ -195,12 +195,15 @@ def _manifest_execution(
     if isinstance(manifest_parallel, bool):
         parallel = manifest_parallel
         source = "training-sweep.json"
+        provenance_verified = True
     else:
         parallel = observed_parallel
-        source = "recorded sweep invocation; legacy manifest predates parallel_execution"
+        source = "unpersisted legacy invocation hint; not evidence"
+        provenance_verified = False
     return {
         "parallel": parallel,
         "parallel_source": source,
+        "parallel_provenance_verified": provenance_verified,
         "variant_count": len(variants),
         "worker_count": len(variants) if parallel else 1,
         "statuses": statuses,
@@ -215,12 +218,18 @@ def _resume_snapshot(path: Path) -> dict[str, Any]:
         return {
             "path": path.as_posix(),
             "present": False,
-            "exact_continuation": None,
+            "exact_continuation": False,
             "blockers": ["resume-validation artifact is missing"],
         }
     payload = _read_json(path)
     checkpoints = payload.get("checkpoints", [])
-    if not isinstance(checkpoints, list):
+    validation_errors: list[str] = []
+    if payload.get("schema_version") != 1:
+        validation_errors.append("resume-validation schema_version must be 1")
+    if payload.get("artifact_type") != "issue9_reward_shaping_resume_validation":
+        validation_errors.append("resume-validation artifact_type is invalid")
+    if not isinstance(checkpoints, list) or not checkpoints:
+        validation_errors.append("resume-validation must contain checkpoints")
         checkpoints = []
     blockers: list[str] = []
     raw_blockers = payload.get("blockers")
@@ -228,17 +237,31 @@ def _resume_snapshot(path: Path) -> dict[str, Any]:
         blockers.extend(str(item) for item in raw_blockers)
     for checkpoint in checkpoints:
         if not isinstance(checkpoint, Mapping):
+            validation_errors.append("resume-validation contains a non-object checkpoint")
             continue
         checkpoint_blockers = checkpoint.get("blockers", [])
         if isinstance(checkpoint_blockers, list):
             blockers.extend(str(item) for item in checkpoint_blockers)
-    exact = payload.get("exact_continuation_available")
-    if exact is None and checkpoints:
-        exact = all(
-            checkpoint.get("exact_continuation_available") is True
-            for checkpoint in checkpoints
-            if isinstance(checkpoint, Mapping)
+        elif checkpoint_blockers is not None:
+            validation_errors.append("checkpoint blockers must be a list")
+        required_true_fields = (
+            "replay_saved",
+            "has_replay_state",
+            "has_rng_state",
+            "has_environment_state",
+            "has_model_state",
+            "has_step_state",
+            "exact_continuation_available",
         )
+        for field in required_true_fields:
+            if checkpoint.get(field) is not True:
+                validation_errors.append(f"checkpoint {field} is not true")
+        if checkpoint.get("resume_contract_version") != 1:
+            validation_errors.append("checkpoint resume_contract_version must be 1")
+    if payload.get("exact_continuation_available") is not True:
+        validation_errors.append("resume-validation does not declare exact continuation")
+    blockers.extend(validation_errors)
+    exact = not blockers
     return {
         "path": path.as_posix(),
         "present": True,
@@ -246,6 +269,7 @@ def _resume_snapshot(path: Path) -> dict[str, Any]:
         "decision": payload.get("decision"),
         "checkpoints": len(checkpoints),
         "blockers": sorted(set(blockers)),
+        "validation_errors": sorted(set(validation_errors)),
     }
 
 
@@ -309,33 +333,93 @@ def build_parity_audit(
         and stage2_config.strict_action_selection_parity
         == stage3_config.strict_action_selection_parity
     )
-    schedule_equivalent = not schedule_differences and total_steps_not_used_for_schedule
+    epsilon_schedule_equivalent = (
+        not any(
+            field in schedule_differences
+            for field in ("epsilon_start", "epsilon_end", "epsilon_decay_steps")
+        )
+        and total_steps_not_used_for_schedule
+    )
     update_schedule_equivalent = not update_differences
+    learning_rate_schedule_equivalent = (
+        constant_learning_rate
+        and stage2_config.learning_rate == stage3_config.learning_rate
+    )
+    learning_schedule_equivalent = (
+        epsilon_schedule_equivalent
+        and learning_rate_schedule_equivalent
+        and update_schedule_equivalent
+    )
+    unexpected_condition_differences = {
+        field: values
+        for field, values in config_differences.items()
+        if field not in {"total_steps", "checkpoint_interval"}
+    }
+    controlled_conditions_equivalent = (
+        not unexpected_condition_differences and environment_equivalent
+    )
+    schedule_equivalent = learning_schedule_equivalent and controlled_conditions_equivalent
 
-    stage3_variants: list[tuple[dict[str, Any], DQNConfig]] = []
+    stage3_variants: list[
+        tuple[dict[str, Any], DQNConfig, dict[str, str]]
+    ] = []
     for variant in stage3_manifest["variants"]:
         config_path = Path(str(variant["config_path"]))
-        _payload, config = _config(config_path)
-        stage3_variants.append((dict(variant), config))
-    baseline = next(
-        (config for variant, config in stage3_variants if config.life_loss_penalty == 0.0),
+        payload, config = _config(config_path)
+        stage3_variants.append(
+            (dict(variant), config, _contract_fingerprint(config_path, payload))
+        )
+    baseline_entry = next(
+        (
+            (variant, config, contract)
+            for variant, config, contract in stage3_variants
+            if config.life_loss_penalty == 0.0
+        ),
         None,
     )
-    strong_penalty = next(
-        (config for variant, config in stage3_variants if config.life_loss_penalty == -1.0),
+    strong_penalty_entry = next(
+        (
+            (variant, config, contract)
+            for variant, config, contract in stage3_variants
+            if config.life_loss_penalty == -1.0
+        ),
         None,
     )
-    if baseline is None or strong_penalty is None:
+    if baseline_entry is None or strong_penalty_entry is None:
         raise ValueError("Stage 3 manifest must include penalty 0.0 and -1.0 variants")
+    _baseline_variant, baseline, baseline_contract = baseline_entry
+    _strong_variant, strong_penalty, strong_penalty_contract = strong_penalty_entry
     internal_differences = _differences(
         baseline,
         strong_penalty,
-        excluded=NON_EXPERIMENT_FIELDS | {"total_steps", "checkpoint_interval"},
+        excluded=NON_EXPERIMENT_FIELDS,
     )
+    internal_manifest_consistency = all(
+        isinstance(variant.get("config"), Mapping)
+        and variant["config"] == config.to_dict()
+        and variant.get("status") == "completed"
+        and variant.get("training_seed_replication", config.seed) == config.seed
+        for variant, config, _contract in stage3_variants
+    ) and (
+        stage3_manifest.get("training_seed") == stage3_config.seed
+        and stage3_manifest.get("training_transitions") == stage3_config.total_steps
+        and stage3_manifest.get("checkpoint_steps")
+        == [
+            stage3_config.checkpoint_interval * index
+            for index in range(
+                1,
+                stage3_config.total_steps // stage3_config.checkpoint_interval + 1,
+            )
+        ]
+    )
+    internal_contract_equivalent = baseline_contract == strong_penalty_contract
     internal_comparison_valid = (
         not internal_differences
+        and internal_manifest_consistency
+        and internal_contract_equivalent
         and stage3_execution["all_completed"]
         and stage3_execution["parallel"]
+        and stage3_execution["parallel_provenance_verified"]
     )
     resume = _resume_snapshot(resume_validation_path)
 
@@ -415,22 +499,24 @@ def build_parity_audit(
             "contract": stage3_contract,
         },
         "normalized_training_config_differences": config_differences,
+        "unexpected_control_condition_differences": unexpected_condition_differences,
         "schedule_audit": {
             "stage2_vs_stage3_250k_schedule_equivalent": schedule_equivalent,
-            "schedule_scope": "epsilon, optimizer learning rate, and update cadence",
-            "epsilon_schedule_equivalent": not any(
-                field in schedule_differences
-                for field in ("epsilon_start", "epsilon_end", "epsilon_decay_steps")
+            "schedule_scope": (
+                "epsilon, optimizer learning rate, update cadence, and controlled "
+                "environment conditions"
             ),
+            "learning_schedule_equivalent": learning_schedule_equivalent,
+            "epsilon_schedule_equivalent": epsilon_schedule_equivalent,
             "epsilon_schedule": {
                 "stage2": _schedule_snapshot(stage2_config),
                 "stage3": _schedule_snapshot(stage3_config),
             },
-            "learning_rate_schedule_equivalent": constant_learning_rate
-            and stage2_config.learning_rate == stage3_config.learning_rate,
+            "learning_rate_schedule_equivalent": learning_rate_schedule_equivalent,
             "update_schedule_equivalent": update_schedule_equivalent,
             "total_steps_dependent_annealing": not total_steps_not_used_for_schedule,
             "environment_contract_equivalent": environment_equivalent,
+            "controlled_conditions_equivalent": controlled_conditions_equivalent,
             "seed_propagation_equivalent": stage2_config.seed == stage3_config.seed,
             "optimizer": "torch.optim.Adam",
             "source_checks": source_checks,
@@ -447,6 +533,10 @@ def build_parity_audit(
         "stage3_internal_comparison": {
             "controlled_comparison_valid": internal_comparison_valid,
             "baseline_vs_minus1_config_differences": internal_differences,
+            "baseline_contract": baseline_contract,
+            "minus1_contract": strong_penalty_contract,
+            "contract_equivalent": internal_contract_equivalent,
+            "manifest_consistency_valid": internal_manifest_consistency,
             "reason": (
                 "All Stage 3 variants were launched in the same parallel sweep with "
                 "the same seed, budget, checkpoint cadence, environment contract, "
