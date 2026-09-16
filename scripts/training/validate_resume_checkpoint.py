@@ -13,6 +13,11 @@ import torch
 
 
 RESUME_CONTRACT_VERSION = 1
+# The current trainers intentionally start a fresh environment and do not
+# restore replay arrays or ALE state.  Keep this explicit so a future payload
+# cannot make this validator overclaim exact continuation before the loaders
+# implement the corresponding restore contract.
+EXACT_RESUME_LOADER_SUPPORTED = False
 
 
 def _load(path: Path) -> dict[str, Any]:
@@ -81,6 +86,10 @@ def inspect_checkpoint(path: Path) -> dict[str, Any]:
         blockers.append("model and optimizer state is incomplete")
     if not has_step_state:
         blockers.append("global/training step state is incomplete")
+    if not EXACT_RESUME_LOADER_SUPPORTED:
+        blockers.append(
+            "trainer does not restore replay contents and environment/ALE state"
+        )
     return {
         "path": str(path),
         "format_version": payload.get("format_version"),

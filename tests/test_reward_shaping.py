@@ -30,6 +30,7 @@ from scripts.analysis.summarize_reward_shaping_multiseed import (
     _promotion_gate,
 )
 from scripts.evaluation.evaluate_reward_shaping_sweep import _validate_manifest_fairness
+from scripts.training.validate_resume_checkpoint import inspect_checkpoint
 
 
 OBSERVATION_SHAPE = (4, 84, 84)
@@ -130,6 +131,56 @@ class _EvaluationEnv:
 
 
 class RewardShapingTests(unittest.TestCase):
+    def test_resume_validator_never_overclaims_unimplemented_exact_restore(self) -> None:
+        payload = {
+            "format_version": 2,
+            "resume_contract_version": 1,
+            "replay_saved": True,
+            "replay_state": {
+                key: []
+                for key in (
+                    "states",
+                    "next_states",
+                    "actions",
+                    "rewards",
+                    "terminated",
+                    "truncated",
+                )
+            },
+            "environment_state": {"ale_state": "serialized"},
+            "rng_state": {
+                "python": object(),
+                "numpy_global": object(),
+                "torch_cpu": object(),
+                "action_rng": object(),
+            },
+            "online_network": {"weight": 1},
+            "target_network": {"weight": 1},
+            "optimizer": {"state": 1},
+            "global_step": 100,
+            "training_steps": 100,
+            "config": {"seed": 2022},
+        }
+        payload["replay_state"].update(
+            {"capacity": 1, "size": 0, "write_index": 0}
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            checkpoint = Path(directory) / "checkpoint.pt"
+            payload["rng_state"] = {
+                "python": b"python",
+                "numpy_global": b"numpy",
+                "torch_cpu": b"torch",
+                "action_rng": b"action",
+            }
+            torch.save(payload, checkpoint)
+            report = inspect_checkpoint(checkpoint)
+
+        self.assertFalse(report["exact_continuation_available"])
+        self.assertIn(
+            "trainer does not restore replay contents and environment/ALE state",
+            report["blockers"],
+        )
+
     def test_promotion_gate_does_not_ignore_survival_regression(self) -> None:
         def condition(
             *,
