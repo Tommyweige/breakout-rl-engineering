@@ -570,6 +570,23 @@ class DQNTrainerTests(unittest.TestCase):
             first_summary = first_trainer.train()
             checkpoint = Path(first_summary["last_checkpoint"])
 
+            advertised_replay_checkpoint = run_dir / "advertised-replay.pt"
+            checkpoint_payload = torch.load(
+                checkpoint,
+                map_location="cpu",
+                weights_only=False,
+            )
+            checkpoint_payload["replay_saved"] = True
+            torch.save(checkpoint_payload, advertised_replay_checkpoint)
+            with self.assertRaisesRegex(ValueError, "does not restore replay"):
+                DQNTrainer(
+                    ShortEpisodeEnv(),
+                    DQNConfig(total_steps=16, **base_values),
+                    run_dir=run_dir / "advertised-replay",
+                    online_network=TinyImageQNetwork(),
+                    resume_from=advertised_replay_checkpoint,
+                )
+
             with self.assertRaisesRegex(ValueError, "exact continuation"):
                 DQNTrainer(
                     ShortEpisodeEnv(),

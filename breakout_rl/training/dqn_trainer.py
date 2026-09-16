@@ -1263,7 +1263,15 @@ class DQNTrainer:
             payload = torch.load(checkpoint_path, map_location=self.device)
         if not isinstance(payload, dict):
             raise ValueError("checkpoint must contain a mapping")
-        if not bool(payload.get("replay_saved", False)) and not self.allow_replay_rewarm:
+        checkpoint_advertises_replay = bool(payload.get("replay_saved", False))
+        if checkpoint_advertises_replay and not self.allow_replay_rewarm:
+            raise ValueError(
+                "checkpoint advertises replay state, but this trainer does not "
+                "restore replay contents or environment/ALE state; exact "
+                "continuation is unavailable. Pass allow_replay_rewarm=True only "
+                "for an explicit non-equivalent warm-start."
+            )
+        if not checkpoint_advertises_replay and not self.allow_replay_rewarm:
             raise ValueError(
                 "checkpoint does not contain replay state; exact continuation is "
                 "unavailable. Pass allow_replay_rewarm=True only for an explicit "
@@ -1308,14 +1316,12 @@ class DQNTrainer:
         )
         self._random_decision_count = int(payload.get("random_decision_count", 0))
         self._greedy_decision_count = int(payload.get("greedy_decision_count", 0))
-        replay_saved = bool(payload.get("replay_saved", False))
+        # Even a legacy/future payload that advertises replay state is treated as
+        # a fresh replay warm-start: this loader does not restore replay or ALE
+        # state, so it must never claim exact continuation.
+        replay_saved = False
         saved_rewarm = payload.get("replay_rewarm_steps_remaining")
-        if replay_saved:
-            self._resume_rewarm_steps_remaining = max(
-                0,
-                int(saved_rewarm) if isinstance(saved_rewarm, int) else 0,
-            )
-        elif isinstance(saved_rewarm, int) and saved_rewarm > 0:
+        if isinstance(saved_rewarm, int) and saved_rewarm > 0:
             self._resume_rewarm_steps_remaining = saved_rewarm
         else:
             # Older checkpoints contain no replay arrays or explicit counter.

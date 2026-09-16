@@ -112,6 +112,8 @@ def _validate_manifest_fairness(variants: Sequence[Mapping[str, Any]]) -> None:
         if key not in {"life_loss_penalty", "contract_id", "contract_path"}
     }
     first_contract_sha256 = variants[0].get("contract_sha256")
+    if not isinstance(first_contract_sha256, str) or not first_contract_sha256:
+        raise ValueError("Stage 2 sweep manifest is missing the first contract hash")
     for variant in variants[1:]:
         config = variant.get("config")
         if not isinstance(config, Mapping):
@@ -126,9 +128,11 @@ def _validate_manifest_fairness(variants: Sequence[Mapping[str, Any]]) -> None:
                 "Stage 2 sweep variants differ in a training field other than "
                 "life_loss_penalty"
             )
+        candidate_contract_sha256 = variant.get("contract_sha256")
         if (
-            first_contract_sha256 is not None
-            and variant.get("contract_sha256") != first_contract_sha256
+            not isinstance(candidate_contract_sha256, str)
+            or not candidate_contract_sha256
+            or candidate_contract_sha256 != first_contract_sha256
         ):
             raise ValueError("Stage 2 sweep variants use different contracts")
 

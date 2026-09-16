@@ -27,7 +27,9 @@ from scripts.training.run_reward_shaping_sweep import build_parser, run_sweep
 from scripts.analysis.audit_reward_shaping_schedule import build_parity_audit
 from scripts.analysis.summarize_reward_shaping_multiseed import (
     _learning_curve_interpretation,
+    _promotion_gate,
 )
+from scripts.evaluation.evaluate_reward_shaping_sweep import _validate_manifest_fairness
 
 
 OBSERVATION_SHAPE = (4, 84, 84)
@@ -128,6 +130,106 @@ class _EvaluationEnv:
 
 
 class RewardShapingTests(unittest.TestCase):
+    def test_promotion_gate_does_not_ignore_survival_regression(self) -> None:
+        def condition(
+            *,
+            episode_length: float,
+            frames: float,
+            score_per_life: float,
+            first_loss: float,
+            loss_rate: float,
+        ) -> dict[str, float]:
+            return {
+                "mean_episode_length": episode_length,
+                "frames_between_life_losses": frames,
+                "score_per_life": score_per_life,
+                "time_to_first_life_loss": first_loss,
+                "life_losses_per_1000_steps": loss_rate,
+            }
+
+        records = {
+            seed: {
+                "checkpoints": {
+                    "1000000": {
+                        "baseline": condition(
+                            episode_length=100,
+                            frames=20,
+                            score_per_life=2,
+                            first_loss=10,
+                            loss_rate=5,
+                        ),
+                        "minus1": condition(
+                            episode_length=110,
+                            frames=22,
+                            score_per_life=2.2,
+                            first_loss=11,
+                            loss_rate=4.5,
+                        ),
+                    }
+                }
+            }
+            for seed in (2022, 2024)
+        }
+        records[2023] = {
+            "checkpoints": {
+                "1000000": {
+                    "baseline": condition(
+                        episode_length=100,
+                        frames=20,
+                        score_per_life=2,
+                        first_loss=10,
+                        loss_rate=5,
+                    ),
+                    "minus1": condition(
+                        episode_length=90,
+                        frames=18,
+                        score_per_life=1.8,
+                        first_loss=9,
+                        loss_rate=5.5,
+                    ),
+                }
+            }
+        }
+        final_table = [
+            {
+                "delta_mean_raw_score": delta,
+                "delta_median_raw_score": delta,
+                "wins": 25,
+                "ties": 0,
+                "losses": 25,
+            }
+            for delta in (5.0, 3.0, 1.0)
+        ]
+
+        gate = _promotion_gate(
+            final_table,
+            records,
+            training_stability={"all_stable": True},
+        )
+
+        self.assertFalse(gate["passes_all_required_gates"])
+        self.assertFalse(
+            gate["checks"]["survival_metrics_non_degraded_for_every_training_seed"]
+        )
+
+    def test_evaluator_rejects_missing_contract_hash(self) -> None:
+        config = {
+            "total_steps": 100,
+            "seed": 2022,
+            "algorithm": "double_dqn",
+            "architecture": "dueling",
+            "life_loss_penalty": 0.0,
+        }
+        variants = [
+            {"label": "baseline", "config": config, "contract_sha256": "abc"},
+            {
+                "label": "shaped",
+                "config": {**config, "life_loss_penalty": -1.0},
+            },
+        ]
+        with self.assertRaisesRegex(ValueError, "different contracts"):
+            _validate_manifest_fairness(variants)
+
     def test_multiseed_learning_curve_interpretation_is_explicit_about_late_degradation(
         self,
     ) -> None:

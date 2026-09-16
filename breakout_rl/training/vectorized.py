@@ -1453,7 +1453,15 @@ class VectorizedDQNTrainer:
             payload = torch.load(checkpoint_path, map_location=self.device)
         if not isinstance(payload, dict):
             raise ValueError("checkpoint must contain a mapping")
-        if not bool(payload.get("replay_saved", False)) and not self.allow_replay_rewarm:
+        checkpoint_advertises_replay = bool(payload.get("replay_saved", False))
+        if checkpoint_advertises_replay and not self.allow_replay_rewarm:
+            raise ValueError(
+                "checkpoint advertises replay state, but this trainer does not "
+                "restore replay contents or environment/ALE state; exact "
+                "continuation is unavailable. Pass allow_replay_rewarm=True only "
+                "for an explicit non-equivalent warm-start."
+            )
+        if not checkpoint_advertises_replay and not self.allow_replay_rewarm:
             raise ValueError(
                 "checkpoint does not contain replay state; exact continuation is "
                 "unavailable. Pass allow_replay_rewarm=True only for an explicit "
@@ -1564,6 +1572,10 @@ class VectorizedDQNTrainer:
         self.replay_insertion_transitions = int(
             payload.get("replay_insertion_transitions", 0)
         )
+        # Treat any advertised replay as unavailable until a loader restores
+        # replay and ALE state; otherwise this provenance would overclaim exact
+        # continuation while the new environment starts from a reset state.
+        replay_saved = False
         saved_rewarm = payload.get("replay_rewarm_steps_remaining")
         if isinstance(saved_rewarm, int) and saved_rewarm > 0:
             self._resume_rewarm_steps_remaining = saved_rewarm
@@ -1583,13 +1595,13 @@ class VectorizedDQNTrainer:
             "source_checkpoint": str(checkpoint_path),
             "source_checkpoint_sha256": _sha256_file(checkpoint_path),
             "source_step": self.global_step,
-            "replay_saved": bool(payload.get("replay_saved", False)),
+            "replay_saved": replay_saved,
             "replay_resume_semantics": (
                 "exact_replay_restore"
-                if bool(payload.get("replay_saved", False))
+                if replay_saved
                 else "fresh_replay_with_learning_starts_rewarm"
             ),
-            "exact_continuation": bool(payload.get("replay_saved", False)),
+            "exact_continuation": replay_saved,
             "allow_replay_rewarm": self.allow_replay_rewarm,
             "source_resume_provenance": saved_resume,
         }

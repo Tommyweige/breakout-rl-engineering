@@ -9,11 +9,14 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import math
 from pathlib import Path
 from statistics import mean, median, pstdev
 from typing import Any, Mapping, Sequence
+
+from breakout_rl.evaluation_contract import load_evaluation_contract
 
 
 BASELINE_LABEL = "penalty-0.0"
@@ -96,6 +99,27 @@ def _normalized_config(config: Mapping[str, Any]) -> dict[str, Any]:
         key: value
         for key, value in config.items()
         if key not in {"seed", "life_loss_penalty", "contract_id", "contract_path"}
+    }
+
+
+def _contract_fingerprint(summary_path: Path, payload: Mapping[str, Any]) -> dict[str, str]:
+    raw_path = payload.get("contract_path")
+    if not isinstance(raw_path, str) or not raw_path.strip():
+        raise ValueError(f"{summary_path}: contract_path is missing")
+    contract_path = Path(raw_path)
+    if not contract_path.is_file():
+        raise FileNotFoundError(contract_path)
+    contract = load_evaluation_contract(contract_path).to_dict()
+    canonical = json.dumps(
+        contract,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+    ).encode("utf-8")
+    return {
+        "path": contract_path.as_posix(),
+        "sha256": hashlib.sha256(canonical).hexdigest(),
+        "contract_id": str(contract["contract_id"]),
     }
 
 
@@ -345,6 +369,10 @@ def _validate_common_evaluation_contract(
         raise ValueError(f"{paths[first_seed]}: evaluation is not raw-score-only")
     if first.get("checkpoint_steps") != list(CHECKPOINT_STEPS):
         raise ValueError(f"{paths[first_seed]}: checkpoint steps are not 250/500/750/1M")
+    first_contract = _contract_fingerprint(paths[first_seed], first)
+    if first_contract["contract_id"] != first["contract_id"]:
+        raise ValueError(f"{paths[first_seed]}: contract_id does not match contract file")
+    contract_fingerprints: dict[str, dict[str, str]] = {}
     runtime_validation: dict[str, Any] = {}
     for seed, payload in payloads.items():
         for field in (
@@ -363,6 +391,12 @@ def _validate_common_evaluation_contract(
             )
         if payload.get("training_transitions") != 1_000_000:
             raise ValueError(f"{paths[seed]}: training budget must be 1M")
+        contract_fingerprint = _contract_fingerprint(paths[seed], payload)
+        contract_fingerprints[str(seed)] = contract_fingerprint
+        if contract_fingerprint != first_contract:
+            raise ValueError(
+                f"{paths[seed]}: contract fingerprint differs from seed {first_seed}"
+            )
         detail_checks = 0
         for label in (BASELINE_LABEL, SHAPED_LABEL):
             for step in CHECKPOINT_STEPS:
@@ -415,7 +449,9 @@ def _validate_common_evaluation_contract(
         "evaluation_episodes_per_seed": 1,
         "eval_seeds": list(eval_seeds),
         "contract_id": first["contract_id"],
-        "contract_path": first.get("contract_path"),
+        "contract_path": first_contract["path"],
+        "contract_fingerprint": first_contract,
+        "contract_fingerprints_by_training_seed": contract_fingerprints,
         "evaluation_score_definition": first["evaluation_score_definition"],
         "checkpoint_steps": list(CHECKPOINT_STEPS),
         "runtime_result_validation": runtime_validation,
@@ -473,6 +509,54 @@ def _validate_training_fairness(
     }
 
 
+def _validate_training_stability(
+    payloads: Mapping[int, Mapping[str, Any]],
+    *,
+    paths: Mapping[int, Path],
+) -> dict[str, Any]:
+    per_training_seed: dict[str, Any] = {}
+    all_stable = True
+    for seed, payload in payloads.items():
+        variants = _variant_map(payload, path=paths[seed])
+        per_variant: dict[str, Any] = {}
+        for label in (BASELINE_LABEL, SHAPED_LABEL):
+            report_reference = variants[label].get("analysis_report")
+            if not isinstance(report_reference, str) or not report_reference:
+                raise ValueError(
+                    f"{paths[seed]}.{label}: analysis_report provenance is missing"
+                )
+            report_path = Path(report_reference)
+            report = _read_json(report_path)
+            non_finite_count = report.get("non_finite_count")
+            run_summary = report.get("run_summary")
+            stable = (
+                isinstance(non_finite_count, int)
+                and not isinstance(non_finite_count, bool)
+                and non_finite_count == 0
+                and isinstance(run_summary, Mapping)
+                and run_summary.get("status") == "completed"
+            )
+            all_stable = all_stable and stable
+            per_variant[label] = {
+                "analysis_report": report_path.as_posix(),
+                "non_finite_count": non_finite_count,
+                "run_status": (
+                    run_summary.get("status")
+                    if isinstance(run_summary, Mapping)
+                    else None
+                ),
+                "stable": stable,
+            }
+        per_training_seed[str(seed)] = per_variant
+    return {
+        "all_stable": all_stable,
+        "per_training_seed": per_training_seed,
+        "stability_definition": (
+            "completed analysis report with non_finite_count=0 for both variants"
+        ),
+    }
+
+
 def _cross_curve(records: Mapping[int, Mapping[str, Any]]) -> list[dict[str, Any]]:
     curve: list[dict[str, Any]] = []
     for step in CHECKPOINT_STEPS:
@@ -489,10 +573,10 @@ def _cross_curve(records: Mapping[int, Mapping[str, Any]]) -> list[dict[str, Any
                 "minus1_mean_raw_score_across_training_seeds": _mean(
                     [item["mean_raw_score"] for item in shaped]
                 ),
-                "baseline_median_raw_score_across_training_seeds": _mean(
+                "baseline_median_raw_score_across_training_seeds": _median(
                     [item["median_raw_score"] for item in baseline]
                 ),
-                "minus1_median_raw_score_across_training_seeds": _mean(
+                "minus1_median_raw_score_across_training_seeds": _median(
                     [item["median_raw_score"] for item in shaped]
                 ),
                 "mean_of_paired_delta_mean": _mean(
@@ -597,6 +681,85 @@ def _learning_curve_interpretation(curve: Sequence[Mapping[str, Any]]) -> dict[s
     }
 
 
+def _promotion_gate(
+    final_table: Sequence[Mapping[str, Any]],
+    records: Mapping[int, Mapping[str, Any]],
+    *,
+    training_stability: Mapping[str, Any],
+) -> dict[str, Any]:
+    positive_effects = [
+        row["delta_mean_raw_score"] for row in final_table if row["delta_mean_raw_score"] > 0
+    ]
+    negative_effects = [
+        row["delta_mean_raw_score"] for row in final_table if row["delta_mean_raw_score"] < 0
+    ]
+    positive_medians = [
+        row["delta_median_raw_score"]
+        for row in final_table
+        if row["delta_median_raw_score"] > 0
+    ]
+    negative_medians = [
+        row["delta_median_raw_score"]
+        for row in final_table
+        if row["delta_median_raw_score"] < 0
+    ]
+    pooled_wins = sum(int(row["wins"]) for row in final_table)
+    pooled_ties = sum(int(row["ties"]) for row in final_table)
+    pooled_losses = sum(int(row["losses"]) for row in final_table)
+    survival_fields_higher_is_better = (
+        "mean_episode_length",
+        "frames_between_life_losses",
+        "score_per_life",
+        "time_to_first_life_loss",
+    )
+    survival_fields_lower_is_better = ("life_losses_per_1000_steps",)
+    survival_by_seed: dict[str, Any] = {}
+    survival_pass = True
+    for seed in sorted(records):
+        final = records[seed]["checkpoints"][str(CHECKPOINT_STEPS[-1])]
+        baseline = final["baseline"]
+        shaped = final["minus1"]
+        deltas = {
+            field: shaped[field] - baseline[field]
+            for field in (
+                *survival_fields_higher_is_better,
+                *survival_fields_lower_is_better,
+            )
+        }
+        seed_pass = all(
+            deltas[field] >= 0 for field in survival_fields_higher_is_better
+        ) and all(deltas[field] <= 0 for field in survival_fields_lower_is_better)
+        survival_pass = survival_pass and seed_pass
+        survival_by_seed[str(seed)] = {
+            "deltas": deltas,
+            "non_degraded": seed_pass,
+        }
+    checks = {
+        "advantage_not_only_seed_2022": len(positive_effects) >= 2,
+        "majority_training_seeds_positive": len(positive_effects)
+        > len(negative_effects),
+        "median_and_paired_distribution_support": (
+            len(positive_medians) > len(negative_medians)
+            and pooled_wins > pooled_losses
+        ),
+        "survival_metrics_non_degraded_for_every_training_seed": survival_pass,
+        "training_stability": training_stability.get("all_stable") is True,
+    }
+    return {
+        "checks": checks,
+        "passes_all_required_gates": all(checks.values()),
+        "survival_by_training_seed": survival_by_seed,
+        "positive_effect_training_seed_count": len(positive_effects),
+        "negative_effect_training_seed_count": len(negative_effects),
+        "positive_median_effect_training_seed_count": len(positive_medians),
+        "negative_median_effect_training_seed_count": len(negative_medians),
+        "pooled_episode_wins": pooled_wins,
+        "pooled_episode_ties": pooled_ties,
+        "pooled_episode_losses": pooled_losses,
+        "pooled_episode_total": pooled_wins + pooled_ties + pooled_losses,
+    }
+
+
 def build_multiseed_summary(
     evaluation_dirs: Mapping[int, Path] = DEFAULT_EVALUATION_DIRS,
 ) -> dict[str, Any]:
@@ -608,6 +771,7 @@ def build_multiseed_summary(
         paths[seed] = path
     common_contract = _validate_common_evaluation_contract(payloads, paths=paths)
     fairness = _validate_training_fairness(payloads, paths=paths)
+    training_stability = _validate_training_stability(payloads, paths=paths)
 
     records: dict[int, dict[str, Any]] = {}
     final_table: list[dict[str, Any]] = []
@@ -683,6 +847,12 @@ def build_multiseed_summary(
         "mean_effect": _mean(final_deltas),
         "median_effect": _median(final_deltas),
         "std_of_effect": _pstd(final_deltas),
+        "effect_range": {
+            "min": min(final_deltas),
+            "max": max(final_deltas),
+            "span": max(final_deltas) - min(final_deltas),
+        },
+        "effect_variance": pstdev(final_deltas) ** 2,
         "baseline_median_raw_score_mean_across_training_seeds": _mean(
             [row["baseline_median_raw_score"] for row in final_table]
         ),
@@ -699,6 +869,12 @@ def build_multiseed_summary(
         "pooled_episode_win_tie_loss_total": pooled_wins + pooled_ties + pooled_losses,
     }
     final_survival = survival[-1]
+    promotion_gate = _promotion_gate(
+        final_table,
+        records,
+        training_stability=training_stability,
+    )
+    learning_interpretation = _learning_curve_interpretation(curve)
 
     return {
         "schema_version": 1,
@@ -718,11 +894,12 @@ def build_multiseed_summary(
         },
         "common_evaluation_contract": common_contract,
         "training_fairness": fairness,
+        "training_stability": training_stability,
         "per_training_seed": records,
         "final_comparison_table": final_table,
         "cross_training_seed_final": final_cross_seed,
         "learning_curve": curve,
-        "learning_curve_interpretation": _learning_curve_interpretation(curve),
+        "learning_curve_interpretation": learning_interpretation,
         "survival_comparison": {
             "by_checkpoint": survival,
             "final_checkpoint": final_survival,
@@ -742,14 +919,24 @@ def build_multiseed_summary(
                 > final_cross_seed["training_seeds_lost_by_minus1"]
             ),
             "minus1_learning_dynamics_replicated_as_early_advantage_then_late_degradation": (
-                _learning_curve_interpretation(curve)[
+                learning_interpretation[
                     "early_faster_mid_advantage_late_degradation_pattern"
                 ]
             ),
-            "candidate_for_2_5m_final_validation": SHAPED_LABEL,
+            "promotion_gate": promotion_gate,
+            "candidate_for_2_5m_final_validation": (
+                SHAPED_LABEL
+                if promotion_gate["passes_all_required_gates"]
+                else None
+            ),
+            "candidate_for_2_5m_consideration": SHAPED_LABEL,
+            "promotion_status": (
+                "passed" if promotion_gate["passes_all_required_gates"] else "not_passed"
+            ),
             "2_5m_action": (
-                "If proceeding, validate -1.0 against the 0.0 baseline as the paired "
-                "control; do not start 2.5M automatically from this artifact."
+                "Do not start 2.5M automatically: the full Issue #9 promotion gate "
+                "must pass. If a follow-up is authorized, -1.0 is the only shaped "
+                "candidate and 0.0 remains the paired control."
             ),
         },
     }

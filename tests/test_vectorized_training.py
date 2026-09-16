@@ -490,6 +490,17 @@ class VectorizedTrainingTests(unittest.TestCase):
             summary = trainer.train()
             checkpoint = next((run_dir / "checkpoints").glob("*.pt"))
             payload = torch.load(checkpoint, map_location="cpu", weights_only=False)
+            advertised_replay_checkpoint = run_dir / "advertised-replay.pt"
+            payload["replay_saved"] = True
+            torch.save(payload, advertised_replay_checkpoint)
+            with self.assertRaisesRegex(ValueError, "does not restore replay"):
+                VectorizedDQNTrainer(
+                    DeterministicVectorEnv(),
+                    config,
+                    run_dir=Path(directory) / "advertised-replay",
+                    online_network=CountingQNetwork(),
+                    resume_from=advertised_replay_checkpoint,
+                )
 
         self.assertEqual(summary["algorithm"], "double_dqn")
         self.assertEqual(summary["num_envs"], 3)
