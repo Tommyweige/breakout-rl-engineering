@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <defs>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="135%"><feDropShadow dx="0" dy="8" stdDeviation="10" flood-opacity="0.12"/></filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#334155"/></marker>
+  </defs>
+  <rect width="1600" height="900" fill="#f8fafc"/>
+  <text x="70" y="82" font-family="Noto Sans CJK TC, sans-serif" font-size="44" font-weight="700" fill="#0f172a">Day 22｜一張遊戲畫面，怎麼變成 Agent 的下一個動作？</text>
+  <text x="70" y="130" font-family="Noto Sans CJK TC, sans-serif" font-size="24" fill="#475569">前面整理畫面，中間讓 ONNX 模型算分數，最後選出分數最高的動作。</text>
+  <g filter="url(#shadow)">
+    <rect x="70" y="210" rx="22" width="350" height="390" fill="#ffffff" stroke="#93c5fd" stroke-width="3"/>
+    <rect x="440" y="210" rx="22" width="350" height="390" fill="#ffffff" stroke="#86efac" stroke-width="3"/>
+    <rect x="810" y="210" rx="22" width="350" height="390" fill="#ffffff" stroke="#c4b5fd" stroke-width="3"/>
+    <rect x="1180" y="210" rx="22" width="350" height="390" fill="#ffffff" stroke="#fdba74" stroke-width="3"/>
+  </g>
+  <circle cx="112" cy="255" r="23" fill="#dbeafe"/><text x="112" y="264" text-anchor="middle" font-family="Arial" font-size="23" font-weight="700" fill="#1d4ed8">1</text>
+  <text x="145" y="264" font-family="Noto Sans CJK TC, sans-serif" font-size="28" font-weight="700" fill="#0f172a">整理遊戲畫面</text>
+  <text x="105" y="330" font-family="Noto Sans CJK TC, sans-serif" font-size="22" fill="#334155">取得 Breakout 畫面</text>
+  <text x="105" y="374" font-family="Noto Sans CJK TC, sans-serif" font-size="22" fill="#334155">轉成灰階、縮成 84×84</text>
+  <text x="105" y="418" font-family="Noto Sans CJK TC, sans-serif" font-size="22" fill="#334155">每次跳過幾個畫面</text>
+  <text x="105" y="462" font-family="Noto Sans CJK TC, sans-serif" font-size="22" fill="#334155">保留最近 4 張畫面</text>
+  <rect x="105" y="515" width="280" height="56" rx="12" fill="#eff6ff"/><text x="245" y="550" text-anchor="middle" font-family="Consolas, monospace" font-size="22" fill="#1e40af">uint8 [4, 84, 84]</text>
+  <circle cx="482" cy="255" r="23" fill="#dcfce7"/><text x="482" y="264" text-anchor="middle" font-family="Arial" font-size="23" font-weight="700" fill="#15803d">2</text>
+  <text x="515" y="254" font-family="Noto Sans CJK TC, sans-serif" font-size="25" font-weight="700" fill="#0f172a">轉成模型看得懂的</text>
+  <text x="515" y="286" font-family="Noto Sans CJK TC, sans-serif" font-size="25" font-weight="700" fill="#0f172a">數字</text>
+  <text x="475" y="350" font-family="Noto Sans CJK TC, sans-serif" font-size="22" fill="#334155">轉成 float32</text>
+  <text x="475" y="394" font-family="Noto Sans CJK TC, sans-serif" font-size="22" fill="#334155">把 0～255 縮成 0～1</text>
+  <text x="475" y="438" font-family="Noto Sans CJK TC, sans-serif" font-size="22" fill="#334155">補上 batch 維度</text>
+  <text x="475" y="482" font-family="Noto Sans CJK TC, sans-serif" font-size="22" fill="#334155">維持固定資料排列</text>
+  <rect x="475" y="515" width="280" height="56" rx="12" fill="#f0fdf4"/><text x="615" y="550" text-anchor="middle" font-family="Consolas, monospace" font-size="19" fill="#166534">float32 [N, 4, 84, 84]</text>
+  <circle cx="852" cy="255" r="23" fill="#ede9fe"/><text x="852" y="264" text-anchor="middle" font-family="Arial" font-size="23" font-weight="700" fill="#7e22ce">3</text>
+  <text x="885" y="264" font-family="Noto Sans CJK TC, sans-serif" font-size="28" font-weight="700" fill="#0f172a">ONNX 模型判斷</text>
+  <text x="845" y="338" font-family="Noto Sans CJK TC, sans-serif" font-size="22" fill="#334155">讀取這 4 張畫面</text>
+  <text x="845" y="382" font-family="Noto Sans CJK TC, sans-serif" font-size="22" fill="#334155">估計每個動作有多值得做</text>
+  <text x="845" y="426" font-family="Noto Sans CJK TC, sans-serif" font-size="22" fill="#334155">最後輸出 4 個 Q-value</text>
+  <text x="845" y="470" font-family="Noto Sans CJK TC, sans-serif" font-size="21" fill="#334155">這一步就是匯出的神經網路</text>
+  <rect x="845" y="515" width="280" height="56" rx="12" fill="#f5f3ff"/><text x="985" y="550" text-anchor="middle" font-family="Consolas, monospace" font-size="22" fill="#6d28d9">q_values [N, 4]</text>
+  <circle cx="1222" cy="255" r="23" fill="#ffedd5"/><text x="1222" y="264" text-anchor="middle" font-family="Arial" font-size="23" font-weight="700" fill="#c2410c">4</text>
+  <text x="1255" y="264" font-family="Noto Sans CJK TC, sans-serif" font-size="28" font-weight="700" fill="#0f172a">選出下一個動作</text>
+  <text x="1215" y="330" font-family="Noto Sans CJK TC, sans-serif" font-size="22" fill="#334155">找出分數最高的那一個</text>
+  <text x="1215" y="385" font-family="Noto Sans CJK TC, sans-serif" font-size="22" fill="#334155">0 = 不動</text>
+  <text x="1215" y="425" font-family="Noto Sans CJK TC, sans-serif" font-size="22" fill="#334155">1 = 發球</text>
+  <text x="1215" y="465" font-family="Noto Sans CJK TC, sans-serif" font-size="22" fill="#334155">2 = 往右</text>
+  <text x="1215" y="505" font-family="Noto Sans CJK TC, sans-serif" font-size="22" fill="#334155">3 = 往左</text>
+  <rect x="1215" y="535" width="280" height="40" rx="10" fill="#fff7ed"/><text x="1355" y="562" text-anchor="middle" font-family="Noto Sans CJK TC, sans-serif" font-size="19" fill="#9a3412">把動作送回遊戲</text>
+  <line x1="420" y1="405" x2="432" y2="405" stroke="#334155" stroke-width="5" marker-end="url(#arrow)"/><line x1="790" y1="405" x2="802" y2="405" stroke="#334155" stroke-width="5" marker-end="url(#arrow)"/><line x1="1160" y1="405" x2="1172" y2="405" stroke="#334155" stroke-width="5" marker-end="url(#arrow)"/>
+  <rect x="70" y="660" width="1460" height="100" rx="18" fill="#eef2ff" stroke="#a5b4fc" stroke-width="2"/>
+  <text x="105" y="702" font-family="Noto Sans CJK TC, sans-serif" font-size="25" font-weight="700" fill="#3730a3">今天最重要的一件事：</text>
+  <text x="105" y="740" font-family="Noto Sans CJK TC, sans-serif" font-size="22" fill="#4338ca">ONNX 只負責第 3 步。前後流程仍由程式處理，這樣之後換執行環境時，更容易確認結果有沒有跑掉。</text>
+  <text x="70" y="830" font-family="Noto Sans CJK TC, sans-serif" font-size="21" fill="#64748b">Day 22 先把 PyTorch 模型匯出；Day 23 再真的用 ONNX Runtime 執行，確認它和原本模型做出相同決策。</text>
+</svg>

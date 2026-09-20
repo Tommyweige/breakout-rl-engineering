@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="430" viewBox="0 0 760 430" role="img" aria-labelledby="title desc">
+  <title id="title">Replay Buffer 持續更新流程</title>
+  <desc id="desc">Agent 持續玩 Breakout，新 transition 加入 Replay Buffer；若 buffer 未滿就增加 size，若已滿就覆蓋最舊資料，之後繼續收集。</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#333"/>
+    </marker>
+    <style>
+      .box { fill: #fff; stroke: #333; stroke-width: 1.6; rx: 10; ry: 10; }
+      .decision { fill: #fff; stroke: #333; stroke-width: 1.6; }
+      .line { stroke: #333; stroke-width: 1.6; fill: none; marker-end: url(#arrow); }
+      .text { font-family: -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",sans-serif; font-size: 18px; fill: #111; text-anchor: middle; dominant-baseline: middle; }
+      .small { font-size: 15px; fill: #444; }
+    </style>
+  </defs>
+
+  <rect class="box" x="250" y="25" width="260" height="54"/>
+  <text class="text" x="380" y="52">Agent 繼續玩 Breakout</text>
+
+  <rect class="box" x="215" y="115" width="330" height="58"/>
+  <text class="text" x="380" y="144">新 transition 加入 Replay Buffer</text>
+
+  <polygon class="decision" points="380,205 485,255 380,305 275,255"/>
+  <text class="text" x="380" y="248">Buffer 已滿？</text>
+
+  <rect class="box" x="50" y="335" width="280" height="58"/>
+  <text class="text" x="190" y="356">未滿：保留新資料</text>
+  <text class="text small" x="190" y="378">size 增加 1</text>
+
+  <rect class="box" x="430" y="335" width="280" height="58"/>
+  <text class="text" x="570" y="356">已滿：覆蓋最舊資料</text>
+  <text class="text small" x="570" y="378">容量維持不變</text>
+
+  <path class="line" d="M380 79 L380 115"/>
+  <path class="line" d="M380 173 L380 205"/>
+  <path class="line" d="M275 255 C190 255 190 300 190 335"/>
+  <path class="line" d="M485 255 C570 255 570 300 570 335"/>
+  <text class="text small" x="235" y="270">否</text>
+  <text class="text small" x="525" y="270">是</text>
+
+  <path d="M190 393 C190 417 380 417 380 417 C570 417 570 393 570 393" stroke="#777" stroke-width="1.4" fill="none"/>
+  <text class="text small" x="380" y="411">下一筆 transition 繼續進來，Replay Buffer 內容持續更新</text>
+</svg>

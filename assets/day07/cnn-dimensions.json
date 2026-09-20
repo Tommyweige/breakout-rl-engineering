@@ -1,0 +1,57 @@
+{
+  "command": "python visualize_cnn_dimensions.py --device cpu --seed 42",
+  "seed": 42,
+  "device": "cpu",
+  "observation": {
+    "shape": [
+      4,
+      84,
+      84
+    ],
+    "dtype": "uint8",
+    "min": 0,
+    "max": 148
+  },
+  "model_input": {
+    "shape": [
+      1,
+      4,
+      84,
+      84
+    ],
+    "dtype": "torch.float32",
+    "min": 0.0,
+    "max": 0.5803921818733215
+  },
+  "runtime_shapes": {
+    "input": [
+      1,
+      4,
+      84,
+      84
+    ],
+    "conv1": [
+      1,
+      32,
+      20,
+      20
+    ],
+    "conv2": [
+      1,
+      64,
+      9,
+      9
+    ],
+    "conv3": [
+      1,
+      64,
+      7,
+      7
+    ],
+    "flatten": [
+      1,
+      3136
+    ]
+  },
+  "feature_dim": 3136
+}
