@@ -42,6 +42,7 @@ class FakeAle {
   frame = 0;
   actions: number[] = [];
   actCalls: Array<{ action: number; paddleStrength?: number }> = [];
+  paddlePositions: number[] = [];
   livesCount = 5;
   settings = new Map<string, number | boolean>();
   loadPath = '';
@@ -67,6 +68,7 @@ class FakeAle {
     this.frame += 1;
     return 0;
   }
+  setBreakoutPaddlePosition(normalizedX: number): void { this.paddlePositions.push(normalizedX); }
   resetGame(): void { this.frame = 0; this.actions = []; }
   gameOver(): boolean { return false; }
   gameTruncated(): boolean { return false; }
@@ -161,51 +163,43 @@ describe('ALE Browser environment contract', () => {
     });
   });
 
-  it('passes proportional Mouse strength to ALE while preserving auto-FIRE and one-frame semantics', () => {
+  it('sets the Human paddle directly at the cursor target while preserving auto-FIRE and one-frame semantics', () => {
     const ale = new FakeAle();
     const environment = createHumanBreakoutEnvironmentForTest(ale as unknown as AleLike, contract, 101);
     const command = {
       direction: 'RIGHT' as const,
-      strength: 0.35,
-      targetX: 0.8,
+      targetX: 0.73,
       paddleCenterX: 0.5,
-      positionError: 0.3,
+      positionError: 0.23,
     };
 
     const serve = environment.stepPaddle(command);
     const serveConfirmation = environment.stepPaddle(command);
-    const paddle = environment.stepPaddle(command);
+    const move = environment.stepPaddle(command);
 
+    expect(ale.paddlePositions).toEqual([0.73, 0.73, 0.73]);
+    expect(ale.actCalls).toEqual([{ action: 1 }, { action: 1 }, { action: 0 }]);
     expect(serve).toMatchObject({
-      requestedDirection: 'RIGHT',
-      requestedPaddleStrength: 0.35,
-      executedDirection: 'FIRE',
+      requestedAleAction: 0,
+      executedAleAction: 1,
+      requestedPaddlePositionX: 0.73,
+      appliedPaddleTargetX: 0.73,
+      requestedPaddleStrength: null,
       executedPaddleStrength: null,
       autoFire: true,
       actualEmulatorFrames: 1,
     });
-    expect(serveConfirmation).toMatchObject({ autoFire: true, executedDirection: 'FIRE' });
-    expect(paddle).toMatchObject({
-      requestedDirection: 'RIGHT',
-      requestedPaddleStrength: 0.35,
-      executedDirection: 'RIGHT',
-      executedPaddleStrength: 0.35,
+    expect(serveConfirmation).toMatchObject({ autoFire: true, executedAleAction: 1 });
+    expect(move).toMatchObject({
+      requestedAleAction: 0,
+      executedAleAction: 0,
+      requestedPaddlePositionX: 0.73,
+      appliedPaddleTargetX: 0.73,
+      requestedPaddleStrength: null,
+      executedPaddleStrength: null,
       autoFire: false,
       actualEmulatorFrames: 1,
-      outerActionRepeat: 1,
     });
-    expect(ale.actCalls).toEqual([
-      { action: 1, paddleStrength: undefined },
-      { action: 1, paddleStrength: undefined },
-      { action: 3, paddleStrength: 0.35 },
-    ]);
-
-    environment.stepPaddle({ ...command, strength: 2 });
-    environment.stepPaddle({ ...command, strength: -1 });
-    expect(ale.actCalls.slice(-2)).toEqual([
-      { action: 3, paddleStrength: 1 },
-      { action: 3, paddleStrength: 0 },
-    ]);
   });
 
   it('reapplies auto-FIRE after a life loss and keeps keyboard actions discrete', () => {
@@ -213,7 +207,6 @@ describe('ALE Browser environment contract', () => {
     const environment = createHumanBreakoutEnvironmentForTest(ale as unknown as AleLike, contract, 101);
     const command = {
       direction: 'LEFT' as const,
-      strength: 0.2,
       targetX: 0.2,
       paddleCenterX: 0.5,
       positionError: -0.3,
@@ -231,15 +224,22 @@ describe('ALE Browser environment contract', () => {
     expect(lostLife.autoFire).toBe(false);
     expect(respawnServe).toMatchObject({ autoFire: true, autoFireReason: 'after_life_loss', executedDirection: 'FIRE' });
     expect(respawnConfirmation).toMatchObject({ autoFire: true, executedDirection: 'FIRE' });
-    expect(keyboard).toMatchObject({ requestedDirection: 'RIGHT', requestedPaddleStrength: null, executedPaddleStrength: null });
+    expect(keyboard).toMatchObject({
+      requestedDirection: 'RIGHT',
+      requestedPaddleStrength: null,
+      executedPaddleStrength: null,
+      requestedPaddlePositionX: null,
+      appliedPaddleTargetX: null,
+    });
     expect(ale.actCalls.map(({ action, paddleStrength }) => [action, paddleStrength])).toEqual([
       [1, undefined],
       [1, undefined],
-      [4, 0.2],
-      [4, 0.2],
+      [0, undefined],
+      [0, undefined],
       [1, undefined],
       [1, undefined],
       [3, undefined],
     ]);
+    expect(ale.paddlePositions).toEqual([0.2, 0.2, 0.2, 0.2, 0.2, 0.2]);
   });
 });

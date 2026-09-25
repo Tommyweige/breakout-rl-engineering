@@ -26,6 +26,7 @@ await writeFile(
     version: alePackageMetadata.version,
     upstreamCommit: alePackageMetadata.codexBuildProvenance?.upstreamCommit,
     paddleStrengthMethod: 'actWithPaddleStrength(action, strength)',
+    paddlePositionMethod: 'setBreakoutPaddlePosition(normalizedX)',
     romSource: 'preloaded /roms/breakout.bin',
   }, null, 2)}\n`,
   'utf8',

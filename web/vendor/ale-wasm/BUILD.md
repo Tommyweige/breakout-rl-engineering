@@ -1,4 +1,4 @@
-# Rebuilding the analog ALE WebAssembly package
+# Rebuilding the Human mouse-control ALE WebAssembly package
 
 The browser needs a Human-only entry point that calls ALE's C++
 `ALEInterface::act(Action, float)`. The released `@farama/ale-wasm@0.12.0`
@@ -13,7 +13,16 @@ file is edited.
 ## Pinned inputs
 
 - ALE source: `f96026b362956d89076ac57d73f2ce82a59881ca` (ALE 0.12.0).
-- Wrapper and TypeScript change: `web/patches/ale-wasm-paddle-strength.patch`.
+- Wrapper, TypeScript, and direct Breakout paddle-position change:
+  `web/patches/ale-wasm-paddle-strength.patch`.
+- `setBreakoutPaddlePosition(normalizedX)` maps the Human cursor's normalized
+  screen X to the pinned Breakout ROM's paddle-position RAM. The mapping is
+  calibrated against the pinned ROM and covered by a real-WASM integration
+  check that measures the paddle center after one raw frame with a maximum
+  normalized error of `0.02`. Human mouse input reapplies the target on every
+  raw frame, avoiding the directional analog controller's catch-up delay while
+  advancing the game normally. Physical screen edges clamp the paddle center
+  to its visible travel range. Agent never calls this Human-only entry point.
 - The same patch disables IPO/LTO only for this WASM build; Emscripten's LTO
   output trapped with function-signature mismatches during a real Breakout
   load. The checked-in non-LTO package is covered by an actual ALE load and
@@ -54,4 +63,6 @@ The build script verifies both toolchain revisions and the ROM hash before
 building, then replaces `ale.js`, `ale.wasm`, and `ale.data` in the local
 package. Commit those generated runtime files with the source patch and package
 metadata. `act(action)` remains the upstream discrete API; Human Mouse uses
-the added `actWithPaddleStrength(action, strength)` method.
+the added `setBreakoutPaddlePosition(normalizedX)` entry point for absolute
+cursor tracking. `actWithPaddleStrength(action, strength)` remains available
+for controlled analog experiments and is not used by the absolute mouse path.

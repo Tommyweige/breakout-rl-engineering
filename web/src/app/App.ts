@@ -68,8 +68,8 @@ interface HumanActionSample {
   executedAction: HumanAction;
   requestedDirection: HumanAction;
   executedDirection: HumanAction;
-  requestedPaddleStrength: number | null;
-  executedPaddleStrength: number | null;
+  requestedPaddlePositionX: number | null;
+  appliedPaddleTargetX: number | null;
   action: HumanAction;
   rawFrameNumber: number;
   actualEmulatorFrames: number;
@@ -80,12 +80,10 @@ interface MouseControlV3Diagnostics {
   paddleCenterX: number | null;
   motionState: MouseMotionState;
   positionError: number | null;
-  startThreshold: number;
-  stopThreshold: number;
   requestedDirection: HumanPaddleCommand['direction'];
-  requestedPaddleStrength: number;
+  requestedPaddlePositionX: number | null;
   executedDirection: HumanAction;
-  executedPaddleStrength: number | null;
+  appliedPaddleTargetX: number | null;
   rawFrameNumber: number;
   actualEmulatorFrames: number;
   executedHumanAction: HumanAction;
@@ -571,10 +569,10 @@ export class App {
     this.setText('[data-role="human-state"]', step.terminated || step.truncated ? 'Game over' : 'Playing');
     this.setText('[data-role="human-stage-state"]', step.terminated || step.truncated ? 'GAME OVER' : 'PLAYING');
     if (this.debug) {
-      this.setText('[data-role="human-requested-action"]', step.requestedAction);
+      this.setText('[data-role="human-requested-action"]', step.requestedDirection);
       this.setText('[data-role="human-executed-action"]', step.executedAction);
-      this.setText('[data-role="requested-paddle-strength"]', formatStrength(step.requestedPaddleStrength));
-      this.setText('[data-role="executed-paddle-strength"]', formatStrength(step.executedPaddleStrength));
+      this.setText('[data-role="requested-paddle-position"]', formatNormalized(step.requestedPaddlePositionX));
+      this.setText('[data-role="applied-paddle-target"]', formatNormalized(step.appliedPaddleTargetX));
       this.setText('[data-role="human-raw-frame-number"]', `${step.rawFrameNumber}`);
       this.setText('[data-role="human-actual-emulator-frames"]', `${step.actualEmulatorFrames}`);
       this.setText('[data-role="human-frame-repeat"]', `${step.actualEmulatorFrames}`);
@@ -707,13 +705,10 @@ export class App {
     this.setText('[data-role="paddle-center-x"]', '—');
     this.setText('[data-role="motion-state"]', 'STOPPED');
     this.setText('[data-role="position-error"]', '—');
-    this.setText('[data-role="start-threshold"]', `${this.mouse.deadzoneNormalized.toFixed(5)}`);
-    this.setText('[data-role="stop-threshold"]', `${this.mouse.deadzoneNormalized.toFixed(5)}`);
-    this.setText('[data-role="mouse-deadzone-raw-px"]', `${this.mouse.deadzoneRawPixels}`);
     this.setText('[data-role="human-requested-action"]', 'NOOP');
     this.setText('[data-role="human-executed-action"]', 'NOOP');
-    this.setText('[data-role="requested-paddle-strength"]', '0.000');
-    this.setText('[data-role="executed-paddle-strength"]', '—');
+    this.setText('[data-role="requested-paddle-position"]', '—');
+    this.setText('[data-role="applied-paddle-target"]', '—');
     this.setText('[data-role="human-raw-frame-number"]', '0');
     this.setText('[data-role="human-actual-emulator-frames"]', '0');
     this.setText('[data-role="human-raw-fps"]', '0');
@@ -768,9 +763,6 @@ export class App {
       this.setText('[data-role="paddle-center-x"]', formatNormalized(this.mouse.paddleCenterX));
       this.setText('[data-role="motion-state"]', this.mouse.motionState);
       this.setText('[data-role="position-error"]', formatNormalized(this.mouse.positionError));
-      this.setText('[data-role="start-threshold"]', `${this.mouse.deadzoneNormalized.toFixed(5)}`);
-      this.setText('[data-role="stop-threshold"]', `${this.mouse.deadzoneNormalized.toFixed(5)}`);
-      this.setText('[data-role="mouse-deadzone-raw-px"]', `${this.mouse.deadzoneRawPixels}`);
       this.setText('[data-role="executed-human-action"]', this.lastHumanAction);
       this.updateMouseDiagnostics();
     }
@@ -846,37 +838,26 @@ export class App {
 
   private updateMouseDiagnostics(command = this.mouse.peekCommand()): void {
     if (!this.debug) return;
-    const diagnostics = window.__mouseControlV3Diagnostics ?? {
+    const current = {
       cursorTargetX: this.mouse.targetX,
       paddleCenterX: this.mouse.paddleCenterX,
       motionState: this.mouse.motionState,
       positionError: this.mouse.positionError,
-      startThreshold: this.mouse.deadzoneNormalized,
-      stopThreshold: this.mouse.deadzoneNormalized,
       requestedDirection: command.direction,
-      requestedPaddleStrength: command.strength,
+      requestedPaddlePositionX: command.targetX,
       executedDirection: this.latestHumanStep?.executedDirection ?? 'NOOP',
-      executedPaddleStrength: this.latestHumanStep?.executedPaddleStrength ?? null,
+      appliedPaddleTargetX: this.latestHumanStep?.appliedPaddleTargetX ?? null,
       rawFrameNumber: this.latestHumanStep?.rawFrameNumber ?? 0,
       actualEmulatorFrames: this.latestHumanStep?.actualEmulatorFrames ?? 0,
       executedHumanAction: this.lastHumanAction,
-      decisionCount: 0,
-      actionHistory: [],
     };
-    diagnostics.cursorTargetX = this.mouse.targetX;
-    diagnostics.paddleCenterX = this.mouse.paddleCenterX;
-    diagnostics.motionState = this.mouse.motionState;
-    diagnostics.positionError = this.mouse.positionError;
-    diagnostics.startThreshold = this.mouse.deadzoneNormalized;
-    diagnostics.stopThreshold = this.mouse.deadzoneNormalized;
-    diagnostics.requestedDirection = command.direction;
-    diagnostics.requestedPaddleStrength = command.strength;
-    diagnostics.executedDirection = this.latestHumanStep?.executedDirection ?? 'NOOP';
-    diagnostics.executedPaddleStrength = this.latestHumanStep?.executedPaddleStrength ?? null;
-    diagnostics.rawFrameNumber = this.latestHumanStep?.rawFrameNumber ?? 0;
-    diagnostics.actualEmulatorFrames = this.latestHumanStep?.actualEmulatorFrames ?? 0;
-    diagnostics.executedHumanAction = this.lastHumanAction;
-    window.__mouseControlV3Diagnostics = diagnostics;
+    const diagnostics = window.__mouseControlV3Diagnostics;
+    if (diagnostics) {
+      Object.assign(diagnostics, current);
+      window.__mouseControlV3Diagnostics = diagnostics;
+      return;
+    }
+    window.__mouseControlV3Diagnostics = { ...current, decisionCount: 0, actionHistory: [] };
   }
 
   private initializeHumanDiagnostics(): void {
@@ -904,8 +885,8 @@ export class App {
       executedAction: step.executedAction,
       requestedDirection: step.requestedDirection,
       executedDirection: step.executedDirection,
-      requestedPaddleStrength: step.requestedPaddleStrength,
-      executedPaddleStrength: step.executedPaddleStrength,
+      requestedPaddlePositionX: step.requestedPaddlePositionX,
+      appliedPaddleTargetX: step.appliedPaddleTargetX,
       action: step.executedAction,
       rawFrameNumber: step.rawFrameNumber,
       actualEmulatorFrames: step.actualEmulatorFrames,
@@ -920,8 +901,8 @@ export class App {
     }
     this.lastHumanAction = step.executedAction;
     if (this.debug) {
-      this.setText('[data-role="requested-paddle-strength"]', formatStrength(step.requestedPaddleStrength));
-      this.setText('[data-role="executed-paddle-strength"]', formatStrength(step.executedPaddleStrength));
+      this.setText('[data-role="requested-paddle-position"]', formatNormalized(step.requestedPaddlePositionX));
+      this.setText('[data-role="applied-paddle-target"]', formatNormalized(step.appliedPaddleTargetX));
       this.setText('[data-role="human-raw-frame-number"]', `${step.rawFrameNumber}`);
       this.setText('[data-role="human-actual-emulator-frames"]', `${step.actualEmulatorFrames}`);
     }
@@ -951,7 +932,7 @@ export class App {
     if (samples.length < 2) return '—';
     const current = samples[samples.length - 1];
     const previous = samples[samples.length - 2];
-    if (!current || current.requestedAction === 'NOOP' || current.targetChangedAtMs === null) return '—';
+    if (!current || current.requestedPaddlePositionX === null || current.targetChangedAtMs === null) return '—';
     return `${Math.max(0, current.timestampMs - current.targetChangedAtMs).toFixed(2)} ms`;
   }
 
@@ -1091,9 +1072,5 @@ function mouseStatusMessage(): string {
 }
 
 function formatNormalized(value: number | null): string {
-  return value === null ? '—' : value.toFixed(3);
-}
-
-function formatStrength(value: number | null): string {
   return value === null ? '—' : value.toFixed(3);
 }

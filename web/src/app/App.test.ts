@@ -99,7 +99,7 @@ describe('Day 30 Human vs AI browser product', () => {
     humanCanvas.dispatchEvent(new Event('pointerleave'));
     await waitForInputRender();
     expect(window.__mouseControlV3Diagnostics?.cursorTargetX).toBeNull();
-    expect(window.__mouseControlV3Diagnostics?.requestedPaddleStrength).toBe(0);
+    expect(window.__mouseControlV3Diagnostics?.requestedPaddlePositionX).toBeNull();
 
     targetAt(250);
     inputMode.value = 'keyboard';
@@ -134,9 +134,9 @@ describe('Day 30 Human vs AI browser product', () => {
     expect(root.querySelector('[data-role="paddle-center-x"]')).not.toBeNull();
     expect(root.querySelector('[data-role="motion-state"]')).not.toBeNull();
     expect(root.querySelector('[data-role="position-error"]')).not.toBeNull();
-    expect(root.querySelector('[data-role="requested-paddle-strength"]')).not.toBeNull();
-    expect(root.querySelector('[data-role="executed-paddle-strength"]')).not.toBeNull();
-    expect(window.__mouseControlV3Diagnostics?.startThreshold).toBeCloseTo(6 / 160, 5);
+    expect(root.querySelector('[data-role="requested-paddle-position"]')).not.toBeNull();
+    expect(root.querySelector('[data-role="applied-paddle-target"]')).not.toBeNull();
+    expect(window.__mouseControlV3Diagnostics?.requestedPaddlePositionX).toBeNull();
   });
 
   it('drives Start, Pause, and Restart through one shared player message', () => {

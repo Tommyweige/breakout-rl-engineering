@@ -17,6 +17,7 @@ export interface ALEInterface {
   // Game Loop
   act(action: number): number;
   actWithPaddleStrength(action: number, paddleStrength: number): number;
+  setBreakoutPaddlePosition(normalizedX: number): void;
   resetGame(): void;
   gameOver(): boolean;
   gameTruncated(): boolean;

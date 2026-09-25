@@ -1,7 +1,7 @@
 {
   "name": "@farama/ale-wasm",
-  "version": "0.12.0-paddle.1",
-  "description": "Pinned ALE 0.12.0 WebAssembly build with a Human-only analog paddle entry point",
+  "version": "0.12.0-paddle.3",
+  "description": "Pinned ALE 0.12.0 WebAssembly build with Human-only analog and absolute paddle entry points",
   "main": "ale.js",
   "module": "index.mjs",
   "types": "ale.d.ts",

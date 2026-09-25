@@ -2,11 +2,12 @@ diff --git a/packages/wasm/ale.d.ts b/packages/wasm/ale.d.ts
 index 54a7ee8..e924807 100644
 --- a/packages/wasm/ale.d.ts
 +++ b/packages/wasm/ale.d.ts
-@@ -16,6 +16,7 @@ export interface ALEInterface {
+@@ -16,6 +16,8 @@ export interface ALEInterface {
  
    // Game Loop
    act(action: number): number;
 +  actWithPaddleStrength(action: number, paddleStrength: number): number;
++  setBreakoutPaddlePosition(normalizedX: number): void;
    resetGame(): void;
    gameOver(): boolean;
    gameTruncated(): boolean;
@@ -39,7 +40,7 @@ diff --git a/src/ale/wasm/ale_wasm_interface.cpp b/src/ale/wasm/ale_wasm_interfa
 index 42deec4..185ead9 100644
 --- a/src/ale/wasm/ale_wasm_interface.cpp
 +++ b/src/ale/wasm/ale_wasm_interface.cpp
-@@ -95,6 +95,10 @@ public:
+@@ -95,6 +95,14 @@ public:
          return ale.act(static_cast<Action>(action));
      }
  
@@ -47,14 +48,113 @@ index 42deec4..185ead9 100644
 +        return ale.act(static_cast<Action>(action), paddle_strength);
 +    }
 +
++    void setBreakoutPaddlePosition(float normalized_x) {
++        ale.setBreakoutPaddlePosition(normalized_x);
++    }
++
      void resetGame() {
          ale.reset_game();
      }
-@@ -320,6 +324,7 @@ EMSCRIPTEN_BINDINGS(ale_module) {
+@@ -320,6 +324,8 @@ EMSCRIPTEN_BINDINGS(ale_module) {
          .function("loadROM", &ale_wasm::ALEInterfaceWrapper::loadROM)
          // Game loop
          .function("act", &ale_wasm::ALEInterfaceWrapper::act)
 +        .function("actWithPaddleStrength", &ale_wasm::ALEInterfaceWrapper::actWithPaddleStrength)
++        .function("setBreakoutPaddlePosition", &ale_wasm::ALEInterfaceWrapper::setBreakoutPaddlePosition)
          .function("resetGame", &ale_wasm::ALEInterfaceWrapper::resetGame)
          .function("gameOver", &ale_wasm::ALEInterfaceWrapper::gameOver)
          .function("gameTruncated", &ale_wasm::ALEInterfaceWrapper::gameTruncated)
+
+diff --git a/src/ale/ale_interface.hpp b/src/ale/ale_interface.hpp
+--- a/src/ale/ale_interface.hpp
++++ b/src/ale/ale_interface.hpp
+@@ -87,5 +87,7 @@ class ALEInterface {
+   // game over screen.
+   reward_t act(Action action, float paddle_strength = 1.0);
++  // Set the Breakout paddle to an absolute normalized screen X.
++  void setBreakoutPaddlePosition(float normalized_x);
+ 
+   // Indicates if the game has ended.
+   bool game_over(bool with_truncation = true) const;
+diff --git a/src/ale/ale_interface.cpp b/src/ale/ale_interface.cpp
+--- a/src/ale/ale_interface.cpp
++++ b/src/ale/ale_interface.cpp
+@@ -263,6 +263,10 @@ reward_t ALEInterface::act(Action action, float paddle_strength) {
+   return environment->act(action, PLAYER_B_NOOP, paddle_strength, 0.0);
+ }
++
++void ALEInterface::setBreakoutPaddlePosition(float normalized_x) {
++  environment->setBreakoutPaddlePosition(normalized_x);
++}
+ 
+ // Returns the vector of modes available for the current game.
+ // This should be called only after the rom is loaded.
+ ModeVect ALEInterface::getAvailableModes() const {
+diff --git a/src/ale/environment/stella_environment.hpp b/src/ale/environment/stella_environment.hpp
+--- a/src/ale/environment/stella_environment.hpp
++++ b/src/ale/environment/stella_environment.hpp
+@@ -44,4 +44,7 @@ class StellaEnvironment {
+   /** Resets the system to its start state. */
+   void reset();
++
++  /** Sets the Breakout paddle to an absolute normalized screen X. */
++  void setBreakoutPaddlePosition(float normalized_x);
+ 
+   /** Returns a copy of the current environment state. Note that by default this **does**
+
+diff --git a/src/ale/environment/stella_environment.cpp b/src/ale/environment/stella_environment.cpp
+--- a/src/ale/environment/stella_environment.cpp
++++ b/src/ale/environment/stella_environment.cpp
+@@ -20,6 +20,8 @@
+ #include "ale/environment/stella_environment.hpp"
+ 
+ #include <algorithm>
++#include <cmath>
++#include <stdexcept>
+ #include <sstream>
+ #include <cstring>
+ #include <optional>
+@@ -264,6 +266,43 @@ void StellaEnvironment::setDifficulty(difficulty_t value) {
+   m_state.setDifficulty(value);
+ }
++
++void StellaEnvironment::setBreakoutPaddlePosition(float normalized_x) {
++  if (!m_use_paddles) {
++    throw std::runtime_error("setBreakoutPaddlePosition requires a paddle-based game");
++  }
++  if (std::strcmp(m_settings->rom(), "breakout") != 0) {
++    throw std::runtime_error("setBreakoutPaddlePosition requires Breakout");
++  }
++  if (!std::isfinite(normalized_x)) {
++    throw std::invalid_argument("paddle position must be finite");
++  }
++  const float target_x = std::clamp(normalized_x, 0.0f, 1.0f);
++  // Breakout's paddle potentiometer maps to visible X in the reverse direction.
++  const float normalized_resistance = std::clamp(
++      (1.2386905f - target_x) / 1.1454613f, 0.0f, 1.0f);
++  const int left = m_state.m_paddle_min + static_cast<int>(
++      std::lround(normalized_resistance * (m_state.m_paddle_max - m_state.m_paddle_min)));
++  m_state.setPaddles(m_osystem->event(), left, m_state.m_right_paddle);
++  // The pinned Breakout ROM stores the paddle's left and right scan positions
++  // in these RAM bytes. Reassert them per frame for direct Mouse positioning.
++  constexpr float kLeftPositionIntercept = 200.0f;
++  constexpr float kLeftPositionScale = 168.0f;
++  constexpr int kLeftPositionMin = 34;
++  constexpr int kLeftPositionMax = 184;
++  constexpr int kRightPositionIntercept = 39;
++  constexpr float kRightPositionScale = 160.0f;
++  constexpr int kRightPositionMin = 55;
++  constexpr int kRightPositionMax = 191;
++  constexpr int kLeftPositionRamAddress = 70;
++  constexpr int kRightPositionRamAddress = 72;
++  const int ram_left = std::clamp(static_cast<int>(std::lround(
++      kLeftPositionIntercept - kLeftPositionScale * target_x)), kLeftPositionMin, kLeftPositionMax);
++  const int ram_right = std::clamp(static_cast<int>(std::lround(
++      kRightPositionIntercept + kRightPositionScale * target_x)), kRightPositionMin, kRightPositionMax);
++  setRAM(kLeftPositionRamAddress, static_cast<byte_t>(ram_left));
++  setRAM(kRightPositionRamAddress, static_cast<byte_t>(ram_right));
++}
+ 
+ void StellaEnvironment::setMode(game_mode_t value) {
+   m_state.setCurrentMode(value);
+ }

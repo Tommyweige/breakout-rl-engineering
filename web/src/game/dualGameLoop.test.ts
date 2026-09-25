@@ -43,11 +43,13 @@ function fakeHumanStep(action: number, frame: number): HumanEnvironmentStep {
     requestedAction: meaning,
     requestedDirection: meaning,
     requestedPaddleStrength: null,
+    requestedPaddlePositionX: null,
     requestedAleAction: action as 0 | 1 | 3 | 4,
     executedModelAction: action,
     executedAction: meaning,
     executedDirection: meaning,
     executedPaddleStrength: null,
+    appliedPaddleTargetX: null,
     executedAleAction: action as 0 | 1 | 3 | 4,
     autoFire: false,
     autoFireReason: null,
@@ -148,12 +150,11 @@ describe('dual game loop', () => {
     expect(onAgentStep).toHaveBeenCalledOnce();
   });
 
-  it('routes analog paddle commands only to Human while Agent keeps discrete actions', async () => {
+  it('routes absolute paddle commands only to Human while Agent keeps discrete actions', async () => {
     const human = new FakeHumanEnvironment();
     const agent = new FakeAgentEnvironment();
     const command: HumanPaddleCommand = {
       direction: 'RIGHT',
-      strength: 0.35,
       targetX: 0.8,
       paddleCenterX: 0.5,
       positionError: 0.3,

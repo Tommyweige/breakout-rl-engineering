@@ -3,17 +3,12 @@ import type { ActionMeaning } from '../inference/types';
 import { detectPaddleCenterNormalized } from './paddleDetector';
 import type { HumanPaddleCommand } from './paddleCommand';
 
-/** The dead zone is intentionally expressed in Atari pixels, not screen CSS pixels. */
-export const DEFAULT_MOUSE_DEADZONE_RAW_PX = 6;
-export const DEFAULT_MOUSE_DEADZONE = DEFAULT_MOUSE_DEADZONE_RAW_PX / ATARI_SCREEN_WIDTH;
-export const DEFAULT_MOUSE_STRENGTH_PER_RAW_PX = 1 / 24;
-
 export type MouseMotionState = 'LEFT' | 'RIGHT' | 'STOPPED';
 
 /**
- * Maps a visible absolute pointer target to one legal ALE action per raw frame.
- * The Human environment owns the 60 Hz cadence; this controller only closes
- * the position loop around the latest single raw RGB frame.
+ * Maps the pointer directly to the Human paddle controller's absolute X.
+ * Paddle detection is telemetry only; movement no longer waits for the paddle
+ * detector or a proportional velocity controller.
  */
 export class MouseController {
   private canvas: HTMLCanvasElement | null = null;
@@ -23,12 +18,6 @@ export class MouseController {
   private paddle: number | null = null;
   private state: MouseMotionState = 'STOPPED';
   private readonly detectorColumnHits = new Uint8Array(ATARI_SCREEN_WIDTH);
-
-  constructor(private readonly deadzoneRawPx = DEFAULT_MOUSE_DEADZONE_RAW_PX) {
-    if (!Number.isFinite(deadzoneRawPx) || deadzoneRawPx < 0) {
-      throw new Error('Mouse dead zone must be a non-negative finite Atari-pixel value');
-    }
-  }
 
   private readonly onPointerMove = (event: PointerEvent): void => {
     if (!this.enabled || !this.canvas) return;
@@ -102,14 +91,6 @@ export class MouseController {
     return this.target - this.paddle;
   }
 
-  get deadzoneRawPixels(): number {
-    return this.deadzoneRawPx;
-  }
-
-  get deadzoneNormalized(): number {
-    return this.deadzoneRawPx / ATARI_SCREEN_WIDTH;
-  }
-
   get hasTarget(): boolean {
     return this.target !== null;
   }
@@ -135,20 +116,17 @@ export class MouseController {
   private resolveCommand(): HumanPaddleCommand {
     const positionError = this.positionError;
     const errorRawPx = positionError === null ? null : positionError * ATARI_SCREEN_WIDTH;
-    if (!this.enabled || errorRawPx === null || Math.abs(errorRawPx) <= this.deadzoneRawPx) {
-      return this.command('NOOP', 0, positionError);
+    if (!this.enabled || errorRawPx === null || errorRawPx === 0) {
+      return this.command('NOOP', positionError);
     }
 
     const direction = errorRawPx < 0 ? 'LEFT' : 'RIGHT';
-    const distanceBeyondDeadzone = Math.abs(errorRawPx) - this.deadzoneRawPx;
-    const strength = clamp(distanceBeyondDeadzone * DEFAULT_MOUSE_STRENGTH_PER_RAW_PX, 0, 1);
-    return this.command(direction, strength, positionError);
+    return this.command(direction, positionError);
   }
 
-  private command(direction: HumanPaddleCommand['direction'], strength: number, positionError: number | null): HumanPaddleCommand {
+  private command(direction: HumanPaddleCommand['direction'], positionError: number | null): HumanPaddleCommand {
     return {
       direction,
-      strength,
       targetX: this.target,
       paddleCenterX: this.paddle,
       positionError,

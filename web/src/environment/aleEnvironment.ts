@@ -1,7 +1,7 @@
 import type { ALEInterface, ALEModule } from '@farama/ale-wasm';
 
 import { ACTION_MEANINGS, type ActionMeaning } from '../inference/types';
-import type { HumanPaddleCommand, PaddleDirection } from '../input/paddleCommand';
+import type { HumanPaddleCommand } from '../input/paddleCommand';
 import { mapModelActionToAle, validateMinimalActionSet, type AleActionCode, type MappedAction } from './actionMapping';
 import {
   ATARI_SCREEN_HEIGHT,
@@ -20,7 +20,6 @@ import { HUMAN_INTERACTIVE_RUNTIME } from './runtimeConfig';
 
 export interface AleLike extends Omit<ALEInterface, 'act'> {
   act(action: number): number;
-  actWithPaddleStrength(action: number, paddleStrength: number): number;
 }
 
 export interface EnvironmentStep {
@@ -85,11 +84,13 @@ export interface HumanEnvironmentStep {
   requestedAction: ActionMeaning;
   requestedDirection: ActionMeaning;
   requestedPaddleStrength: number | null;
+  requestedPaddlePositionX: number | null;
   requestedAleAction: AleActionCode;
   executedModelAction: number;
   executedAction: ActionMeaning;
   executedDirection: ActionMeaning;
   executedPaddleStrength: number | null;
+  appliedPaddleTargetX: number | null;
   executedAleAction: AleActionCode;
   autoFire: boolean;
   autoFireReason: EnvironmentStep['autoFireReason'];
@@ -778,28 +779,36 @@ export class HumanBreakoutEnvironment {
   }
 
   step(modelActionIndex: number): HumanEnvironmentStep {
+    this.assertActive();
+    if (this.isFinished) throw new Error('cannot step a finished Breakout episode; reset first');
     return this.stepInput(mapModelActionToAle(modelActionIndex), null);
   }
 
   stepPaddle(command: HumanPaddleCommand): HumanEnvironmentStep {
-    const requested = mapModelActionToAle(ACTION_MEANINGS.indexOf(command.direction));
-    return this.stepInput(requested, normalizePaddleStrength(command.direction, command.strength));
+    this.assertActive();
+    if (this.isFinished) throw new Error('cannot step a finished Breakout episode; reset first');
+    const requested = mapModelActionToAle(ACTION_MEANINGS.indexOf('NOOP'));
+    const requestedPaddlePositionX = normalizePaddlePosition(command.targetX);
+    return this.stepInput(requested, requestedPaddlePositionX, command.direction);
   }
 
-  private stepInput(requested: MappedAction, requestedPaddleStrength: number | null): HumanEnvironmentStep {
+  private stepInput(
+    requested: MappedAction,
+    requestedPaddlePositionX: number | null,
+    requestedDirection: ActionMeaning = requested.meaning,
+  ): HumanEnvironmentStep {
     this.assertActive();
     if (this.isFinished) throw new Error('cannot step a finished Breakout episode; reset first');
     const startedAt = now();
     const autoFire = this.needsFire;
     const autoFireReason = autoFire ? this.pendingFireReason : null;
     const executed = autoFire ? mapModelActionToAle(1) : requested;
+    if (requestedPaddlePositionX !== null) this.ale.setBreakoutPaddlePosition(requestedPaddlePositionX);
+    const appliedPaddleTargetX = requestedPaddlePositionX;
     const beforeFrameNumber = this.ale.getFrameNumber();
     const beforeRawRgb = this.lastRawRgb;
     const aleStartedAt = now();
-    const executedPaddleStrength = autoFire ? null : requestedPaddleStrength;
-    const reward = executedPaddleStrength === null
-      ? this.ale.act(executed.aleAction)
-      : this.ale.actWithPaddleStrength(executed.aleAction, executedPaddleStrength);
+    const reward = this.ale.act(executed.aleAction);
     const rawRgb = copyBytes(this.ale.getScreenRGB());
     const aleStepMs = now() - aleStartedAt;
     const rawChange = changedFraction(beforeRawRgb, rawRgb);
@@ -846,13 +855,15 @@ export class HumanBreakoutEnvironment {
       rawRgb: new Uint8Array(rawRgb),
       requestedModelAction: requested.modelIndex,
       requestedAction: requested.meaning,
-      requestedDirection: requested.meaning,
-      requestedPaddleStrength,
+      requestedDirection,
+      requestedPaddleStrength: null,
+      requestedPaddlePositionX,
       requestedAleAction: requested.aleAction,
       executedModelAction: executed.modelIndex,
       executedAction: executed.meaning,
       executedDirection: executed.meaning,
-      executedPaddleStrength,
+      executedPaddleStrength: null,
+      appliedPaddleTargetX,
       executedAleAction: executed.aleAction,
       autoFire,
       autoFireReason,
@@ -912,9 +923,9 @@ export class HumanBreakoutEnvironment {
   }
 }
 
-function normalizePaddleStrength(direction: PaddleDirection, strength: number): number {
-  if (direction === 'NOOP' || !Number.isFinite(strength)) return 0;
-  return Math.min(1, Math.max(0, strength));
+function normalizePaddlePosition(position: number | null): number | null {
+  if (position === null || !Number.isFinite(position)) return null;
+  return Math.min(1, Math.max(0, position));
 }
 
 export interface HumanEnvironmentSnapshot {

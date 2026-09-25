@@ -72,4 +72,4 @@ done
 cp "$source_root/packages/wasm/ale.d.ts" "$package_dir/ale.d.ts"
 cp "$source_root/LICENSE.md" "$package_dir/LICENSE"
 
-echo "Built @farama/ale-wasm 0.12.0-paddle.1 from $upstream_commit"
+echo "Built @farama/ale-wasm 0.12.0-paddle.3 from $upstream_commit"

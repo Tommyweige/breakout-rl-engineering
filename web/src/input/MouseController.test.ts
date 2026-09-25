@@ -21,132 +21,79 @@ function moveTo(listeners: Map<string, EventListener>, clientX: number): void {
 }
 
 describe('MouseController', () => {
-  it('uses a small Atari-pixel dead zone', () => {
-    const fixture = canvasFixture();
-    const controller = new MouseController(3);
-    controller.attach(fixture.canvas);
-    controller.setEnabled(true);
-    controller.updatePaddleCenter(0.5);
-
-    moveTo(fixture.listeners, 206); // target 0.53, 4.8 Atari pixels away
-    expect(controller.currentAction()).toBe('RIGHT');
-    controller.updatePaddleCenter(0.525); // 0.8 Atari pixels from target
-    expect(controller.currentAction()).toBe('NOOP');
-    expect(controller.motionState).toBe('STOPPED');
-  });
-
-  it('returns proportional paddle strength in Atari-relative units', () => {
-    const fixture = canvasFixture();
-    const controller = new MouseController(3);
-    controller.attach(fixture.canvas);
-    controller.setEnabled(true);
-    controller.updatePaddleCenter(0.5);
-
-    moveTo(fixture.listeners, 211); // 8.8 Atari pixels right of paddle
-    const small = controller.currentCommand();
-    moveTo(fixture.listeners, 225); // 20 Atari pixels right of paddle
-    const medium = controller.currentCommand();
-    moveTo(fixture.listeners, 300); // far enough to saturate
-    const full = controller.currentCommand();
-
-    expect(small.direction).toBe('RIGHT');
-    expect(small.strength).toBeGreaterThan(0);
-    expect(small.strength).toBeLessThan(medium.strength);
-    expect(medium.strength).toBeLessThan(1);
-    expect(full).toMatchObject({ direction: 'RIGHT', strength: 1, targetX: 1, paddleCenterX: 0.5 });
-    expect(full.positionError).toBe(0.5);
-  });
-
-  it('uses the same proportional strength for left corrections and remains neutral inside the dead zone', () => {
-    const fixture = canvasFixture();
-    const controller = new MouseController(3);
-    controller.attach(fixture.canvas);
-    controller.setEnabled(true);
-    controller.updatePaddleCenter(0.5);
-
-    moveTo(fixture.listeners, 203); // target 0.515, within the 3-pixel dead zone
-    expect(controller.currentCommand()).toMatchObject({ direction: 'NOOP', strength: 0 });
-
-    moveTo(fixture.listeners, 175);
-    const left = controller.currentCommand();
-    moveTo(fixture.listeners, 150);
-    const fartherLeft = controller.currentCommand();
-
-    expect(left.direction).toBe('LEFT');
-    expect(left.strength).toBeGreaterThan(0);
-    expect(fartherLeft.direction).toBe('LEFT');
-    expect(fartherLeft.strength).toBeGreaterThan(left.strength);
-    expect(fartherLeft.strength).toBe(1);
-  });
-
-  it('returns safe neutral input when the pointer or first paddle detection is unavailable', () => {
+  it('maps responsive canvas coordinates to an absolute paddle target', () => {
     const fixture = canvasFixture();
     const controller = new MouseController();
     controller.attach(fixture.canvas);
     controller.setEnabled(true);
-    moveTo(fixture.listeners, 300);
-    expect(controller.currentCommand()).toMatchObject({ direction: 'NOOP', strength: 0 });
-
     controller.updatePaddleCenter(0.5);
-    moveTo(fixture.listeners, 211);
-    const lastTrustedCommand = controller.currentCommand();
-    controller.updatePaddleCenter(Number.NaN);
-    controller.updatePaddleCenter(null);
-    expect(controller.currentCommand()).toEqual(lastTrustedCommand);
 
-    fixture.listeners.get('pointerleave')!(new Event('pointerleave'));
-    expect(controller.currentCommand()).toMatchObject({ direction: 'NOOP', strength: 0, targetX: null });
+    moveTo(fixture.listeners, 250);
+
+    expect(controller.currentCommand()).toEqual({
+      direction: 'RIGHT',
+      targetX: 0.75,
+      paddleCenterX: 0.5,
+      positionError: 0.25,
+    });
   });
 
-  it('allows bidirectional correction on successive raw frames', () => {
+  it('keeps the absolute target even when paddle detection is unavailable', () => {
     const fixture = canvasFixture();
-    const controller = new MouseController(3);
+    const controller = new MouseController();
     controller.attach(fixture.canvas);
     controller.setEnabled(true);
-    controller.updatePaddleCenter(0.5);
 
     moveTo(fixture.listeners, 260);
-    expect(controller.currentAction()).toBe('RIGHT');
-    controller.updatePaddleCenter(0.85);
-    expect(controller.currentAction()).toBe('LEFT');
-    expect(controller.motionState).toBe('LEFT');
+
+    expect(controller.currentCommand()).toEqual({
+      direction: 'NOOP',
+      targetX: 0.8,
+      paddleCenterX: null,
+      positionError: null,
+    });
   });
 
-  it('uses the latest trusted paddle center when detector input is missing', () => {
+  it('reports direction from observed position without scaling or dead-zone filtering', () => {
+    const fixture = canvasFixture();
+    const controller = new MouseController();
+    controller.attach(fixture.canvas);
+    controller.setEnabled(true);
+    controller.updatePaddleCenter(0.5);
+
+    moveTo(fixture.listeners, 201);
+    expect(controller.currentCommand().direction).toBe('RIGHT');
+    expect(controller.currentCommand().targetX).toBeCloseTo(0.505);
+
+    controller.updatePaddleCenter(0.51);
+    expect(controller.currentCommand().direction).toBe('LEFT');
+  });
+
+  it('uses the last valid detected paddle center for diagnostics', () => {
     const controller = new MouseController();
     controller.updatePaddleCenter(0.4);
+    controller.updatePaddleCenter(Number.NaN);
     controller.updatePaddleCenter(null);
 
     expect(controller.paddleCenterX).toBe(0.4);
   });
 
-  it('returns NOOP when the pointer leaves the canvas', () => {
+  it('clears the target on pointer leave and input mode changes', () => {
     const fixture = canvasFixture();
     const controller = new MouseController();
     controller.attach(fixture.canvas);
     controller.setEnabled(true);
     controller.updatePaddleCenter(0.5);
     moveTo(fixture.listeners, 260);
-    expect(controller.currentAction()).toBe('RIGHT');
+    expect(controller.currentCommand().targetX).toBe(0.8);
 
     fixture.listeners.get('pointerleave')!(new Event('pointerleave'));
-    expect(controller.targetX).toBeNull();
-    expect(controller.currentAction()).toBe('NOOP');
-  });
+    expect(controller.currentCommand()).toMatchObject({ direction: 'NOOP', targetX: null });
 
-  it('clears target and motion state when switching input modes', () => {
-    const fixture = canvasFixture();
-    const controller = new MouseController();
-    controller.attach(fixture.canvas);
-    controller.setEnabled(true);
-    controller.updatePaddleCenter(0.5);
-    moveTo(fixture.listeners, 260);
-    expect(controller.currentAction()).toBe('RIGHT');
-
+    moveTo(fixture.listeners, 250);
     controller.setEnabled(false);
     expect(controller.targetX).toBeNull();
     expect(controller.motionState).toBe('STOPPED');
-    expect(controller.currentAction()).toBe('NOOP');
   });
 
   it('does not expose or call Pointer Lock APIs', () => {
