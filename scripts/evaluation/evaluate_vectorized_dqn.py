@@ -76,19 +76,20 @@ def run_evaluation(args: argparse.Namespace) -> tuple[Path, Path, dict[str, Any]
         "evaluation_config": evaluation_config.to_dict(),
         "evaluation_contract_path": args.contract.as_posix(),
         "evaluation_contract": contract.to_dict(),
-        "purpose": "Day 15 Contract v2 learning-regression guardrail for Day 16",
+        "purpose": "Fixed-seed Contract v2 evaluation of a vectorized DQN checkpoint",
         "policy_protocol": "same frozen seeds, environment-side FIRE, raw reward, and epsilon",
     }
     training_metadata = {
         **dict(loaded.training_metadata),
         "source_day14_run_id": None,
-        "source_day16_run_id": vectorized_run_id,
-        "day16_vectorized_checkpoint": True,
+        "source_vectorized_run_id": vectorized_run_id,
+        "training_steps": loaded.checkpoint_metadata.get("training_steps"),
+        "vectorized_checkpoint": True,
     }
     checkpoint_metadata = {
         **dict(loaded.checkpoint_metadata),
         "source_day14_run_id": None,
-        "source_day16_run_id": vectorized_run_id,
+        "source_vectorized_run_id": vectorized_run_id,
     }
     result = evaluate_policy(
         loaded.model,

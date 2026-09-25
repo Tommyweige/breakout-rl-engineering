@@ -143,6 +143,28 @@ class DQNTrainingStepTests(unittest.TestCase):
         self.assertTrue(any(parameter.grad is not None for parameter in self.online.parameters()))
         self.assertTrue(all(parameter.grad is None for parameter in self.target.parameters()))
 
+    def test_prioritized_update_weights_per_sample_huber_loss(self) -> None:
+        optimizer = torch.optim.SGD(self.online.parameters(), lr=0.01)
+
+        result = dqn_training_step(
+            self.online,
+            self.target,
+            optimizer,
+            make_batch(),
+            gamma=0.5,
+            gradient_clip_norm=None,
+            algorithm="double_dqn",
+            importance_sampling_weights=torch.tensor([1.0, 0.25]),
+        )
+
+        # The unweighted SmoothL1 losses are [2.5, 0.5].
+        self.assertAlmostEqual(result.loss, 1.3125)
+        torch.testing.assert_close(
+            result.absolute_td_errors,
+            torch.tensor([3.0, 1.0]),
+        )
+        self.assertFalse(result.absolute_td_errors.requires_grad)
+
     def test_non_finite_q_values_are_rejected_before_optimizer_step(self) -> None:
         with torch.no_grad():
             self.online.linear.weight[0, 0] = float("nan")
