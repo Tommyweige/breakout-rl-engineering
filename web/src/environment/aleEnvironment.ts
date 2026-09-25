@@ -455,10 +455,16 @@ export class BrowserBreakoutEnvironment {
     };
   }
 
-  /** Gameplay-only variant that yields between raw ALE frames. Formal evaluation keeps `step()`. */
-  async stepAsync(modelActionIndex: number): Promise<EnvironmentStep> {
+  /**
+   * Live Agent stepping can use one raw frame per display-paced decision.
+   * Formal evaluation keeps the contract repeat through the synchronous `step()`.
+   */
+  async stepAsync(modelActionIndex: number, rawFrameRepeat: number = this.contract.frame_skip): Promise<EnvironmentStep> {
     this.assertActive();
     if (this.isFinished) throw new Error('cannot step a finished Breakout episode; reset first');
+    if (!Number.isInteger(rawFrameRepeat) || rawFrameRepeat < 1 || rawFrameRepeat > this.contract.frame_skip) {
+      throw new Error(`gameplay raw frame repeat must be between 1 and ${this.contract.frame_skip}`);
+    }
     const startedAt = now();
     const requested = mapModelActionToAle(modelActionIndex);
     const autoFire = this.needsFire;
@@ -475,8 +481,8 @@ export class BrowserBreakoutEnvironment {
     const sampledGrayscaleFrames: Uint8Array[] = [];
     let actualRawSteps = 0;
 
-    for (let repeat = 0; repeat < this.contract.frame_skip; repeat += 1) {
-      if (repeat > 0) await yieldToEventLoop();
+    for (let repeat = 0; repeat < rawFrameRepeat; repeat += 1) {
+      if (repeat > 0 && rawFrameRepeat > 1) await yieldToEventLoop();
       reward += this.ale.act(executed.aleAction);
       const frame = copyBytes(this.ale.getScreenRGB());
       const grayscale = copyBytes(this.ale.getScreenGrayscale());
@@ -576,7 +582,7 @@ export class BrowserBreakoutEnvironment {
       agentStep: this.agentStep,
       actualEmulatorFrames: this.ale.getFrameNumber() - beforeFrameNumber || actualRawSteps,
       rawFrameSkip: this.ale.getInt('frame_skip'),
-      outerActionRepeat: this.contract.frame_skip,
+      outerActionRepeat: rawFrameRepeat,
       terminated: this.terminated,
       truncated: this.truncated,
       gameOverReason: this.truncated ? 'time_limit' : this.terminated ? 'terminated' : null,

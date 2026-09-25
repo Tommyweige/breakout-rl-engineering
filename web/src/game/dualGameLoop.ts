@@ -11,7 +11,7 @@ export interface LoopEnvironment {
   readonly currentSeed: number;
   reset(seed?: number): unknown;
   step(actionIndex: number): EnvironmentStep;
-  stepAsync?(actionIndex: number): Promise<EnvironmentStep>;
+  stepAsync?(actionIndex: number, rawFrameRepeat?: number): Promise<EnvironmentStep>;
 }
 
 export interface HumanLoopEnvironment {
@@ -30,6 +30,7 @@ export interface AgentLoopStep {
   policy: PolicyResult;
   environment: EnvironmentStep;
   inferenceMs: number;
+  environmentStepMs: number;
   totalDecisionMs: number;
 }
 
@@ -81,13 +82,14 @@ export interface DualGameLoopOptions {
  * Coordinates two simulation clocks and one presentation clock.
  *
  * Human ticks are synchronous one-raw-frame steps. Agent decisions are
- * asynchronous and may take longer than one display frame. Neither clock is
- * allowed to catch up with a burst after a late callback.
+ * asynchronous, start on presentation frames, and skip frames while inference
+ * is in flight. Neither simulation clock catches up with a burst after delay.
  */
 export class DualGameLoop {
   private status: LoopStatus = 'idle';
   private humanTimer: ReturnType<typeof setTimeout> | null = null;
   private agentTimer: ReturnType<typeof setTimeout> | null = null;
+  private agentFrameHandle: number | null = null;
   private renderHandle: number | ReturnType<typeof setTimeout> | null = null;
   private humanDeadline: number | null = null;
   private agentDeadline: number | null = null;
@@ -236,34 +238,42 @@ export class DualGameLoop {
   }
 
   private scheduleAgent(delayMs: number): void {
-    if (this.agentTimer !== null || this.status !== 'running' || this.destroyed) return;
+    if (this.agentTimer !== null || this.agentFrameHandle !== null || this.status !== 'running' || this.destroyed) return;
+    if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+      this.agentFrameHandle = window.requestAnimationFrame(() => {
+        this.agentFrameHandle = null;
+        if (this.status !== 'running' || this.destroyed) return;
+        this.startAgentDecision(now());
+      });
+      return;
+    }
     this.agentTimer = setTimeout(() => {
       this.agentTimer = null;
       if (this.status !== 'running' || this.destroyed) return;
-      const startedAt = now();
-      this.agentDeadline = startedAt + this.agentIntervalMs();
-      if (this.agentInFlight) {
-        this.scheduleAgent(this.agentIntervalMs());
-        return;
-      }
-      const promise = this.processAgentDecision(false);
-      this.pendingAgentDecision = promise;
-      void promise
-        .catch((error) => {
-          this.fail(error);
-        })
-        .finally(() => {
-          if (this.pendingAgentDecision === promise) this.pendingAgentDecision = null;
-          if (this.status === 'running' && !this.destroyed) {
-            const completedAt = now();
-            // A slow decision never triggers catch-up work, but it also should
-            // not incur another full target interval before the next decision.
-            if ((this.agentDeadline ?? 0) <= completedAt) this.agentDeadline = completedAt;
-            this.scheduleAgent(Math.max(0, (this.agentDeadline ?? completedAt) - completedAt));
-          }
-          this.emitDiagnostics();
-        });
+      this.startAgentDecision(now());
     }, Math.max(0, delayMs));
+  }
+
+  private startAgentDecision(startedAt: number): void {
+    if (this.agentInFlight) return;
+    this.agentDeadline = startedAt + this.agentIntervalMs();
+    const promise = this.processAgentDecision(false);
+    this.pendingAgentDecision = promise;
+    void promise
+      .catch((error) => {
+        this.fail(error);
+      })
+      .finally(() => {
+        if (this.pendingAgentDecision === promise) this.pendingAgentDecision = null;
+        if (this.status === 'running' && !this.destroyed) {
+          const completedAt = now();
+          // A slow decision never triggers catch-up work, but it also should
+          // not incur another full target interval before the next decision.
+          if ((this.agentDeadline ?? 0) <= completedAt) this.agentDeadline = completedAt;
+          this.scheduleAgent(Math.max(0, (this.agentDeadline ?? completedAt) - completedAt));
+        }
+        this.emitDiagnostics();
+      });
   }
 
   private processHumanTick(startedAt: number): void {
@@ -296,10 +306,13 @@ export class DualGameLoop {
     try {
       const inferenceStartedAt = now();
       const policy = await this.options.infer(this.options.agent.observation);
+      const inferenceMs = now() - inferenceStartedAt;
       if (!allowWhenPaused && (this.status !== 'running' || this.destroyed)) return;
+      const environmentStartedAt = now();
       const environment = this.options.agent.stepAsync
-        ? await this.options.agent.stepAsync(policy.actionIndex)
+        ? await this.options.agent.stepAsync(policy.actionIndex, this.options.agentRuntime.outerActionRepeat)
         : this.options.agent.step(policy.actionIndex);
+      const environmentStepMs = now() - environmentStartedAt;
       const finishedAt = now();
       const previous = this.lastAgentDecisionAt;
       if (previous !== null) this.agentDecisionIntervals.push(startedAt - previous);
@@ -309,7 +322,8 @@ export class DualGameLoop {
       this.options.onAgentStep?.({
         policy,
         environment,
-        inferenceMs: finishedAt - inferenceStartedAt,
+        inferenceMs,
+        environmentStepMs,
         totalDecisionMs: finishedAt - startedAt,
       });
     } finally {
@@ -349,6 +363,9 @@ export class DualGameLoop {
   private clearScheduledWork(): void {
     if (this.humanTimer !== null) clearTimeout(this.humanTimer);
     if (this.agentTimer !== null) clearTimeout(this.agentTimer);
+    if (this.agentFrameHandle !== null && typeof window !== 'undefined' && typeof window.cancelAnimationFrame === 'function') {
+      window.cancelAnimationFrame(this.agentFrameHandle);
+    }
     if (this.renderHandle !== null) {
       if (typeof window !== 'undefined' && typeof window.cancelAnimationFrame === 'function' && typeof this.renderHandle === 'number') {
         window.cancelAnimationFrame(this.renderHandle);
@@ -358,6 +375,7 @@ export class DualGameLoop {
     }
     this.humanTimer = null;
     this.agentTimer = null;
+    this.agentFrameHandle = null;
     this.renderHandle = null;
   }
 

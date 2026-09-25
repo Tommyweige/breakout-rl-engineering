@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { EnvironmentStep, HumanEnvironmentStep } from '../environment/aleEnvironment';
 import type { PolicyResult } from '../inference/types';
 import type { HumanPaddleCommand } from '../input/paddleCommand';
-import { DualGameLoop, type HumanLoopEnvironment, type LoopEnvironment } from './dualGameLoop';
+import { DualGameLoop, type AgentLoopStep, type HumanLoopEnvironment, type LoopEnvironment } from './dualGameLoop';
 
 function fakeAgentStep(action: number): EnvironmentStep {
   return {
@@ -104,6 +104,7 @@ class FakeAgentEnvironment implements LoopEnvironment {
   isFinished = false;
   currentSeed = 1;
   actions: number[] = [];
+  stepAsync?: LoopEnvironment['stepAsync'];
 
   reset(seed = this.currentSeed): void {
     this.currentSeed = seed;
@@ -150,6 +151,31 @@ describe('dual game loop', () => {
     expect(onAgentStep).toHaveBeenCalledOnce();
   });
 
+  it('reports policy inference separately from the Agent environment step', async () => {
+    const human = new FakeHumanEnvironment();
+    const agent = new FakeAgentEnvironment();
+    const steps: AgentLoopStep[] = [];
+    const loop = new DualGameLoop({
+      human,
+      agent,
+      agentRuntime: { outerActionRepeat: 4, stickyActionProbability: 0.25 },
+      humanCommand: () => ({ kind: 'discrete', actionIndex: 0 }),
+      infer: async () => {
+        await wait(10);
+        return policyResult(2);
+      },
+      onAgentStep: (step) => steps.push(step),
+    });
+
+    await loop.stepOnce();
+
+    const step = steps[0];
+    expect(step).toBeDefined();
+    expect(step!.inferenceMs).toBeGreaterThanOrEqual(10);
+    expect(step!.environmentStepMs).toBeGreaterThanOrEqual(0);
+    expect(step!.totalDecisionMs).toBeGreaterThanOrEqual(step!.inferenceMs + step!.environmentStepMs);
+  });
+
   it('routes absolute paddle commands only to Human while Agent keeps discrete actions', async () => {
     const human = new FakeHumanEnvironment();
     const agent = new FakeAgentEnvironment();
@@ -172,6 +198,30 @@ describe('dual game loop', () => {
     expect(human.actions).toEqual([]);
     expect(human.paddleCommands).toEqual([command]);
     expect(agent.actions).toEqual([2]);
+  });
+
+  it('passes the configured raw-frame repeat to the async Agent environment', async () => {
+    const human = new FakeHumanEnvironment();
+    const agent = new FakeAgentEnvironment();
+    const repeats: number[] = [];
+    agent.stepAsync = async (actionIndex, rawFrameRepeat = 4) => {
+      agent.actions.push(actionIndex);
+      repeats.push(rawFrameRepeat);
+      return { ...fakeAgentStep(actionIndex), actualEmulatorFrames: rawFrameRepeat, outerActionRepeat: rawFrameRepeat };
+    };
+    const loop = new DualGameLoop({
+      human,
+      agent,
+      agentRuntime: { outerActionRepeat: 1, stickyActionProbability: 0.25 },
+      humanCommand: () => ({ kind: 'discrete', actionIndex: 0 }),
+      infer: async () => policyResult(2),
+    });
+
+    await loop.stepOnce();
+
+    expect(agent.actions).toEqual([2]);
+    expect(repeats).toEqual([1]);
+    expect(loop.runtimeDiagnostics.agentRawFrameDelta).toBe(1);
   });
 
   it('continues Human raw ticks while Agent inference is slow', async () => {

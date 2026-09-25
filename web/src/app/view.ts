@@ -189,7 +189,9 @@ function renderTechnicalDetails(): string {
             <div><span>Greedy action</span><strong data-role="greedy-action">NOOP</strong></div>
             <div><span>Mistake injected</span><strong data-role="mistake-injected">no</strong></div>
             <div><span>Episode return</span><strong data-role="episode-return">0</strong></div>
-            <div><span>Inference latency</span><strong data-role="inference-latency">—</strong></div>
+            <div><span>Policy inference</span><strong data-role="inference-latency">—</strong></div>
+            <div><span>Agent ALE step</span><strong data-role="agent-step-latency">—</strong></div>
+            <div><span>Agent decision cycle</span><strong data-role="agent-cycle-latency">—</strong></div>
             <div><span>Frame / step</span><strong data-role="agent-frame">0 / 0</strong></div>
             <div><span>Auto-FIRE</span><strong data-role="auto-fire">0</strong></div>
             <div><span>Backend evidence</span><strong data-role="backend-evidence">—</strong></div>

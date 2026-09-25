@@ -466,13 +466,14 @@ export class App {
         ...this.agentEnvironment.runtimeDiagnostics,
         humanRuntime: this.humanEnvironment.runtimeDiagnostics,
         agentRuntime: this.agentEnvironment.runtimeDiagnostics,
+        interactiveAgentRuntime: { rawFramesPerDecision: 1, schedule: 'requestAnimationFrame' },
         humanInstanceId: this.humanEnvironment.instanceId,
         agentInstanceId: this.agentEnvironment.instanceId,
         crossOriginIsolated: window.crossOriginIsolated,
         dualInstanceCount: new Set([this.humanEnvironment.instanceId, this.agentEnvironment.instanceId]).size,
-        preferredBackend: this.webgpuSupport?.supported ? 'webgpu' : 'wasm',
+        preferredBackend: 'wasm',
         actualGameplayBackend: this.gameplayBackend,
-        gracefulFallback: this.gameplayBackend !== 'webgpu' && this.webgpuSupport?.supported === true,
+        gracefulFallback: this.gameplayBackend === 'webgpu',
       };
       if (this.debug) {
         const browser = await detectBrowser();
@@ -493,13 +494,18 @@ export class App {
         human: this.humanEnvironment,
         agent: this.agentEnvironment,
         agentRuntime: {
-          outerActionRepeat: this.agentEnvironment.contract.frame_skip,
+          // Live inference follows display cadence and advances one raw frame at
+          // a time. The formal Agent environment still uses contract repeat 4.
+          outerActionRepeat: 1,
           stickyActionProbability: this.agentEnvironment.contract.sticky_action_probability,
         },
         humanCommand: () => this.currentHumanCommand(),
-        infer: async (observation) => this.difficultyPolicy.select(
-          await (this.gameplayInferenceWorker?.infer(observation) ?? this.scheduler.run(observation)),
-        ),
+        infer: async (observation) => {
+          const policy = this.gameplayInferenceWorker
+            ? await this.gameplayInferenceWorker.infer(observation)
+            : await this.scheduler.run(observation);
+          return this.difficultyPolicy.select(policy);
+        },
         onHumanStep: (step) => {
           this.latestHumanStep = step;
           this.recordHumanStep(step);
@@ -517,7 +523,6 @@ export class App {
         // this deadline keeps observed Human raw cadence near the 60 Hz Atari
         // target without changing the Human environment's one-frame semantics.
         humanTargetFps: 80,
-        agentTargetFps: 15,
       });
       this.updateHumanRuntimeDiagnostics(this.gameLoop.runtimeDiagnostics);
       this.scheduler.start();
@@ -599,6 +604,8 @@ export class App {
       this.setText('[data-role="auto-fire"]', `${this.agentAutoFireCount}`);
       this.required('[data-role="gameplay-q-values"]').innerHTML = renderPolicyQValuesMarkup(step.policy.qValues, step.policy.actionIndex);
       this.renderPreprocessing(environment.observation, environment.processedFrame);
+      this.setText('[data-role="agent-step-latency"]', `${step.environmentStepMs.toFixed(2)} ms`);
+      this.setText('[data-role="agent-cycle-latency"]', `${step.totalDecisionMs.toFixed(2)} ms`);
     }
   }
 
@@ -626,7 +633,9 @@ export class App {
   private async prepareGameplayPolicy(): Promise<void> {
     const support = this.webgpuSupport ?? await detectWebGpuSupport();
     this.webgpuSupport = support;
-    const candidates: InferenceBackend[] = support.supported ? ['webgpu', 'wasm'] : ['wasm'];
+    // Live gameplay prefers the lower-latency WASM path for per-frame inference;
+    // WebGPU remains available when the WASM session cannot initialize.
+    const candidates: InferenceBackend[] = support.supported ? ['wasm', 'webgpu'] : ['wasm'];
     let lastError: unknown = null;
     for (const backend of candidates) {
       try {
@@ -637,12 +646,15 @@ export class App {
           this.policy = new OrtWebPolicy({ backend });
           await this.policy.load();
         }
-        if (this.gameplayInferenceWorker?.actualBackend !== backend) {
+        if (backend === 'wasm') {
+          await this.gameplayInferenceWorker?.release();
+          this.gameplayInferenceWorker = null;
+        } else if (this.gameplayInferenceWorker?.actualBackend !== backend) {
           await this.gameplayInferenceWorker?.release();
           this.gameplayInferenceWorker = new AgentInferenceWorker(backend);
           await this.gameplayInferenceWorker.load();
         }
-        if (this.gameplayInferenceWorker.actualBackend !== backend) {
+        if (this.gameplayInferenceWorker && this.gameplayInferenceWorker.actualBackend !== backend) {
           throw new Error(`gameplay worker requested ${backend.toUpperCase()} but used ${this.gameplayInferenceWorker.actualBackend ?? 'unavailable'}`);
         }
         this.gameplayBackend = this.policy.actualBackend;
@@ -731,6 +743,8 @@ export class App {
     this.setText('[data-role="mistake-injected"]', 'no');
     this.setText('[data-role="episode-return"]', '0');
     this.setText('[data-role="inference-latency"]', '—');
+    this.setText('[data-role="agent-step-latency"]', '—');
+    this.setText('[data-role="agent-cycle-latency"]', '—');
     this.setText('[data-role="agent-frame"]', '0 / 0');
     this.setText('[data-role="auto-fire"]', '0');
     this.setText('[data-role="gameplay-backend"]', '—');

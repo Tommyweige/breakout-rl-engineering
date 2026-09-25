@@ -118,15 +118,30 @@ describe('ALE Browser environment contract', () => {
     expect(ale.actions).toEqual([1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3]);
   });
 
-  it('keeps the gameplay async Agent step at four raw frames while yielding between frames', async () => {
+  it('keeps the default gameplay Agent step at four raw frames while yielding between frames', async () => {
     const ale = new FakeAle();
     const environment = createBrowserBreakoutEnvironmentForTest(ale as unknown as AleLike, contract, 101);
 
-    const result = await environment.stepAsync(2);
+    const resultPromise = environment.stepAsync(2);
 
+    expect(ale.actions).toEqual([1]);
+    const result = await resultPromise;
     expect(result.actualEmulatorFrames).toBe(4);
     expect(result.outerActionRepeat).toBe(4);
     expect(ale.actions).toEqual([1, 1, 1, 1]);
+  });
+
+  it('supports one raw frame per live Agent decision without changing the contract default', async () => {
+    const ale = new FakeAle();
+    const environment = createBrowserBreakoutEnvironmentForTest(ale as unknown as AleLike, contract, 101);
+
+    const resultPromise = environment.stepAsync(2, 1);
+
+    expect(ale.actions).toEqual([1]);
+    const result = await resultPromise;
+    expect(result.actualEmulatorFrames).toBe(1);
+    expect(result.outerActionRepeat).toBe(1);
+    expect(ale.actions).toEqual([1]);
   });
 
   it('keeps Human runtime at one raw frame with sticky actions disabled and exposes the latest RGB frame', () => {
