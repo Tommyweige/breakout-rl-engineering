@@ -398,7 +398,15 @@ def run_experiment(
     continuation_failures = [
         check
         for check in audit.get("failed_checks", [])
-        if "staged resume" in check or "replay state is saved" in check or "replay history" in check
+        if isinstance(check, Mapping)
+        and any(
+            phrase in str(check.get("name", ""))
+            for phrase in (
+                "staged resume",
+                "replay state is saved",
+                "replay history",
+            )
+        )
     ]
     unrelated_audit_failures = [
         check
