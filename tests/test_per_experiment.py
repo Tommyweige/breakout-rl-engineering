@@ -6,7 +6,11 @@ import unittest
 from pathlib import Path
 
 from scripts.analysis.audit_per_baseline import audit_baseline
-from scripts.analysis.compare_per_experiment import _describe, _episode_returns
+from scripts.analysis.compare_per_experiment import (
+    _describe,
+    _episode_returns,
+    _metric_value_at_transition,
+)
 
 
 class PERExperimentAnalysisTests(unittest.TestCase):
@@ -63,6 +67,21 @@ class PERExperimentAnalysisTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "duplicate paired episode key"):
             _episode_returns(payload, label="duplicate-fixture")
+
+    def test_milestone_metrics_do_not_leak_values_from_later_steps(self) -> None:
+        rows = [
+            {"global_step": "100", "optimizer_updates": "20"},
+            {"global_step": "250", "optimizer_updates": "40"},
+            {"global_step": "500", "optimizer_updates": "90"},
+        ]
+
+        self.assertEqual(
+            _metric_value_at_transition(rows, "optimizer_updates", 250),
+            40.0,
+        )
+        self.assertIsNone(
+            _metric_value_at_transition(rows, "optimizer_updates", 200)
+        )
 
     def test_descriptive_summary_reports_spread_without_pooling(self) -> None:
         summary = _describe([1.0, 3.0, 8.0])

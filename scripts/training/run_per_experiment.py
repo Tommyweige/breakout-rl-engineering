@@ -28,9 +28,7 @@ from breakout_rl.training.vectorized import (
     VectorizedTrainingStepSnapshot,
 )
 from scripts.analysis.audit_per_baseline import audit_baseline
-from scripts.analysis.compare_per_experiment import write_comparison
 from scripts.evaluation.evaluate_vectorized_dqn import run_evaluation
-from scripts.visualization.visualize_per_experiment import generate_visualizations
 
 
 def _sha256(path: Path) -> str:
@@ -64,6 +62,98 @@ def _write_json(path: Path, payload: Mapping[str, Any]) -> None:
         encoding="utf-8",
     )
     os.replace(temporary, path)
+
+
+def _completed_matrix_is_present(
+    manifest: Mapping[str, Any],
+    *,
+    output_root: Path,
+    training_seeds: Sequence[int],
+    milestones: Sequence[int],
+) -> bool:
+    runs = manifest.get("runs")
+    if not isinstance(runs, Mapping):
+        return False
+    for seed in training_seeds:
+        run_record = runs.get(str(seed))
+        if not isinstance(run_record, Mapping):
+            return False
+        training = run_record.get("training")
+        evaluations = run_record.get("evaluations")
+        if (
+            not isinstance(training, Mapping)
+            or training.get("status") != "completed"
+            or not isinstance(evaluations, Mapping)
+        ):
+            return False
+        summary_path = output_root / "runs" / f"per-seed{seed}" / "summary.json"
+        if not summary_path.is_file():
+            return False
+        for transitions in milestones:
+            evaluation = evaluations.get(str(transitions))
+            if (
+                not isinstance(evaluation, Mapping)
+                or evaluation.get("status") != "completed"
+            ):
+                return False
+            results_path = output_root / "evaluations" / f"seed-{seed}" / (
+                f"step-{transitions:08d}"
+            ) / "results.json"
+            episodes_path = results_path.with_name("episodes.csv")
+            if not results_path.is_file() or not episodes_path.is_file():
+                return False
+    return True
+
+
+def _run_postprocessing(
+    *,
+    config_path: Path,
+    output_root: Path,
+) -> tuple[dict[str, Any], list[Path]]:
+    repository_root = Path(__file__).resolve().parents[2]
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "scripts.analysis.compare_per_experiment",
+            "--config",
+            str(config_path),
+            "--output-root",
+            str(output_root),
+        ],
+        check=True,
+        cwd=repository_root,
+    )
+    comparison_path = output_root / "comparison.json"
+    comparison = json.loads(comparison_path.read_text(encoding="utf-8"))
+    if not isinstance(comparison, dict):
+        raise ValueError(f"{comparison_path} must contain a JSON object")
+
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "scripts.visualization.visualize_per_experiment",
+            "--comparison",
+            str(comparison_path),
+            "--output-root",
+            str(output_root),
+        ],
+        check=True,
+        cwd=repository_root,
+    )
+    figures = [
+        output_root / "visualizations" / "evaluation-by-transitions.png",
+        output_root / "visualizations" / "evaluation-by-wall-clock.png",
+        output_root / "visualizations" / "priority-diagnostics-seed11.png",
+    ]
+    missing_figures = [path for path in figures if not path.is_file()]
+    if missing_figures:
+        raise FileNotFoundError(
+            "visualization subprocess did not create required figures: "
+            + ", ".join(str(path) for path in missing_figures)
+        )
+    return comparison, figures
 
 
 def _emit(event: str, **values: Any) -> None:
@@ -211,14 +301,26 @@ def run_experiment(
     manifest_path = output_root / "manifest.json"
     if manifest_path.exists():
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        matrix_complete = _completed_matrix_is_present(
+            manifest,
+            output_root=output_root,
+            training_seeds=training_seeds,
+            milestones=milestones,
+        )
         if (
             manifest.get("experiment_config_sha256") != config_sha
             or manifest.get("baseline_audit_sha256") != _sha256(audit_path)
-            or manifest.get("implementation_base_commit") != current_commit
+            or (
+                manifest.get("implementation_base_commit") != current_commit
+                and not matrix_complete
+            )
         ):
             raise ValueError(
-                f"{manifest_path} belongs to a different config or baseline audit"
+                f"{manifest_path} belongs to a different config, baseline audit, "
+                "or incomplete training commit"
             )
+        if manifest.get("implementation_base_commit") != current_commit:
+            manifest["postprocessing_code_commit"] = current_commit
     else:
         manifest = {
             "schema_version": 1,
@@ -415,12 +517,10 @@ def run_experiment(
             if checkpoint.name not in keep and not checkpoint.name.endswith("-diagnostic.pt"):
                 checkpoint.unlink()
 
-    comparison = write_comparison(
-        config_path,
-        output_root=output_root,
-    )
-    figures = generate_visualizations(
-        comparison_path=output_root / "comparison.json",
+    manifest["status"] = "postprocessing"
+    _write_json(manifest_path, manifest)
+    comparison, figures = _run_postprocessing(
+        config_path=config_path,
         output_root=output_root,
     )
     manifest["status"] = "completed"

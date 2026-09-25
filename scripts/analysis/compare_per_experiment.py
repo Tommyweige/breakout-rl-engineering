@@ -160,6 +160,27 @@ def _metric_value(rows: Sequence[Mapping[str, str]], field: str) -> float | None
     return None
 
 
+def _metric_value_at_transition(
+    rows: Sequence[Mapping[str, str]],
+    field: str,
+    transitions: int,
+) -> float | None:
+    for row in reversed(rows):
+        try:
+            step = int(float(row.get("global_step", "")))
+        except (TypeError, ValueError):
+            continue
+        if step != transitions:
+            continue
+        value = row.get(field)
+        try:
+            parsed = float(value or "")
+        except (TypeError, ValueError):
+            return None
+        return parsed if math.isfinite(parsed) else None
+    return None
+
+
 def _describe(values: Sequence[float]) -> dict[str, float | int]:
     parsed = [float(value) for value in values]
     if not parsed:
@@ -361,9 +382,15 @@ def compare_experiment(
                     baseline_metrics,
                     "optimizer_updates_per_second",
                 )
-            candidate_updates = _metric_value(per_metrics, "optimizer_updates")
+            candidate_updates = _metric_value_at_transition(
+                per_metrics,
+                "optimizer_updates",
+                transitions,
+            )
             if candidate_updates is None:
-                candidate_updates = float(per_runtime.get("optimizer_updates", 0.0))
+                raise ValueError(
+                    f"{per_run_dir}: metrics do not record optimizer_updates at {transitions}"
+                )
             per_updates_per_second = (
                 (candidate_updates - per_update_count_cursor[training_seed])
                 / per_stage_seconds
