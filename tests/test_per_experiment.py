@@ -11,7 +11,7 @@ from scripts.analysis.compare_per_experiment import (
     _cumulative_distribution_at_transition,
     _describe,
     _episode_returns,
-    _has_numerical_failure_event,
+    _has_non_finite_diagnostic_event,
     _last_row_at_or_before_transition,
     _metric_value_at_transition,
     _policy_decision_distribution,
@@ -128,7 +128,7 @@ class PERExperimentAnalysisTests(unittest.TestCase):
         self.assertEqual(summary["non_finite_record_count"], 1)
         self.assertEqual(summary["non_finite_value_count"], 1)
 
-    def test_numerical_failure_event_is_nonfinite_or_incomplete_run(self) -> None:
+    def test_diagnostic_event_marks_nonfinite_but_not_run_completion(self) -> None:
         completed = {
             "training_status": "completed",
             "diagnostics": {
@@ -154,9 +154,9 @@ class PERExperimentAnalysisTests(unittest.TestCase):
             },
         }
 
-        self.assertFalse(_has_numerical_failure_event(completed))
-        self.assertTrue(_has_numerical_failure_event(non_finite))
-        self.assertTrue(_has_numerical_failure_event(incomplete))
+        self.assertFalse(_has_non_finite_diagnostic_event(completed))
+        self.assertTrue(_has_non_finite_diagnostic_event(non_finite))
+        self.assertFalse(_has_non_finite_diagnostic_event(incomplete))
 
     def test_action_and_policy_distributions_use_cumulative_checkpoint_counters(self) -> None:
         rows = [

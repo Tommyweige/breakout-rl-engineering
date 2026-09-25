@@ -378,7 +378,9 @@ def _aggregate_training_stability(
         {
             "training_seed": seed_result["training_seed"],
             **{
-                method: int(_has_numerical_failure_event(seed_result[method]))
+                method: int(
+                    _has_non_finite_diagnostic_event(seed_result[method])
+                )
                 for method in ("uniform", "per")
             },
         }
@@ -424,11 +426,28 @@ def _aggregate_training_stability(
             "unit": "training run, at most one event per method and seed",
             "rule": (
                 "an event is a non-finite or invalid training diagnostic in the "
-                "comparison window, or failure to complete the frozen 500K budget"
+                "comparison window"
             ),
             "by_training_seed": failure_events_by_seed,
             "by_method": {
                 method: sum(int(row[method]) for row in failure_events_by_seed)
+                for method in ("uniform", "per")
+            },
+        },
+        "run_completion": {
+            "by_training_seed": [
+                {
+                    "training_seed": seed_result["training_seed"],
+                    "uniform": seed_result["uniform"]["training_status"],
+                    "per": seed_result["per"]["training_status"],
+                }
+                for seed_result in per_seed
+            ],
+            "completed_run_count_by_method": {
+                method: sum(
+                    seed_result[method]["training_status"] == "completed"
+                    for seed_result in per_seed
+                )
                 for method in ("uniform", "per")
             },
         },
@@ -443,11 +462,10 @@ def _aggregate_training_stability(
     }
 
 
-def _has_numerical_failure_event(method_result: Mapping[str, Any]) -> bool:
+def _has_non_finite_diagnostic_event(method_result: Mapping[str, Any]) -> bool:
     diagnostics = method_result["diagnostics"]
     return (
-        method_result.get("training_status") != "completed"
-        or int(diagnostics["non_finite_record_count"]) > 0
+        int(diagnostics["non_finite_record_count"]) > 0
         or int(diagnostics["non_finite_value_count"]) > 0
         or int(diagnostics["invalid_value_count"]) > 0
     )
@@ -546,6 +564,8 @@ def _render_markdown_report(comparison: Mapping[str, Any]) -> str:
     conclusion = comparison["conclusion"]
     stability = comparison["training_stability"]
     failure_events = stability["numerical_failure_events"]["by_method"]
+    completed_runs = stability["run_completion"]["completed_run_count_by_method"]
+    training_seed_count = len(stability["by_training_seed"])
     lines = [
         "# PER vs Uniform Replay experiment report",
         "",
@@ -638,9 +658,10 @@ def _render_markdown_report(comparison: Mapping[str, Any]) -> str:
     lines.extend(
         [
             "",
-            "### Non-finite and training-failure events",
+            "### Non-finite diagnostics, run completion, and collapse",
             "",
-            f"Numerical failure event rule (one event per run): any non-finite/invalid diagnostic in the final 250K window or failure to complete 500K transitions. Events: Uniform {failure_events['uniform']}, PER {failure_events['per']}. Non-finite scalar values: Uniform {stability['non_finite_diagnostic_values']['uniform']}, PER {stability['non_finite_diagnostic_values']['per']}.",
+            f"Diagnostic event rule (one event per run): at least one non-finite or invalid diagnostic in the final 250K window. Events: Uniform {failure_events['uniform']}, PER {failure_events['per']}. Non-finite scalar values: Uniform {stability['non_finite_diagnostic_values']['uniform']}, PER {stability['non_finite_diagnostic_values']['per']}; invalid scalar entries: Uniform {stability['invalid_diagnostic_values']['uniform']}, PER {stability['invalid_diagnostic_values']['per']}.",
+            f"Runs completing the frozen 500K budget: Uniform {completed_runs['uniform']}/{training_seed_count}, PER {completed_runs['per']}/{training_seed_count}. Incomplete or invalid runs fail the comparator before it emits a final experiment report.",
             "",
             "Behavioral score collapse is not classified because Issue #12 defines no reward-based collapse threshold.",
             stability["behavioral_collapse_assessment"]["reason"],
@@ -1138,8 +1159,8 @@ def write_comparison(
                 "training_seed": seed_result["training_seed"],
                 "method": method,
                 "training_status": method_result["training_status"],
-                "numerical_failure_event": int(
-                    _has_numerical_failure_event(method_result)
+                "non_finite_diagnostic_event": int(
+                    _has_non_finite_diagnostic_event(method_result)
                 ),
                 "requested_window_start": diagnostics[
                     "requested_transition_window"
