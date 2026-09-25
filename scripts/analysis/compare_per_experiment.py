@@ -201,6 +201,21 @@ def _metric_value_at_transition(
     return None
 
 
+def _last_row_at_or_before_transition(
+    rows: Sequence[Mapping[str, str]],
+    transitions: int,
+) -> tuple[int, Mapping[str, str]] | None:
+    selected: tuple[int, Mapping[str, str]] | None = None
+    for row in rows:
+        try:
+            step = int(float(row.get("global_step", "")))
+        except (TypeError, ValueError):
+            continue
+        if step <= transitions and (selected is None or step >= selected[0]):
+            selected = (step, row)
+    return selected
+
+
 def _summarize_training_diagnostics(
     rows: Sequence[Mapping[str, str]],
     *,
@@ -269,18 +284,10 @@ def _cumulative_distribution_at_transition(
     transitions: int,
     fields: Mapping[str, str],
 ) -> dict[str, Any]:
-    selected_row: Mapping[str, str] | None = None
-    selected_step = -1
-    for row in rows:
-        try:
-            step = int(float(row.get("global_step", "")))
-        except (TypeError, ValueError):
-            continue
-        if step <= transitions and step >= selected_step:
-            selected_row = row
-            selected_step = step
-    if selected_row is None:
+    selected = _last_row_at_or_before_transition(rows, transitions)
+    if selected is None:
         raise ValueError(f"no action counters recorded by {transitions} transitions")
+    selected_step, selected_row = selected
 
     counts: dict[str, int] = {}
     for label, field in fields.items():
@@ -310,18 +317,10 @@ def _policy_decision_distribution(
     *,
     transitions: int,
 ) -> dict[str, int | float]:
-    selected_row: Mapping[str, str] | None = None
-    selected_step = -1
-    for row in rows:
-        try:
-            step = int(float(row.get("global_step", "")))
-        except (TypeError, ValueError):
-            continue
-        if step <= transitions and step >= selected_step:
-            selected_row = row
-            selected_step = step
-    if selected_row is None:
+    selected = _last_row_at_or_before_transition(rows, transitions)
+    if selected is None:
         raise ValueError(f"no policy decision counters recorded by {transitions}")
+    selected_step, selected_row = selected
     counts: dict[str, int] = {}
     for label, field in _POLICY_DECISION_FIELDS.items():
         try:

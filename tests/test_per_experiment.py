@@ -11,6 +11,7 @@ from scripts.analysis.compare_per_experiment import (
     _cumulative_distribution_at_transition,
     _describe,
     _episode_returns,
+    _last_row_at_or_before_transition,
     _metric_value_at_transition,
     _policy_decision_distribution,
     _summarize_training_diagnostics,
@@ -150,7 +151,10 @@ class PERExperimentAnalysisTests(unittest.TestCase):
             },
         )
         policy = _policy_decision_distribution(rows, transitions=30)
+        selected = _last_row_at_or_before_transition(rows, transitions=30)
 
+        self.assertIsNotNone(selected)
+        self.assertEqual(selected[0], 30)
         self.assertEqual(actions["counts"]["fire"], 4)
         self.assertAlmostEqual(actions["fractions"]["left"], 11 / 30)
         self.assertAlmostEqual(policy["random_fraction"], 0.2)
