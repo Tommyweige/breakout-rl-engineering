@@ -7,9 +7,13 @@ from pathlib import Path
 
 from scripts.analysis.audit_per_baseline import audit_baseline
 from scripts.analysis.compare_per_experiment import (
+    _build_experiment_conclusion,
+    _cumulative_distribution_at_transition,
     _describe,
     _episode_returns,
     _metric_value_at_transition,
+    _policy_decision_distribution,
+    _summarize_training_diagnostics,
 )
 
 
@@ -82,6 +86,106 @@ class PERExperimentAnalysisTests(unittest.TestCase):
         self.assertIsNone(
             _metric_value_at_transition(rows, "optimizer_updates", 200)
         )
+
+    def test_stability_summary_uses_window_and_counts_non_finite_records(self) -> None:
+        rows = [
+            {
+                "global_step": "10",
+                "loss": "100",
+                "q_mean": "100",
+            },
+            {
+                "global_step": "20",
+                "loss": "2",
+                "q_mean": "3",
+                "q_max": "4",
+                "td_error_mean_abs": "1",
+                "td_error_max_abs": "2",
+                "gradient_norm": "0.5",
+            },
+            {
+                "global_step": "30",
+                "loss": "nan",
+                "q_mean": "5",
+                "q_max": "6",
+                "td_error_mean_abs": "2",
+                "td_error_max_abs": "3",
+                "gradient_norm": "0.75",
+            },
+        ]
+
+        summary = _summarize_training_diagnostics(
+            rows,
+            start_transition=20,
+            end_transition=30,
+        )
+
+        self.assertEqual(summary["logged_record_count"], 2)
+        self.assertEqual(summary["observed_transition_window"], {"start": 20, "end": 30})
+        self.assertEqual(summary["metrics"]["loss"]["mean"], 2.0)
+        self.assertEqual(summary["non_finite_record_count"], 1)
+        self.assertEqual(summary["non_finite_value_count"], 1)
+
+    def test_action_and_policy_distributions_use_cumulative_checkpoint_counters(self) -> None:
+        rows = [
+            {
+                "global_step": "30",
+                "noop_count": "3",
+                "fire_count": "4",
+                "right_count": "12",
+                "left_count": "11",
+                "random_decision_count": "6",
+                "greedy_decision_count": "24",
+            }
+        ]
+
+        actions = _cumulative_distribution_at_transition(
+            rows,
+            transitions=30,
+            fields={
+                "noop": "noop_count",
+                "fire": "fire_count",
+                "right": "right_count",
+                "left": "left_count",
+            },
+        )
+        policy = _policy_decision_distribution(rows, transitions=30)
+
+        self.assertEqual(actions["counts"]["fire"], 4)
+        self.assertAlmostEqual(actions["fractions"]["left"], 11 / 30)
+        self.assertAlmostEqual(policy["random_fraction"], 0.2)
+        self.assertAlmostEqual(policy["greedy_fraction"], 0.8)
+
+    def test_experiment_conclusion_reports_mixed_quality_and_cumulative_time(self) -> None:
+        milestones = [
+            {
+                "transitions": 100,
+                "uniform_across_training_seeds": {"mean": 8.0},
+                "per_across_training_seeds": {"mean": 7.0},
+                "paired_training_seed_mean_differences": [-1.0, 0.0, -2.0],
+            },
+            {
+                "transitions": 200,
+                "uniform_across_training_seeds": {"mean": 10.0},
+                "per_across_training_seeds": {"mean": 11.0},
+                "paired_training_seed_mean_differences": [1.0, 2.0, 0.0],
+            },
+        ]
+        runtime_rows = [
+            {
+                "transitions": step,
+                "uniform": {"elapsed_seconds": 100.0},
+                "per": {"elapsed_seconds": 150.0},
+            }
+            for step in (100, 200)
+        ]
+
+        conclusion = _build_experiment_conclusion(milestones, runtime_rows)
+
+        self.assertEqual(conclusion["outcome_category"], "mixed_no_established_advantage")
+        self.assertEqual(conclusion["training_seed_count"], 3)
+        self.assertIn("does not establish a consistent PER quality advantage", conclusion["statement"])
+        self.assertIn("1.50x", conclusion["statement"])
 
     def test_descriptive_summary_reports_spread_without_pooling(self) -> None:
         summary = _describe([1.0, 3.0, 8.0])

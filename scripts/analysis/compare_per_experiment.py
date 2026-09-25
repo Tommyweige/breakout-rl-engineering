@@ -15,6 +15,26 @@ from typing import Any, Mapping, Sequence
 import numpy as np
 
 
+_STABILITY_METRICS = (
+    "loss",
+    "q_mean",
+    "q_max",
+    "td_error_mean_abs",
+    "td_error_max_abs",
+    "gradient_norm",
+)
+_ACTION_COUNT_FIELDS = {
+    "noop": "noop_count",
+    "fire": "fire_count",
+    "right": "right_count",
+    "left": "left_count",
+}
+_POLICY_DECISION_FIELDS = {
+    "random": "random_decision_count",
+    "greedy": "greedy_decision_count",
+}
+
+
 def _read_json(path: Path) -> dict[str, Any]:
     value = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(value, dict):
@@ -181,6 +201,429 @@ def _metric_value_at_transition(
     return None
 
 
+def _summarize_training_diagnostics(
+    rows: Sequence[Mapping[str, str]],
+    *,
+    start_transition: int,
+    end_transition: int,
+) -> dict[str, Any]:
+    window: list[Mapping[str, str]] = []
+    observed_steps: list[int] = []
+    for row in rows:
+        try:
+            step = int(float(row.get("global_step", "")))
+        except (TypeError, ValueError):
+            continue
+        if start_transition <= step <= end_transition:
+            window.append(row)
+            observed_steps.append(step)
+    if not window:
+        raise ValueError(
+            "training metrics do not cover diagnostic window "
+            f"{start_transition}..{end_transition}"
+        )
+
+    metrics: dict[str, dict[str, float | int] | None] = {}
+    non_finite_records: set[int] = set()
+    non_finite_values = 0
+    invalid_values = 0
+    for field in _STABILITY_METRICS:
+        finite_values: list[float] = []
+        for row_index, row in enumerate(window):
+            raw_value = row.get(field)
+            if raw_value in (None, ""):
+                continue
+            try:
+                value = float(raw_value)
+            except (TypeError, ValueError):
+                invalid_values += 1
+                non_finite_records.add(row_index)
+                continue
+            if not math.isfinite(value):
+                non_finite_values += 1
+                non_finite_records.add(row_index)
+                continue
+            finite_values.append(value)
+        metrics[field] = _describe(finite_values) if finite_values else None
+
+    return {
+        "requested_transition_window": {
+            "start": start_transition,
+            "end": end_transition,
+        },
+        "observed_transition_window": {
+            "start": min(observed_steps),
+            "end": max(observed_steps),
+        },
+        "logged_record_count": len(window),
+        "metrics": metrics,
+        "non_finite_record_count": len(non_finite_records),
+        "non_finite_value_count": non_finite_values,
+        "invalid_value_count": invalid_values,
+    }
+
+
+def _cumulative_distribution_at_transition(
+    rows: Sequence[Mapping[str, str]],
+    *,
+    transitions: int,
+    fields: Mapping[str, str],
+) -> dict[str, Any]:
+    selected_row: Mapping[str, str] | None = None
+    selected_step = -1
+    for row in rows:
+        try:
+            step = int(float(row.get("global_step", "")))
+        except (TypeError, ValueError):
+            continue
+        if step <= transitions and step >= selected_step:
+            selected_row = row
+            selected_step = step
+    if selected_row is None:
+        raise ValueError(f"no action counters recorded by {transitions} transitions")
+
+    counts: dict[str, int] = {}
+    for label, field in fields.items():
+        try:
+            value = float(selected_row.get(field, ""))
+        except (TypeError, ValueError) as error:
+            raise ValueError(f"missing cumulative action counter {field}") from error
+        if not math.isfinite(value) or value < 0 or not value.is_integer():
+            raise ValueError(f"invalid cumulative action counter {field}: {value}")
+        counts[label] = int(value)
+    total = sum(counts.values())
+    if total != selected_step:
+        raise ValueError(
+            "cumulative action counters do not match the observed transition step: "
+            f"counts={total}, step={selected_step}"
+        )
+
+    return {
+        "observed_transition": selected_step,
+        "counts": counts,
+        "fractions": {label: count / total for label, count in counts.items()},
+    }
+
+
+def _policy_decision_distribution(
+    rows: Sequence[Mapping[str, str]],
+    *,
+    transitions: int,
+) -> dict[str, int | float]:
+    selected_row: Mapping[str, str] | None = None
+    selected_step = -1
+    for row in rows:
+        try:
+            step = int(float(row.get("global_step", "")))
+        except (TypeError, ValueError):
+            continue
+        if step <= transitions and step >= selected_step:
+            selected_row = row
+            selected_step = step
+    if selected_row is None:
+        raise ValueError(f"no policy decision counters recorded by {transitions}")
+    counts: dict[str, int] = {}
+    for label, field in _POLICY_DECISION_FIELDS.items():
+        try:
+            value = float(selected_row.get(field, ""))
+        except (TypeError, ValueError) as error:
+            raise ValueError(f"missing policy decision counter {field}") from error
+        if not math.isfinite(value) or value < 0 or not value.is_integer():
+            raise ValueError(f"invalid policy decision counter {field}: {value}")
+        counts[label] = int(value)
+    total = sum(counts.values())
+    if total != selected_step:
+        raise ValueError(
+            "policy decision counters do not match the observed transition step: "
+            f"counts={total}, step={selected_step}"
+        )
+    return {
+        **counts,
+        "random_fraction": counts["random"] / total,
+        "greedy_fraction": counts["greedy"] / total,
+    }
+
+
+def _aggregate_training_stability(
+    per_seed: Sequence[Mapping[str, Any]],
+    *,
+    start_transition: int,
+    end_transition: int,
+) -> dict[str, Any]:
+    metric_means: dict[str, dict[str, dict[str, float | int]]] = {}
+    for field in _STABILITY_METRICS:
+        metric_means[field] = {}
+        for method in ("uniform", "per"):
+            means = [
+                float(seed_result[method]["diagnostics"]["metrics"][field]["mean"])
+                for seed_result in per_seed
+                if seed_result[method]["diagnostics"]["metrics"][field] is not None
+            ]
+            if len(means) != len(per_seed):
+                raise ValueError(
+                    f"not every {method} seed has finite {field} diagnostics"
+                )
+            metric_means[field][method] = _describe(means)
+
+    action_fraction_means: dict[str, dict[str, dict[str, float | int]]] = {}
+    for action in _ACTION_COUNT_FIELDS:
+        action_fraction_means[action] = {}
+        for method in ("uniform", "per"):
+            fractions = [
+                float(seed_result[method]["actions"]["fractions"][action])
+                for seed_result in per_seed
+            ]
+            action_fraction_means[action][method] = _describe(fractions)
+
+    return {
+        "comparison_window": {
+            "start_transition": start_transition,
+            "end_transition": end_transition,
+        },
+        "independent_unit": "training_seed",
+        "aggregation": (
+            "summarize logged diagnostics within each run, then summarize the "
+            "three per-seed means; log records are not independent replicates"
+        ),
+        "diagnostic_metrics": list(_STABILITY_METRICS),
+        "by_training_seed": list(per_seed),
+        "across_training_seed_means": metric_means,
+        "action_fraction_across_training_seeds": action_fraction_means,
+        "non_finite_diagnostic_records": {
+            method: sum(
+                int(seed_result[method]["diagnostics"]["non_finite_record_count"])
+                for seed_result in per_seed
+            )
+            for method in ("uniform", "per")
+        },
+        "non_finite_diagnostic_values": {
+            method: sum(
+                int(seed_result[method]["diagnostics"]["non_finite_value_count"])
+                for seed_result in per_seed
+            )
+            for method in ("uniform", "per")
+        },
+        "invalid_diagnostic_values": {
+            method: sum(
+                int(seed_result[method]["diagnostics"]["invalid_value_count"])
+                for seed_result in per_seed
+            )
+            for method in ("uniform", "per")
+        },
+        "collapse_assessment": {
+            "status": "not_classified",
+            "reason": (
+                "Issue #12 does not freeze a numeric collapse threshold. The "
+                "report includes run completion, non-finite counts, and paired "
+                "diagnostics without inventing a collapse label."
+            ),
+        },
+    }
+
+
+def _build_experiment_conclusion(
+    milestones: Sequence[Mapping[str, Any]],
+    runtime_rows: Sequence[Mapping[str, Any]],
+) -> dict[str, Any]:
+    quality: list[dict[str, Any]] = []
+    runtime: list[dict[str, Any]] = []
+    for milestone in milestones:
+        transitions = int(milestone["transitions"])
+        uniform_mean = float(milestone["uniform_across_training_seeds"]["mean"])
+        per_mean = float(milestone["per_across_training_seeds"]["mean"])
+        quality.append(
+            {
+                "transitions": transitions,
+                "uniform_mean_return": uniform_mean,
+                "per_mean_return": per_mean,
+                "per_minus_uniform_mean_return": per_mean - uniform_mean,
+            }
+        )
+        rows = [row for row in runtime_rows if row["transitions"] == transitions]
+        uniform_seconds = statistics.mean(
+            float(row["uniform"]["elapsed_seconds"]) for row in rows
+        )
+        per_seconds = statistics.mean(
+            float(row["per"]["elapsed_seconds"]) for row in rows
+        )
+        runtime.append(
+            {
+                "transitions": transitions,
+                "uniform_mean_cumulative_seconds": uniform_seconds,
+                "per_mean_cumulative_seconds": per_seconds,
+                "per_over_uniform_cumulative_time_ratio": per_seconds / uniform_seconds,
+            }
+        )
+
+    deltas = [row["per_minus_uniform_mean_return"] for row in quality]
+    if all(delta > 0 for delta in deltas):
+        category = "descriptive_per_quality_advantage"
+        conclusion = (
+            "PER has a positive cross-seed mean return difference at every "
+            "measured transition milestone. With only three training seeds, "
+            "this remains descriptive evidence rather than a superiority claim."
+        )
+    elif all(delta < 0 for delta in deltas):
+        category = "descriptive_per_quality_disadvantage"
+        conclusion = (
+            "PER has a negative cross-seed mean return difference at every "
+            "measured transition milestone. With only three training seeds, "
+            "this remains descriptive evidence rather than a general claim."
+        )
+    else:
+        category = "mixed_no_established_advantage"
+        conclusion = (
+            "The measured cross-seed return differences change direction across "
+            "milestones, so this experiment does not establish a consistent PER "
+            "quality advantage. The three-seed results are descriptive."
+        )
+    final_runtime = runtime[-1] if runtime else None
+    if final_runtime is not None:
+        ratio = float(final_runtime["per_over_uniform_cumulative_time_ratio"])
+        conclusion += (
+            f" At {final_runtime['transitions']:,} transitions, mean cumulative "
+            f"training time was {ratio:.2f}x the Uniform time."
+        )
+    return {
+        "outcome_category": category,
+        "statement": conclusion,
+        "independent_unit": "training_seed",
+        "training_seed_count": len(
+            milestones[0]["paired_training_seed_mean_differences"]
+        )
+        if milestones
+        else 0,
+        "quality_by_milestone": quality,
+        "cumulative_runtime_by_milestone": runtime,
+        "claim_limit": (
+            "Cross-training-seed summaries use n=3 and are descriptive; paired "
+            "evaluation episodes are not independent training replicates."
+        ),
+    }
+
+
+def _format_report_number(value: float, *, digits: int = 2) -> str:
+    return f"{value:,.{digits}f}"
+
+
+def _format_signed_report_number(value: float, *, digits: int = 2) -> str:
+    return f"{value:+,.{digits}f}"
+
+
+def _render_markdown_report(comparison: Mapping[str, Any]) -> str:
+    conclusion = comparison["conclusion"]
+    stability = comparison["training_stability"]
+    lines = [
+        "# PER vs Uniform Replay experiment report",
+        "",
+        f"**Conclusion:** {conclusion['statement']}",
+        "",
+        "## Evaluation quality and cumulative training time",
+        "",
+        "| Transitions | Uniform mean return | PER mean return | PER − Uniform | Uniform seconds | PER seconds | PER / Uniform time |",
+        "| ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+    ]
+    runtime_by_step = {
+        int(row["transitions"]): row
+        for row in conclusion["cumulative_runtime_by_milestone"]
+    }
+    for quality in conclusion["quality_by_milestone"]:
+        runtime = runtime_by_step[int(quality["transitions"])]
+        lines.append(
+            "| {steps:,} | {uniform} | {per} | {delta} | {uniform_time} | "
+            "{per_time} | {ratio:.2f}x |".format(
+                steps=int(quality["transitions"]),
+                uniform=_format_report_number(float(quality["uniform_mean_return"])),
+                per=_format_report_number(float(quality["per_mean_return"])),
+                delta=_format_signed_report_number(
+                    float(quality["per_minus_uniform_mean_return"])
+                ),
+                uniform_time=_format_report_number(
+                    float(runtime["uniform_mean_cumulative_seconds"]), digits=1
+                ),
+                per_time=_format_report_number(
+                    float(runtime["per_mean_cumulative_seconds"]), digits=1
+                ),
+                ratio=float(runtime["per_over_uniform_cumulative_time_ratio"]),
+            )
+        )
+
+    lines.extend(
+        [
+            "",
+            "## Training stability diagnostics",
+            "",
+            "The table reports the mean of each run's logged diagnostic values, then summarizes those per-seed means (`n=3`). The metric rows are descriptive observations, not independent replicates.",
+            "",
+            "| Diagnostic | Uniform mean across seed means | PER mean across seed means |",
+            "| --- | ---: | ---: |",
+        ]
+    )
+    metric_labels = {
+        "loss": "Loss",
+        "q_mean": "Q mean",
+        "q_max": "Q max",
+        "td_error_mean_abs": "Mean absolute TD error",
+        "td_error_max_abs": "Maximum absolute TD error",
+        "gradient_norm": "Gradient norm",
+    }
+    for field, label in metric_labels.items():
+        methods = stability["across_training_seed_means"][field]
+        lines.append(
+            f"| {label} | "
+            f"{_format_report_number(float(methods['uniform']['mean']), digits=4)} | "
+            f"{_format_report_number(float(methods['per']['mean']), digits=4)} |"
+        )
+    lines.extend(
+        [
+            "",
+            "### Action and policy decision distributions",
+            "",
+            "Action fractions are cumulative through 500K transitions. Random and greedy fractions describe policy decisions.",
+            "",
+            "| Measure | Uniform | PER |",
+            "| --- | ---: | ---: |",
+        ]
+    )
+    action_methods = stability["action_fraction_across_training_seeds"]
+    for action in _ACTION_COUNT_FIELDS:
+        uniform_fraction = float(action_methods[action]["uniform"]["mean"])
+        per_fraction = float(action_methods[action]["per"]["mean"])
+        lines.append(
+            f"| {action.title()} action | {uniform_fraction:.1%} | {per_fraction:.1%} |"
+        )
+    decisions = stability["by_training_seed"]
+    uniform_random = statistics.mean(
+        float(row["uniform"]["policy_decisions"]["random_fraction"])
+        for row in decisions
+    )
+    per_random = statistics.mean(
+        float(row["per"]["policy_decisions"]["random_fraction"])
+        for row in decisions
+    )
+    lines.append(f"| Random decisions | {uniform_random:.1%} | {per_random:.1%} |")
+    lines.extend(
+        [
+            "",
+            "### Non-finite values and collapse handling",
+            "",
+            f"Non-finite diagnostic records in the final 250K-transition window: Uniform {stability['non_finite_diagnostic_records']['uniform']}, PER {stability['non_finite_diagnostic_records']['per']}. Non-finite scalar values: Uniform {stability['non_finite_diagnostic_values']['uniform']}, PER {stability['non_finite_diagnostic_values']['per']}. All six runs completed 500K transitions.",
+            "",
+            stability["collapse_assessment"]["reason"],
+            "",
+            "## Interpretation limits",
+            "",
+            f"- {conclusion['claim_limit']}",
+            "- Day 20 Uniform training metrics in the pinned source contain detailed scalar diagnostics from the final 250K stage; the stability comparison uses that same transition window for PER.",
+            "- The baseline and PER runs record diagnostics at different frequencies; compare per-run summaries descriptively.",
+            "- Priority size is a replay diagnostic, not a model-quality measure.",
+            "- This result does not promote or replace the canonical model.",
+            "",
+        ]
+    )
+    return "\n".join(lines)
+
+
 def _describe(values: Sequence[float]) -> dict[str, float | int]:
     parsed = [float(value) for value in values]
     if not parsed:
@@ -223,6 +666,7 @@ def compare_experiment(
     detailed_rows: list[dict[str, Any]] = []
     milestone_reports: list[dict[str, Any]] = []
     runtime_rows: list[dict[str, Any]] = []
+    training_stability_seed_results: list[dict[str, Any]] = []
     uniform_cumulative_seconds = {seed: 0.0 for seed in seeds}
     per_cumulative_seconds = {seed: 0.0 for seed in seeds}
     per_update_count_cursor = {seed: 0.0 for seed in seeds}
@@ -511,6 +955,53 @@ def compare_experiment(
                     },
                 }
             )
+            if transitions == milestones[-1]:
+                stability_start = milestones[-2] if len(milestones) > 1 else 0
+                uniform_diagnostics = _summarize_training_diagnostics(
+                    baseline_metrics,
+                    start_transition=stability_start,
+                    end_transition=transitions,
+                )
+                per_diagnostics = _summarize_training_diagnostics(
+                    per_metrics,
+                    start_transition=stability_start,
+                    end_transition=transitions,
+                )
+                uniform_actions = _cumulative_distribution_at_transition(
+                    baseline_metrics,
+                    transitions=transitions,
+                    fields=_ACTION_COUNT_FIELDS,
+                )
+                per_actions = _cumulative_distribution_at_transition(
+                    per_metrics,
+                    transitions=transitions,
+                    fields=_ACTION_COUNT_FIELDS,
+                )
+                uniform_policy_decisions = _policy_decision_distribution(
+                    baseline_metrics,
+                    transitions=transitions,
+                )
+                per_policy_decisions = _policy_decision_distribution(
+                    per_metrics,
+                    transitions=transitions,
+                )
+                training_stability_seed_results.append(
+                    {
+                        "training_seed": training_seed,
+                        "uniform": {
+                            "training_status": "completed",
+                            "diagnostics": uniform_diagnostics,
+                            "actions": uniform_actions,
+                            "policy_decisions": uniform_policy_decisions,
+                        },
+                        "per": {
+                            "training_status": per_summary["status"],
+                            "diagnostics": per_diagnostics,
+                            "actions": per_actions,
+                            "policy_decisions": per_policy_decisions,
+                        },
+                    }
+                )
 
         previous_transition_milestone = transitions
         milestone_reports.append(
@@ -534,8 +1025,15 @@ def compare_experiment(
             }
         )
 
+    stability_start = milestones[-2] if len(milestones) > 1 else 0
+    training_stability = _aggregate_training_stability(
+        training_stability_seed_results,
+        start_transition=stability_start,
+        end_transition=milestones[-1],
+    )
+    conclusion = _build_experiment_conclusion(milestone_reports, runtime_rows)
     comparison = {
-        "schema_version": 1,
+        "schema_version": 2,
         "experiment_id": config["experiment_id"],
         "baseline_audit": "baseline-compatibility.json",
         "baseline_source_commit": source_commit,
@@ -563,6 +1061,8 @@ def compare_experiment(
             "Cross-training-seed summaries use n=3 and are descriptive; no single episode or best seed is a success criterion.",
         ],
         "milestones": milestone_reports,
+        "training_stability": training_stability,
+        "conclusion": conclusion,
         "engineering_cost": {
             "comparison_unit": "same training seed and transition milestone",
             "source_note": (
@@ -594,6 +1094,67 @@ def write_comparison(
         writer = csv.DictWriter(stream, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(rows)
+    stability_csv_path = output_root / "training-stability.csv"
+    stability_rows: list[dict[str, Any]] = []
+    for seed_result in comparison["training_stability"]["by_training_seed"]:
+        for method in ("uniform", "per"):
+            method_result = seed_result[method]
+            diagnostics = method_result["diagnostics"]
+            stability_row: dict[str, Any] = {
+                "training_seed": seed_result["training_seed"],
+                "method": method,
+                "training_status": method_result["training_status"],
+                "requested_window_start": diagnostics[
+                    "requested_transition_window"
+                ]["start"],
+                "requested_window_end": diagnostics["requested_transition_window"][
+                    "end"
+                ],
+                "observed_window_start": diagnostics["observed_transition_window"][
+                    "start"
+                ],
+                "observed_window_end": diagnostics["observed_transition_window"][
+                    "end"
+                ],
+                "logged_record_count": diagnostics["logged_record_count"],
+                "non_finite_record_count": diagnostics["non_finite_record_count"],
+                "non_finite_value_count": diagnostics["non_finite_value_count"],
+                "invalid_value_count": diagnostics["invalid_value_count"],
+                "random_decision_count": method_result["policy_decisions"][
+                    "random"
+                ],
+                "greedy_decision_count": method_result["policy_decisions"][
+                    "greedy"
+                ],
+                "random_decision_fraction": method_result["policy_decisions"][
+                    "random_fraction"
+                ],
+            }
+            for field in _STABILITY_METRICS:
+                summary = diagnostics["metrics"][field]
+                for statistic in ("n", "mean", "median", "sample_std", "p10", "p90"):
+                    stability_row[f"{field}_{statistic}"] = (
+                        summary[statistic] if summary is not None else None
+                    )
+            for action in _ACTION_COUNT_FIELDS:
+                stability_row[f"{action}_count"] = method_result["actions"][
+                    "counts"
+                ][action]
+                stability_row[f"{action}_fraction"] = method_result["actions"][
+                    "fractions"
+                ][action]
+            stability_rows.append(stability_row)
+    stability_fields = list(stability_rows[0]) if stability_rows else []
+    with stability_csv_path.open("w", newline="", encoding="utf-8") as stream:
+        writer = csv.DictWriter(stream, fieldnames=stability_fields)
+        writer.writeheader()
+        writer.writerows(stability_rows)
+
+    report_path = output_root / "report.md"
+    report_path.write_text(
+        _render_markdown_report(comparison),
+        encoding="utf-8",
+    )
     runtime_path = output_root / "runtime-overhead.json"
     runtime_path.write_text(
         json.dumps(comparison["engineering_cost"], indent=2, ensure_ascii=False)

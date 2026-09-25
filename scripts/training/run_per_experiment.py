@@ -147,11 +147,16 @@ def _run_postprocessing(
         output_root / "visualizations" / "evaluation-by-wall-clock.png",
         output_root / "visualizations" / "priority-diagnostics-seed11.png",
     ]
-    missing_figures = [path for path in figures if not path.is_file()]
-    if missing_figures:
+    evidence_files = [
+        *figures,
+        output_root / "training-stability.csv",
+        output_root / "report.md",
+    ]
+    missing_outputs = [path for path in evidence_files if not path.is_file()]
+    if missing_outputs:
         raise FileNotFoundError(
-            "visualization subprocess did not create required figures: "
-            + ", ".join(str(path) for path in missing_figures)
+            "PER postprocessing did not create required evidence files: "
+            + ", ".join(str(path) for path in missing_outputs)
         )
     return comparison, figures
 
@@ -527,6 +532,15 @@ def run_experiment(
     manifest["completed_at_utc"] = datetime.now(timezone.utc).isoformat()
     manifest["comparison_path"] = (output_root / "comparison.json").relative_to(output_root).as_posix()
     manifest["comparison_sha256"] = _sha256(output_root / "comparison.json")
+    manifest["conclusion"] = comparison["conclusion"]
+    manifest["training_stability_path"] = (
+        output_root / "training-stability.csv"
+    ).relative_to(output_root).as_posix()
+    manifest["training_stability_sha256"] = _sha256(
+        output_root / "training-stability.csv"
+    )
+    manifest["report_path"] = (output_root / "report.md").relative_to(output_root).as_posix()
+    manifest["report_sha256"] = _sha256(output_root / "report.md")
     manifest["runtime_overhead_path"] = (
         output_root / "runtime-overhead.json"
     ).relative_to(output_root).as_posix()
