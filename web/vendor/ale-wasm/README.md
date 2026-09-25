@@ -14,7 +14,7 @@ CommonJS interop for tests and tooling.
 The checked-in build uses Emscripten 3.1.68 and the vcpkg baseline pinned by
 ALE's `vcpkg.json` (`3426a5e955f029ab0088ef6656fda06552bd2699`). Rebuild the
 runtime from the repository root with `bash web/scripts/build-ale-wasm.sh`;
-see `web/docs/ale-wasm-analog.md` for toolchain setup and provenance details.
+see `BUILD.md` for toolchain setup and provenance details.
 
 `roms/breakout.bin` is the 2,048-byte Breakout ROM extracted from the official
 `@farama/ale-wasm@0.12.0` package. Its SHA-256 is

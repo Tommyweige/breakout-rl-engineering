@@ -35,7 +35,14 @@ git clone --filter=blob:none https://github.com/Farama-Foundation/Arcade-Learnin
 git -C "$source_root" checkout --detach "$upstream_commit"
 git -C "$source_root" apply "$web_root/patches/ale-wasm-paddle-strength.patch"
 
-actual_rom_sha256="$(sha256sum "$package_dir/roms/breakout.bin" | cut -d ' ' -f 1)"
+if command -v sha256sum >/dev/null 2>&1; then
+  actual_rom_sha256="$(sha256sum "$package_dir/roms/breakout.bin" | cut -d ' ' -f 1)"
+elif command -v shasum >/dev/null 2>&1; then
+  actual_rom_sha256="$(shasum -a 256 "$package_dir/roms/breakout.bin" | cut -d ' ' -f 1)"
+else
+  echo "Install sha256sum or shasum to verify the Breakout ROM." >&2
+  exit 1
+fi
 if [[ "$actual_rom_sha256" != "$rom_sha256" ]]; then
   echo "Breakout ROM SHA-256 mismatch: $actual_rom_sha256" >&2
   exit 1

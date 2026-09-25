@@ -23,6 +23,7 @@
     "ale.data",
     "ale.d.ts",
     "README.md",
+    "BUILD.md",
     "LICENSE"
   ],
   "license": "GPL-2.0",
