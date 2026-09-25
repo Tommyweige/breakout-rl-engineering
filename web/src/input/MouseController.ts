@@ -1,10 +1,12 @@
 import { ATARI_SCREEN_HEIGHT, ATARI_SCREEN_WIDTH } from '../environment/atariPreprocessing';
 import type { ActionMeaning } from '../inference/types';
 import { detectPaddleCenterNormalized } from './paddleDetector';
+import type { HumanPaddleCommand } from './paddleCommand';
 
 /** The dead zone is intentionally expressed in Atari pixels, not screen CSS pixels. */
 export const DEFAULT_MOUSE_DEADZONE_RAW_PX = 6;
 export const DEFAULT_MOUSE_DEADZONE = DEFAULT_MOUSE_DEADZONE_RAW_PX / ATARI_SCREEN_WIDTH;
+export const DEFAULT_MOUSE_STRENGTH_PER_RAW_PX = 1 / 24;
 
 export type MouseMotionState = 'LEFT' | 'RIGHT' | 'STOPPED';
 
@@ -113,21 +115,44 @@ export class MouseController {
   }
 
   currentAction(): ActionMeaning {
-    const action = this.resolveAction();
-    this.state = action === 'LEFT' || action === 'RIGHT' ? action : 'STOPPED';
-    return action;
+    return this.currentCommand().direction;
   }
 
   peekAction(): ActionMeaning {
-    return this.resolveAction();
+    return this.peekCommand().direction;
   }
 
-  private resolveAction(): ActionMeaning {
-    if (!this.enabled || this.target === null || this.paddle === null) return 'NOOP';
-    const error = (this.target - this.paddle) * ATARI_SCREEN_WIDTH;
-    if (error < -this.deadzoneRawPx) return 'LEFT';
-    if (error > this.deadzoneRawPx) return 'RIGHT';
-    return 'NOOP';
+  currentCommand(): HumanPaddleCommand {
+    const command = this.resolveCommand();
+    this.state = command.direction === 'NOOP' ? 'STOPPED' : command.direction;
+    return command;
+  }
+
+  peekCommand(): HumanPaddleCommand {
+    return this.resolveCommand();
+  }
+
+  private resolveCommand(): HumanPaddleCommand {
+    const positionError = this.positionError;
+    const errorRawPx = positionError === null ? null : positionError * ATARI_SCREEN_WIDTH;
+    if (!this.enabled || errorRawPx === null || Math.abs(errorRawPx) <= this.deadzoneRawPx) {
+      return this.command('NOOP', 0, positionError);
+    }
+
+    const direction = errorRawPx < 0 ? 'LEFT' : 'RIGHT';
+    const distanceBeyondDeadzone = Math.abs(errorRawPx) - this.deadzoneRawPx;
+    const strength = clamp(distanceBeyondDeadzone * DEFAULT_MOUSE_STRENGTH_PER_RAW_PX, 0, 1);
+    return this.command(direction, strength, positionError);
+  }
+
+  private command(direction: HumanPaddleCommand['direction'], strength: number, positionError: number | null): HumanPaddleCommand {
+    return {
+      direction,
+      strength,
+      targetX: this.target,
+      paddleCenterX: this.paddle,
+      positionError,
+    };
   }
 }
 

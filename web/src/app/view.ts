@@ -171,6 +171,10 @@ function renderTechnicalDetails(): string {
             <div><span>Dead zone normalized</span><strong data-role="stop-threshold">0.03750</strong></div>
             <div><span>Human requested</span><strong data-role="human-requested-action">NOOP</strong></div>
             <div><span>Human executed</span><strong data-role="human-executed-action">NOOP</strong></div>
+            <div><span>Requested paddle strength</span><strong data-role="requested-paddle-strength">0.000</strong></div>
+            <div><span>Executed paddle strength</span><strong data-role="executed-paddle-strength">—</strong></div>
+            <div><span>Raw frame number</span><strong data-role="human-raw-frame-number">0</strong></div>
+            <div><span>Actual emulator frames</span><strong data-role="human-actual-emulator-frames">0</strong></div>
             <div><span>Human action</span><strong data-role="executed-human-action">NOOP</strong></div>
             <div><span>Human raw FPS</span><strong data-role="human-raw-fps">0</strong></div>
             <div><span>Human tick count</span><strong data-role="human-tick-count">0</strong></div>

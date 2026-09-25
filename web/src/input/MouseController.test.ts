@@ -35,6 +35,69 @@ describe('MouseController', () => {
     expect(controller.motionState).toBe('STOPPED');
   });
 
+  it('returns proportional paddle strength in Atari-relative units', () => {
+    const fixture = canvasFixture();
+    const controller = new MouseController(3);
+    controller.attach(fixture.canvas);
+    controller.setEnabled(true);
+    controller.updatePaddleCenter(0.5);
+
+    moveTo(fixture.listeners, 211); // 8.8 Atari pixels right of paddle
+    const small = controller.currentCommand();
+    moveTo(fixture.listeners, 225); // 20 Atari pixels right of paddle
+    const medium = controller.currentCommand();
+    moveTo(fixture.listeners, 300); // far enough to saturate
+    const full = controller.currentCommand();
+
+    expect(small.direction).toBe('RIGHT');
+    expect(small.strength).toBeGreaterThan(0);
+    expect(small.strength).toBeLessThan(medium.strength);
+    expect(medium.strength).toBeLessThan(1);
+    expect(full).toMatchObject({ direction: 'RIGHT', strength: 1, targetX: 1, paddleCenterX: 0.5 });
+    expect(full.positionError).toBe(0.5);
+  });
+
+  it('uses the same proportional strength for left corrections and remains neutral inside the dead zone', () => {
+    const fixture = canvasFixture();
+    const controller = new MouseController(3);
+    controller.attach(fixture.canvas);
+    controller.setEnabled(true);
+    controller.updatePaddleCenter(0.5);
+
+    moveTo(fixture.listeners, 203); // target 0.515, within the 3-pixel dead zone
+    expect(controller.currentCommand()).toMatchObject({ direction: 'NOOP', strength: 0 });
+
+    moveTo(fixture.listeners, 175);
+    const left = controller.currentCommand();
+    moveTo(fixture.listeners, 150);
+    const fartherLeft = controller.currentCommand();
+
+    expect(left.direction).toBe('LEFT');
+    expect(left.strength).toBeGreaterThan(0);
+    expect(fartherLeft.direction).toBe('LEFT');
+    expect(fartherLeft.strength).toBeGreaterThan(left.strength);
+    expect(fartherLeft.strength).toBe(1);
+  });
+
+  it('returns safe neutral input when the pointer or first paddle detection is unavailable', () => {
+    const fixture = canvasFixture();
+    const controller = new MouseController();
+    controller.attach(fixture.canvas);
+    controller.setEnabled(true);
+    moveTo(fixture.listeners, 300);
+    expect(controller.currentCommand()).toMatchObject({ direction: 'NOOP', strength: 0 });
+
+    controller.updatePaddleCenter(0.5);
+    moveTo(fixture.listeners, 211);
+    const lastTrustedCommand = controller.currentCommand();
+    controller.updatePaddleCenter(Number.NaN);
+    controller.updatePaddleCenter(null);
+    expect(controller.currentCommand()).toEqual(lastTrustedCommand);
+
+    fixture.listeners.get('pointerleave')!(new Event('pointerleave'));
+    expect(controller.currentCommand()).toMatchObject({ direction: 'NOOP', strength: 0, targetX: null });
+  });
+
   it('allows bidirectional correction on successive raw frames', () => {
     const fixture = canvasFixture();
     const controller = new MouseController(3);

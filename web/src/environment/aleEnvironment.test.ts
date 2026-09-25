@@ -41,6 +41,8 @@ const contract: BreakoutContractV2 = {
 class FakeAle {
   frame = 0;
   actions: number[] = [];
+  actCalls: Array<{ action: number; paddleStrength?: number }> = [];
+  livesCount = 5;
   settings = new Map<string, number | boolean>();
   loadPath = '';
 
@@ -53,11 +55,22 @@ class FakeAle {
   setString(): void {}
   getString(): string { return ''; }
   loadROM(path: string): void { this.loadPath = path; }
-  act(action: number): number { this.actions.push(action); this.frame += 1; return 0; }
+  act(action: number): number {
+    this.actions.push(action);
+    this.actCalls.push({ action });
+    this.frame += 1;
+    return 0;
+  }
+  actWithPaddleStrength(action: number, paddleStrength: number): number {
+    this.actions.push(action);
+    this.actCalls.push({ action, paddleStrength });
+    this.frame += 1;
+    return 0;
+  }
   resetGame(): void { this.frame = 0; this.actions = []; }
   gameOver(): boolean { return false; }
   gameTruncated(): boolean { return false; }
-  lives(): number { return 5; }
+  lives(): number { return this.livesCount; }
   getFrameNumber(): number { return this.frame; }
   getEpisodeFrameNumber(): number { return this.frame; }
   getScreenRGB(): Uint8ClampedArray { return new Uint8ClampedArray(160 * 210 * 3).fill(this.frame % 255); }
@@ -146,5 +159,87 @@ describe('ALE Browser environment contract', () => {
       stickyActionProbability: 0,
       usesModelPreprocessing: false,
     });
+  });
+
+  it('passes proportional Mouse strength to ALE while preserving auto-FIRE and one-frame semantics', () => {
+    const ale = new FakeAle();
+    const environment = createHumanBreakoutEnvironmentForTest(ale as unknown as AleLike, contract, 101);
+    const command = {
+      direction: 'RIGHT' as const,
+      strength: 0.35,
+      targetX: 0.8,
+      paddleCenterX: 0.5,
+      positionError: 0.3,
+    };
+
+    const serve = environment.stepPaddle(command);
+    const serveConfirmation = environment.stepPaddle(command);
+    const paddle = environment.stepPaddle(command);
+
+    expect(serve).toMatchObject({
+      requestedDirection: 'RIGHT',
+      requestedPaddleStrength: 0.35,
+      executedDirection: 'FIRE',
+      executedPaddleStrength: null,
+      autoFire: true,
+      actualEmulatorFrames: 1,
+    });
+    expect(serveConfirmation).toMatchObject({ autoFire: true, executedDirection: 'FIRE' });
+    expect(paddle).toMatchObject({
+      requestedDirection: 'RIGHT',
+      requestedPaddleStrength: 0.35,
+      executedDirection: 'RIGHT',
+      executedPaddleStrength: 0.35,
+      autoFire: false,
+      actualEmulatorFrames: 1,
+      outerActionRepeat: 1,
+    });
+    expect(ale.actCalls).toEqual([
+      { action: 1, paddleStrength: undefined },
+      { action: 1, paddleStrength: undefined },
+      { action: 3, paddleStrength: 0.35 },
+    ]);
+
+    environment.stepPaddle({ ...command, strength: 2 });
+    environment.stepPaddle({ ...command, strength: -1 });
+    expect(ale.actCalls.slice(-2)).toEqual([
+      { action: 3, paddleStrength: 1 },
+      { action: 3, paddleStrength: 0 },
+    ]);
+  });
+
+  it('reapplies auto-FIRE after a life loss and keeps keyboard actions discrete', () => {
+    const ale = new FakeAle();
+    const environment = createHumanBreakoutEnvironmentForTest(ale as unknown as AleLike, contract, 101);
+    const command = {
+      direction: 'LEFT' as const,
+      strength: 0.2,
+      targetX: 0.2,
+      paddleCenterX: 0.5,
+      positionError: -0.3,
+    };
+
+    environment.stepPaddle(command); // initial serve attempt
+    environment.stepPaddle(command); // serve confirmation
+    environment.stepPaddle(command); // paddle input
+    ale.livesCount = 4;
+    const lostLife = environment.stepPaddle(command);
+    const respawnServe = environment.stepPaddle(command);
+    const respawnConfirmation = environment.stepPaddle(command);
+    const keyboard = environment.step(2);
+
+    expect(lostLife.autoFire).toBe(false);
+    expect(respawnServe).toMatchObject({ autoFire: true, autoFireReason: 'after_life_loss', executedDirection: 'FIRE' });
+    expect(respawnConfirmation).toMatchObject({ autoFire: true, executedDirection: 'FIRE' });
+    expect(keyboard).toMatchObject({ requestedDirection: 'RIGHT', requestedPaddleStrength: null, executedPaddleStrength: null });
+    expect(ale.actCalls.map(({ action, paddleStrength }) => [action, paddleStrength])).toEqual([
+      [1, undefined],
+      [1, undefined],
+      [4, 0.2],
+      [4, 0.2],
+      [1, undefined],
+      [1, undefined],
+      [3, undefined],
+    ]);
   });
 });

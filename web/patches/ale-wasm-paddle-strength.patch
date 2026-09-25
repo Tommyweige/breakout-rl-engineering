@@ -1,0 +1,60 @@
+diff --git a/packages/wasm/ale.d.ts b/packages/wasm/ale.d.ts
+index 54a7ee8..e924807 100644
+--- a/packages/wasm/ale.d.ts
++++ b/packages/wasm/ale.d.ts
+@@ -16,6 +16,7 @@ export interface ALEInterface {
+ 
+   // Game Loop
+   act(action: number): number;
++  actWithPaddleStrength(action: number, paddleStrength: number): number;
+   resetGame(): void;
+   gameOver(): boolean;
+   gameTruncated(): boolean;
+diff --git a/src/ale/CMakeLists.txt b/src/ale/CMakeLists.txt
+index 1aeb1d5..c98be4a 100644
+--- a/src/ale/CMakeLists.txt
++++ b/src/ale/CMakeLists.txt
+@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
+ set(CMAKE_CXX_EXTENSIONS FALSE)
+ # Skip IPO/LTO for sanitizer and RelWithDebInfo builds so stack traces from
+ # valgrind/sanitizers resolve to real function names instead of '???'.
+-if(NOT ENABLE_SANITIZER AND NOT CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
++if(NOT BUILD_WASM_LIB AND NOT ENABLE_SANITIZER AND NOT CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+   set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+ endif()
+ set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
+diff --git a/src/ale/wasm/CMakeLists.txt b/src/ale/wasm/CMakeLists.txt
+index a276d70..0a3c405 100644
+--- a/src/ale/wasm/CMakeLists.txt
++++ b/src/ale/wasm/CMakeLists.txt
+@@ -56,7 +56,6 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release")
+     list(APPEND EMSCRIPTEN_LINK_FLAGS
+         "-O3"
+         "-sASSERTIONS=0"
+-        "-flto"
+     )
+ else()
+     list(APPEND EMSCRIPTEN_LINK_FLAGS
+diff --git a/src/ale/wasm/ale_wasm_interface.cpp b/src/ale/wasm/ale_wasm_interface.cpp
+index 42deec4..185ead9 100644
+--- a/src/ale/wasm/ale_wasm_interface.cpp
++++ b/src/ale/wasm/ale_wasm_interface.cpp
+@@ -95,6 +95,10 @@ public:
+         return ale.act(static_cast<Action>(action));
+     }
+ 
++    int actWithPaddleStrength(int action, float paddle_strength) {
++        return ale.act(static_cast<Action>(action), paddle_strength);
++    }
++
+     void resetGame() {
+         ale.reset_game();
+     }
+@@ -320,6 +324,7 @@ EMSCRIPTEN_BINDINGS(ale_module) {
+         .function("loadROM", &ale_wasm::ALEInterfaceWrapper::loadROM)
+         // Game loop
+         .function("act", &ale_wasm::ALEInterfaceWrapper::act)
++        .function("actWithPaddleStrength", &ale_wasm::ALEInterfaceWrapper::actWithPaddleStrength)
+         .function("resetGame", &ale_wasm::ALEInterfaceWrapper::resetGame)
+         .function("gameOver", &ale_wasm::ALEInterfaceWrapper::gameOver)
+         .function("gameTruncated", &ale_wasm::ALEInterfaceWrapper::gameTruncated)

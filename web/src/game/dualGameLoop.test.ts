@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { EnvironmentStep, HumanEnvironmentStep } from '../environment/aleEnvironment';
 import type { PolicyResult } from '../inference/types';
+import type { HumanPaddleCommand } from '../input/paddleCommand';
 import { DualGameLoop, type HumanLoopEnvironment, type LoopEnvironment } from './dualGameLoop';
 
 function fakeAgentStep(action: number): EnvironmentStep {
@@ -40,9 +41,13 @@ function fakeHumanStep(action: number, frame: number): HumanEnvironmentStep {
     rawRgb: new Uint8Array(160 * 210 * 3),
     requestedModelAction: action,
     requestedAction: meaning,
+    requestedDirection: meaning,
+    requestedPaddleStrength: null,
     requestedAleAction: action as 0 | 1 | 3 | 4,
     executedModelAction: action,
     executedAction: meaning,
+    executedDirection: meaning,
+    executedPaddleStrength: null,
     executedAleAction: action as 0 | 1 | 3 | 4,
     autoFire: false,
     autoFireReason: null,
@@ -68,12 +73,14 @@ class FakeHumanEnvironment implements HumanLoopEnvironment {
   isFinished = false;
   currentSeed = 1;
   actions: number[] = [];
+  paddleCommands: HumanPaddleCommand[] = [];
   private frame = 0;
 
   reset(seed = this.currentSeed): void {
     this.currentSeed = seed;
     this.isFinished = false;
     this.actions = [];
+    this.paddleCommands = [];
     this.frame = 0;
   }
 
@@ -81,6 +88,12 @@ class FakeHumanEnvironment implements HumanLoopEnvironment {
     this.actions.push(action);
     this.frame += 1;
     return fakeHumanStep(action, this.frame);
+  }
+
+  stepPaddle(command: HumanPaddleCommand): HumanEnvironmentStep {
+    this.paddleCommands.push(command);
+    this.frame += 1;
+    return fakeHumanStep(command.direction === 'RIGHT' ? 2 : command.direction === 'LEFT' ? 3 : 0, this.frame);
   }
 }
 
@@ -123,7 +136,7 @@ describe('dual game loop', () => {
       human,
       agent,
       agentRuntime: { outerActionRepeat: 4, stickyActionProbability: 0.25 },
-      humanAction: () => 3,
+      humanCommand: () => ({ kind: 'discrete', actionIndex: 3 }),
       infer: async () => policyResult(2),
       onAgentStep,
     });
@@ -133,6 +146,31 @@ describe('dual game loop', () => {
     expect(human.actions).toEqual([3]);
     expect(agent.actions).toEqual([2]);
     expect(onAgentStep).toHaveBeenCalledOnce();
+  });
+
+  it('routes analog paddle commands only to Human while Agent keeps discrete actions', async () => {
+    const human = new FakeHumanEnvironment();
+    const agent = new FakeAgentEnvironment();
+    const command: HumanPaddleCommand = {
+      direction: 'RIGHT',
+      strength: 0.35,
+      targetX: 0.8,
+      paddleCenterX: 0.5,
+      positionError: 0.3,
+    };
+    const loop = new DualGameLoop({
+      human,
+      agent,
+      agentRuntime: { outerActionRepeat: 4, stickyActionProbability: 0.25 },
+      humanCommand: () => ({ kind: 'paddle', command }),
+      infer: async () => policyResult(2),
+    });
+
+    await loop.stepOnce();
+
+    expect(human.actions).toEqual([]);
+    expect(human.paddleCommands).toEqual([command]);
+    expect(agent.actions).toEqual([2]);
   });
 
   it('continues Human raw ticks while Agent inference is slow', async () => {
@@ -145,7 +183,7 @@ describe('dual game loop', () => {
       human,
       agent,
       agentRuntime: { outerActionRepeat: 4, stickyActionProbability: 0.25 },
-      humanAction: () => 0,
+      humanCommand: () => ({ kind: 'discrete', actionIndex: 0 }),
       humanTargetFps: 60,
       agentTargetFps: 15,
       infer: () => new Promise((resolve) => {
@@ -178,7 +216,7 @@ describe('dual game loop', () => {
       human,
       agent,
       agentRuntime: { outerActionRepeat: 4, stickyActionProbability: 0.25 },
-      humanAction: () => 0,
+      humanCommand: () => ({ kind: 'discrete', actionIndex: 0 }),
       infer: async () => policyResult(0),
     });
 

@@ -1,6 +1,7 @@
 import type { ALEInterface, ALEModule } from '@farama/ale-wasm';
 
-import type { ActionMeaning } from '../inference/types';
+import { ACTION_MEANINGS, type ActionMeaning } from '../inference/types';
+import type { HumanPaddleCommand, PaddleDirection } from '../input/paddleCommand';
 import { mapModelActionToAle, validateMinimalActionSet, type AleActionCode, type MappedAction } from './actionMapping';
 import {
   ATARI_SCREEN_HEIGHT,
@@ -17,7 +18,10 @@ import {
 } from './nativeAtariPreprocessing';
 import { HUMAN_INTERACTIVE_RUNTIME } from './runtimeConfig';
 
-export interface AleLike extends ALEInterface {}
+export interface AleLike extends Omit<ALEInterface, 'act'> {
+  act(action: number): number;
+  actWithPaddleStrength(action: number, paddleStrength: number): number;
+}
 
 export interface EnvironmentStep {
   observation: Uint8Array;
@@ -79,9 +83,13 @@ export interface HumanEnvironmentStep {
   rawRgb: Uint8Array;
   requestedModelAction: number;
   requestedAction: ActionMeaning;
+  requestedDirection: ActionMeaning;
+  requestedPaddleStrength: number | null;
   requestedAleAction: AleActionCode;
   executedModelAction: number;
   executedAction: ActionMeaning;
+  executedDirection: ActionMeaning;
+  executedPaddleStrength: number | null;
   executedAleAction: AleActionCode;
   autoFire: boolean;
   autoFireReason: EnvironmentStep['autoFireReason'];
@@ -770,17 +778,28 @@ export class HumanBreakoutEnvironment {
   }
 
   step(modelActionIndex: number): HumanEnvironmentStep {
+    return this.stepInput(mapModelActionToAle(modelActionIndex), null);
+  }
+
+  stepPaddle(command: HumanPaddleCommand): HumanEnvironmentStep {
+    const requested = mapModelActionToAle(ACTION_MEANINGS.indexOf(command.direction));
+    return this.stepInput(requested, normalizePaddleStrength(command.direction, command.strength));
+  }
+
+  private stepInput(requested: MappedAction, requestedPaddleStrength: number | null): HumanEnvironmentStep {
     this.assertActive();
     if (this.isFinished) throw new Error('cannot step a finished Breakout episode; reset first');
     const startedAt = now();
-    const requested = mapModelActionToAle(modelActionIndex);
     const autoFire = this.needsFire;
     const autoFireReason = autoFire ? this.pendingFireReason : null;
     const executed = autoFire ? mapModelActionToAle(1) : requested;
     const beforeFrameNumber = this.ale.getFrameNumber();
     const beforeRawRgb = this.lastRawRgb;
     const aleStartedAt = now();
-    const reward = this.ale.act(executed.aleAction);
+    const executedPaddleStrength = autoFire ? null : requestedPaddleStrength;
+    const reward = executedPaddleStrength === null
+      ? this.ale.act(executed.aleAction)
+      : this.ale.actWithPaddleStrength(executed.aleAction, executedPaddleStrength);
     const rawRgb = copyBytes(this.ale.getScreenRGB());
     const aleStepMs = now() - aleStartedAt;
     const rawChange = changedFraction(beforeRawRgb, rawRgb);
@@ -827,9 +846,13 @@ export class HumanBreakoutEnvironment {
       rawRgb: new Uint8Array(rawRgb),
       requestedModelAction: requested.modelIndex,
       requestedAction: requested.meaning,
+      requestedDirection: requested.meaning,
+      requestedPaddleStrength,
       requestedAleAction: requested.aleAction,
       executedModelAction: executed.modelIndex,
       executedAction: executed.meaning,
+      executedDirection: executed.meaning,
+      executedPaddleStrength,
       executedAleAction: executed.aleAction,
       autoFire,
       autoFireReason,
@@ -887,6 +910,11 @@ export class HumanBreakoutEnvironment {
   private assertActive(): void {
     if (this.disposed) throw new Error('ALE environment has been disposed');
   }
+}
+
+function normalizePaddleStrength(direction: PaddleDirection, strength: number): number {
+  if (direction === 'NOOP' || !Number.isFinite(strength)) return 0;
+  return Math.min(1, Math.max(0, strength));
 }
 
 export interface HumanEnvironmentSnapshot {

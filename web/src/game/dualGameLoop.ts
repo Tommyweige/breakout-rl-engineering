@@ -1,6 +1,7 @@
 import type { HumanEnvironmentStep } from '../environment/aleEnvironment';
 import type { PolicyResult } from '../inference/types';
 import type { EnvironmentStep } from '../environment/aleEnvironment';
+import type { HumanPaddleCommand } from '../input/paddleCommand';
 
 export type LoopStatus = 'idle' | 'running' | 'paused' | 'error';
 
@@ -18,7 +19,12 @@ export interface HumanLoopEnvironment {
   readonly currentSeed: number;
   reset(seed?: number): unknown;
   step(actionIndex: number): HumanEnvironmentStep;
+  stepPaddle(command: HumanPaddleCommand): HumanEnvironmentStep;
 }
+
+export type HumanLoopCommand =
+  | { kind: 'discrete'; actionIndex: number }
+  | { kind: 'paddle'; command: HumanPaddleCommand };
 
 export interface AgentLoopStep {
   policy: PolicyResult;
@@ -60,7 +66,7 @@ export interface DualGameLoopOptions {
   human: HumanLoopEnvironment;
   agent: LoopEnvironment;
   agentRuntime: AgentRuntimeSemantics;
-  humanAction: () => number;
+  humanCommand: () => HumanLoopCommand;
   infer: (observation: Uint8Array) => Promise<PolicyResult>;
   onHumanStep?: (step: HumanEnvironmentStep) => void;
   onAgentStep?: (step: AgentLoopStep) => void;
@@ -268,7 +274,10 @@ export class DualGameLoop {
       const previous = this.lastHumanTickAt;
       if (previous !== null) this.humanTickIntervals.push(startedAt - previous);
       this.lastHumanTickAt = startedAt;
-      const step = this.options.human.step(this.options.humanAction());
+      const command = this.options.humanCommand();
+      const step = command.kind === 'paddle'
+        ? this.options.human.stepPaddle(command.command)
+        : this.options.human.step(command.actionIndex);
       this.humanRawTickCount += 1;
       this.humanRawFrameDelta += step.actualEmulatorFrames;
       this.options.onHumanStep?.(step);
