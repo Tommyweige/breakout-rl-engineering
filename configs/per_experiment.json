@@ -24,6 +24,7 @@
     250000,
     500000
   ],
+  "primary_training_lifecycle": "continuous_single_run",
   "training_config": {
     "total_steps": 500000,
     "seed": 11,

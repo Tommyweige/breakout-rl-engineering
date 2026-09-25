@@ -16,20 +16,53 @@ from scripts.analysis.compare_per_experiment import (
     _metric_value_at_transition,
     _policy_decision_distribution,
     _summarize_training_diagnostics,
+    _validate_continuous_run,
+    _validate_training_configs_differ_only_by_sampling,
 )
 
 
 class PERExperimentAnalysisTests(unittest.TestCase):
-    def test_day20_uniform_baseline_audit_is_complete_and_compatible(self) -> None:
+    def test_day20_staged_replay_reset_is_rejected_as_primary_control(self) -> None:
         audit = audit_baseline(Path("configs/per_experiment.json"))
 
-        self.assertEqual(audit["status"], "compatible")
-        self.assertTrue(audit["reuse_allowed"])
-        self.assertEqual(audit["decision"], "reuse_day20_uniform")
-        self.assertEqual(audit["failed_checks"], [])
+        self.assertEqual(audit["status"], "incompatible")
+        self.assertFalse(audit["reuse_allowed"])
+        self.assertEqual(audit["decision"], "rerun_uniform_baseline")
+        self.assertEqual(len(audit["failed_checks"]), 18)
         self.assertEqual(len(audit["checkpoints"]), 9)
         self.assertEqual(audit["protocol"]["training_seeds"], [11, 22, 33])
         self.assertEqual(audit["protocol"]["milestones"], [100_000, 250_000, 500_000])
+        self.assertFalse(
+            audit["continuation_semantics"][
+                "historical_reference_compatible_with_primary"
+            ]
+        )
+        for check_suffix in (
+            "primary run has no staged resume",
+            "resumed replay state is saved",
+            "resume preserves replay history",
+        ):
+            matching = [
+                check
+                for check in audit["checks"]
+                if check["name"].endswith(check_suffix)
+            ]
+            self.assertEqual(
+                sum(not check["passed"] for check in matching),
+                6,
+            )
+            if check_suffix == "resumed replay state is saved":
+                self.assertTrue(all(check["observed"] is False for check in matching))
+            if check_suffix == "resume preserves replay history":
+                self.assertTrue(
+                    all(
+                        check["observed"]
+                        == "fresh_replay_with_learning_starts_rewarm"
+                        for check in matching
+                    )
+                )
+            if check_suffix == "primary run has no staged resume":
+                self.assertEqual(len(matching), 9)
 
     def test_episode_returns_pair_by_evaluation_seed_and_episode_index(self) -> None:
         payload = {
@@ -157,6 +190,77 @@ class PERExperimentAnalysisTests(unittest.TestCase):
         self.assertFalse(_has_non_finite_diagnostic_event(completed))
         self.assertTrue(_has_non_finite_diagnostic_event(non_finite))
         self.assertFalse(_has_non_finite_diagnostic_event(incomplete))
+
+    def test_comparison_rejects_staged_replay_rewarm_checkpoint(self) -> None:
+        summary = {
+            "status": "completed",
+            "total_steps": 500_000,
+            "runtime": {
+                "wall_clock_seconds": 20.0,
+                "steps_per_second": 25_000.0,
+                "stage_start_step": 100_000,
+                "stage_training_steps": 400_000,
+                "resume_provenance": {
+                    "replay_saved": False,
+                    "replay_rewarm_steps_remaining": 1_000,
+                },
+                "replay_rewarm_steps_remaining": 0,
+            },
+        }
+        evaluation = {
+            "training": {
+                "resume_provenance": {
+                    "replay_saved": False,
+                    "replay_resume_semantics": (
+                        "fresh_replay_with_learning_starts_rewarm"
+                    ),
+                },
+                "trainer_runtime": {
+                    "wall_clock_seconds": 10.0,
+                    "steps_per_second": 25_000.0,
+                    "stage_start_step": 100_000,
+                    "stage_training_steps": 250_000,
+                },
+            }
+        }
+
+        with self.assertRaisesRegex(ValueError, "staged resume or replay re-warm"):
+            _validate_continuous_run(
+                summary,
+                evaluation,
+                method="uniform",
+                seed=11,
+                transitions=250_000,
+                total_steps=500_000,
+            )
+
+    def test_method_configs_may_differ_only_by_replay_sampling(self) -> None:
+        per_config = {
+            "seed": 11,
+            "learning_rate": 0.0001,
+            "gamma": 0.99,
+            "replay_sampling": "prioritized",
+        }
+        uniform_config = {**per_config, "replay_sampling": "uniform"}
+        expected = {**per_config}
+
+        _validate_training_configs_differ_only_by_sampling(
+            per_config,
+            uniform_config,
+            expected_config=expected,
+            seed=11,
+            label="fixture",
+        )
+
+        mismatched_uniform = {**uniform_config, "gamma": 0.98}
+        with self.assertRaisesRegex(ValueError, "training config field gamma"):
+            _validate_training_configs_differ_only_by_sampling(
+                per_config,
+                mismatched_uniform,
+                expected_config=expected,
+                seed=11,
+                label="fixture",
+            )
 
     def test_action_and_policy_distributions_use_cumulative_checkpoint_counters(self) -> None:
         rows = [

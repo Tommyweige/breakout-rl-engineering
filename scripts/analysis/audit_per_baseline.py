@@ -101,6 +101,9 @@ def audit_baseline(config_path: Path) -> dict[str, Any]:
     expected_seeds = [int(seed) for seed in experiment["training_seeds"]]
     expected_milestones = [int(step) for step in experiment["milestones"]]
     evaluation = experiment["evaluation"]
+    expected_lifecycle = str(
+        experiment.get("primary_training_lifecycle", "continuous_single_run")
+    )
     source_commit = str(baseline["source_commit"])
     if not re.fullmatch(r"[0-9a-f]{40}", source_commit):
         raise ValueError("baseline.source_commit must be a full 40-character SHA")
@@ -217,6 +220,7 @@ def audit_baseline(config_path: Path) -> dict[str, Any]:
     )
 
     artifact_records: list[dict[str, Any]] = []
+    continuation_records: list[dict[str, Any]] = []
     source_provenance: dict[int, dict[str, Any]] = {}
     for seed in expected_seeds:
         previous_milestone = 0
@@ -346,6 +350,54 @@ def audit_baseline(config_path: Path) -> dict[str, Any]:
             runtime = training.get("trainer_runtime")
             if not isinstance(runtime, Mapping):
                 runtime = {}
+            resume_provenance = training.get("resume_provenance")
+            is_resumed_checkpoint = isinstance(resume_provenance, Mapping)
+            observed_lifecycle = (
+                "staged_resume" if is_resumed_checkpoint else "initial_run"
+            )
+            lifecycle_checks_passed = True
+            if expected_lifecycle == "continuous_single_run":
+                lifecycle_checks_passed &= _check(
+                    checks,
+                    f"seed {seed} step {milestone} primary run has no staged resume",
+                    False,
+                    is_resumed_checkpoint,
+                )
+                if is_resumed_checkpoint:
+                    lifecycle_checks_passed &= _check(
+                        checks,
+                        f"seed {seed} step {milestone} resumed replay state is saved",
+                        True,
+                        resume_provenance.get("replay_saved"),
+                    )
+                    lifecycle_checks_passed &= _check(
+                        checks,
+                        f"seed {seed} step {milestone} resume preserves replay history",
+                        "exact_replay_continuation",
+                        resume_provenance.get("replay_resume_semantics"),
+                    )
+            elif expected_lifecycle != "staged_resume":
+                lifecycle_checks_passed &= _check(
+                    checks,
+                    "configured primary training lifecycle is supported",
+                    "continuous_single_run or staged_resume",
+                    expected_lifecycle,
+                )
+            continuation_records.append(
+                {
+                    "training_seed": seed,
+                    "transitions": milestone,
+                    "candidate_lifecycle": expected_lifecycle,
+                    "observed_lifecycle": observed_lifecycle,
+                    "stage_start_step": runtime.get("stage_start_step"),
+                    "resume_provenance": (
+                        dict(resume_provenance)
+                        if isinstance(resume_provenance, Mapping)
+                        else None
+                    ),
+                    "primary_lifecycle_compatible": lifecycle_checks_passed,
+                }
+            )
             expected_stage_transitions = milestone - previous_milestone
             _check(
                 checks,
@@ -462,6 +514,14 @@ def audit_baseline(config_path: Path) -> dict[str, Any]:
         "status": "compatible" if passed else "incompatible",
         "reuse_allowed": passed,
         "decision": "reuse_day20_uniform" if passed else "rerun_uniform_baseline",
+        "continuation_semantics": {
+            "candidate_lifecycle": expected_lifecycle,
+            "historical_reference_compatible_with_primary": all(
+                record["primary_lifecycle_compatible"]
+                for record in continuation_records
+            ),
+            "records": continuation_records,
+        },
         "experiment_id": experiment["experiment_id"],
         "baseline": {
             "experiment_id": baseline["experiment_id"],

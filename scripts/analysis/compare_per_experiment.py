@@ -7,7 +7,6 @@ import csv
 import json
 import math
 import statistics
-import subprocess
 import sys
 from pathlib import Path
 from typing import Any, Mapping, Sequence
@@ -40,28 +39,6 @@ def _read_json(path: Path) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise ValueError(f"{path} must contain a JSON object")
     return value
-
-
-def _git_json(commit: str, path: str) -> dict[str, Any]:
-    value = json.loads(
-        subprocess.check_output(
-            ["git", "show", f"{commit}:{path}"],
-            text=True,
-            encoding="utf-8",
-        )
-    )
-    if not isinstance(value, dict):
-        raise ValueError(f"{commit}:{path} must contain a JSON object")
-    return value
-
-
-def _git_csv(commit: str, path: str) -> list[dict[str, str]]:
-    contents = subprocess.check_output(
-        ["git", "show", f"{commit}:{path}"],
-        text=True,
-        encoding="utf-8",
-    )
-    return list(csv.DictReader(contents.splitlines()))
 
 
 def _local_csv(path: Path) -> list[dict[str, str]]:
@@ -119,7 +96,7 @@ def _cumulative_timing_from_metrics(
                 "environment_transitions_per_second": rate,
             }
     raise ValueError(
-        f"PER metrics do not contain a valid throughput record at {transitions} transitions"
+        f"training metrics do not contain a valid throughput record at {transitions} transitions"
     )
 
 
@@ -151,6 +128,99 @@ def _training_runtime(
     return dict(runtime)
 
 
+def _validate_continuous_run(
+    summary: Mapping[str, Any],
+    evaluation: Mapping[str, Any],
+    *,
+    method: str,
+    seed: int,
+    transitions: int,
+    total_steps: int,
+) -> dict[str, Any]:
+    summary_runtime = summary.get("runtime")
+    if not isinstance(summary_runtime, Mapping):
+        raise ValueError(f"{method} seed {seed}: missing run runtime metadata")
+    checkpoint_runtime = _training_runtime(
+        evaluation,
+        label=f"{method} seed {seed} step {transitions}",
+    )
+    if (
+        summary.get("status") != "completed"
+        or summary.get("total_steps") != total_steps
+        or summary_runtime.get("stage_start_step") != 0
+        or summary_runtime.get("stage_training_steps") != total_steps
+        or summary_runtime.get("resume_provenance") is not None
+        or summary_runtime.get("replay_rewarm_steps_remaining") != 0
+        or checkpoint_runtime.get("stage_start_step") != 0
+        or checkpoint_runtime.get("stage_training_steps") != transitions
+    ):
+        raise ValueError(
+            f"{method} seed {seed} step {transitions}: staged resume or replay "
+            "re-warm is incompatible with the continuous primary protocol"
+        )
+    training = evaluation.get("training")
+    if not isinstance(training, Mapping) or training.get("resume_provenance") is not None:
+        raise ValueError(
+            f"{method} seed {seed} step {transitions}: checkpoint records a resumed run"
+        )
+    return checkpoint_runtime
+
+
+def _validate_training_configs_differ_only_by_sampling(
+    per_config: Mapping[str, Any],
+    uniform_config: Mapping[str, Any],
+    *,
+    expected_config: Mapping[str, Any],
+    seed: int,
+    label: str,
+) -> None:
+    for field, expected in expected_config.items():
+        expected_value = seed if field == "seed" else expected
+        per_expected = "prioritized" if field == "replay_sampling" else expected_value
+        uniform_expected = "uniform" if field == "replay_sampling" else expected_value
+        if per_config.get(field) != per_expected:
+            raise ValueError(
+                f"{label}: PER training config field {field} expected "
+                f"{per_expected!r}, got {per_config.get(field)!r}"
+            )
+        if uniform_config.get(field) != uniform_expected:
+            raise ValueError(
+                f"{label}: Uniform training config field {field} expected "
+                f"{uniform_expected!r}, got {uniform_config.get(field)!r}"
+            )
+        if field != "replay_sampling" and per_config.get(field) != uniform_config.get(field):
+            raise ValueError(
+                f"{label}: methods differ on non-replay training field {field}"
+            )
+
+
+def _validate_runtime_parity(
+    uniform_runtime: Mapping[str, Any],
+    per_runtime: Mapping[str, Any],
+    *,
+    seed: int,
+) -> None:
+    fields = (
+        "python_version",
+        "pytorch_version",
+        "torch_cuda_version",
+        "gymnasium_version",
+        "ale_version",
+        "numpy_version",
+        "cpu_thread_count",
+        "precision",
+        "resolved_device",
+        "cuda_device_name",
+        "gpu_model",
+    )
+    for field in fields:
+        if uniform_runtime.get(field) != per_runtime.get(field):
+            raise ValueError(
+                f"seed {seed}: Uniform and PER runtime differ on {field}: "
+                f"{uniform_runtime.get(field)!r} != {per_runtime.get(field)!r}"
+            )
+
+
 def _stage_runtime_value(
     runtime: Mapping[str, Any],
     stage_name: str,
@@ -164,20 +234,6 @@ def _stage_runtime_value(
         return None
     value = stage.get(field)
     return float(value) if isinstance(value, (int, float)) and math.isfinite(float(value)) else None
-
-
-def _metric_value(rows: Sequence[Mapping[str, str]], field: str) -> float | None:
-    for row in reversed(rows):
-        value = row.get(field)
-        if value in (None, ""):
-            continue
-        try:
-            result = float(value)
-        except (TypeError, ValueError):
-            continue
-        if math.isfinite(result):
-            return result
-    return None
 
 
 def _metric_value_at_transition(
@@ -563,13 +619,34 @@ def _format_signed_report_number(value: float, *, digits: int = 2) -> str:
 def _render_markdown_report(comparison: Mapping[str, Any]) -> str:
     conclusion = comparison["conclusion"]
     stability = comparison["training_stability"]
+    primary = comparison["primary_comparison"]
+    historical = comparison["historical_reference"]
+    provenance = comparison["method_provenance"]
     failure_events = stability["numerical_failure_events"]["by_method"]
     completed_runs = stability["run_completion"]["completed_run_count_by_method"]
     training_seed_count = len(stability["by_training_seed"])
     lines = [
-        "# PER vs Uniform Replay experiment report",
+        "# Continuous PER vs Uniform Replay control report",
         "",
         f"**Conclusion:** {conclusion['statement']}",
+        "",
+        (
+            f"Primary comparison: {primary['control']} vs {primary['candidate']}; "
+            f"`{primary['only_intentional_training_config_difference']}` is the "
+            "only intentional training-config difference."
+        ),
+        (
+            "Historical Day 20 Uniform evidence is excluded from the primary A/B: "
+            f"the audit classified it as `{historical['audit_status']}` because resumed "
+            "milestones reset replay and re-warm. Those artifacts remain unchanged."
+        ),
+        (
+            "Recorded source commits: Uniform `"
+            f"{provenance['uniform']['source_commit']}`; PER "
+            f"`{provenance['per']['source_commit']}`. Their training implementation "
+            "fingerprints match; the preserved PER run predates later audit, runner, "
+            "and reporting commits."
+        ),
         "",
         "## Evaluation quality and cumulative training time",
         "",
@@ -598,6 +675,49 @@ def _render_markdown_report(comparison: Mapping[str, Any]) -> str:
                     float(runtime["per_mean_cumulative_seconds"]), digits=1
                 ),
                 ratio=float(runtime["per_over_uniform_cumulative_time_ratio"]),
+            )
+        )
+
+    engineering = comparison["engineering_cost"]["by_seed_and_milestone"]
+    lines.extend(
+        [
+            "",
+            "## Transition and replay overhead",
+            "",
+            "Stage throughput and optimizer rates use elapsed wall time between adjacent checkpoints. Replay profiling values are cumulative from each continuous run through that checkpoint.",
+            "",
+            "| Transitions | Uniform transitions/s | PER transitions/s | Uniform updates/s | PER updates/s | Uniform replay GPU s | PER sampling GPU s | PER priority-update GPU s |",
+            "| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+        ]
+    )
+    for transitions in sorted({int(row["transitions"]) for row in engineering}):
+        rows = [row for row in engineering if int(row["transitions"]) == transitions]
+
+        def average(path: Sequence[str]) -> str:
+            values: list[float] = []
+            for row in rows:
+                value: Any = row
+                for key in path:
+                    value = value.get(key) if isinstance(value, Mapping) else None
+                if isinstance(value, (int, float)) and math.isfinite(float(value)):
+                    values.append(float(value))
+            return (
+                _format_report_number(statistics.mean(values), digits=2)
+                if values
+                else "n/a"
+            )
+
+        lines.append(
+            "| {steps:,} | {uniform_rate} | {per_rate} | {uniform_updates} | "
+            "{per_updates} | {uniform_sample} | {per_sample} | {priority_update} |".format(
+                steps=transitions,
+                uniform_rate=average(("uniform", "environment_transitions_per_second")),
+                per_rate=average(("per", "environment_transitions_per_second")),
+                uniform_updates=average(("optimizer_updates_per_second", "uniform")),
+                per_updates=average(("optimizer_updates_per_second", "per")),
+                uniform_sample=average(("replay_sampling", "uniform_gpu_seconds")),
+                per_sample=average(("replay_sampling", "per_gpu_seconds")),
+                priority_update=average(("per_priority_update", "gpu_seconds")),
             )
         )
 
@@ -669,8 +789,8 @@ def _render_markdown_report(comparison: Mapping[str, Any]) -> str:
             "## Interpretation limits",
             "",
             f"- {conclusion['claim_limit']}",
-            "- Day 20 Uniform training metrics in the pinned source contain detailed scalar diagnostics from the final 250K stage; the stability comparison uses that same transition window for PER.",
-            "- The baseline and PER runs record diagnostics at different frequencies; compare per-run summaries descriptively.",
+            "- Stability diagnostics use the final 250K transitions from both current-code methods and summarize each run before comparing the three training seeds.",
+            "- Exact Git commits differ because the completed PER runs were preserved; the recorded fingerprint covers the model, replay, trainer, environment, and evaluation source trees and matches across methods.",
             "- Priority size is a replay diagnostic, not a model-quality measure.",
             "- This result does not promote or replace the canonical model.",
             "",
@@ -704,13 +824,26 @@ def compare_experiment(
     output_root = output_root.resolve()
     audit_path = output_root / "baseline-compatibility.json"
     audit = _read_json(audit_path)
-    if audit.get("status") != "compatible" or audit.get("reuse_allowed") is not True:
-        raise ValueError("the Day 20 baseline audit does not permit reuse")
+    continuation = audit.get("continuation_semantics", {})
+    if (
+        audit.get("status") != "incompatible"
+        or audit.get("reuse_allowed") is not False
+        or continuation.get("candidate_lifecycle") != "continuous_single_run"
+        or continuation.get("historical_reference_compatible_with_primary") is not False
+    ):
+        raise ValueError(
+            "primary comparison requires the staged Day 20 reference to be "
+            "explicitly excluded by the continuation audit"
+        )
+    manifest = _read_json(output_root / "manifest.json")
+    if manifest.get("primary_comparison_status") != "continuous_uniform_vs_continuous_per":
+        raise ValueError("both continuous current-code method matrices must be complete")
 
-    baseline = config["baseline"]
-    source_commit = str(baseline["source_commit"])
+    historical_reference = config["baseline"]
+    historical_source_commit = str(historical_reference["source_commit"])
     seeds = [int(seed) for seed in config["training_seeds"]]
     milestones = [int(step) for step in config["milestones"]]
+    total_steps = int(config["training_config"]["total_steps"])
     evaluation = config["evaluation"]
     expected_eval_seeds = [int(seed) for seed in evaluation["seeds"]]
     contract_payload = _read_json(Path(str(evaluation["contract"])))
@@ -722,9 +855,165 @@ def compare_experiment(
     milestone_reports: list[dict[str, Any]] = []
     runtime_rows: list[dict[str, Any]] = []
     training_stability_seed_results: list[dict[str, Any]] = []
-    uniform_cumulative_seconds = {seed: 0.0 for seed in seeds}
-    per_cumulative_seconds = {seed: 0.0 for seed in seeds}
+    run_context: dict[int, dict[str, Any]] = {}
+    method_provenance = manifest.get("method_provenance", {})
+    if not isinstance(method_provenance, Mapping):
+        raise ValueError("experiment manifest is missing per-method source provenance")
+    per_source = method_provenance.get("per")
+    uniform_source = method_provenance.get("uniform")
+    if not isinstance(per_source, Mapping) or not isinstance(uniform_source, Mapping):
+        raise ValueError("both current method source records are required")
+    per_fingerprint = per_source.get("training_source_fingerprint", {})
+    uniform_fingerprint = uniform_source.get("training_source_fingerprint", {})
+    if (
+        not isinstance(per_fingerprint, Mapping)
+        or not isinstance(uniform_fingerprint, Mapping)
+        or per_fingerprint.get("sha256") != uniform_fingerprint.get("sha256")
+    ):
+        raise ValueError("Uniform and PER training implementation fingerprints differ")
+
+    stability_start = milestones[-2] if len(milestones) > 1 else 0
+    for training_seed in seeds:
+        per_run_dir = output_root / "runs" / f"per-seed{training_seed}"
+        uniform_run_dir = output_root / "runs" / f"uniform-seed{training_seed}"
+        per_summary = _read_json(per_run_dir / "summary.json")
+        uniform_summary = _read_json(uniform_run_dir / "summary.json")
+        if (
+            per_summary.get("status") != "completed"
+            or uniform_summary.get("status") != "completed"
+            or per_summary.get("total_steps") != total_steps
+            or uniform_summary.get("total_steps") != total_steps
+            or per_summary.get("replay_sampling") != "prioritized"
+            or uniform_summary.get("replay_sampling") != "uniform"
+        ):
+            raise ValueError(f"seed {training_seed}: primary training run is incomplete")
+
+        per_config = _read_json(per_run_dir / "config.json")
+        uniform_config = _read_json(uniform_run_dir / "config.json")
+        _validate_training_configs_differ_only_by_sampling(
+            per_config,
+            uniform_config,
+            expected_config=config["training_config"],
+            seed=training_seed,
+            label=f"seed {training_seed}",
+        )
+        if per_summary.get("model_config") != uniform_summary.get("model_config"):
+            raise ValueError(f"seed {training_seed}: model configurations differ")
+
+        per_runtime = per_summary.get("runtime", {})
+        uniform_runtime = uniform_summary.get("runtime", {})
+        if not isinstance(per_runtime, Mapping) or not isinstance(
+            uniform_runtime, Mapping
+        ):
+            raise ValueError(f"seed {training_seed}: training runtime metadata is missing")
+        _validate_runtime_parity(uniform_runtime, per_runtime, seed=training_seed)
+
+        for method, summary, source_record in (
+            ("per", per_summary, per_source),
+            ("uniform", uniform_summary, uniform_source),
+        ):
+            source_by_seed = source_record.get("by_training_seed", {})
+            source_for_seed = (
+                source_by_seed.get(str(training_seed))
+                if isinstance(source_by_seed, Mapping)
+                else None
+            )
+            summary_runtime = summary.get("runtime", {})
+            if (
+                not isinstance(source_for_seed, Mapping)
+                or not isinstance(summary_runtime, Mapping)
+                or source_for_seed.get("source_commit")
+                != summary_runtime.get("git_commit_sha")
+                or source_for_seed.get("training_source_fingerprint_sha256")
+                != per_fingerprint.get("sha256")
+            ):
+                raise ValueError(
+                    f"{method} seed {training_seed}: source commit/fingerprint "
+                    "does not match its run summary"
+                )
+
+        per_metrics = _local_csv(per_run_dir / "metrics.csv")
+        uniform_metrics = _local_csv(uniform_run_dir / "metrics.csv")
+        per_checkpoint_metrics: dict[int, dict[str, Any]] = {}
+        uniform_checkpoint_metrics: dict[int, dict[str, Any]] = {}
+        for transitions in milestones:
+            per_updates = _metric_value_at_transition(
+                per_metrics,
+                "optimizer_updates",
+                transitions,
+            )
+            uniform_updates = _metric_value_at_transition(
+                uniform_metrics,
+                "optimizer_updates",
+                transitions,
+            )
+            if per_updates is None or uniform_updates is None:
+                raise ValueError(
+                    f"seed {training_seed}: optimizer update count missing at "
+                    f"{transitions} transitions"
+                )
+            per_checkpoint_metrics[transitions] = {
+                "optimizer_updates": per_updates,
+                "throughput": _cumulative_timing_from_metrics(
+                    per_metrics,
+                    transitions,
+                ),
+            }
+            uniform_checkpoint_metrics[transitions] = {
+                "optimizer_updates": uniform_updates,
+                "throughput": _cumulative_timing_from_metrics(
+                    uniform_metrics,
+                    transitions,
+                ),
+            }
+
+        per_diagnostics = _summarize_training_diagnostics(
+            per_metrics,
+            start_transition=stability_start,
+            end_transition=milestones[-1],
+        )
+        uniform_diagnostics = _summarize_training_diagnostics(
+            uniform_metrics,
+            start_transition=stability_start,
+            end_transition=milestones[-1],
+        )
+        per_actions = _cumulative_distribution_at_transition(
+            per_metrics,
+            transitions=milestones[-1],
+            fields=_ACTION_COUNT_FIELDS,
+        )
+        uniform_actions = _cumulative_distribution_at_transition(
+            uniform_metrics,
+            transitions=milestones[-1],
+            fields=_ACTION_COUNT_FIELDS,
+        )
+        per_policy_decisions = _policy_decision_distribution(
+            per_metrics,
+            transitions=milestones[-1],
+        )
+        uniform_policy_decisions = _policy_decision_distribution(
+            uniform_metrics,
+            transitions=milestones[-1],
+        )
+        run_context[training_seed] = {
+            "per_run_dir": per_run_dir,
+            "uniform_run_dir": uniform_run_dir,
+            "per_summary": per_summary,
+            "uniform_summary": uniform_summary,
+            "per_metrics": per_checkpoint_metrics,
+            "uniform_metrics": uniform_checkpoint_metrics,
+            "per_diagnostics": per_diagnostics,
+            "uniform_diagnostics": uniform_diagnostics,
+            "per_actions": per_actions,
+            "uniform_actions": uniform_actions,
+            "per_policy_decisions": per_policy_decisions,
+            "uniform_policy_decisions": uniform_policy_decisions,
+        }
+
     per_update_count_cursor = {seed: 0.0 for seed in seeds}
+    uniform_update_count_cursor = {seed: 0.0 for seed in seeds}
+    per_cumulative_seconds = {seed: 0.0 for seed in seeds}
+    uniform_cumulative_seconds = {seed: 0.0 for seed in seeds}
     previous_transition_milestone = 0
 
     for transitions in milestones:
@@ -737,76 +1026,128 @@ def compare_experiment(
         uniform_seed_spreads: list[float] = []
         per_seed_spreads: list[float] = []
         for training_seed in seeds:
-            baseline_path = str(baseline["evaluation_template"]).format(
-                seed=training_seed,
-                step=transitions,
-            )
-            uniform_eval = _git_json(source_commit, baseline_path)
-            per_eval_path = (
-                output_root
-                / "evaluations"
-                / f"seed-{training_seed}"
-                / f"step-{transitions:08d}"
+            context = run_context[training_seed]
+            uniform_eval_path = (
+                _evaluation_dir(
+                    output_root,
+                    replay_sampling="uniform",
+                    seed=training_seed,
+                    transitions=transitions,
+                )
                 / "results.json"
             )
+            per_eval_path = (
+                _evaluation_dir(
+                    output_root,
+                    replay_sampling="prioritized",
+                    seed=training_seed,
+                    transitions=transitions,
+                )
+                / "results.json"
+            )
+            uniform_eval = _read_json(uniform_eval_path)
             per_eval = _read_json(per_eval_path)
-            per_run_dir = output_root / "runs" / f"per-seed{training_seed}"
-            per_summary = _read_json(per_run_dir / "summary.json")
-            if per_summary.get("status") != "completed":
-                raise ValueError(f"{per_run_dir}: PER training did not complete")
-            if per_summary.get("total_steps") != int(config["training_config"]["total_steps"]):
-                raise ValueError(f"{per_run_dir}: PER training stopped before the frozen budget")
+            per_run_dir = context["per_run_dir"]
+            uniform_run_dir = context["uniform_run_dir"]
+            per_summary = context["per_summary"]
+            uniform_summary = context["uniform_summary"]
             if uniform_eval.get("evaluation_seeds") != expected_eval_seeds:
-                raise ValueError(f"{baseline_path}: Uniform evaluation seeds drifted")
+                raise ValueError(f"{uniform_eval_path}: Uniform evaluation seeds drifted")
             if per_eval.get("evaluation_seeds") != expected_eval_seeds:
                 raise ValueError(f"{per_eval_path}: PER evaluation seeds drifted")
             if uniform_eval.get("episodes_per_seed") != evaluation["episodes_per_seed"]:
-                raise ValueError(f"{baseline_path}: Uniform episodes per seed drifted")
+                raise ValueError(f"{uniform_eval_path}: Uniform episodes per seed drifted")
             if per_eval.get("episodes_per_seed") != evaluation["episodes_per_seed"]:
                 raise ValueError(f"{per_eval_path}: PER episodes per seed drifted")
             if uniform_eval.get("evaluation_epsilon") != evaluation["epsilon"]:
-                raise ValueError(f"{baseline_path}: Uniform evaluation epsilon drifted")
+                raise ValueError(f"{uniform_eval_path}: Uniform evaluation epsilon drifted")
             if per_eval.get("evaluation_epsilon") != evaluation["epsilon"]:
                 raise ValueError(f"{per_eval_path}: PER evaluation epsilon drifted")
             if uniform_eval.get("total_episodes") != expected_episode_count:
-                raise ValueError(f"{baseline_path}: Uniform episode count drifted")
+                raise ValueError(f"{uniform_eval_path}: Uniform episode count drifted")
             if per_eval.get("total_episodes") != expected_episode_count:
                 raise ValueError(f"{per_eval_path}: PER episode count drifted")
             candidate_training = per_eval.get("training")
-            if not isinstance(candidate_training, Mapping):
-                raise ValueError(f"{per_eval_path}: missing PER training metadata")
-            candidate_config = candidate_training.get("training_config")
-            if not isinstance(candidate_config, Mapping):
-                raise ValueError(f"{per_eval_path}: missing PER training config")
-            for field, expected in config["training_config"].items():
-                expected_value = training_seed if field == "seed" else expected
-                if candidate_config.get(field) != expected_value:
-                    raise ValueError(
-                        f"{per_eval_path}: PER training config field {field} "
-                        f"expected {expected_value!r}, got {candidate_config.get(field)!r}"
-                    )
-            if candidate_training.get("contract_id") != expected_contract_id:
-                raise ValueError(f"{per_eval_path}: PER training Contract v2 id drifted")
-            if candidate_eval_checkpoint_step := per_eval.get("checkpoint", {}).get(
-                "training_steps"
+            uniform_training = uniform_eval.get("training")
+            if not isinstance(candidate_training, Mapping) or not isinstance(
+                uniform_training, Mapping
             ):
-                if candidate_eval_checkpoint_step != transitions:
-                    raise ValueError(f"{per_eval_path}: checkpoint transition count drifted")
-            elif per_eval.get("checkpoint", {}).get("step") != transitions:
-                raise ValueError(f"{per_eval_path}: checkpoint transition count is missing")
-            if per_eval.get("schema_version") != 2:
-                raise ValueError(f"{per_eval_path}: PER evaluation schema changed")
-            if per_eval.get("checkpoint", {}).get("format_version") != 2:
-                raise ValueError(f"{per_eval_path}: PER checkpoint schema changed")
+                raise ValueError(
+                    f"seed {training_seed} at {transitions}: a method evaluation "
+                    "is missing training metadata"
+                )
+            candidate_config = candidate_training.get("training_config")
+            uniform_config = uniform_training.get("training_config")
+            if not isinstance(candidate_config, Mapping) or not isinstance(
+                uniform_config, Mapping
+            ):
+                raise ValueError(
+                    f"seed {training_seed} at {transitions}: a method evaluation "
+                    "is missing training_config"
+                )
+            _validate_training_configs_differ_only_by_sampling(
+                candidate_config,
+                uniform_config,
+                expected_config=config["training_config"],
+                seed=training_seed,
+                label=f"seed {training_seed} step {transitions}",
+            )
+            if (
+                candidate_training.get("contract_id") != expected_contract_id
+                or uniform_training.get("contract_id") != expected_contract_id
+            ):
+                raise ValueError(
+                    f"seed {training_seed} at {transitions}: Contract v2 id drifted"
+                )
+            for method, payload, path in (
+                ("Uniform", uniform_eval, uniform_eval_path),
+                ("PER", per_eval, per_eval_path),
+            ):
+                checkpoint_metadata = payload.get("checkpoint", {})
+                if (
+                    not isinstance(checkpoint_metadata, Mapping)
+                    or payload.get("schema_version") != 2
+                    or checkpoint_metadata.get("format_version") != 2
+                    or checkpoint_metadata.get("training_steps") != transitions
+                    or not isinstance(checkpoint_metadata.get("sha256"), str)
+                    or not re.fullmatch(
+                        r"[0-9a-f]{64}", checkpoint_metadata.get("sha256", "")
+                    )
+                ):
+                    raise ValueError(
+                        f"{path}: {method} evaluation/checkpoint schema, hash, or "
+                        "step drifted"
+                    )
+            uniform_runtime = _validate_continuous_run(
+                uniform_summary,
+                uniform_eval,
+                method="uniform",
+                seed=training_seed,
+                transitions=transitions,
+                total_steps=total_steps,
+            )
+            per_runtime = _validate_continuous_run(
+                per_summary,
+                per_eval,
+                method="prioritized",
+                seed=training_seed,
+                transitions=transitions,
+                total_steps=total_steps,
+            )
 
-            uniform_returns = _episode_returns(uniform_eval, label=baseline_path)
+            uniform_returns = _episode_returns(
+                uniform_eval,
+                label=str(uniform_eval_path),
+            )
             per_returns = _episode_returns(per_eval, label=str(per_eval_path))
             if set(uniform_returns) != set(per_returns):
                 raise ValueError(
                     f"seed {training_seed} at {transitions}: paired evaluation episode keys differ"
                 )
             if set(key[0] for key in uniform_returns) != set(expected_eval_seeds):
-                raise ValueError(f"{baseline_path}: evaluation episode seed grouping drifted")
+                raise ValueError(
+                    f"{uniform_eval_path}: evaluation episode seed grouping drifted"
+                )
             paired_differences = [
                 per_returns[key] - uniform_returns[key]
                 for key in sorted(uniform_returns)
@@ -824,77 +1165,49 @@ def compare_experiment(
             uniform_seed_spreads.append(float(uniform_stats["sample_std"]))
             per_seed_spreads.append(float(per_stats["sample_std"]))
 
-            baseline_metrics_path = str(baseline["training_metrics_template"]).format(
-                seed=training_seed
-            )
-            baseline_metrics = _git_csv(source_commit, baseline_metrics_path)
-            per_metrics = _local_csv(per_run_dir / "metrics.csv")
-            uniform_runtime = _training_runtime(
-                uniform_eval,
-                label=baseline_path,
-            )
-            per_runtime = _training_runtime(
-                per_eval,
-                label=str(per_eval_path),
-            )
             milestone_delta = transitions - previous_transition_milestone
-            uniform_stage_seconds = float(uniform_runtime["wall_clock_seconds"])
-            uniform_cumulative_seconds[training_seed] += uniform_stage_seconds
+            prior_uniform_seconds = uniform_cumulative_seconds[training_seed]
+            uniform_elapsed_seconds = float(uniform_runtime["wall_clock_seconds"])
+            uniform_stage_seconds = uniform_elapsed_seconds - prior_uniform_seconds
+            if uniform_stage_seconds <= 0.0:
+                raise ValueError(
+                    f"{uniform_eval_path}: non-increasing continuous Uniform wall time"
+                )
+            uniform_cumulative_seconds[training_seed] = uniform_elapsed_seconds
             uniform_timing = {
                 "stage_elapsed_seconds": uniform_stage_seconds,
-                "elapsed_seconds": uniform_cumulative_seconds[training_seed],
-                "environment_transitions_per_second": (
-                    milestone_delta / uniform_stage_seconds
-                ),
-                "source": "checkpoint trainer_runtime; cumulative stages summed",
+                "elapsed_seconds": uniform_elapsed_seconds,
+                "environment_transitions_per_second": milestone_delta / uniform_stage_seconds,
+                "source": "continuous-run checkpoint trainer_runtime",
             }
-            per_checkpoint_timing = _cumulative_timing_from_metrics(
-                per_metrics,
-                transitions,
-            )
-            per_cumulative_seconds[training_seed] = per_checkpoint_timing[
-                "elapsed_seconds"
-            ]
-            prior_per_cumulative = 0.0
-            if previous_transition_milestone > 0:
-                previous_checkpoint_timing = _cumulative_timing_from_metrics(
-                    per_metrics,
-                    previous_transition_milestone,
-                )
-                prior_per_cumulative = previous_checkpoint_timing["elapsed_seconds"]
-            per_stage_seconds = (
-                per_cumulative_seconds[training_seed] - prior_per_cumulative
-            )
+            prior_per_seconds = per_cumulative_seconds[training_seed]
+            per_elapsed_seconds = float(per_runtime["wall_clock_seconds"])
+            per_stage_seconds = per_elapsed_seconds - prior_per_seconds
             if per_stage_seconds <= 0.0:
-                raise ValueError(f"{per_eval_path}: non-increasing PER checkpoint wall time")
+                raise ValueError(
+                    f"{per_eval_path}: non-increasing continuous PER wall time"
+                )
+            per_cumulative_seconds[training_seed] = per_elapsed_seconds
             per_timing = {
                 "stage_elapsed_seconds": per_stage_seconds,
-                "elapsed_seconds": per_cumulative_seconds[training_seed],
+                "elapsed_seconds": per_elapsed_seconds,
                 "environment_transitions_per_second": milestone_delta / per_stage_seconds,
-                "source": "metrics.csv cumulative throughput at exact milestone; one continuous PER run",
+                "source": "continuous-run checkpoint trainer_runtime",
             }
-            uniform_updates_per_second = uniform_runtime.get(
-                "optimizer_updates_per_second"
+            uniform_updates = context["uniform_metrics"][transitions][
+                "optimizer_updates"
+            ]
+            per_updates = context["per_metrics"][transitions]["optimizer_updates"]
+            uniform_updates_per_second = (
+                (uniform_updates - uniform_update_count_cursor[training_seed])
+                / uniform_stage_seconds
             )
-            if not isinstance(uniform_updates_per_second, (int, float)):
-                uniform_updates_per_second = _metric_value(
-                    baseline_metrics,
-                    "optimizer_updates_per_second",
-                )
-            candidate_updates = _metric_value_at_transition(
-                per_metrics,
-                "optimizer_updates",
-                transitions,
-            )
-            if candidate_updates is None:
-                raise ValueError(
-                    f"{per_run_dir}: metrics do not record optimizer_updates at {transitions}"
-                )
             per_updates_per_second = (
-                (candidate_updates - per_update_count_cursor[training_seed])
+                (per_updates - per_update_count_cursor[training_seed])
                 / per_stage_seconds
             )
-            per_update_count_cursor[training_seed] = candidate_updates
+            uniform_update_count_cursor[training_seed] = uniform_updates
+            per_update_count_cursor[training_seed] = per_updates
             uniform_stage_timings = uniform_runtime.get("stage_timings", {})
             per_stage_timings = per_runtime.get("stage_timings", {})
             if not isinstance(uniform_stage_timings, Mapping):
@@ -919,6 +1232,9 @@ def compare_experiment(
                 "paired_episode_count": paired_stats["n"],
                 "uniform_elapsed_seconds": uniform_timing["elapsed_seconds"],
                 "per_elapsed_seconds": per_timing["elapsed_seconds"],
+                "uniform_checkpoint_runtime_seconds": uniform_runtime[
+                    "wall_clock_seconds"
+                ],
                 "per_checkpoint_runtime_seconds": per_runtime["wall_clock_seconds"],
                 "per_transitions_per_second": per_timing[
                     "environment_transitions_per_second"
@@ -937,6 +1253,11 @@ def compare_experiment(
                     uniform_runtime,
                     "gpu_replay_gather_cast",
                     "gpu_seconds",
+                ),
+                "uniform_replay_sample_wall_seconds": _stage_runtime_value(
+                    uniform_runtime,
+                    "gpu_replay_gather_cast",
+                    "wall_seconds",
                 ),
                 "per_sampling_gpu_seconds": _stage_runtime_value(
                     per_runtime,
@@ -968,7 +1289,9 @@ def compare_experiment(
                     "sha256"
                 ),
                 "per_checkpoint_sha256": per_eval.get("checkpoint", {}).get("sha256"),
-                "uniform_eval_artifact": baseline_path,
+                "uniform_eval_artifact": uniform_eval_path.relative_to(
+                    output_root
+                ).as_posix(),
                 "per_eval_artifact": per_eval_path.relative_to(output_root).as_posix(),
             }
             detailed_rows.append(row)
@@ -993,6 +1316,9 @@ def compare_experiment(
                     },
                     "replay_sampling": {
                         "uniform_gpu_seconds": row["uniform_replay_sample_gpu_seconds"],
+                        "uniform_host_dispatch_seconds": row[
+                            "uniform_replay_sample_wall_seconds"
+                        ],
                         "per_gpu_seconds": row["per_sampling_gpu_seconds"],
                         "per_host_dispatch_seconds": row["per_sampling_wall_seconds"],
                     },
@@ -1011,49 +1337,22 @@ def compare_experiment(
                 }
             )
             if transitions == milestones[-1]:
-                stability_start = milestones[-2] if len(milestones) > 1 else 0
-                uniform_diagnostics = _summarize_training_diagnostics(
-                    baseline_metrics,
-                    start_transition=stability_start,
-                    end_transition=transitions,
-                )
-                per_diagnostics = _summarize_training_diagnostics(
-                    per_metrics,
-                    start_transition=stability_start,
-                    end_transition=transitions,
-                )
-                uniform_actions = _cumulative_distribution_at_transition(
-                    baseline_metrics,
-                    transitions=transitions,
-                    fields=_ACTION_COUNT_FIELDS,
-                )
-                per_actions = _cumulative_distribution_at_transition(
-                    per_metrics,
-                    transitions=transitions,
-                    fields=_ACTION_COUNT_FIELDS,
-                )
-                uniform_policy_decisions = _policy_decision_distribution(
-                    baseline_metrics,
-                    transitions=transitions,
-                )
-                per_policy_decisions = _policy_decision_distribution(
-                    per_metrics,
-                    transitions=transitions,
-                )
                 training_stability_seed_results.append(
                     {
                         "training_seed": training_seed,
                         "uniform": {
-                            "training_status": "completed",
-                            "diagnostics": uniform_diagnostics,
-                            "actions": uniform_actions,
-                            "policy_decisions": uniform_policy_decisions,
+                            "training_status": uniform_summary["status"],
+                            "diagnostics": context["uniform_diagnostics"],
+                            "actions": context["uniform_actions"],
+                            "policy_decisions": context[
+                                "uniform_policy_decisions"
+                            ],
                         },
                         "per": {
                             "training_status": per_summary["status"],
-                            "diagnostics": per_diagnostics,
-                            "actions": per_actions,
-                            "policy_decisions": per_policy_decisions,
+                            "diagnostics": context["per_diagnostics"],
+                            "actions": context["per_actions"],
+                            "policy_decisions": context["per_policy_decisions"],
                         },
                     }
                 )
@@ -1087,11 +1386,62 @@ def compare_experiment(
         end_transition=milestones[-1],
     )
     conclusion = _build_experiment_conclusion(milestone_reports, runtime_rows)
+    runtime_provenance_by_method = {}
+    for method in ("uniform", "per"):
+        source_record = method_provenance[method]
+        runtime_provenance_by_method[method] = {
+            "source_commit": source_record["source_commit"],
+            "training_source_fingerprint_sha256": source_record[
+                "training_source_fingerprint"
+            ]["sha256"],
+            "by_training_seed": {
+                str(seed): {
+                    "python_version": run_context[seed][f"{method}_summary"][
+                        "runtime"
+                    ].get("python_version"),
+                    "pytorch_version": run_context[seed][f"{method}_summary"][
+                        "runtime"
+                    ].get("pytorch_version"),
+                    "torch_cuda_version": run_context[seed][f"{method}_summary"][
+                        "runtime"
+                    ].get("torch_cuda_version"),
+                    "cuda_device_name": run_context[seed][f"{method}_summary"][
+                        "runtime"
+                    ].get("cuda_device_name"),
+                    "gpu_model": run_context[seed][f"{method}_summary"][
+                        "runtime"
+                    ].get("gpu_model"),
+                    "cpu_thread_count": run_context[seed][f"{method}_summary"][
+                        "runtime"
+                    ].get("cpu_thread_count"),
+                    "precision": run_context[seed][f"{method}_summary"][
+                        "runtime"
+                    ].get("precision"),
+                }
+                for seed in seeds
+            },
+        }
     comparison = {
         "schema_version": 2,
         "experiment_id": config["experiment_id"],
         "baseline_audit": "baseline-compatibility.json",
-        "baseline_source_commit": source_commit,
+        "primary_comparison": {
+            "control": "continuous Uniform Replay",
+            "candidate": "continuous Prioritized Experience Replay",
+            "lifecycle": "continuous_single_run",
+            "only_intentional_training_config_difference": "replay_sampling",
+            "training_source_fingerprint_sha256": per_fingerprint["sha256"],
+        },
+        "historical_reference": {
+            "source_commit": historical_source_commit,
+            "audit_status": audit["status"],
+            "role": "secondary_reference_only",
+            "excluded_from_primary_reason": (
+                "Day 20 250K/500K milestones resumed from checkpoints without "
+                "saved replay state and re-warmed a fresh replay buffer."
+            ),
+        },
+        "method_provenance": runtime_provenance_by_method,
         "candidate_algorithm": {
             "algorithm": config["training_config"]["algorithm"],
             "architecture": config["training_config"]["architecture"],
@@ -1121,9 +1471,10 @@ def compare_experiment(
         "engineering_cost": {
             "comparison_unit": "same training seed and transition milestone",
             "source_note": (
-                "Day 20 stage runtimes are accumulated across screening, pilot, and main checkpoints. "
-                "PER cumulative wall time comes from metrics.csv throughput at exact transition milestones; "
-                "the checkpoint runtime is retained as a cross-check. The current profiler records replay sampling and priority-update stages."
+                "Uniform and PER are measured by the same current-code continuous runner. "
+                "Cumulative wall time comes from each checkpoint's trainer_runtime; "
+                "stage rates and optimizer updates/sec are differences between adjacent "
+                "continuous checkpoints. Historical Day 20 timing is excluded."
             ),
             "by_seed_and_milestone": runtime_rows,
         },
@@ -1224,7 +1575,7 @@ def write_comparison(
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Compare the frozen Day 20 Uniform baseline with completed PER runs."
+        description="Compare completed continuous Uniform and PER runs."
     )
     parser.add_argument("--config", type=Path, default=Path("configs/per_experiment.json"))
     parser.add_argument("--output-root", type=Path, default=Path("experiments/per"))
@@ -1240,7 +1591,6 @@ def main(argv: Sequence[str] | None = None) -> int:
         KeyError,
         TypeError,
         ValueError,
-        subprocess.CalledProcessError,
     ) as error:
         print(f"PER comparison failed: {error}", file=sys.stderr)
         return 2
