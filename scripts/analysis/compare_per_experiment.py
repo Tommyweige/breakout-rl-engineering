@@ -1159,7 +1159,7 @@ def write_comparison(
                 "training_seed": seed_result["training_seed"],
                 "method": method,
                 "training_status": method_result["training_status"],
-                "non_finite_diagnostic_event": int(
+                "diagnostic_event": int(
                     _has_non_finite_diagnostic_event(method_result)
                 ),
                 "requested_window_start": diagnostics[
