@@ -374,6 +374,17 @@ def _aggregate_training_stability(
             ]
             action_fraction_means[action][method] = _describe(fractions)
 
+    failure_events_by_seed = [
+        {
+            "training_seed": seed_result["training_seed"],
+            **{
+                method: int(_has_numerical_failure_event(seed_result[method]))
+                for method in ("uniform", "per")
+            },
+        }
+        for seed_result in per_seed
+    ]
+
     return {
         "comparison_window": {
             "start_transition": start_transition,
@@ -409,15 +420,37 @@ def _aggregate_training_stability(
             )
             for method in ("uniform", "per")
         },
-        "collapse_assessment": {
+        "numerical_failure_events": {
+            "unit": "training run, at most one event per method and seed",
+            "rule": (
+                "an event is a non-finite or invalid training diagnostic in the "
+                "comparison window, or failure to complete the frozen 500K budget"
+            ),
+            "by_training_seed": failure_events_by_seed,
+            "by_method": {
+                method: sum(int(row[method]) for row in failure_events_by_seed)
+                for method in ("uniform", "per")
+            },
+        },
+        "behavioral_collapse_assessment": {
             "status": "not_classified",
             "reason": (
-                "Issue #12 does not freeze a numeric collapse threshold. The "
-                "report includes run completion, non-finite counts, and paired "
-                "diagnostics without inventing a collapse label."
+                "Issue #12 does not freeze a reward-based collapse threshold. "
+                "The report compares paired evaluation returns and training "
+                "diagnostics without inventing a behavioral-collapse label."
             ),
         },
     }
+
+
+def _has_numerical_failure_event(method_result: Mapping[str, Any]) -> bool:
+    diagnostics = method_result["diagnostics"]
+    return (
+        method_result.get("training_status") != "completed"
+        or int(diagnostics["non_finite_record_count"]) > 0
+        or int(diagnostics["non_finite_value_count"]) > 0
+        or int(diagnostics["invalid_value_count"]) > 0
+    )
 
 
 def _build_experiment_conclusion(
@@ -512,6 +545,7 @@ def _format_signed_report_number(value: float, *, digits: int = 2) -> str:
 def _render_markdown_report(comparison: Mapping[str, Any]) -> str:
     conclusion = comparison["conclusion"]
     stability = comparison["training_stability"]
+    failure_events = stability["numerical_failure_events"]["by_method"]
     lines = [
         "# PER vs Uniform Replay experiment report",
         "",
@@ -604,11 +638,12 @@ def _render_markdown_report(comparison: Mapping[str, Any]) -> str:
     lines.extend(
         [
             "",
-            "### Non-finite values and collapse handling",
+            "### Non-finite and training-failure events",
             "",
-            f"Non-finite diagnostic records in the final 250K-transition window: Uniform {stability['non_finite_diagnostic_records']['uniform']}, PER {stability['non_finite_diagnostic_records']['per']}. Non-finite scalar values: Uniform {stability['non_finite_diagnostic_values']['uniform']}, PER {stability['non_finite_diagnostic_values']['per']}. All six runs completed 500K transitions.",
+            f"Numerical failure event rule (one event per run): any non-finite/invalid diagnostic in the final 250K window or failure to complete 500K transitions. Events: Uniform {failure_events['uniform']}, PER {failure_events['per']}. Non-finite scalar values: Uniform {stability['non_finite_diagnostic_values']['uniform']}, PER {stability['non_finite_diagnostic_values']['per']}.",
             "",
-            stability["collapse_assessment"]["reason"],
+            "Behavioral score collapse is not classified because Issue #12 defines no reward-based collapse threshold.",
+            stability["behavioral_collapse_assessment"]["reason"],
             "",
             "## Interpretation limits",
             "",
@@ -1103,6 +1138,9 @@ def write_comparison(
                 "training_seed": seed_result["training_seed"],
                 "method": method,
                 "training_status": method_result["training_status"],
+                "numerical_failure_event": int(
+                    _has_numerical_failure_event(method_result)
+                ),
                 "requested_window_start": diagnostics[
                     "requested_transition_window"
                 ]["start"],

@@ -11,6 +11,7 @@ from scripts.analysis.compare_per_experiment import (
     _cumulative_distribution_at_transition,
     _describe,
     _episode_returns,
+    _has_numerical_failure_event,
     _last_row_at_or_before_transition,
     _metric_value_at_transition,
     _policy_decision_distribution,
@@ -126,6 +127,36 @@ class PERExperimentAnalysisTests(unittest.TestCase):
         self.assertEqual(summary["metrics"]["loss"]["mean"], 2.0)
         self.assertEqual(summary["non_finite_record_count"], 1)
         self.assertEqual(summary["non_finite_value_count"], 1)
+
+    def test_numerical_failure_event_is_nonfinite_or_incomplete_run(self) -> None:
+        completed = {
+            "training_status": "completed",
+            "diagnostics": {
+                "non_finite_record_count": 0,
+                "non_finite_value_count": 0,
+                "invalid_value_count": 0,
+            },
+        }
+        non_finite = {
+            "training_status": "completed",
+            "diagnostics": {
+                "non_finite_record_count": 1,
+                "non_finite_value_count": 2,
+                "invalid_value_count": 0,
+            },
+        }
+        incomplete = {
+            "training_status": "incomplete",
+            "diagnostics": {
+                "non_finite_record_count": 0,
+                "non_finite_value_count": 0,
+                "invalid_value_count": 0,
+            },
+        }
+
+        self.assertFalse(_has_numerical_failure_event(completed))
+        self.assertTrue(_has_numerical_failure_event(non_finite))
+        self.assertTrue(_has_numerical_failure_event(incomplete))
 
     def test_action_and_policy_distributions_use_cumulative_checkpoint_counters(self) -> None:
         rows = [
