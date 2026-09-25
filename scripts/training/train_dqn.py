@@ -52,7 +52,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--resume",
         type=Path,
         default=None,
-        help="checkpoint to restore; replay data is warmed up again",
+        help="checkpoint to restore; exact replay restore is required by default",
+    )
+    parser.add_argument(
+        "--allow-replay-rewarm",
+        action="store_true",
+        help="explicitly allow a non-equivalent fresh-replay warm-start",
     )
     parser.add_argument("--batch-size", type=int, default=None)
     parser.add_argument("--replay-capacity", type=int, default=None)
@@ -78,6 +83,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--no-reward-clip",
         action="store_true",
         help="store raw rewards for training instead of sign-clipped rewards",
+    )
+    parser.add_argument(
+        "--life-loss-penalty",
+        type=float,
+        default=None,
+        help="additional training-reward term when fire_reset_life_loss is true",
     )
     return parser
 
@@ -134,6 +145,8 @@ def _config_from_args(args: argparse.Namespace) -> DQNConfig:
             overrides[name] = value
     if args.no_reward_clip:
         overrides["reward_clip"] = False
+    if args.life_loss_penalty is not None:
+        overrides["life_loss_penalty"] = args.life_loss_penalty
     if args.algorithm is not None:
         overrides["algorithm"] = args.algorithm
     if args.contract is not None:
@@ -196,6 +209,7 @@ def main(argv: list[str] | None = None) -> int:
             config,
             run_dir=run_path,
             resume_from=args.resume,
+            allow_replay_rewarm=args.allow_replay_rewarm,
         )
         summary = trainer.train()
     except NonFiniteTrainingError as error:

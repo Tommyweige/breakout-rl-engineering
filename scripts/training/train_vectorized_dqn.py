@@ -54,12 +54,29 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--replay-backend", choices=("cpu", "gpu"), default=None)
     parser.add_argument("--run-dir", type=Path, default=None)
     parser.add_argument("--run-id", default=None)
+    parser.add_argument(
+        "--resume",
+        type=Path,
+        default=None,
+        help="checkpoint to restore; exact replay restore is required by default",
+    )
+    parser.add_argument(
+        "--allow-replay-rewarm",
+        action="store_true",
+        help="explicitly allow a non-equivalent fresh-replay warm-start",
+    )
     parser.add_argument("--batch-size", type=int, default=None)
     parser.add_argument("--replay-capacity", type=int, default=None)
     parser.add_argument("--learning-starts", type=int, default=None)
     parser.add_argument("--train-frequency", type=int, default=None)
     parser.add_argument("--target-update-interval", type=int, default=None)
     parser.add_argument("--checkpoint-interval", type=int, default=None)
+    parser.add_argument(
+        "--life-loss-penalty",
+        type=float,
+        default=None,
+        help="additional training-reward term when fire_reset_life_loss is true",
+    )
     parser.add_argument("--cpu-threads", type=int, default=None)
     parser.add_argument("--profile-stages", action="store_true")
     parser.add_argument(
@@ -155,6 +172,8 @@ def _config_from_args(args: argparse.Namespace) -> DQNConfig:
         value = getattr(args, name)
         if value is not None:
             overrides[name] = value
+    if args.life_loss_penalty is not None:
+        overrides["life_loss_penalty"] = args.life_loss_penalty
     if args.profile_stages:
         overrides["profile_stages"] = True
     if args.strict_action_selection_parity is not None:
@@ -223,7 +242,13 @@ def main(argv: list[str] | None = None) -> int:
         **breakout_environment_kwargs(contract),
     )
     try:
-        trainer = VectorizedDQNTrainer(env, config, run_dir=run_path)
+        trainer = VectorizedDQNTrainer(
+            env,
+            config,
+            run_dir=run_path,
+            resume_from=args.resume,
+            allow_replay_rewarm=args.allow_replay_rewarm,
+        )
         summary = trainer.train()
     except (RuntimeError, ValueError) as error:
         print(f"Vectorized training could not start or was stopped: {error}")

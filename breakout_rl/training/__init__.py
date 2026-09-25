@@ -6,6 +6,16 @@ utilities can be imported without loading the full training runtime.
 
 from breakout_rl.training.config import DQNConfig, SUPPORTED_ALGORITHMS, normalize_algorithm
 from breakout_rl.training.metrics import METRIC_FIELDS, MetricsLogger
+from breakout_rl.training.reward_shaping import (
+    LIFE_LOSS_INFO_KEY,
+    reward_design_metadata,
+    shape_training_reward,
+    validate_life_loss_penalty,
+)
+from breakout_rl.training.survival import (
+    compute_episode_survival_metrics,
+    life_losses_per_1000_steps,
+)
 
 __all__ = [
     "DQNConfig",
@@ -15,6 +25,12 @@ __all__ = [
     "DQNTrainingStepResult",
     "METRIC_FIELDS",
     "MetricsLogger",
+    "LIFE_LOSS_INFO_KEY",
+    "reward_design_metadata",
+    "shape_training_reward",
+    "validate_life_loss_penalty",
+    "compute_episode_survival_metrics",
+    "life_losses_per_1000_steps",
     "NonFiniteTrainingError",
     "TrainingStepCallback",
     "TrainingStepSnapshot",

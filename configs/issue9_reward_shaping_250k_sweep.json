@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "experiment": "issue-9-reward-shaping-stage2",
+  "stage": "250k_penalty_sweep",
+  "algorithm": "double_dqn",
+  "architecture": "dueling",
+  "training_seed": 2022,
+  "training_transitions": 250000,
+  "checkpoint_steps": [62500, 125000, 187500, 250000],
+  "penalties": [0.0, -0.25, -0.5, -1.0],
+  "optional_penalties": [-0.1],
+  "training_configs": [
+    "configs/issue9_reward_shaping_250k_baseline.json",
+    "configs/issue9_reward_shaping_250k_penalty_minus025.json",
+    "configs/issue9_reward_shaping_250k_penalty_minus05.json",
+    "configs/issue9_reward_shaping_250k_penalty_minus1.json"
+  ],
+  "evaluation_config": "configs/eval/reward_shaping_eval.json",
+  "contract": "configs/eval/breakout_contract_v2.json",
+  "evaluation_score": "raw Atari reward only",
+  "selection_status": "candidate screening; not final model promotion"
+}
