@@ -210,6 +210,39 @@ describe('dual game loop', () => {
     expect(loop.runtimeDiagnostics.humanRawFrameDelta).toBe(human.actions.length);
   });
 
+  it('does not add a full idle interval after an Agent decision overruns its target', async () => {
+    const human = new FakeHumanEnvironment();
+    const agent = new FakeAgentEnvironment();
+    let inFlight = 0;
+    let maxInFlight = 0;
+    const loop = new DualGameLoop({
+      human,
+      agent,
+      agentRuntime: { outerActionRepeat: 4, stickyActionProbability: 0.25 },
+      humanCommand: () => ({ kind: 'discrete', actionIndex: 0 }),
+      agentTargetFps: 15,
+      infer: () => new Promise((resolve) => {
+        inFlight += 1;
+        maxInFlight = Math.max(maxInFlight, inFlight);
+        setTimeout(() => {
+          inFlight -= 1;
+          resolve(policyResult(1));
+        }, 80);
+      }),
+    });
+
+    loop.start();
+    await wait(420);
+    loop.pause();
+    const diagnostics = loop.runtimeDiagnostics;
+    await wait(90);
+    loop.destroy();
+
+    expect(agent.actions.length).toBeGreaterThanOrEqual(3);
+    expect(diagnostics.agentDecisionP50Ms).toBeLessThan(125);
+    expect(maxInFlight).toBe(1);
+  });
+
   it('stops both simulation clocks on pause and clears work on destroy', async () => {
     const human = new FakeHumanEnvironment();
     const agent = new FakeAgentEnvironment();

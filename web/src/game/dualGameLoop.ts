@@ -255,8 +255,11 @@ export class DualGameLoop {
         .finally(() => {
           if (this.pendingAgentDecision === promise) this.pendingAgentDecision = null;
           if (this.status === 'running' && !this.destroyed) {
-            if ((this.agentDeadline ?? 0) <= now()) this.agentDeadline = now() + this.agentIntervalMs();
-            this.scheduleAgent(Math.max(0, (this.agentDeadline ?? now()) - now()));
+            const completedAt = now();
+            // A slow decision never triggers catch-up work, but it also should
+            // not incur another full target interval before the next decision.
+            if ((this.agentDeadline ?? 0) <= completedAt) this.agentDeadline = completedAt;
+            this.scheduleAgent(Math.max(0, (this.agentDeadline ?? completedAt) - completedAt));
           }
           this.emitDiagnostics();
         });
