@@ -639,6 +639,79 @@ def _format_signed_report_number(value: float, *, digits: int = 2) -> str:
     return f"{value:+,.{digits}f}"
 
 
+def _render_evaluation_quality_tables(
+    conclusion: Mapping[str, Any],
+    milestones: Sequence[Mapping[str, Any]],
+) -> list[str]:
+    milestone_by_step = {
+        int(milestone["transitions"]): milestone for milestone in milestones
+    }
+    lines = [
+        "| Transitions | Uniform mean (median) | PER mean (median) | PER − Uniform mean | Uniform seconds | PER seconds | PER / Uniform time |",
+        "| ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+    ]
+    for quality in conclusion["quality_by_milestone"]:
+        transitions = int(quality["transitions"])
+        milestone = milestone_by_step[transitions]
+        runtime = next(
+            item
+            for item in conclusion["cumulative_runtime_by_milestone"]
+            if int(item["transitions"]) == transitions
+        )
+        uniform = milestone["uniform_across_training_seeds"]
+        per = milestone["per_across_training_seeds"]
+        lines.append(
+            "| {steps:,} | {uniform_mean} ({uniform_median}) | "
+            "{per_mean} ({per_median}) | {delta} | {uniform_time} | "
+            "{per_time} | {ratio:.2f}x |".format(
+                steps=transitions,
+                uniform_mean=_format_report_number(float(uniform["mean"])),
+                uniform_median=_format_report_number(float(uniform["median"])),
+                per_mean=_format_report_number(float(per["mean"])),
+                per_median=_format_report_number(float(per["median"])),
+                delta=_format_signed_report_number(
+                    float(quality["per_minus_uniform_mean_return"])
+                ),
+                uniform_time=_format_report_number(
+                    float(runtime["uniform_mean_cumulative_seconds"]), digits=1
+                ),
+                per_time=_format_report_number(
+                    float(runtime["per_mean_cumulative_seconds"]), digits=1
+                ),
+                ratio=float(runtime["per_over_uniform_cumulative_time_ratio"]),
+            )
+        )
+
+    lines.extend(
+        [
+            "",
+            "### Per-training-seed return means",
+            "",
+            "Each seed mean averages 15 raw-score evaluation episodes (three evaluation seeds × five episodes); paired differences align evaluation seed and episode index.",
+            "",
+            "| Transitions | Training seed | Uniform mean | PER mean | Paired eval mean Δ (PER − Uniform) | Paired episodes |",
+            "| ---: | ---: | ---: | ---: | ---: | ---: |",
+        ]
+    )
+    for milestone in milestones:
+        for seed_result in milestone["per_seed"]:
+            lines.append(
+                "| {steps:,} | {seed} | {uniform} | {per} | {delta} | {episodes} |".format(
+                    steps=int(milestone["transitions"]),
+                    seed=int(seed_result["training_seed"]),
+                    uniform=_format_report_number(
+                        float(seed_result["uniform_mean_return"])
+                    ),
+                    per=_format_report_number(float(seed_result["per_mean_return"])),
+                    delta=_format_signed_report_number(
+                        float(seed_result["paired_mean_return_difference"])
+                    ),
+                    episodes=int(seed_result["paired_episode_count"]),
+                )
+            )
+    return lines
+
+
 def _render_markdown_report(comparison: Mapping[str, Any]) -> str:
     conclusion = comparison["conclusion"]
     stability = comparison["training_stability"]
@@ -673,33 +746,13 @@ def _render_markdown_report(comparison: Mapping[str, Any]) -> str:
         "",
         "## Evaluation quality and cumulative training time",
         "",
-        "| Transitions | Uniform mean return | PER mean return | PER − Uniform | Uniform seconds | PER seconds | PER / Uniform time |",
-        "| ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
     ]
-    runtime_by_step = {
-        int(row["transitions"]): row
-        for row in conclusion["cumulative_runtime_by_milestone"]
-    }
-    for quality in conclusion["quality_by_milestone"]:
-        runtime = runtime_by_step[int(quality["transitions"])]
-        lines.append(
-            "| {steps:,} | {uniform} | {per} | {delta} | {uniform_time} | "
-            "{per_time} | {ratio:.2f}x |".format(
-                steps=int(quality["transitions"]),
-                uniform=_format_report_number(float(quality["uniform_mean_return"])),
-                per=_format_report_number(float(quality["per_mean_return"])),
-                delta=_format_signed_report_number(
-                    float(quality["per_minus_uniform_mean_return"])
-                ),
-                uniform_time=_format_report_number(
-                    float(runtime["uniform_mean_cumulative_seconds"]), digits=1
-                ),
-                per_time=_format_report_number(
-                    float(runtime["per_mean_cumulative_seconds"]), digits=1
-                ),
-                ratio=float(runtime["per_over_uniform_cumulative_time_ratio"]),
-            )
+    lines.extend(
+        _render_evaluation_quality_tables(
+            conclusion,
+            comparison["milestones"],
         )
+    )
 
     engineering = comparison["engineering_cost"]["by_seed_and_milestone"]
     lines.extend(

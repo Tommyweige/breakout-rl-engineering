@@ -12,6 +12,7 @@ from scripts.analysis.compare_per_experiment import (
     _describe,
     _episode_returns,
     _evaluation_dir,
+    _render_evaluation_quality_tables,
     _has_non_finite_diagnostic_event,
     _last_row_at_or_before_transition,
     _metric_value_at_transition,
@@ -136,6 +137,48 @@ class PERExperimentAnalysisTests(unittest.TestCase):
                 seed=11,
                 transitions=100_000,
             )
+
+    def test_report_quality_tables_show_seed_means_medians_and_paired_deltas(self) -> None:
+        conclusion = {
+            "quality_by_milestone": [
+                {
+                    "transitions": 100_000,
+                    "per_minus_uniform_mean_return": 1.0,
+                }
+            ],
+            "cumulative_runtime_by_milestone": [
+                {
+                    "transitions": 100_000,
+                    "uniform_mean_cumulative_seconds": 100.0,
+                    "per_mean_cumulative_seconds": 150.0,
+                    "per_over_uniform_cumulative_time_ratio": 1.5,
+                }
+            ],
+        }
+        milestones = [
+            {
+                "transitions": 100_000,
+                "uniform_across_training_seeds": {"mean": 5.0, "median": 4.0},
+                "per_across_training_seeds": {"mean": 6.0, "median": 6.0},
+                "per_seed": [
+                    {
+                        "training_seed": 11,
+                        "uniform_mean_return": 5.0,
+                        "per_mean_return": 6.0,
+                        "paired_mean_return_difference": 1.0,
+                        "paired_episode_count": 15,
+                    }
+                ],
+            }
+        ]
+
+        report_lines = _render_evaluation_quality_tables(conclusion, milestones)
+        report = "\n".join(report_lines)
+
+        self.assertIn("5.00 (4.00)", report)
+        self.assertIn("6.00 (6.00)", report)
+        self.assertIn("| 100,000 | 11 | 5.00 | 6.00 | +1.00 | 15 |", report)
+        self.assertIn("evaluation seed and episode index", report)
 
     def test_milestone_metrics_do_not_leak_values_from_later_steps(self) -> None:
         rows = [
