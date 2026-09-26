@@ -4,7 +4,7 @@
   "environment_contract": {
     "contract_id": "day15-breakout-evaluation-v2-fire-reset",
     "path": "configs/eval/breakout_contract_v2.json",
-    "sha256": "e9947fc3a1235100aa92f75a79cf33668b36b4f325f22a0bc8b9546a356b85ba"
+    "sha256": "7eca5ae5262a28aeabf3be658f8275a68f3d2ae40cc74379400be2890dc31a2a"
   },
   "input": {
     "name": "observation",
