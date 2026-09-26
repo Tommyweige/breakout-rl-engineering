@@ -46,6 +46,28 @@ def _local_csv(path: Path) -> list[dict[str, str]]:
         return list(csv.DictReader(stream))
 
 
+def _evaluation_dir(
+    output_root: Path,
+    *,
+    replay_sampling: str,
+    seed: int,
+    transitions: int,
+) -> Path:
+    if replay_sampling == "prioritized":
+        method_path = Path()
+    elif replay_sampling == "uniform":
+        method_path = Path("uniform")
+    else:
+        raise ValueError(f"unsupported replay sampling mode: {replay_sampling}")
+    return (
+        output_root
+        / "evaluations"
+        / method_path
+        / f"seed-{seed}"
+        / f"step-{transitions:08d}"
+    )
+
+
 def _episode_returns(payload: Mapping[str, Any], *, label: str) -> dict[tuple[int, int], float]:
     episodes = payload.get("per_episode")
     if not isinstance(episodes, list):

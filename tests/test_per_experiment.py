@@ -11,6 +11,7 @@ from scripts.analysis.compare_per_experiment import (
     _cumulative_distribution_at_transition,
     _describe,
     _episode_returns,
+    _evaluation_dir,
     _has_non_finite_diagnostic_event,
     _last_row_at_or_before_transition,
     _metric_value_at_transition,
@@ -106,6 +107,35 @@ class PERExperimentAnalysisTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "duplicate paired episode key"):
             _episode_returns(payload, label="duplicate-fixture")
+
+    def test_evaluation_paths_separate_uniform_and_prioritized_runs(self) -> None:
+        output_root = Path("fixture")
+
+        self.assertEqual(
+            _evaluation_dir(
+                output_root,
+                replay_sampling="uniform",
+                seed=11,
+                transitions=100_000,
+            ),
+            output_root / "evaluations" / "uniform" / "seed-11" / "step-00100000",
+        )
+        self.assertEqual(
+            _evaluation_dir(
+                output_root,
+                replay_sampling="prioritized",
+                seed=11,
+                transitions=100_000,
+            ),
+            output_root / "evaluations" / "seed-11" / "step-00100000",
+        )
+        with self.assertRaisesRegex(ValueError, "unsupported replay sampling mode"):
+            _evaluation_dir(
+                output_root,
+                replay_sampling="unknown",
+                seed=11,
+                transitions=100_000,
+            )
 
     def test_milestone_metrics_do_not_leak_values_from_later_steps(self) -> None:
         rows = [
