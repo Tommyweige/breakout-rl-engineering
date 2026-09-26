@@ -1,0 +1,108 @@
+{
+  "schema_version": 1,
+  "experiment_id": "issue-12-per-vs-uniform",
+  "issue": 12,
+  "title": "Proportional Prioritized Experience Replay vs Uniform Replay",
+  "source_of_truth": "Tommyweige/breakout-rl-engineering#12",
+  "baseline": {
+    "experiment_id": "day20-dqn-family",
+    "family_id": "dueling_double_dqn",
+    "replay_sampling": "uniform",
+    "source_commit": "aa2231a2bd81ec903f0aa55f54003b27c1ac32e5",
+    "manifest_path": "experiments/day20-dqn-family/manifest.json",
+    "training_metrics_template": "assets/day20/evidence-runs/dueling_double_dqn-seed{seed}-main/metrics.csv",
+    "evaluation_template": "evaluations/day20-dqn-family/dueling_double_dqn/seed{seed}/step-{step:08d}/results.json",
+    "backend_id": "day16-vectorized-dqn-n2"
+  },
+  "training_seeds": [
+    11,
+    22,
+    33
+  ],
+  "milestones": [
+    100000,
+    250000,
+    500000
+  ],
+  "primary_training_lifecycle": "continuous_single_run",
+  "training_config": {
+    "total_steps": 500000,
+    "seed": 11,
+    "algorithm": "double_dqn",
+    "architecture": "dueling",
+    "gamma": 0.99,
+    "learning_rate": 0.0001,
+    "batch_size": 32,
+    "replay_capacity": 10000,
+    "learning_starts": 1000,
+    "train_frequency": 4,
+    "target_update_interval": 500,
+    "epsilon_start": 0.9,
+    "epsilon_end": 0.05,
+    "epsilon_decay_steps": 10000,
+    "gradient_clip_norm": 10.0,
+    "reward_clip": true,
+    "life_loss_penalty": 0.0,
+    "device": "cuda",
+    "precision": "float32",
+    "checkpoint_interval": 100000,
+    "checkpoint_steps": [
+      100000,
+      250000,
+      500000
+    ],
+    "diagnostics_interval": 100,
+    "metrics_flush_interval": 500,
+    "cpu_threads": 2,
+    "replay_transfer": "direct",
+    "replay_backend": "gpu",
+    "replay_sampling": "prioritized",
+    "per_alpha": 0.6,
+    "per_beta_start": 0.4,
+    "per_beta_end": 1.0,
+    "per_beta_anneal_transitions": 500000,
+    "priority_epsilon": 1e-06,
+    "profile_stages": true,
+    "num_envs": 2,
+    "strict_action_selection_parity": true
+  },
+  "evaluation": {
+    "config": "configs/eval/breakout_eval.json",
+    "contract": "configs/eval/breakout_contract_v2.json",
+    "contract_sha256": "e9947fc3a1235100aa92f75a79cf33668b36b4f325f22a0bc8b9546a356b85ba",
+    "config_sha256": "4db7c72c44b74d00c0ab933d3b2ebc25d67e92f82b90f24e53525d33f795a6b2",
+    "seeds": [
+      101,
+      202,
+      303
+    ],
+    "episodes_per_seed": 5,
+    "epsilon": 0.0,
+    "raw_reward": true,
+    "same_seed_pairs": true
+  },
+  "comparison": {
+    "primary_unit": "training_seed",
+    "paired_within": [
+      "evaluation_seed",
+      "episode_index"
+    ],
+    "required_views": [
+      "evaluation_return_vs_transitions",
+      "evaluation_return_vs_wall_clock"
+    ],
+    "promotion_rule": "Do not replace the canonical model or deployment from this experiment.",
+    "possible_outcomes": [
+      "PER improves early learning but converges similarly by 500K",
+      "PER improves early and final quality",
+      "PER quality gain costs too much wall-clock time",
+      "PER changes transition efficiency or stability without improving final quality",
+      "PER has no meaningful advantage or hurts this Breakout setup"
+    ],
+    "do_not_claim_success_from": [
+      "best single episode",
+      "best single training seed",
+      "priority magnitude as model quality"
+    ]
+  }
+}

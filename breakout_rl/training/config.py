@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 import operator
+from collections.abc import Sequence
 from dataclasses import asdict, dataclass, fields, replace
 from numbers import Integral, Real
 from typing import Any, Mapping
@@ -84,6 +85,15 @@ def _replay_backend_request(value: str, *, name: str) -> str:
     return normalized
 
 
+def _replay_sampling_request(value: str, *, name: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{name} must be uniform or prioritized")
+    normalized = value.strip().lower()
+    if normalized not in {"uniform", "prioritized"}:
+        raise ValueError(f"{name} must be uniform or prioritized")
+    return normalized
+
+
 def _algorithm_request(value: str, *, name: str) -> str:
     if not isinstance(value, str) or not value.strip():
         raise ValueError(
@@ -132,11 +142,18 @@ class DQNConfig:
     device: str = "cpu"
     precision: str = "float32"
     checkpoint_interval: int = 1_000
+    checkpoint_steps: tuple[int, ...] = ()
     diagnostics_interval: int = 1
     metrics_flush_interval: int = 1
     cpu_threads: int | None = None
     replay_transfer: str = "direct"
     replay_backend: str = "cpu"
+    replay_sampling: str = "uniform"
+    per_alpha: float = 0.6
+    per_beta_start: float = 0.4
+    per_beta_end: float = 1.0
+    per_beta_anneal_transitions: int = 500_000
+    priority_epsilon: float = 1e-6
     profile_stages: bool = False
     num_envs: int = 1
     strict_action_selection_parity: bool = False
@@ -225,7 +242,32 @@ class DQNConfig:
             _validated_int(self.cpu_threads, name="cpu_threads", minimum=1)
         if not isinstance(self.profile_stages, bool):
             raise TypeError("profile_stages must be a boolean")
-        _validated_int(self.num_envs, name="num_envs", minimum=1)
+        num_envs = _validated_int(self.num_envs, name="num_envs", minimum=1)
+        checkpoint_steps = self.checkpoint_steps
+        if isinstance(checkpoint_steps, (str, bytes)) or not isinstance(
+            checkpoint_steps,
+            Sequence,
+        ):
+            raise TypeError("checkpoint_steps must be a sequence of transition counts")
+        normalized_checkpoint_steps: list[int] = []
+        for step in checkpoint_steps:
+            parsed_step = _validated_int(
+                step,
+                name="checkpoint_steps entries",
+                minimum=1,
+            )
+            if parsed_step > self.total_steps:
+                raise ValueError("checkpoint_steps entries cannot exceed total_steps")
+            if parsed_step % num_envs != 0:
+                raise ValueError(
+                    "checkpoint_steps entries must align with complete vector steps"
+                )
+            normalized_checkpoint_steps.append(parsed_step)
+        object.__setattr__(
+            self,
+            "checkpoint_steps",
+            tuple(sorted(set(normalized_checkpoint_steps))),
+        )
         if not isinstance(self.strict_action_selection_parity, bool):
             raise TypeError("strict_action_selection_parity must be a boolean")
         for name in ("contract_id", "contract_path"):
@@ -242,8 +284,32 @@ class DQNConfig:
             "replay_backend",
             _replay_backend_request(self.replay_backend, name="replay_backend"),
         )
+        object.__setattr__(
+            self,
+            "replay_sampling",
+            _replay_sampling_request(self.replay_sampling, name="replay_sampling"),
+        )
+        object.__setattr__(self, "per_alpha", _probability(self.per_alpha, name="per_alpha"))
+        beta_start = _probability(self.per_beta_start, name="per_beta_start")
+        beta_end = _probability(self.per_beta_end, name="per_beta_end")
+        if beta_end < beta_start:
+            raise ValueError("per_beta_end must be greater than or equal to per_beta_start")
+        object.__setattr__(self, "per_beta_start", beta_start)
+        object.__setattr__(self, "per_beta_end", beta_end)
+        _validated_int(
+            self.per_beta_anneal_transitions,
+            name="per_beta_anneal_transitions",
+            minimum=1,
+        )
+        object.__setattr__(
+            self,
+            "priority_epsilon",
+            _finite_real(self.priority_epsilon, name="priority_epsilon", minimum=0.0),
+        )
         if self.replay_backend == "gpu" and self.replay_transfer != "direct":
             raise ValueError("replay_transfer must be direct when replay_backend='gpu'")
+        if self.replay_sampling == "prioritized" and self.replay_backend != "gpu":
+            raise ValueError("prioritized replay currently requires replay_backend='gpu'")
         _validated_int(
             self.checkpoint_interval,
             name="checkpoint_interval",
@@ -348,7 +414,9 @@ class DQNConfig:
     def to_dict(self) -> dict[str, Any]:
         """Return a JSON-compatible mapping of the configuration fields."""
 
-        return asdict(self)
+        payload = asdict(self)
+        payload["checkpoint_steps"] = list(self.checkpoint_steps)
+        return payload
 
     @property
     def requested_device(self) -> str:
