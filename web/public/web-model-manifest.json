@@ -10,14 +10,14 @@
   "inference_spec": {
     "url": "/inference_spec.json",
     "source_path": "configs/inference/inference_spec.json",
-    "sha256": "d87bd56557d3dd8c67ee88cc460f8ca1cb210739be5e84618b16228d9af7e83f"
+    "sha256": "b396989041eff00396789c0f878fa783b071b0d3327aa1638c891a25d3f84507"
   },
   "fixtures": {
     "observations_url": "/fixtures/day22-probe-observations.u8",
     "reference_url": "/fixtures/day22-reference.json",
     "sample_count": 60,
     "observations_sha256": "93005ada43548fabb3ca4828009e4ba73ca26ece9ab5079c27ba4649e3c7c5ec",
-    "reference_sha256": "b6057df0002708f51d1b59a8d4fc5c14109be034830efcbc469242773c170ccf"
+    "reference_sha256": "354b2b7e2be11eaefa9775e7931fcdde8463e2f0e09b999e5349624e9d3a0d42"
   },
   "requested_backend": "wasm",
   "browser_runtime": "onnxruntime-web"
