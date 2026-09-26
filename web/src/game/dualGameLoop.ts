@@ -12,6 +12,7 @@ export interface LoopEnvironment {
   reset(seed?: number): unknown;
   step(actionIndex: number): EnvironmentStep;
   stepAsync?(actionIndex: number, rawFrameRepeat?: number): Promise<EnvironmentStep>;
+  stepInteractiveFrame?(actionIndex: number, rawFrameRepeat: number): EnvironmentStep;
 }
 
 export interface HumanLoopEnvironment {
@@ -309,7 +310,9 @@ export class DualGameLoop {
       const inferenceMs = now() - inferenceStartedAt;
       if (!allowWhenPaused && (this.status !== 'running' || this.destroyed)) return;
       const environmentStartedAt = now();
-      const environment = this.options.agent.stepAsync
+      const environment = this.options.agent.stepInteractiveFrame
+        ? this.options.agent.stepInteractiveFrame(policy.actionIndex, this.options.agentRuntime.outerActionRepeat)
+        : this.options.agent.stepAsync
         ? await this.options.agent.stepAsync(policy.actionIndex, this.options.agentRuntime.outerActionRepeat)
         : this.options.agent.step(policy.actionIndex);
       const environmentStepMs = now() - environmentStartedAt;

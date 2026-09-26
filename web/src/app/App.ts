@@ -466,7 +466,12 @@ export class App {
         ...this.agentEnvironment.runtimeDiagnostics,
         humanRuntime: this.humanEnvironment.runtimeDiagnostics,
         agentRuntime: this.agentEnvironment.runtimeDiagnostics,
-        interactiveAgentRuntime: { rawFramesPerDecision: 1, schedule: 'requestAnimationFrame' },
+        interactiveAgentRuntime: {
+          rawFramesPerInference: 1,
+          policyActionRepeat: this.agentEnvironment.contract.frame_skip,
+          policyObservationRepeat: this.agentEnvironment.contract.frame_skip,
+          schedule: 'requestAnimationFrame',
+        },
         humanInstanceId: this.humanEnvironment.instanceId,
         agentInstanceId: this.agentEnvironment.instanceId,
         crossOriginIsolated: window.crossOriginIsolated,
@@ -494,9 +499,9 @@ export class App {
         human: this.humanEnvironment,
         agent: this.agentEnvironment,
         agentRuntime: {
-          // Live inference follows display cadence and advances one raw frame at
-          // a time. The formal Agent environment still uses contract repeat 4.
-          outerActionRepeat: 1,
+          // Inference follows display cadence; the environment latches each
+          // action and updates the model observation at the trained frame skip.
+          outerActionRepeat: this.agentEnvironment.contract.frame_skip,
           stickyActionProbability: this.agentEnvironment.contract.sticky_action_probability,
         },
         humanCommand: () => this.currentHumanCommand(),
@@ -519,10 +524,10 @@ export class App {
         onFrame: () => this.renderCanvases(),
         onDiagnostics: (diagnostics) => this.updateHumanRuntimeDiagnostics(diagnostics),
         onError: (error) => this.reportRuntimeError(error),
-        // Chrome timer/render overhead is measurable on the production page;
-        // this deadline keeps observed Human raw cadence near the 60 Hz Atari
-        // target without changing the Human environment's one-frame semantics.
+        // Both policy inference and raw ALE rendering follow browser refresh;
+        // the Agent environment preserves its four-frame policy cadence.
         humanTargetFps: 80,
+        agentTargetFps: 60,
       });
       this.updateHumanRuntimeDiagnostics(this.gameLoop.runtimeDiagnostics);
       this.scheduler.start();

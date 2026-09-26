@@ -105,6 +105,7 @@ class FakeAgentEnvironment implements LoopEnvironment {
   currentSeed = 1;
   actions: number[] = [];
   stepAsync?: LoopEnvironment['stepAsync'];
+  stepInteractiveFrame?: LoopEnvironment['stepInteractiveFrame'];
 
   reset(seed = this.currentSeed): void {
     this.currentSeed = seed;
@@ -174,6 +175,27 @@ describe('dual game loop', () => {
     expect(step!.inferenceMs).toBeGreaterThanOrEqual(10);
     expect(step!.environmentStepMs).toBeGreaterThanOrEqual(0);
     expect(step!.totalDecisionMs).toBeGreaterThanOrEqual(step!.inferenceMs + step!.environmentStepMs);
+  });
+
+  it('routes each display-paced inference through the interactive frame step with the trained repeat', async () => {
+    const human = new FakeHumanEnvironment();
+    const agent = new FakeAgentEnvironment();
+    agent.stepInteractiveFrame = vi.fn((actionIndex) => {
+      agent.actions.push(actionIndex);
+      return fakeAgentStep(actionIndex);
+    });
+    const loop = new DualGameLoop({
+      human,
+      agent,
+      agentRuntime: { outerActionRepeat: 4, stickyActionProbability: 0.25 },
+      humanCommand: () => ({ kind: 'discrete', actionIndex: 0 }),
+      infer: async () => policyResult(2),
+    });
+
+    await loop.stepOnce();
+
+    expect(agent.stepInteractiveFrame).toHaveBeenCalledWith(2, 4);
+    expect(agent.actions).toEqual([2]);
   });
 
   it('routes absolute paddle commands only to Human while Agent keeps discrete actions', async () => {

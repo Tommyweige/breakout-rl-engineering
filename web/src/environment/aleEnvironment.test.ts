@@ -131,17 +131,40 @@ describe('ALE Browser environment contract', () => {
     expect(ale.actions).toEqual([1, 1, 1, 1]);
   });
 
-  it('supports one raw frame per live Agent decision without changing the contract default', async () => {
-    const ale = new FakeAle();
-    const environment = createBrowserBreakoutEnvironmentForTest(ale as unknown as AleLike, contract, 101);
+  it('runs one raw frame per display tick while preserving four-frame policy observations and actions', () => {
+    const canonicalAle = new FakeAle();
+    const interactiveAle = new FakeAle();
+    const canonical = createBrowserBreakoutEnvironmentForTest(canonicalAle as unknown as AleLike, contract, 101);
+    const interactive = createBrowserBreakoutEnvironmentForTest(interactiveAle as unknown as AleLike, contract, 101);
 
-    const resultPromise = environment.stepAsync(2, 1);
+    for (let decision = 0; decision < 2; decision += 1) {
+      canonical.step(0);
+      for (let frame = 0; frame < contract.frame_skip; frame += 1) {
+        interactive.stepInteractiveFrame(0, contract.frame_skip);
+      }
+    }
+    expect(interactive.observation).toEqual(canonical.observation);
 
-    expect(ale.actions).toEqual([1]);
-    const result = await resultPromise;
-    expect(result.actualEmulatorFrames).toBe(1);
-    expect(result.outerActionRepeat).toBe(1);
-    expect(ale.actions).toEqual([1]);
+    const observationBeforeAction = interactive.observation;
+    const expected = canonical.step(2);
+    const actionStart = interactiveAle.actions.length;
+    const liveFrames = [
+      interactive.stepInteractiveFrame(2, contract.frame_skip),
+      interactive.stepInteractiveFrame(3, contract.frame_skip),
+      interactive.stepInteractiveFrame(0, contract.frame_skip),
+      interactive.stepInteractiveFrame(1, contract.frame_skip),
+    ];
+
+    expect(liveFrames.slice(0, -1).map((step) => step.observation)).toEqual([
+      observationBeforeAction,
+      observationBeforeAction,
+      observationBeforeAction,
+    ]);
+    expect(liveFrames.map((step) => step.executedAction)).toEqual(['RIGHT', 'RIGHT', 'RIGHT', 'RIGHT']);
+    expect(liveFrames.every((step) => step.actualEmulatorFrames === 1)).toBe(true);
+    expect(interactiveAle.actions.slice(actionStart)).toEqual(canonicalAle.actions.slice(-contract.frame_skip));
+    expect(liveFrames.at(-1)?.observation).toEqual(expected.observation);
+    expect(liveFrames.at(-1)?.agentStep).toBe(expected.agentStep);
   });
 
   it('keeps Human runtime at one raw frame with sticky actions disabled and exposes the latest RGB frame', () => {

@@ -163,6 +163,13 @@ export class BrowserBreakoutEnvironment {
   private fireActivityStreak = 0;
   private episodeReturn = 0;
   private agentStep = 0;
+  private interactiveFramesInDecision = 0;
+  private interactiveDecisionRepeat = 0;
+  private interactiveAction: MappedAction | null = null;
+  private interactiveBeforeObservation: Uint8Array | null = null;
+  private interactiveDecisionReward = 0;
+  private interactiveRgbFrames: Uint8Array[] = [];
+  private interactiveGrayFrames: Uint8Array[] = [];
   private terminated = false;
   private truncated = false;
   private disposed = false;
@@ -315,6 +322,7 @@ export class BrowserBreakoutEnvironment {
     this.fireActivityStreak = 0;
     this.episodeReturn = 0;
     this.agentStep = 0;
+    this.resetInteractiveDecision();
     this.terminated = false;
     this.truncated = false;
     if (this.preprocessingTraceEnabled) {
@@ -455,10 +463,7 @@ export class BrowserBreakoutEnvironment {
     };
   }
 
-  /**
-   * Live Agent stepping can use one raw frame per display-paced decision.
-   * Formal evaluation keeps the contract repeat through the synchronous `step()`.
-   */
+  /** Completes one action repeat while yielding between raw frames. */
   async stepAsync(modelActionIndex: number, rawFrameRepeat: number = this.contract.frame_skip): Promise<EnvironmentStep> {
     this.assertActive();
     if (this.isFinished) throw new Error('cannot step a finished Breakout episode; reset first');
@@ -588,6 +593,172 @@ export class BrowserBreakoutEnvironment {
       gameOverReason: this.truncated ? 'time_limit' : this.terminated ? 'terminated' : null,
       timing: { aleStepMs, preprocessingMs, totalMs },
     };
+  }
+
+  /**
+   * Advances one visible ALE frame while keeping the model's trained
+   * frame-skip cadence. The caller may run inference every display frame;
+   * only the first inferred action in each repeat window is applied, and the
+   * policy observation is max-pooled and stacked once per complete window.
+   */
+  stepInteractiveFrame(modelActionIndex: number, rawFrameRepeat: number = this.contract.frame_skip): EnvironmentStep {
+    this.assertActive();
+    if (this.isFinished) throw new Error('cannot step a finished Breakout episode; reset first');
+    if (!Number.isInteger(rawFrameRepeat) || rawFrameRepeat < 1 || rawFrameRepeat > this.contract.frame_skip) {
+      throw new Error(`gameplay raw frame repeat must be between 1 and ${this.contract.frame_skip}`);
+    }
+
+    const startedAt = now();
+    const requested = mapModelActionToAle(modelActionIndex);
+    if (this.interactiveFramesInDecision === 0) {
+      this.interactiveDecisionRepeat = rawFrameRepeat;
+      this.interactiveAction = requested;
+      this.interactiveBeforeObservation = new Uint8Array(this.lastObservation);
+      this.interactiveDecisionReward = 0;
+      this.interactiveRgbFrames = [];
+      this.interactiveGrayFrames = [];
+    } else if (this.interactiveDecisionRepeat !== rawFrameRepeat) {
+      throw new Error('gameplay raw frame repeat cannot change during an active policy action');
+    }
+
+    const latchedAction = this.interactiveAction ?? requested;
+    const autoFire = this.needsFire;
+    const autoFireReason = autoFire ? this.pendingFireReason : null;
+    const executed = autoFire ? mapModelActionToAle(1) : latchedAction;
+    const beforeFrameNumber = this.ale.getFrameNumber();
+    const aleStartedAt = now();
+    const reward = this.ale.act(executed.aleAction);
+    const rawFrame = copyBytes(this.ale.getScreenRGB());
+    const grayscale = copyBytes(this.ale.getScreenGrayscale());
+    const aleStepMs = now() - aleStartedAt;
+
+    this.interactiveFramesInDecision += 1;
+    this.interactiveDecisionReward += reward;
+    this.interactiveRgbFrames.push(rawFrame);
+    this.interactiveGrayFrames.push(grayscale);
+    this.lastRawRgb = new Uint8Array(rawFrame);
+    this.episodeReturn += reward;
+    this.terminated = this.ale.gameOver();
+    this.truncated = this.ale.gameTruncated();
+
+    const decisionComplete = this.interactiveFramesInDecision >= rawFrameRepeat || this.terminated || this.truncated;
+    let processedFrame = this.lastProcessedFrame;
+    let observation = this.lastObservation;
+    let observationChangedFraction = 0;
+    let preprocessingMs = 0;
+    let fireConfirmation: EnvironmentStep['fireConfirmation'] = null;
+    const lives = this.ale.lives();
+
+    if (decisionComplete) {
+      const lastRgbFrame = this.interactiveRgbFrames[this.interactiveRgbFrames.length - 1];
+      const previousRgbFrame = this.interactiveRgbFrames[this.interactiveRgbFrames.length - 2];
+      const lastGrayFrame = this.interactiveGrayFrames[this.interactiveGrayFrames.length - 1];
+      const previousGrayFrame = this.interactiveGrayFrames[this.interactiveGrayFrames.length - 2];
+      if (!lastRgbFrame || !lastGrayFrame) throw new Error('ALE returned no frame after act()');
+
+      const renderFrame = previousRgbFrame && lastRgbFrame
+        ? maxPoolRgbFramesForRender(previousRgbFrame, lastRgbFrame)
+        : lastRgbFrame;
+      const pooledGrayscale = previousGrayFrame && lastGrayFrame
+        ? maxPoolGrayscaleFrames(previousGrayFrame, lastGrayFrame)
+        : lastGrayFrame;
+      const preprocessingStartedAt = now();
+      processedFrame = preprocessGrayscaleFrame(pooledGrayscale);
+      observation = this.frameStack.push(processedFrame);
+      preprocessingMs = now() - preprocessingStartedAt;
+      observationChangedFraction = changedFraction(
+        this.interactiveBeforeObservation ?? this.lastObservation,
+        observation,
+      );
+      this.lastRawRgb = new Uint8Array(renderFrame);
+      this.lastProcessedFrame = new Uint8Array(processedFrame);
+      this.lastObservation = new Uint8Array(observation);
+
+      if (autoFire) {
+        this.fireAttempts += 1;
+        if (this.interactiveDecisionReward !== 0) fireConfirmation = 'reward';
+        if (observationChangedFraction >= this.contract.fire_reset_confirmation.min_observation_change_fraction) {
+          this.fireActivityStreak += 1;
+        } else {
+          this.fireActivityStreak = 0;
+        }
+        if (!fireConfirmation && this.fireActivityStreak >= this.contract.fire_reset_confirmation.confirmation_steps) {
+          fireConfirmation = 'observation_activity_streak';
+        }
+        if (fireConfirmation || this.terminated || this.truncated) {
+          this.needsFire = false;
+          this.pendingFireReason = null;
+          this.fireAttempts = 0;
+          this.fireActivityStreak = 0;
+        } else if (this.fireAttempts >= this.contract.fire_reset_confirmation.max_fire_attempts) {
+          throw new Error(`FIRE serve was not confirmed after ${this.fireAttempts} attempts for ${autoFireReason}`);
+        }
+      } else {
+        this.fireActivityStreak = 0;
+      }
+
+      if (lives < this.lastLives) {
+        this.needsFire = true;
+        this.pendingFireReason = 'after_life_loss';
+        this.fireAttempts = 0;
+        this.fireActivityStreak = 0;
+      }
+      this.lastLives = lives;
+      this.agentStep += 1;
+
+      if (this.preprocessingTraceEnabled) {
+        this.traceSteps.push({
+          rawGrayscaleFrames: this.interactiveGrayFrames.map((frame) => Array.from(frame)),
+          pooledGrayscale: Array.from(pooledGrayscale),
+          processedFrame: Array.from(processedFrame),
+          observation: Array.from(observation),
+          requestedModelAction: latchedAction.modelIndex,
+          executedModelAction: executed.modelIndex,
+          autoFire,
+          autoFireReason,
+        });
+      }
+      this.resetInteractiveDecision();
+    }
+
+    const totalMs = now() - startedAt;
+    return {
+      observation: new Uint8Array(observation),
+      processedFrame: new Uint8Array(processedFrame),
+      rawRgb: new Uint8Array(this.lastRawRgb),
+      requestedModelAction: requested.modelIndex,
+      requestedAction: requested.meaning,
+      requestedAleAction: requested.aleAction,
+      executedModelAction: executed.modelIndex,
+      executedAction: executed.meaning,
+      executedAleAction: executed.aleAction,
+      autoFire,
+      autoFireReason,
+      fireConfirmation,
+      observationChangedFraction,
+      reward,
+      episodeReturn: this.episodeReturn,
+      lives,
+      frameNumber: this.ale.getFrameNumber(),
+      agentStep: this.agentStep,
+      actualEmulatorFrames: this.ale.getFrameNumber() - beforeFrameNumber || 1,
+      rawFrameSkip: this.ale.getInt('frame_skip'),
+      outerActionRepeat: rawFrameRepeat,
+      terminated: this.terminated,
+      truncated: this.truncated,
+      gameOverReason: this.truncated ? 'time_limit' : this.terminated ? 'terminated' : null,
+      timing: { aleStepMs, preprocessingMs, totalMs },
+    };
+  }
+
+  private resetInteractiveDecision(): void {
+    this.interactiveFramesInDecision = 0;
+    this.interactiveDecisionRepeat = 0;
+    this.interactiveAction = null;
+    this.interactiveBeforeObservation = null;
+    this.interactiveDecisionReward = 0;
+    this.interactiveRgbFrames = [];
+    this.interactiveGrayFrames = [];
   }
 
   enablePreprocessingTrace(): void {
