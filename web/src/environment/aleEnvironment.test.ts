@@ -41,6 +41,9 @@ const contract: BreakoutContractV2 = {
 class FakeAle {
   frame = 0;
   actions: number[] = [];
+  actCalls: Array<{ action: number; paddleStrength?: number }> = [];
+  paddlePositions: number[] = [];
+  livesCount = 5;
   settings = new Map<string, number | boolean>();
   loadPath = '';
 
@@ -53,11 +56,23 @@ class FakeAle {
   setString(): void {}
   getString(): string { return ''; }
   loadROM(path: string): void { this.loadPath = path; }
-  act(action: number): number { this.actions.push(action); this.frame += 1; return 0; }
+  act(action: number): number {
+    this.actions.push(action);
+    this.actCalls.push({ action });
+    this.frame += 1;
+    return 0;
+  }
+  actWithPaddleStrength(action: number, paddleStrength: number): number {
+    this.actions.push(action);
+    this.actCalls.push({ action, paddleStrength });
+    this.frame += 1;
+    return 0;
+  }
+  setBreakoutPaddlePosition(normalizedX: number): void { this.paddlePositions.push(normalizedX); }
   resetGame(): void { this.frame = 0; this.actions = []; }
   gameOver(): boolean { return false; }
   gameTruncated(): boolean { return false; }
-  lives(): number { return 5; }
+  lives(): number { return this.livesCount; }
   getFrameNumber(): number { return this.frame; }
   getEpisodeFrameNumber(): number { return this.frame; }
   getScreenRGB(): Uint8ClampedArray { return new Uint8ClampedArray(160 * 210 * 3).fill(this.frame % 255); }
@@ -103,15 +118,53 @@ describe('ALE Browser environment contract', () => {
     expect(ale.actions).toEqual([1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3]);
   });
 
-  it('keeps the gameplay async Agent step at four raw frames while yielding between frames', async () => {
+  it('keeps the default gameplay Agent step at four raw frames while yielding between frames', async () => {
     const ale = new FakeAle();
     const environment = createBrowserBreakoutEnvironmentForTest(ale as unknown as AleLike, contract, 101);
 
-    const result = await environment.stepAsync(2);
+    const resultPromise = environment.stepAsync(2);
 
+    expect(ale.actions).toEqual([1]);
+    const result = await resultPromise;
     expect(result.actualEmulatorFrames).toBe(4);
     expect(result.outerActionRepeat).toBe(4);
     expect(ale.actions).toEqual([1, 1, 1, 1]);
+  });
+
+  it('runs one raw frame per display tick while preserving four-frame policy observations and actions', () => {
+    const canonicalAle = new FakeAle();
+    const interactiveAle = new FakeAle();
+    const canonical = createBrowserBreakoutEnvironmentForTest(canonicalAle as unknown as AleLike, contract, 101);
+    const interactive = createBrowserBreakoutEnvironmentForTest(interactiveAle as unknown as AleLike, contract, 101);
+
+    for (let decision = 0; decision < 2; decision += 1) {
+      canonical.step(0);
+      for (let frame = 0; frame < contract.frame_skip; frame += 1) {
+        interactive.stepInteractiveFrame(0, contract.frame_skip);
+      }
+    }
+    expect(interactive.observation).toEqual(canonical.observation);
+
+    const observationBeforeAction = interactive.observation;
+    const expected = canonical.step(2);
+    const actionStart = interactiveAle.actions.length;
+    const liveFrames = [
+      interactive.stepInteractiveFrame(2, contract.frame_skip),
+      interactive.stepInteractiveFrame(3, contract.frame_skip),
+      interactive.stepInteractiveFrame(0, contract.frame_skip),
+      interactive.stepInteractiveFrame(1, contract.frame_skip),
+    ];
+
+    expect(liveFrames.slice(0, -1).map((step) => step.observation)).toEqual([
+      observationBeforeAction,
+      observationBeforeAction,
+      observationBeforeAction,
+    ]);
+    expect(liveFrames.map((step) => step.executedAction)).toEqual(['RIGHT', 'RIGHT', 'RIGHT', 'RIGHT']);
+    expect(liveFrames.every((step) => step.actualEmulatorFrames === 1)).toBe(true);
+    expect(interactiveAle.actions.slice(actionStart)).toEqual(canonicalAle.actions.slice(-contract.frame_skip));
+    expect(liveFrames.at(-1)?.observation).toEqual(expected.observation);
+    expect(liveFrames.at(-1)?.agentStep).toBe(expected.agentStep);
   });
 
   it('keeps Human runtime at one raw frame with sticky actions disabled and exposes the latest RGB frame', () => {
@@ -146,5 +199,85 @@ describe('ALE Browser environment contract', () => {
       stickyActionProbability: 0,
       usesModelPreprocessing: false,
     });
+  });
+
+  it('sets the Human paddle directly at the cursor target while preserving auto-FIRE and one-frame semantics', () => {
+    const ale = new FakeAle();
+    const environment = createHumanBreakoutEnvironmentForTest(ale as unknown as AleLike, contract, 101);
+    const command = {
+      direction: 'RIGHT' as const,
+      targetX: 0.73,
+      paddleCenterX: 0.5,
+      positionError: 0.23,
+    };
+
+    const serve = environment.stepPaddle(command);
+    const serveConfirmation = environment.stepPaddle(command);
+    const move = environment.stepPaddle(command);
+
+    expect(ale.paddlePositions).toEqual([0.73, 0.73, 0.73]);
+    expect(ale.actCalls).toEqual([{ action: 1 }, { action: 1 }, { action: 0 }]);
+    expect(serve).toMatchObject({
+      requestedAleAction: 0,
+      executedAleAction: 1,
+      requestedPaddlePositionX: 0.73,
+      appliedPaddleTargetX: 0.73,
+      requestedPaddleStrength: null,
+      executedPaddleStrength: null,
+      autoFire: true,
+      actualEmulatorFrames: 1,
+    });
+    expect(serveConfirmation).toMatchObject({ autoFire: true, executedAleAction: 1 });
+    expect(move).toMatchObject({
+      requestedAleAction: 0,
+      executedAleAction: 0,
+      requestedPaddlePositionX: 0.73,
+      appliedPaddleTargetX: 0.73,
+      requestedPaddleStrength: null,
+      executedPaddleStrength: null,
+      autoFire: false,
+      actualEmulatorFrames: 1,
+    });
+  });
+
+  it('reapplies auto-FIRE after a life loss and keeps keyboard actions discrete', () => {
+    const ale = new FakeAle();
+    const environment = createHumanBreakoutEnvironmentForTest(ale as unknown as AleLike, contract, 101);
+    const command = {
+      direction: 'LEFT' as const,
+      targetX: 0.2,
+      paddleCenterX: 0.5,
+      positionError: -0.3,
+    };
+
+    environment.stepPaddle(command); // initial serve attempt
+    environment.stepPaddle(command); // serve confirmation
+    environment.stepPaddle(command); // paddle input
+    ale.livesCount = 4;
+    const lostLife = environment.stepPaddle(command);
+    const respawnServe = environment.stepPaddle(command);
+    const respawnConfirmation = environment.stepPaddle(command);
+    const keyboard = environment.step(2);
+
+    expect(lostLife.autoFire).toBe(false);
+    expect(respawnServe).toMatchObject({ autoFire: true, autoFireReason: 'after_life_loss', executedDirection: 'FIRE' });
+    expect(respawnConfirmation).toMatchObject({ autoFire: true, executedDirection: 'FIRE' });
+    expect(keyboard).toMatchObject({
+      requestedDirection: 'RIGHT',
+      requestedPaddleStrength: null,
+      executedPaddleStrength: null,
+      requestedPaddlePositionX: null,
+      appliedPaddleTargetX: null,
+    });
+    expect(ale.actCalls.map(({ action, paddleStrength }) => [action, paddleStrength])).toEqual([
+      [1, undefined],
+      [1, undefined],
+      [0, undefined],
+      [0, undefined],
+      [1, undefined],
+      [1, undefined],
+      [3, undefined],
+    ]);
+    expect(ale.paddlePositions).toEqual([0.2, 0.2, 0.2, 0.2, 0.2, 0.2]);
   });
 });

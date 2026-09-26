@@ -1,6 +1,7 @@
 import type { ALEInterface, ALEModule } from '@farama/ale-wasm';
 
-import type { ActionMeaning } from '../inference/types';
+import { ACTION_MEANINGS, type ActionMeaning } from '../inference/types';
+import type { HumanPaddleCommand } from '../input/paddleCommand';
 import { mapModelActionToAle, validateMinimalActionSet, type AleActionCode, type MappedAction } from './actionMapping';
 import {
   ATARI_SCREEN_HEIGHT,
@@ -17,7 +18,9 @@ import {
 } from './nativeAtariPreprocessing';
 import { HUMAN_INTERACTIVE_RUNTIME } from './runtimeConfig';
 
-export interface AleLike extends ALEInterface {}
+export interface AleLike extends Omit<ALEInterface, 'act'> {
+  act(action: number): number;
+}
 
 export interface EnvironmentStep {
   observation: Uint8Array;
@@ -79,9 +82,15 @@ export interface HumanEnvironmentStep {
   rawRgb: Uint8Array;
   requestedModelAction: number;
   requestedAction: ActionMeaning;
+  requestedDirection: ActionMeaning;
+  requestedPaddleStrength: number | null;
+  requestedPaddlePositionX: number | null;
   requestedAleAction: AleActionCode;
   executedModelAction: number;
   executedAction: ActionMeaning;
+  executedDirection: ActionMeaning;
+  executedPaddleStrength: number | null;
+  appliedPaddleTargetX: number | null;
   executedAleAction: AleActionCode;
   autoFire: boolean;
   autoFireReason: EnvironmentStep['autoFireReason'];
@@ -154,6 +163,13 @@ export class BrowserBreakoutEnvironment {
   private fireActivityStreak = 0;
   private episodeReturn = 0;
   private agentStep = 0;
+  private interactiveFramesInDecision = 0;
+  private interactiveDecisionRepeat = 0;
+  private interactiveAction: MappedAction | null = null;
+  private interactiveBeforeObservation: Uint8Array | null = null;
+  private interactiveDecisionReward = 0;
+  private interactiveRgbFrames: Uint8Array[] = [];
+  private interactiveGrayFrames: Uint8Array[] = [];
   private terminated = false;
   private truncated = false;
   private disposed = false;
@@ -306,6 +322,7 @@ export class BrowserBreakoutEnvironment {
     this.fireActivityStreak = 0;
     this.episodeReturn = 0;
     this.agentStep = 0;
+    this.resetInteractiveDecision();
     this.terminated = false;
     this.truncated = false;
     if (this.preprocessingTraceEnabled) {
@@ -446,10 +463,13 @@ export class BrowserBreakoutEnvironment {
     };
   }
 
-  /** Gameplay-only variant that yields between raw ALE frames. Formal evaluation keeps `step()`. */
-  async stepAsync(modelActionIndex: number): Promise<EnvironmentStep> {
+  /** Completes one action repeat while yielding between raw frames. */
+  async stepAsync(modelActionIndex: number, rawFrameRepeat: number = this.contract.frame_skip): Promise<EnvironmentStep> {
     this.assertActive();
     if (this.isFinished) throw new Error('cannot step a finished Breakout episode; reset first');
+    if (!Number.isInteger(rawFrameRepeat) || rawFrameRepeat < 1 || rawFrameRepeat > this.contract.frame_skip) {
+      throw new Error(`gameplay raw frame repeat must be between 1 and ${this.contract.frame_skip}`);
+    }
     const startedAt = now();
     const requested = mapModelActionToAle(modelActionIndex);
     const autoFire = this.needsFire;
@@ -466,8 +486,8 @@ export class BrowserBreakoutEnvironment {
     const sampledGrayscaleFrames: Uint8Array[] = [];
     let actualRawSteps = 0;
 
-    for (let repeat = 0; repeat < this.contract.frame_skip; repeat += 1) {
-      if (repeat > 0) await yieldToEventLoop();
+    for (let repeat = 0; repeat < rawFrameRepeat; repeat += 1) {
+      if (repeat > 0 && rawFrameRepeat > 1) await yieldToEventLoop();
       reward += this.ale.act(executed.aleAction);
       const frame = copyBytes(this.ale.getScreenRGB());
       const grayscale = copyBytes(this.ale.getScreenGrayscale());
@@ -567,12 +587,178 @@ export class BrowserBreakoutEnvironment {
       agentStep: this.agentStep,
       actualEmulatorFrames: this.ale.getFrameNumber() - beforeFrameNumber || actualRawSteps,
       rawFrameSkip: this.ale.getInt('frame_skip'),
-      outerActionRepeat: this.contract.frame_skip,
+      outerActionRepeat: rawFrameRepeat,
       terminated: this.terminated,
       truncated: this.truncated,
       gameOverReason: this.truncated ? 'time_limit' : this.terminated ? 'terminated' : null,
       timing: { aleStepMs, preprocessingMs, totalMs },
     };
+  }
+
+  /**
+   * Advances one visible ALE frame while keeping the model's trained
+   * frame-skip cadence. The caller may run inference every display frame;
+   * only the first inferred action in each repeat window is applied, and the
+   * policy observation is max-pooled and stacked once per complete window.
+   */
+  stepInteractiveFrame(modelActionIndex: number, rawFrameRepeat: number = this.contract.frame_skip): EnvironmentStep {
+    this.assertActive();
+    if (this.isFinished) throw new Error('cannot step a finished Breakout episode; reset first');
+    if (!Number.isInteger(rawFrameRepeat) || rawFrameRepeat < 1 || rawFrameRepeat > this.contract.frame_skip) {
+      throw new Error(`gameplay raw frame repeat must be between 1 and ${this.contract.frame_skip}`);
+    }
+
+    const startedAt = now();
+    const requested = mapModelActionToAle(modelActionIndex);
+    if (this.interactiveFramesInDecision === 0) {
+      this.interactiveDecisionRepeat = rawFrameRepeat;
+      this.interactiveAction = requested;
+      this.interactiveBeforeObservation = new Uint8Array(this.lastObservation);
+      this.interactiveDecisionReward = 0;
+      this.interactiveRgbFrames = [];
+      this.interactiveGrayFrames = [];
+    } else if (this.interactiveDecisionRepeat !== rawFrameRepeat) {
+      throw new Error('gameplay raw frame repeat cannot change during an active policy action');
+    }
+
+    const latchedAction = this.interactiveAction ?? requested;
+    const autoFire = this.needsFire;
+    const autoFireReason = autoFire ? this.pendingFireReason : null;
+    const executed = autoFire ? mapModelActionToAle(1) : latchedAction;
+    const beforeFrameNumber = this.ale.getFrameNumber();
+    const aleStartedAt = now();
+    const reward = this.ale.act(executed.aleAction);
+    const rawFrame = copyBytes(this.ale.getScreenRGB());
+    const grayscale = copyBytes(this.ale.getScreenGrayscale());
+    const aleStepMs = now() - aleStartedAt;
+
+    this.interactiveFramesInDecision += 1;
+    this.interactiveDecisionReward += reward;
+    this.interactiveRgbFrames.push(rawFrame);
+    this.interactiveGrayFrames.push(grayscale);
+    this.lastRawRgb = new Uint8Array(rawFrame);
+    this.episodeReturn += reward;
+    this.terminated = this.ale.gameOver();
+    this.truncated = this.ale.gameTruncated();
+
+    const decisionComplete = this.interactiveFramesInDecision >= rawFrameRepeat || this.terminated || this.truncated;
+    let processedFrame = this.lastProcessedFrame;
+    let observation = this.lastObservation;
+    let observationChangedFraction = 0;
+    let preprocessingMs = 0;
+    let fireConfirmation: EnvironmentStep['fireConfirmation'] = null;
+    const lives = this.ale.lives();
+
+    if (decisionComplete) {
+      const lastRgbFrame = this.interactiveRgbFrames[this.interactiveRgbFrames.length - 1];
+      const previousRgbFrame = this.interactiveRgbFrames[this.interactiveRgbFrames.length - 2];
+      const lastGrayFrame = this.interactiveGrayFrames[this.interactiveGrayFrames.length - 1];
+      const previousGrayFrame = this.interactiveGrayFrames[this.interactiveGrayFrames.length - 2];
+      if (!lastRgbFrame || !lastGrayFrame) throw new Error('ALE returned no frame after act()');
+
+      const renderFrame = previousRgbFrame && lastRgbFrame
+        ? maxPoolRgbFramesForRender(previousRgbFrame, lastRgbFrame)
+        : lastRgbFrame;
+      const pooledGrayscale = previousGrayFrame && lastGrayFrame
+        ? maxPoolGrayscaleFrames(previousGrayFrame, lastGrayFrame)
+        : lastGrayFrame;
+      const preprocessingStartedAt = now();
+      processedFrame = preprocessGrayscaleFrame(pooledGrayscale);
+      observation = this.frameStack.push(processedFrame);
+      preprocessingMs = now() - preprocessingStartedAt;
+      observationChangedFraction = changedFraction(
+        this.interactiveBeforeObservation ?? this.lastObservation,
+        observation,
+      );
+      this.lastRawRgb = new Uint8Array(renderFrame);
+      this.lastProcessedFrame = new Uint8Array(processedFrame);
+      this.lastObservation = new Uint8Array(observation);
+
+      if (autoFire) {
+        this.fireAttempts += 1;
+        if (this.interactiveDecisionReward !== 0) fireConfirmation = 'reward';
+        if (observationChangedFraction >= this.contract.fire_reset_confirmation.min_observation_change_fraction) {
+          this.fireActivityStreak += 1;
+        } else {
+          this.fireActivityStreak = 0;
+        }
+        if (!fireConfirmation && this.fireActivityStreak >= this.contract.fire_reset_confirmation.confirmation_steps) {
+          fireConfirmation = 'observation_activity_streak';
+        }
+        if (fireConfirmation || this.terminated || this.truncated) {
+          this.needsFire = false;
+          this.pendingFireReason = null;
+          this.fireAttempts = 0;
+          this.fireActivityStreak = 0;
+        } else if (this.fireAttempts >= this.contract.fire_reset_confirmation.max_fire_attempts) {
+          throw new Error(`FIRE serve was not confirmed after ${this.fireAttempts} attempts for ${autoFireReason}`);
+        }
+      } else {
+        this.fireActivityStreak = 0;
+      }
+
+      if (lives < this.lastLives) {
+        this.needsFire = true;
+        this.pendingFireReason = 'after_life_loss';
+        this.fireAttempts = 0;
+        this.fireActivityStreak = 0;
+      }
+      this.lastLives = lives;
+      this.agentStep += 1;
+
+      if (this.preprocessingTraceEnabled) {
+        this.traceSteps.push({
+          rawGrayscaleFrames: this.interactiveGrayFrames.map((frame) => Array.from(frame)),
+          pooledGrayscale: Array.from(pooledGrayscale),
+          processedFrame: Array.from(processedFrame),
+          observation: Array.from(observation),
+          requestedModelAction: latchedAction.modelIndex,
+          executedModelAction: executed.modelIndex,
+          autoFire,
+          autoFireReason,
+        });
+      }
+      this.resetInteractiveDecision();
+    }
+
+    const totalMs = now() - startedAt;
+    return {
+      observation: new Uint8Array(observation),
+      processedFrame: new Uint8Array(processedFrame),
+      rawRgb: new Uint8Array(this.lastRawRgb),
+      requestedModelAction: requested.modelIndex,
+      requestedAction: requested.meaning,
+      requestedAleAction: requested.aleAction,
+      executedModelAction: executed.modelIndex,
+      executedAction: executed.meaning,
+      executedAleAction: executed.aleAction,
+      autoFire,
+      autoFireReason,
+      fireConfirmation,
+      observationChangedFraction,
+      reward,
+      episodeReturn: this.episodeReturn,
+      lives,
+      frameNumber: this.ale.getFrameNumber(),
+      agentStep: this.agentStep,
+      actualEmulatorFrames: this.ale.getFrameNumber() - beforeFrameNumber || 1,
+      rawFrameSkip: this.ale.getInt('frame_skip'),
+      outerActionRepeat: rawFrameRepeat,
+      terminated: this.terminated,
+      truncated: this.truncated,
+      gameOverReason: this.truncated ? 'time_limit' : this.terminated ? 'terminated' : null,
+      timing: { aleStepMs, preprocessingMs, totalMs },
+    };
+  }
+
+  private resetInteractiveDecision(): void {
+    this.interactiveFramesInDecision = 0;
+    this.interactiveDecisionRepeat = 0;
+    this.interactiveAction = null;
+    this.interactiveBeforeObservation = null;
+    this.interactiveDecisionReward = 0;
+    this.interactiveRgbFrames = [];
+    this.interactiveGrayFrames = [];
   }
 
   enablePreprocessingTrace(): void {
@@ -772,11 +958,30 @@ export class HumanBreakoutEnvironment {
   step(modelActionIndex: number): HumanEnvironmentStep {
     this.assertActive();
     if (this.isFinished) throw new Error('cannot step a finished Breakout episode; reset first');
+    return this.stepInput(mapModelActionToAle(modelActionIndex), null);
+  }
+
+  stepPaddle(command: HumanPaddleCommand): HumanEnvironmentStep {
+    this.assertActive();
+    if (this.isFinished) throw new Error('cannot step a finished Breakout episode; reset first');
+    const requested = mapModelActionToAle(ACTION_MEANINGS.indexOf('NOOP'));
+    const requestedPaddlePositionX = normalizePaddlePosition(command.targetX);
+    return this.stepInput(requested, requestedPaddlePositionX, command.direction);
+  }
+
+  private stepInput(
+    requested: MappedAction,
+    requestedPaddlePositionX: number | null,
+    requestedDirection: ActionMeaning = requested.meaning,
+  ): HumanEnvironmentStep {
+    this.assertActive();
+    if (this.isFinished) throw new Error('cannot step a finished Breakout episode; reset first');
     const startedAt = now();
-    const requested = mapModelActionToAle(modelActionIndex);
     const autoFire = this.needsFire;
     const autoFireReason = autoFire ? this.pendingFireReason : null;
     const executed = autoFire ? mapModelActionToAle(1) : requested;
+    if (requestedPaddlePositionX !== null) this.ale.setBreakoutPaddlePosition(requestedPaddlePositionX);
+    const appliedPaddleTargetX = requestedPaddlePositionX;
     const beforeFrameNumber = this.ale.getFrameNumber();
     const beforeRawRgb = this.lastRawRgb;
     const aleStartedAt = now();
@@ -827,9 +1032,15 @@ export class HumanBreakoutEnvironment {
       rawRgb: new Uint8Array(rawRgb),
       requestedModelAction: requested.modelIndex,
       requestedAction: requested.meaning,
+      requestedDirection,
+      requestedPaddleStrength: null,
+      requestedPaddlePositionX,
       requestedAleAction: requested.aleAction,
       executedModelAction: executed.modelIndex,
       executedAction: executed.meaning,
+      executedDirection: executed.meaning,
+      executedPaddleStrength: null,
+      appliedPaddleTargetX,
       executedAleAction: executed.aleAction,
       autoFire,
       autoFireReason,
@@ -887,6 +1098,11 @@ export class HumanBreakoutEnvironment {
   private assertActive(): void {
     if (this.disposed) throw new Error('ALE environment has been disposed');
   }
+}
+
+function normalizePaddlePosition(position: number | null): number | null {
+  if (position === null || !Number.isFinite(position)) return null;
+  return Math.min(1, Math.max(0, position));
 }
 
 export interface HumanEnvironmentSnapshot {

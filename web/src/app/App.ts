@@ -16,6 +16,7 @@ import { detectBrowser } from '../inference/browserInfo';
 import { detectWebGpuSupport } from '../inference/webgpuSupport';
 import { KeyboardController } from '../input/KeyboardController';
 import { MouseController, type MouseMotionState } from '../input/MouseController';
+import type { HumanPaddleCommand } from '../input/paddleCommand';
 import { DifficultyPolicy, AI_DIFFICULTY_LABELS, isAiDifficulty, type AiDifficulty } from './difficultyPolicy';
 import {
   BrowserBreakoutEnvironment,
@@ -24,7 +25,7 @@ import {
   type HumanEnvironmentStep,
 } from '../environment/aleEnvironment';
 import { loadBreakoutContract, type BreakoutContractV2 } from '../environment/breakoutContract';
-import { DualGameLoop, type AgentLoopStep, type DualLoopDiagnostics } from '../game/dualGameLoop';
+import { DualGameLoop, type AgentLoopStep, type DualLoopDiagnostics, type HumanLoopCommand } from '../game/dualGameLoop';
 import { browserEvaluationSeeds, runPolicyEvaluation, type BrowserPolicyEvaluationArtifact } from '../evaluation/policyEvaluation';
 import { buildBrowserValidationArtifact, buildDay28ValidationArtifact } from '../validation/buildArtifact';
 import { runBrowserBackendComparison } from '../validation/runBrowserBenchmark';
@@ -65,6 +66,10 @@ interface HumanActionSample {
   positionError: number | null;
   requestedAction: HumanAction;
   executedAction: HumanAction;
+  requestedDirection: HumanAction;
+  executedDirection: HumanAction;
+  requestedPaddlePositionX: number | null;
+  appliedPaddleTargetX: number | null;
   action: HumanAction;
   rawFrameNumber: number;
   actualEmulatorFrames: number;
@@ -75,8 +80,12 @@ interface MouseControlV3Diagnostics {
   paddleCenterX: number | null;
   motionState: MouseMotionState;
   positionError: number | null;
-  startThreshold: number;
-  stopThreshold: number;
+  requestedDirection: HumanPaddleCommand['direction'];
+  requestedPaddlePositionX: number | null;
+  executedDirection: HumanAction;
+  appliedPaddleTargetX: number | null;
+  rawFrameNumber: number;
+  actualEmulatorFrames: number;
   executedHumanAction: HumanAction;
   decisionCount: number;
   actionHistory: HumanActionSample[];
@@ -132,6 +141,7 @@ export class App {
 
     this.keyboard.attach();
     this.mouse.attach(this.required<HTMLCanvasElement>('[data-role="human-canvas"]'));
+    window.addEventListener('blur', this.onWindowBlur);
     this.setInputMode('keyboard');
     this.inputTimer = window.setInterval(() => this.renderHumanInput(), 80);
     this.unsubscribeScheduler = this.scheduler.subscribe((status) => {
@@ -184,6 +194,7 @@ export class App {
   destroy(): void {
     if (!this.mounted) return;
     this.gameLoop?.destroy();
+    window.removeEventListener('blur', this.onWindowBlur);
     this.humanEnvironment?.dispose();
     this.agentEnvironment?.dispose();
     this.keyboard.detach();
@@ -455,13 +466,19 @@ export class App {
         ...this.agentEnvironment.runtimeDiagnostics,
         humanRuntime: this.humanEnvironment.runtimeDiagnostics,
         agentRuntime: this.agentEnvironment.runtimeDiagnostics,
+        interactiveAgentRuntime: {
+          rawFramesPerInference: 1,
+          policyActionRepeat: this.agentEnvironment.contract.frame_skip,
+          policyObservationRepeat: this.agentEnvironment.contract.frame_skip,
+          schedule: 'requestAnimationFrame',
+        },
         humanInstanceId: this.humanEnvironment.instanceId,
         agentInstanceId: this.agentEnvironment.instanceId,
         crossOriginIsolated: window.crossOriginIsolated,
         dualInstanceCount: new Set([this.humanEnvironment.instanceId, this.agentEnvironment.instanceId]).size,
-        preferredBackend: this.webgpuSupport?.supported ? 'webgpu' : 'wasm',
+        preferredBackend: 'wasm',
         actualGameplayBackend: this.gameplayBackend,
-        gracefulFallback: this.gameplayBackend !== 'webgpu' && this.webgpuSupport?.supported === true,
+        gracefulFallback: this.gameplayBackend === 'webgpu',
       };
       if (this.debug) {
         const browser = await detectBrowser();
@@ -482,13 +499,18 @@ export class App {
         human: this.humanEnvironment,
         agent: this.agentEnvironment,
         agentRuntime: {
+          // Inference follows display cadence; the environment latches each
+          // action and updates the model observation at the trained frame skip.
           outerActionRepeat: this.agentEnvironment.contract.frame_skip,
           stickyActionProbability: this.agentEnvironment.contract.sticky_action_probability,
         },
-        humanAction: () => ACTION_MEANINGS.indexOf(this.currentHumanAction()),
-        infer: async (observation) => this.difficultyPolicy.select(
-          await (this.gameplayInferenceWorker?.infer(observation) ?? this.scheduler.run(observation)),
-        ),
+        humanCommand: () => this.currentHumanCommand(),
+        infer: async (observation) => {
+          const policy = this.gameplayInferenceWorker
+            ? await this.gameplayInferenceWorker.infer(observation)
+            : await this.scheduler.run(observation);
+          return this.difficultyPolicy.select(policy);
+        },
         onHumanStep: (step) => {
           this.latestHumanStep = step;
           this.recordHumanStep(step);
@@ -502,11 +524,10 @@ export class App {
         onFrame: () => this.renderCanvases(),
         onDiagnostics: (diagnostics) => this.updateHumanRuntimeDiagnostics(diagnostics),
         onError: (error) => this.reportRuntimeError(error),
-        // Chrome timer/render overhead is measurable on the production page;
-        // this deadline keeps observed Human raw cadence near the 60 Hz Atari
-        // target without changing the Human environment's one-frame semantics.
+        // Both policy inference and raw ALE rendering follow browser refresh;
+        // the Agent environment preserves its four-frame policy cadence.
         humanTargetFps: 80,
-        agentTargetFps: 15,
+        agentTargetFps: 60,
       });
       this.updateHumanRuntimeDiagnostics(this.gameLoop.runtimeDiagnostics);
       this.scheduler.start();
@@ -558,8 +579,12 @@ export class App {
     this.setText('[data-role="human-state"]', step.terminated || step.truncated ? 'Game over' : 'Playing');
     this.setText('[data-role="human-stage-state"]', step.terminated || step.truncated ? 'GAME OVER' : 'PLAYING');
     if (this.debug) {
-      this.setText('[data-role="human-requested-action"]', step.requestedAction);
+      this.setText('[data-role="human-requested-action"]', step.requestedDirection);
       this.setText('[data-role="human-executed-action"]', step.executedAction);
+      this.setText('[data-role="requested-paddle-position"]', formatNormalized(step.requestedPaddlePositionX));
+      this.setText('[data-role="applied-paddle-target"]', formatNormalized(step.appliedPaddleTargetX));
+      this.setText('[data-role="human-raw-frame-number"]', `${step.rawFrameNumber}`);
+      this.setText('[data-role="human-actual-emulator-frames"]', `${step.actualEmulatorFrames}`);
       this.setText('[data-role="human-frame-repeat"]', `${step.actualEmulatorFrames}`);
       this.setText('[data-role="human-sticky"]', `${step.stickyActionProbability}`);
       this.updateHumanRuntimeDiagnostics(this.gameLoop?.runtimeDiagnostics ?? null);
@@ -584,6 +609,8 @@ export class App {
       this.setText('[data-role="auto-fire"]', `${this.agentAutoFireCount}`);
       this.required('[data-role="gameplay-q-values"]').innerHTML = renderPolicyQValuesMarkup(step.policy.qValues, step.policy.actionIndex);
       this.renderPreprocessing(environment.observation, environment.processedFrame);
+      this.setText('[data-role="agent-step-latency"]', `${step.environmentStepMs.toFixed(2)} ms`);
+      this.setText('[data-role="agent-cycle-latency"]', `${step.totalDecisionMs.toFixed(2)} ms`);
     }
   }
 
@@ -611,7 +638,9 @@ export class App {
   private async prepareGameplayPolicy(): Promise<void> {
     const support = this.webgpuSupport ?? await detectWebGpuSupport();
     this.webgpuSupport = support;
-    const candidates: InferenceBackend[] = support.supported ? ['webgpu', 'wasm'] : ['wasm'];
+    // Live gameplay prefers the lower-latency WASM path for per-frame inference;
+    // WebGPU remains available when the WASM session cannot initialize.
+    const candidates: InferenceBackend[] = support.supported ? ['wasm', 'webgpu'] : ['wasm'];
     let lastError: unknown = null;
     for (const backend of candidates) {
       try {
@@ -622,12 +651,15 @@ export class App {
           this.policy = new OrtWebPolicy({ backend });
           await this.policy.load();
         }
-        if (this.gameplayInferenceWorker?.actualBackend !== backend) {
+        if (backend === 'wasm') {
+          await this.gameplayInferenceWorker?.release();
+          this.gameplayInferenceWorker = null;
+        } else if (this.gameplayInferenceWorker?.actualBackend !== backend) {
           await this.gameplayInferenceWorker?.release();
           this.gameplayInferenceWorker = new AgentInferenceWorker(backend);
           await this.gameplayInferenceWorker.load();
         }
-        if (this.gameplayInferenceWorker.actualBackend !== backend) {
+        if (this.gameplayInferenceWorker && this.gameplayInferenceWorker.actualBackend !== backend) {
           throw new Error(`gameplay worker requested ${backend.toUpperCase()} but used ${this.gameplayInferenceWorker.actualBackend ?? 'unavailable'}`);
         }
         this.gameplayBackend = this.policy.actualBackend;
@@ -690,11 +722,12 @@ export class App {
     this.setText('[data-role="paddle-center-x"]', '—');
     this.setText('[data-role="motion-state"]', 'STOPPED');
     this.setText('[data-role="position-error"]', '—');
-    this.setText('[data-role="start-threshold"]', `${this.mouse.deadzoneNormalized.toFixed(5)}`);
-    this.setText('[data-role="stop-threshold"]', `${this.mouse.deadzoneNormalized.toFixed(5)}`);
-    this.setText('[data-role="mouse-deadzone-raw-px"]', `${this.mouse.deadzoneRawPixels}`);
     this.setText('[data-role="human-requested-action"]', 'NOOP');
     this.setText('[data-role="human-executed-action"]', 'NOOP');
+    this.setText('[data-role="requested-paddle-position"]', '—');
+    this.setText('[data-role="applied-paddle-target"]', '—');
+    this.setText('[data-role="human-raw-frame-number"]', '0');
+    this.setText('[data-role="human-actual-emulator-frames"]', '0');
     this.setText('[data-role="human-raw-fps"]', '0');
     this.setText('[data-role="human-tick-count"]', '0');
     this.setText('[data-role="human-late-ticks"]', '0');
@@ -715,6 +748,8 @@ export class App {
     this.setText('[data-role="mistake-injected"]', 'no');
     this.setText('[data-role="episode-return"]', '0');
     this.setText('[data-role="inference-latency"]', '—');
+    this.setText('[data-role="agent-step-latency"]', '—');
+    this.setText('[data-role="agent-cycle-latency"]', '—');
     this.setText('[data-role="agent-frame"]', '0 / 0');
     this.setText('[data-role="auto-fire"]', '0');
     this.setText('[data-role="gameplay-backend"]', '—');
@@ -735,21 +770,18 @@ export class App {
   }
 
   private renderHumanInput(): void {
-    const mouseAction = this.mouse.peekAction();
+    const mouseCommand = this.mouse.peekCommand();
     const inputs = this.inputMode === 'keyboard'
       ? [...this.keyboard.snapshot()]
-      : mouseAction === 'NOOP' ? [] : [mouseAction];
+      : mouseCommand.direction === 'NOOP' ? [] : [mouseCommand.direction];
     this.setText('[data-role="human-input"]', inputs.length ? inputs.join(' + ') : 'none');
-    if (this.inputMode === 'mouse') this.setText('[data-role="input-hint"]', mouseStatusMessage(this.mouse.hasTarget));
+    if (this.inputMode === 'mouse') this.setText('[data-role="input-hint"]', mouseStatusMessage());
     this.renderMouseTargetMarker();
     if (this.debug) {
       this.setText('[data-role="cursor-target-x"]', formatNormalized(this.mouse.targetX));
       this.setText('[data-role="paddle-center-x"]', formatNormalized(this.mouse.paddleCenterX));
       this.setText('[data-role="motion-state"]', this.mouse.motionState);
       this.setText('[data-role="position-error"]', formatNormalized(this.mouse.positionError));
-      this.setText('[data-role="start-threshold"]', `${this.mouse.deadzoneNormalized.toFixed(5)}`);
-      this.setText('[data-role="stop-threshold"]', `${this.mouse.deadzoneNormalized.toFixed(5)}`);
-      this.setText('[data-role="mouse-deadzone-raw-px"]', `${this.mouse.deadzoneRawPixels}`);
       this.setText('[data-role="executed-human-action"]', this.lastHumanAction);
       this.updateMouseDiagnostics();
     }
@@ -764,7 +796,7 @@ export class App {
     this.lastHumanAction = 'NOOP';
     const label = value === 'keyboard' ? 'Keyboard' : 'Mouse';
     this.setText('[data-role="human-input-mode"]', label);
-    this.setText('[data-role="input-hint"]', keyboardEnabled ? '← / → move · Space serves' : mouseStatusMessage(this.mouse.hasTarget));
+    this.setText('[data-role="input-hint"]', keyboardEnabled ? '← / → move · Space serves' : mouseStatusMessage());
     this.required<HTMLCanvasElement>('[data-role="human-canvas"]').dataset.inputMode = value;
     this.renderHumanInput();
   }
@@ -788,14 +820,24 @@ export class App {
     this.renderHumanInput();
   }
 
-  private currentHumanAction(): HumanAction {
-    const action = this.inputMode === 'keyboard' ? this.keyboard.currentAction() : this.mouse.currentAction();
+  private readonly onWindowBlur = (): void => {
+    this.clearHumanInput();
+  };
+
+  private currentHumanCommand(): HumanLoopCommand {
+    if (this.inputMode === 'mouse') {
+      const command = this.mouse.currentCommand();
+      this.lastHumanAction = command.direction;
+      if (this.debug) this.updateMouseDiagnostics(command);
+      return { kind: 'paddle', command };
+    }
+    const action = this.keyboard.currentAction();
     this.lastHumanAction = action;
     if (this.debug) {
       this.setText('[data-role="executed-human-action"]', action);
       this.updateMouseDiagnostics();
     }
-    return action;
+    return { kind: 'discrete', actionIndex: ACTION_MEANINGS.indexOf(action) };
   }
 
   private renderMouseTargetMarker(): void {
@@ -813,27 +855,28 @@ export class App {
     marker.style.left = `${canvasBounds.left - stageBounds.left + targetX * canvasBounds.width}px`;
   }
 
-  private updateMouseDiagnostics(): void {
+  private updateMouseDiagnostics(command = this.mouse.peekCommand()): void {
     if (!this.debug) return;
-    const diagnostics = window.__mouseControlV3Diagnostics ?? {
+    const current = {
       cursorTargetX: this.mouse.targetX,
       paddleCenterX: this.mouse.paddleCenterX,
       motionState: this.mouse.motionState,
       positionError: this.mouse.positionError,
-      startThreshold: this.mouse.deadzoneNormalized,
-      stopThreshold: this.mouse.deadzoneNormalized,
+      requestedDirection: command.direction,
+      requestedPaddlePositionX: command.targetX,
+      executedDirection: this.latestHumanStep?.executedDirection ?? 'NOOP',
+      appliedPaddleTargetX: this.latestHumanStep?.appliedPaddleTargetX ?? null,
+      rawFrameNumber: this.latestHumanStep?.rawFrameNumber ?? 0,
+      actualEmulatorFrames: this.latestHumanStep?.actualEmulatorFrames ?? 0,
       executedHumanAction: this.lastHumanAction,
-      decisionCount: 0,
-      actionHistory: [],
     };
-    diagnostics.cursorTargetX = this.mouse.targetX;
-    diagnostics.paddleCenterX = this.mouse.paddleCenterX;
-    diagnostics.motionState = this.mouse.motionState;
-    diagnostics.positionError = this.mouse.positionError;
-    diagnostics.startThreshold = this.mouse.deadzoneNormalized;
-    diagnostics.stopThreshold = this.mouse.deadzoneNormalized;
-    diagnostics.executedHumanAction = this.lastHumanAction;
-    window.__mouseControlV3Diagnostics = diagnostics;
+    const diagnostics = window.__mouseControlV3Diagnostics;
+    if (diagnostics) {
+      Object.assign(diagnostics, current);
+      window.__mouseControlV3Diagnostics = diagnostics;
+      return;
+    }
+    window.__mouseControlV3Diagnostics = { ...current, decisionCount: 0, actionHistory: [] };
   }
 
   private initializeHumanDiagnostics(): void {
@@ -859,6 +902,10 @@ export class App {
       positionError: this.mouse.positionError,
       requestedAction: step.requestedAction,
       executedAction: step.executedAction,
+      requestedDirection: step.requestedDirection,
+      executedDirection: step.executedDirection,
+      requestedPaddlePositionX: step.requestedPaddlePositionX,
+      appliedPaddleTargetX: step.appliedPaddleTargetX,
       action: step.executedAction,
       rawFrameNumber: step.rawFrameNumber,
       actualEmulatorFrames: step.actualEmulatorFrames,
@@ -872,6 +919,12 @@ export class App {
       if (legacy.actionHistory.length > 512) legacy.actionHistory.splice(0, legacy.actionHistory.length - 512);
     }
     this.lastHumanAction = step.executedAction;
+    if (this.debug) {
+      this.setText('[data-role="requested-paddle-position"]', formatNormalized(step.requestedPaddlePositionX));
+      this.setText('[data-role="applied-paddle-target"]', formatNormalized(step.appliedPaddleTargetX));
+      this.setText('[data-role="human-raw-frame-number"]', `${step.rawFrameNumber}`);
+      this.setText('[data-role="human-actual-emulator-frames"]', `${step.actualEmulatorFrames}`);
+    }
     this.updateMouseDiagnostics();
   }
 
@@ -898,7 +951,7 @@ export class App {
     if (samples.length < 2) return '—';
     const current = samples[samples.length - 1];
     const previous = samples[samples.length - 2];
-    if (!current || current.requestedAction === 'NOOP' || current.targetChangedAtMs === null) return '—';
+    if (!current || current.requestedPaddlePositionX === null || current.targetChangedAtMs === null) return '—';
     return `${Math.max(0, current.timestampMs - current.targetChangedAtMs).toFixed(2)} ms`;
   }
 
@@ -1033,8 +1086,8 @@ function displayCardState(finished: boolean, status: string): string {
   return 'Ready';
 }
 
-function mouseStatusMessage(hasTarget: boolean): string {
-  return hasTarget ? 'Target set · Move to reposition' : 'Mouse · Move over the game to set a target';
+function mouseStatusMessage(): string {
+  return 'Move mouse to control paddle';
 }
 
 function formatNormalized(value: number | null): string {

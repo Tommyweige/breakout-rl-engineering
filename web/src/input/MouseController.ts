@@ -1,17 +1,14 @@
 import { ATARI_SCREEN_HEIGHT, ATARI_SCREEN_WIDTH } from '../environment/atariPreprocessing';
 import type { ActionMeaning } from '../inference/types';
 import { detectPaddleCenterNormalized } from './paddleDetector';
-
-/** The dead zone is intentionally expressed in Atari pixels, not screen CSS pixels. */
-export const DEFAULT_MOUSE_DEADZONE_RAW_PX = 6;
-export const DEFAULT_MOUSE_DEADZONE = DEFAULT_MOUSE_DEADZONE_RAW_PX / ATARI_SCREEN_WIDTH;
+import type { HumanPaddleCommand } from './paddleCommand';
 
 export type MouseMotionState = 'LEFT' | 'RIGHT' | 'STOPPED';
 
 /**
- * Maps a visible absolute pointer target to one legal ALE action per raw frame.
- * The Human environment owns the 60 Hz cadence; this controller only closes
- * the position loop around the latest single raw RGB frame.
+ * Maps the pointer directly to the Human paddle controller's absolute X.
+ * Paddle detection is telemetry only; movement no longer waits for the paddle
+ * detector or a proportional velocity controller.
  */
 export class MouseController {
   private canvas: HTMLCanvasElement | null = null;
@@ -21,12 +18,6 @@ export class MouseController {
   private paddle: number | null = null;
   private state: MouseMotionState = 'STOPPED';
   private readonly detectorColumnHits = new Uint8Array(ATARI_SCREEN_WIDTH);
-
-  constructor(private readonly deadzoneRawPx = DEFAULT_MOUSE_DEADZONE_RAW_PX) {
-    if (!Number.isFinite(deadzoneRawPx) || deadzoneRawPx < 0) {
-      throw new Error('Mouse dead zone must be a non-negative finite Atari-pixel value');
-    }
-  }
 
   private readonly onPointerMove = (event: PointerEvent): void => {
     if (!this.enabled || !this.canvas) return;
@@ -100,34 +91,46 @@ export class MouseController {
     return this.target - this.paddle;
   }
 
-  get deadzoneRawPixels(): number {
-    return this.deadzoneRawPx;
-  }
-
-  get deadzoneNormalized(): number {
-    return this.deadzoneRawPx / ATARI_SCREEN_WIDTH;
-  }
-
   get hasTarget(): boolean {
     return this.target !== null;
   }
 
   currentAction(): ActionMeaning {
-    const action = this.resolveAction();
-    this.state = action === 'LEFT' || action === 'RIGHT' ? action : 'STOPPED';
-    return action;
+    return this.currentCommand().direction;
   }
 
   peekAction(): ActionMeaning {
-    return this.resolveAction();
+    return this.peekCommand().direction;
   }
 
-  private resolveAction(): ActionMeaning {
-    if (!this.enabled || this.target === null || this.paddle === null) return 'NOOP';
-    const error = (this.target - this.paddle) * ATARI_SCREEN_WIDTH;
-    if (error < -this.deadzoneRawPx) return 'LEFT';
-    if (error > this.deadzoneRawPx) return 'RIGHT';
-    return 'NOOP';
+  currentCommand(): HumanPaddleCommand {
+    const command = this.resolveCommand();
+    this.state = command.direction === 'NOOP' ? 'STOPPED' : command.direction;
+    return command;
+  }
+
+  peekCommand(): HumanPaddleCommand {
+    return this.resolveCommand();
+  }
+
+  private resolveCommand(): HumanPaddleCommand {
+    const positionError = this.positionError;
+    const errorRawPx = positionError === null ? null : positionError * ATARI_SCREEN_WIDTH;
+    if (!this.enabled || errorRawPx === null || errorRawPx === 0) {
+      return this.command('NOOP', positionError);
+    }
+
+    const direction = errorRawPx < 0 ? 'LEFT' : 'RIGHT';
+    return this.command(direction, positionError);
+  }
+
+  private command(direction: HumanPaddleCommand['direction'], positionError: number | null): HumanPaddleCommand {
+    return {
+      direction,
+      targetX: this.target,
+      paddleCenterX: this.paddle,
+      positionError,
+    };
   }
 }
 

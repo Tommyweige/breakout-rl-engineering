@@ -1,0 +1,48 @@
+{
+  "name": "@farama/ale-wasm",
+  "version": "0.12.0-paddle.3",
+  "description": "Pinned ALE 0.12.0 WebAssembly build with Human-only analog and absolute paddle entry points",
+  "main": "ale.js",
+  "module": "index.mjs",
+  "types": "ale.d.ts",
+  "exports": {
+    ".": {
+      "types": "./ale.d.ts",
+      "browser": "./index.mjs",
+      "node": "./node.mjs",
+      "import": "./index.mjs",
+      "require": "./ale.js",
+      "default": "./index.mjs"
+    }
+  },
+  "files": [
+    "index.mjs",
+    "node.mjs",
+    "ale.js",
+    "ale.wasm",
+    "ale.data",
+    "ale.d.ts",
+    "README.md",
+    "BUILD.md",
+    "LICENSE"
+  ],
+  "license": "GPL-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Farama-Foundation/Arcade-Learning-Environment.git",
+    "directory": "packages/wasm"
+  },
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "browser": {
+    "fs": false,
+    "path": false
+  },
+  "codexBuildProvenance": {
+    "upstreamCommit": "f96026b362956d89076ac57d73f2ce82a59881ca",
+    "patch": "web/patches/ale-wasm-paddle-strength.patch",
+    "emscripten": "3.1.68",
+    "vcpkgBaseline": "3426a5e955f029ab0088ef6656fda06552bd2699"
+  }
+}

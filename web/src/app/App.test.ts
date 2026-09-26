@@ -66,13 +66,61 @@ describe('Day 30 Human vs AI browser product', () => {
     inputMode.value = 'mouse';
     inputMode.dispatchEvent(new Event('change', { bubbles: true }));
     expect(root.querySelector('[data-role="human-input-mode"]')?.textContent).toBe('Mouse');
-    expect(root.querySelector('[data-role="input-hint"]')?.textContent).toContain('set a target');
+    expect(root.querySelector('[data-role="input-hint"]')?.textContent).toBe('Move mouse to control paddle');
 
     inputMode.value = 'keyboard';
     inputMode.dispatchEvent(new Event('change', { bubbles: true }));
     expect(root.querySelector('[data-role="human-input-mode"]')?.textContent).toBe('Keyboard');
     expect(root.querySelector<HTMLCanvasElement>('[data-role="human-canvas"]')).toBe(humanCanvas);
     expect(root.querySelector('[data-role="human-score"]')?.textContent).toBe('0');
+  });
+
+  it('clears Mouse input on pointer leave, mode switch, blur, pause, and reset', async () => {
+    window.history.replaceState({}, '', '/?debug=1');
+    const root = document.createElement('div');
+    document.body.append(root);
+    app = new App(root);
+    app.mount();
+
+    const humanCanvas = root.querySelector<HTMLCanvasElement>('[data-role="human-canvas"]')!;
+    Object.defineProperty(humanCanvas, 'getBoundingClientRect', {
+      value: () => ({ left: 100, width: 200, top: 0, height: 210, right: 300, bottom: 210, x: 100, y: 0, toJSON: () => ({}) }),
+    });
+    const inputMode = root.querySelector<HTMLSelectElement>('[data-action="input-mode"]')!;
+    const targetAt = (clientX: number) => humanCanvas.dispatchEvent(new MouseEvent('pointermove', { clientX }));
+    const waitForInputRender = () => new Promise((resolve) => window.setTimeout(resolve, 90));
+
+    inputMode.value = 'mouse';
+    inputMode.dispatchEvent(new Event('change', { bubbles: true }));
+    targetAt(250);
+    await waitForInputRender();
+    expect(window.__mouseControlV3Diagnostics?.cursorTargetX).toBe(0.75);
+
+    humanCanvas.dispatchEvent(new Event('pointerleave'));
+    await waitForInputRender();
+    expect(window.__mouseControlV3Diagnostics?.cursorTargetX).toBeNull();
+    expect(window.__mouseControlV3Diagnostics?.requestedPaddlePositionX).toBeNull();
+
+    targetAt(250);
+    inputMode.value = 'keyboard';
+    inputMode.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(window.__mouseControlV3Diagnostics?.cursorTargetX).toBeNull();
+
+    inputMode.value = 'mouse';
+    inputMode.dispatchEvent(new Event('change', { bubbles: true }));
+    targetAt(250);
+    await waitForInputRender();
+    window.dispatchEvent(new Event('blur'));
+    expect(window.__mouseControlV3Diagnostics?.cursorTargetX).toBeNull();
+
+    targetAt(250);
+    await waitForInputRender();
+    root.querySelector<HTMLButtonElement>('[data-action="pause"]')!.click();
+    expect(window.__mouseControlV3Diagnostics?.cursorTargetX).toBeNull();
+    targetAt(250);
+    await waitForInputRender();
+    root.querySelector<HTMLButtonElement>('[data-action="reset"]')!.click();
+    expect(window.__mouseControlV3Diagnostics?.cursorTargetX).toBeNull();
   });
 
   it('exposes Mouse v3 diagnostics only on the debug route', () => {
@@ -86,7 +134,9 @@ describe('Day 30 Human vs AI browser product', () => {
     expect(root.querySelector('[data-role="paddle-center-x"]')).not.toBeNull();
     expect(root.querySelector('[data-role="motion-state"]')).not.toBeNull();
     expect(root.querySelector('[data-role="position-error"]')).not.toBeNull();
-    expect(window.__mouseControlV3Diagnostics?.startThreshold).toBeCloseTo(6 / 160, 5);
+    expect(root.querySelector('[data-role="requested-paddle-position"]')).not.toBeNull();
+    expect(root.querySelector('[data-role="applied-paddle-target"]')).not.toBeNull();
+    expect(window.__mouseControlV3Diagnostics?.requestedPaddlePositionX).toBeNull();
   });
 
   it('drives Start, Pause, and Restart through one shared player message', () => {
