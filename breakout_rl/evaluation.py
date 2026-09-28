@@ -27,9 +27,11 @@ from torch import nn
 from breakout_env import ENVIRONMENT_ID, make_breakout_env
 from breakout_rl.completion import (
     BreakoutCompletionDetector,
+    CompletionState,
     inspect_breakout_completion_support,
     read_ale_episode_frame,
     read_ale_lives,
+    read_breakout_score,
 )
 from breakout_rl.models.factory import build_q_network, checkpoint_architecture
 from breakout_rl.tensors import observation_to_tensor
@@ -87,6 +89,7 @@ def _capture_source_provenance(repository_root: Path) -> dict[str, Any]:
         Path("breakout_rl/completion.py"),
         Path("breakout_rl/evaluation.py"),
         Path("breakout_rl/evaluation_artifacts.py"),
+        Path("configs/eval/breakout_completion_audit_v1.json"),
     )
     source_digest = hashlib.sha256()
     try:
@@ -285,12 +288,7 @@ class EpisodeResult:
     frames_between_life_losses: float | None = None
     time_to_first_life_loss: int | None = None
     life_losses_per_1000_steps: float = 0.0
-    cleared: bool | None = None
-    clear_agent_step: int | None = None
-    clear_emulator_frame: int | None = None
-    clear_score: float | None = None
-    lives_remaining_at_clear: int | None = None
-    completion_detection_source: str | None = None
+    completion_state: CompletionState = CompletionState(cleared=None)
 
     @property
     def complete(self) -> bool:
@@ -305,6 +303,34 @@ class EpisodeResult:
         if self.truncated:
             return "truncated"
         return "incomplete"
+
+    @property
+    def cleared(self) -> bool | None:
+        return self.completion_state.cleared
+
+    @property
+    def clear_agent_step(self) -> int | None:
+        return self.completion_state.clear_agent_step
+
+    @property
+    def clear_emulator_frame(self) -> int | None:
+        return self.completion_state.clear_emulator_frame
+
+    @property
+    def clear_score(self) -> float | None:
+        return self.completion_state.clear_score
+
+    @property
+    def lives_remaining_at_clear(self) -> int | None:
+        return self.completion_state.lives_remaining_at_clear
+
+    @property
+    def completion_detection_source(self) -> str | None:
+        return self.completion_state.completion_detection_source
+
+    @property
+    def completion_detection_reason(self) -> str | None:
+        return self.completion_state.unavailable_reason
 
     @property
     def completion_outcome(self) -> str:
@@ -347,12 +373,19 @@ class EpisodeResult:
             "complete": self.complete,
             "stop_reason": self.stop_reason,
             "completion_outcome": self.completion_outcome,
-            "cleared": self.cleared,
-            "clear_agent_step": self.clear_agent_step,
-            "clear_emulator_frame": self.clear_emulator_frame,
-            "clear_score": self.clear_score,
-            "lives_remaining_at_clear": self.lives_remaining_at_clear,
-            "completion_detection_source": self.completion_detection_source,
+            "cleared": self.completion_state.cleared,
+            "clear_agent_step": self.completion_state.clear_agent_step,
+            "clear_emulator_frame": self.completion_state.clear_emulator_frame,
+            "clear_score": self.completion_state.clear_score,
+            "lives_remaining_at_clear": (
+                self.completion_state.lives_remaining_at_clear
+            ),
+            "completion_detection_source": (
+                self.completion_state.completion_detection_source
+            ),
+            "completion_detection_reason": (
+                self.completion_state.unavailable_reason
+            ),
             # Keep the historical field, but define it explicitly as the
             # action sent to the wrapped environment.
             "action_distribution": executed_distribution,
@@ -986,6 +1019,7 @@ def evaluate_policy(
                             )
                             completion_detector.observe(
                                 cumulative_score=episode_return,
+                                ram_score=read_breakout_score(env),
                                 agent_step=len(executed_action_values),
                                 emulator_frame=elapsed_emulator_frame,
                                 lives_remaining=read_ale_lives(env),
@@ -1038,20 +1072,7 @@ def evaluate_policy(
                             life_losses_per_1000_steps=float(
                                 survival_metrics["life_losses_per_1000_steps"]
                             ),
-                            cleared=completion_detector.state.cleared,
-                            clear_agent_step=(
-                                completion_detector.state.clear_agent_step
-                            ),
-                            clear_emulator_frame=(
-                                completion_detector.state.clear_emulator_frame
-                            ),
-                            clear_score=completion_detector.state.clear_score,
-                            lives_remaining_at_clear=(
-                                completion_detector.state.lives_remaining_at_clear
-                            ),
-                            completion_detection_source=(
-                                completion_detector.state.completion_detection_source
-                            ),
+                            completion_state=completion_detector.state,
                         )
                     )
     finally:
@@ -1159,6 +1180,7 @@ def write_evaluation_artifacts(
         "clear_score",
         "lives_remaining_at_clear",
         "completion_detection_source",
+        "completion_detection_reason",
         "completion_provenance_json",
         *action_columns,
         "action_distribution_json",
@@ -1211,6 +1233,7 @@ def write_evaluation_artifacts(
                 "clear_score": episode.clear_score,
                 "lives_remaining_at_clear": episode.lives_remaining_at_clear,
                 "completion_detection_source": episode.completion_detection_source,
+                "completion_detection_reason": episode.completion_detection_reason,
                 "completion_provenance_json": json.dumps(
                     episode_payload.get("completion_provenance"),
                     ensure_ascii=False,

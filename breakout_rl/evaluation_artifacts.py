@@ -35,6 +35,7 @@ COMPLETION_EPISODE_FIELDS = (
     "clear_score",
     "lives_remaining_at_clear",
     "completion_detection_source",
+    "completion_detection_reason",
 )
 COMPLETION_SUMMARY_FIELDS = (
     "total_episodes",
@@ -471,6 +472,13 @@ def validate_episode_rows(
             raise ValueError(
                 f"{source_path}: completion_detection_source must be a string or null"
             )
+        completion_detection_reason = raw_row.get("completion_detection_reason")
+        if completion_detection_reason in (None, ""):
+            completion_detection_reason = None
+        elif not isinstance(completion_detection_reason, str):
+            raise ValueError(
+                f"{source_path}: completion_detection_reason must be a string or null"
+            )
         if raw_cleared is True:
             if clear_agent_step is None or clear_score is None:
                 raise ValueError(
@@ -490,6 +498,19 @@ def validate_episode_rows(
             if completion_detection_source is None:
                 raise ValueError(
                     f"{source_path}: a verified clear requires a detection source"
+                )
+            if completion_detection_reason is not None:
+                raise ValueError(
+                    f"{source_path}: a verified clear cannot have a detection error"
+                )
+        elif raw_cleared is False:
+            if completion_detection_source is None:
+                raise ValueError(
+                    f"{source_path}: cleared=false requires an available detector source"
+                )
+            if completion_detection_reason is not None:
+                raise ValueError(
+                    f"{source_path}: cleared=false cannot have a detection error"
                 )
         elif any(
             value is not None
@@ -562,6 +583,7 @@ def validate_episode_rows(
                 "clear_score": clear_score,
                 "lives_remaining_at_clear": lives_remaining_at_clear,
                 "completion_detection_source": completion_detection_source,
+                "completion_detection_reason": completion_detection_reason,
                 "completion_outcome": raw_completion_outcome,
                 "completion_provenance": raw_row.get("completion_provenance"),
             }

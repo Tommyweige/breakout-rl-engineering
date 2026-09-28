@@ -16,6 +16,7 @@ from breakout_rl.completion import (
     BreakoutCompletionDetector,
     CompletionSupport,
     inspect_breakout_completion_support,
+    read_breakout_score,
 )
 from breakout_rl.evaluation_artifacts import (
     summary_from_episode_rows,
@@ -83,6 +84,7 @@ class BreakoutCompletionDetectorTests(unittest.TestCase):
         for score, step, lives in ((0.0, 1, 5), (7.0, 2, 5), (432.0, 100, 4)):
             state = self.detector.observe(
                 cumulative_score=score,
+                ram_score=int(score),
                 agent_step=step,
                 emulator_frame=step * 4,
                 lives_remaining=lives,
@@ -93,6 +95,7 @@ class BreakoutCompletionDetectorTests(unittest.TestCase):
     def test_two_wall_maximum_latches_with_environment_native_timing(self) -> None:
         before_maximum = self.detector.observe(
             cumulative_score=863.0,
+            ram_score=863,
             agent_step=119,
             emulator_frame=476,
             lives_remaining=3,
@@ -101,6 +104,7 @@ class BreakoutCompletionDetectorTests(unittest.TestCase):
 
         clear = self.detector.observe(
             cumulative_score=864.0,
+            ram_score=864,
             agent_step=120,
             emulator_frame=480,
             lives_remaining=3,
@@ -114,6 +118,7 @@ class BreakoutCompletionDetectorTests(unittest.TestCase):
 
         after_clear = self.detector.observe(
             cumulative_score=864.0,
+            ram_score=864,
             agent_step=121,
             emulator_frame=484,
             lives_remaining=2,
@@ -123,6 +128,7 @@ class BreakoutCompletionDetectorTests(unittest.TestCase):
     def test_game_over_and_truncation_scores_do_not_imply_a_clear(self) -> None:
         game_over = self.detector.observe(
             cumulative_score=87.0,
+            ram_score=87,
             agent_step=80,
             emulator_frame=320,
             lives_remaining=0,
@@ -132,6 +138,7 @@ class BreakoutCompletionDetectorTests(unittest.TestCase):
         self.detector.reset()
         time_limit = self.detector.observe(
             cumulative_score=250.0,
+            ram_score=250,
             agent_step=27000,
             emulator_frame=108000,
             lives_remaining=1,
@@ -153,6 +160,7 @@ class BreakoutCompletionDetectorTests(unittest.TestCase):
 
         state = detector.observe(
             cumulative_score=864.0,
+            ram_score=864,
             agent_step=100,
             emulator_frame=400,
             lives_remaining=2,
@@ -161,6 +169,60 @@ class BreakoutCompletionDetectorTests(unittest.TestCase):
         self.assertIsNone(state.cleared)
         self.assertIsNone(state.clear_score)
         self.assertIsNone(state.completion_detection_source)
+
+    def test_ram_and_raw_reward_disagreement_fails_closed_for_the_episode(self) -> None:
+        mismatch = self.detector.observe(
+            cumulative_score=10.0,
+            ram_score=9,
+            agent_step=1,
+            emulator_frame=4,
+            lives_remaining=5,
+        )
+        self.assertIsNone(mismatch.cleared)
+        self.assertIsNone(mismatch.completion_detection_source)
+        self.assertIn("disagrees", mismatch.unavailable_reason)
+
+        later = self.detector.observe(
+            cumulative_score=864.0,
+            ram_score=864,
+            agent_step=100,
+            emulator_frame=400,
+            lives_remaining=4,
+        )
+        self.assertIsNone(later.cleared)
+
+    def test_ale_scoreboard_ram_fixture_emits_the_documented_maximum_reward(self) -> None:
+        env = make_breakout_env(fire_reset=True)
+        try:
+            env.reset(seed=101)
+            support = inspect_breakout_completion_support(env)
+            ale = env.unwrapped.ale
+            frame_origin = ale.getEpisodeFrameNumber()
+            env.step(2)  # The wrapper supplies the initial FIRE serve.
+            ale.setRAM(76, 0x08)
+            ale.setRAM(77, 0x64)
+            self.assertEqual(read_breakout_score(env), BREAKOUT_FULL_CLEAR_SCORE)
+
+            _, reward, terminated, truncated, _ = env.step(0)
+            score_from_ram = read_breakout_score(env)
+            emulator_frame = ale.getEpisodeFrameNumber() - frame_origin
+            lives = ale.lives()
+        finally:
+            env.close()
+
+        self.assertTrue(support.supported, support.reason)
+        self.assertEqual(reward, float(BREAKOUT_FULL_CLEAR_SCORE))
+        self.assertFalse(terminated or truncated)
+        detector = BreakoutCompletionDetector(support)
+        state = detector.observe(
+            cumulative_score=float(reward),
+            ram_score=score_from_ram,
+            agent_step=2,
+            emulator_frame=emulator_frame,
+            lives_remaining=lives,
+        )
+        self.assertTrue(state.cleared)
+        self.assertEqual(state.clear_score, float(BREAKOUT_FULL_CLEAR_SCORE))
 
     def test_repository_environment_matches_the_audited_runtime(self) -> None:
         env = make_breakout_env(fire_reset=True)

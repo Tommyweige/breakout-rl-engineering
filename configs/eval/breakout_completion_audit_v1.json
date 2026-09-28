@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "detector_id": "ale-breakout-two-wall-score-864-v1",
+  "detector_id": "ale-breakout-two-wall-score-864-v2",
   "environment": {
     "id": "ALE/Breakout-v5",
     "game": "breakout",
@@ -22,8 +22,13 @@
   "completion": {
     "definition": "The player destroys both consecutive brick walls in one-player Breakout Game 1.",
     "score_threshold": 864,
-    "score_signal": "Cumulative unmodified ALE rewards, which expose the ROM's score increments.",
-    "detection_source": "ale_raw_reward_exact_max_score",
+    "score_signal": "The ROM scoreboard in ALE RAM, cross-checked against cumulative unmodified ALE rewards.",
+    "ram_score_field": {
+      "addresses": [76, 77],
+      "encoding": "packed_bcd_four_digit",
+      "byte_order": "high_pair_then_low_pair"
+    },
+    "detection_source": "ale_ram_bcd_score_and_raw_reward_agreement",
     "native_ale_clear_signal": null,
     "ram_clear_address": null,
     "failure_policy": "Unsupported environment, mode, ALE version, ROM checksum, or ALE interface yields cleared=null. No screen-only guess is used."
@@ -31,7 +36,7 @@
   "ale_episode_signals": {
     "game_over": "Normal loss after lives are exhausted; it is not a full-clear signal.",
     "game_truncated": "The configured 108000-emulator-frame episode limit; it is not a full-clear signal.",
-    "ram": "ALE exposes 128 RAM bytes. No individual RAM address has been validated as a full-clear flag, so the detector does not rely on an unverified offset."
+    "ram": "ALE exposes 128 RAM bytes. RAM[76:78] stores the four-digit packed-BCD scoreboard; no separate RAM clear flag is used."
   },
   "failure_semantics": {
     "normal_loss": "terminated=true remains stop_reason=terminated and is separately reported as completion_outcome=game_over when the audited detector is available.",
@@ -44,34 +49,9 @@
     "clear_times": "Successful clears only, reported in agent steps and emulator frames.",
     "p90": "Nearest-rank percentile: sorted_values[ceil(0.9 * n) - 1]; one sample reports that sample and zero samples report null."
   },
-  "controlled_validation": {
-    "explicit_mode_parity": {
-      "seed": 101,
-      "steps": 501,
-      "result": "ALE defaults and explicit mode=0,difficulty=0 produced identical observations, rewards, termination, and truncation."
-    },
-    "real_gameplay_trajectory": {
-      "seed": 101,
-      "policy": "seeded random policy through the shared evaluator and Contract v2 environment factory",
-      "agent_steps": 171,
-      "raw_score": 1.0,
-      "lives_lost": 5,
-      "terminated": true,
-      "truncated": false,
-      "completion_outcome": "game_over",
-      "cleared": false,
-      "clear_rate": 0.0
-    },
-    "deterministic_boundary_fixture": {
-      "runtime_identity": "the audited ALE/Breakout-v5 mode, difficulty, ALE version, and ROM checksum",
-      "scores_observed": [0, 7, 432, 863, 864],
-      "clear_results": [false, false, false, false, true],
-      "latched_once": true,
-      "limitation": "This fixture validates the exact documented raw-score boundary; it is not a captured full-clear gameplay trajectory."
-    }
-  },
   "limitations": [
     "The detector is enabled only for the pinned ale-py runtime, mode 0, difficulty 0, and exact packaged ROM checksum.",
+    "RAM[76:78] is the scoreboard, not a dedicated win flag; the manual's documented 864-point maximum supplies the full-clear meaning.",
     "Completion time is reported in agent steps and ALE emulator frames; Python wall-clock time is not used.",
     "No seconds conversion is reported."
   ],

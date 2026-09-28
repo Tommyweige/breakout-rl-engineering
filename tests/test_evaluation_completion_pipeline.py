@@ -12,6 +12,7 @@ from unittest.mock import patch
 import gymnasium as gym
 import numpy as np
 
+from breakout_env import make_breakout_env
 from breakout_rl.completion import (
     BREAKOUT_COMPLETION_SOURCE,
     CompletionSupport,
@@ -86,6 +87,10 @@ class EvaluationCompletionPipelineTests(unittest.TestCase):
                 side_effect=[4],
             ),
             patch(
+                "breakout_rl.evaluation.read_breakout_score",
+                return_value=864,
+            ),
+            patch(
                 "breakout_rl.evaluation._capture_source_provenance",
                 return_value={
                     "source_commit": "a" * 40,
@@ -152,6 +157,26 @@ class EvaluationCompletionPipelineTests(unittest.TestCase):
         self.assertEqual(provenance["contract_id"], "contract-v2")
         self.assertEqual(provenance["contract_sha256"], "b" * 64)
         self.assertEqual(provenance["source_commit"], "a" * 40)
+
+    def test_seeded_real_game_over_trajectory_is_not_a_clear(self) -> None:
+        result = evaluate_policy(
+            None,
+            episodes=1,
+            seeds=[101],
+            device="cpu",
+            env_factory=lambda: make_breakout_env(fire_reset=True),
+            max_steps_per_episode=5000,
+        )
+
+        episode = result.episodes[0]
+        self.assertTrue(result.completion_detector["supported"])
+        self.assertTrue(episode.terminated)
+        self.assertFalse(episode.truncated)
+        self.assertEqual(episode.completion_outcome, "game_over")
+        self.assertFalse(episode.cleared)
+        self.assertEqual(episode.episode_return, 1.0)
+        self.assertEqual(episode.life_loss_count, 5)
+        self.assertEqual(result.to_dict()["summary"]["clear_rate"], 0.0)
 
 
 if __name__ == "__main__":
