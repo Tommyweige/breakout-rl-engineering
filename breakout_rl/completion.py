@@ -82,6 +82,9 @@ BREAKOUT_ROM_SHA256 = _audit_string(_AUDIT_RUNTIME, "rom_sha256", "unsupported")
 BREAKOUT_MODE = _audit_integer(_AUDIT_ENVIRONMENT, "mode", -1)
 BREAKOUT_DIFFICULTY = _audit_integer(_AUDIT_ENVIRONMENT, "difficulty", -1)
 BREAKOUT_FULL_CLEAR_SCORE = _audit_integer(_AUDIT_COMPLETION, "score_threshold", -1)
+BREAKOUT_EXPECTED_MAXIMUM_SCORE = _audit_integer(
+    _AUDIT_COMPLETION, "expected_maximum_score", -1
+)
 BREAKOUT_COMPLETION_SOURCE = _audit_string(
     _AUDIT_COMPLETION, "detection_source", "unsupported"
 )
@@ -95,6 +98,9 @@ BREAKOUT_SCORE_RAM_ENCODING = _audit_string(
 BREAKOUT_SCORE_RAM_BYTE_ORDER = _audit_string(
     _AUDIT_SCORE_RAM_FIELD, "byte_order", "unsupported"
 )
+BREAKOUT_SCORE_RAM_DECODING_RULE = _audit_string(
+    _AUDIT_SCORE_RAM_FIELD, "decoding_rule", "unsupported"
+)
 _COMPLETION_AUDIT_VALID = (
     _AUDIT_CONFIG.get("schema_version") == COMPLETION_SCHEMA_VERSION
     and BREAKOUT_COMPLETION_DETECTOR_ID != "unsupported"
@@ -104,10 +110,12 @@ _COMPLETION_AUDIT_VALID = (
     and BREAKOUT_MODE >= 0
     and BREAKOUT_DIFFICULTY >= 0
     and BREAKOUT_FULL_CLEAR_SCORE > 0
+    and BREAKOUT_EXPECTED_MAXIMUM_SCORE == BREAKOUT_FULL_CLEAR_SCORE
     and BREAKOUT_COMPLETION_SOURCE != "unsupported"
     and len(BREAKOUT_SCORE_RAM_ADDRESSES) == 2
     and BREAKOUT_SCORE_RAM_ENCODING == "packed_bcd_four_digit"
     and BREAKOUT_SCORE_RAM_BYTE_ORDER == "high_pair_then_low_pair"
+    and BREAKOUT_SCORE_RAM_DECODING_RULE != "unsupported"
 )
 
 

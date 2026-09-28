@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import json
 import unittest
 
 from breakout_env import make_breakout_env
 from breakout_rl.completion import (
+    BREAKOUT_AUDIT_CONFIG_PATH,
     BREAKOUT_ALE_PY_VERSION,
     BREAKOUT_COMPLETION_SOURCE,
     BREAKOUT_DIFFICULTY,
@@ -236,6 +238,58 @@ class BreakoutCompletionDetectorTests(unittest.TestCase):
         self.assertEqual(support.mode, 0)
         self.assertEqual(support.difficulty, 0)
         self.assertEqual(support.rom_sha256, BREAKOUT_ROM_SHA256)
+
+    def test_audit_pins_runtime_identity_score_rule_and_positive_validation_limit(self) -> None:
+        audit = json.loads(
+            BREAKOUT_AUDIT_CONFIG_PATH.read_text(encoding="utf-8")
+        )
+        environment = audit["environment"]
+        runtime = audit["runtime"]
+        completion = audit["completion"]
+        ram_score = completion["ram_score_field"]
+        provenance = audit["source_provenance"]
+        validation = audit["validation"]
+
+        self.assertEqual(environment["id"], "ALE/Breakout-v5")
+        self.assertEqual((environment["mode"], environment["difficulty"]), (0, 0))
+        self.assertEqual(environment["frame_skip"], 4)
+        self.assertEqual(environment["sticky_action_probability"], 0.25)
+        self.assertEqual(runtime["ale_ram_bytes"], 128)
+        self.assertEqual(runtime["ale_py_version"], BREAKOUT_ALE_PY_VERSION)
+        self.assertEqual(runtime["gymnasium_version"], "1.3.0")
+        self.assertEqual(runtime["rom_sha256"], BREAKOUT_ROM_SHA256)
+        self.assertEqual(ram_score["addresses"], [76, 77])
+        self.assertEqual(ram_score["encoding"], "packed_bcd_four_digit")
+        self.assertIn(
+            "reject any nibble greater than 9",
+            ram_score["decoding_rule"],
+        )
+        self.assertEqual(completion["expected_maximum_score"], 864)
+        self.assertEqual(completion["score_threshold"], 864)
+        self.assertEqual(
+            provenance["contract_sha256"],
+            "7eca5ae5262a28aeabf3be658f8275a68f3d2ae40cc74379400be2890dc31a2a",
+        )
+        self.assertTrue(
+            any(
+                "atariage.com/manual_html_page.php" in citation["url"]
+                for citation in provenance["citations"]
+            )
+        )
+        self.assertTrue(
+            any(
+                "ale.farama.org/environments/breakout/" in citation["url"]
+                for citation in provenance["citations"]
+            )
+        )
+        self.assertEqual(
+            validation["natural_ale_positive_trajectory"]["status"],
+            "not_observed",
+        )
+        self.assertEqual(
+            validation["limitation"],
+            "Positive completion detection is validated against a deterministic synthetic RAM/reward fixture derived from documented Breakout scoring semantics, but has not yet been observed on a naturally completed ALE trajectory.",
+        )
 
 
 class CompletionSummaryTests(unittest.TestCase):
