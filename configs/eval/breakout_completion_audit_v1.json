@@ -1,0 +1,108 @@
+{
+  "schema_version": 1,
+  "detector_id": "ale-breakout-two-wall-score-864-v2",
+  "environment": {
+    "id": "ALE/Breakout-v5",
+    "game": "breakout",
+    "mode": 0,
+    "difficulty": 0,
+    "mode_description": "Breakout Game 1, the default one-player game",
+    "frame_skip": 4,
+    "sticky_action_probability": 0.25,
+    "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+    "contract_sha256": "7eca5ae5262a28aeabf3be658f8275a68f3d2ae40cc74379400be2890dc31a2a"
+  },
+  "runtime": {
+    "ale_py_version": "0.12.0",
+    "gymnasium_version": "1.3.0",
+    "rom_sha256": "376323f051c3c373c887fd83abead39d87d844ff283d435f4addbfc1710c6fd5",
+    "ale_ram_bytes": 128,
+    "episode_frame_counter": "ALEInterface.getEpisodeFrameNumber"
+  },
+  "source_provenance": {
+    "contract_file": "configs/eval/breakout_contract_v2.json",
+    "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+    "contract_sha256": "7eca5ae5262a28aeabf3be658f8275a68f3d2ae40cc74379400be2890dc31a2a",
+    "runtime_identity_source": "ALE runtime inspection in inspect_breakout_completion_support",
+    "citations": [
+      {
+        "url": "https://www.atariage.com/manual_html_page.php?SoftwareID=889",
+        "sections": ["How to Play Breakout", "One-Player Games", "Scoring"],
+        "supports": "One-player Game 1 requires destroying two walls; the documented maximum score is 864."
+      },
+      {
+        "url": "https://ale.farama.org/environments/breakout/",
+        "sections": ["Starting the game", "Variants", "Difficulty and modes"],
+        "supports": "ALE/Breakout-v5 uses four-frame skip and 0.25 repeat-action probability; mode 0 and difficulty 0 are the defaults."
+      }
+    ],
+    "verified_on": "2026-09-28"
+  },
+  "completion": {
+    "definition": "The player destroys both consecutive brick walls in one-player Breakout Game 1.",
+    "score_threshold": 864,
+    "expected_maximum_score": 864,
+    "score_signal": "The ROM scoreboard in ALE RAM, cross-checked against cumulative unmodified ALE rewards.",
+    "ram_score_field": {
+      "addresses": [76, 77],
+      "encoding": "packed_bcd_four_digit",
+      "byte_order": "high_pair_then_low_pair",
+      "decoding_rule": "Decode each byte's high nibble then low nibble as one decimal digit; concatenate both bytes in listed order; reject any nibble greater than 9."
+    },
+    "detection_source": "ale_ram_bcd_score_and_raw_reward_agreement",
+    "native_ale_clear_signal": null,
+    "ram_clear_address": null,
+    "failure_policy": "Unsupported environment, mode, ALE version, ROM checksum, or ALE interface yields cleared=null. No screen-only guess is used."
+  },
+  "ale_episode_signals": {
+    "game_over": "Normal loss after lives are exhausted; it is not a full-clear signal.",
+    "game_truncated": "The configured 108000-emulator-frame episode limit; it is not a full-clear signal.",
+    "ram": "ALE exposes 128 RAM bytes. RAM[76:78] stores the four-digit packed-BCD scoreboard; no separate RAM clear flag is used."
+  },
+  "failure_semantics": {
+    "normal_loss": "terminated=true remains stop_reason=terminated and is separately reported as completion_outcome=game_over when the audited detector is available.",
+    "time_limit": "truncated=true with ALE's frame-limit signal remains stop_reason=time_limit and completion_outcome=time_limit.",
+    "unsupported_detector": "cleared=null and clear_rate=null; an unknown detector result is not counted as a failed clear.",
+    "runtime_failure": "Evaluation exceptions abort the run; the CLI reports Evaluation failed and exits nonzero instead of writing a zero-clear episode."
+  },
+  "aggregation": {
+    "clear_rate": "clear_count / total_episodes only when clear status is known for every episode; otherwise null.",
+    "clear_times": "Successful clears only, reported in agent steps and emulator frames.",
+    "p90": "Nearest-rank percentile: sorted_values[ceil(0.9 * n) - 1]; one sample reports that sample and zero samples report null."
+  },
+  "validation": {
+    "status": "implementation_complete_positive_gameplay_validation_pending",
+    "synthetic_positive_fixture": {
+      "status": "passed",
+      "test": "tests/test_completion.py::BreakoutCompletionDetectorTests::test_ale_scoreboard_ram_fixture_emits_the_documented_maximum_reward",
+      "ram_values_hex": {"76": "0x08", "77": "0x64"},
+      "decoded_score": 864,
+      "cumulative_raw_reward": 864,
+      "provenance": "The fixture writes the documented packed-BCD score into ALE RAM and then checks that the next genuine ALE transition emits matching raw reward; it does not simulate the brick-clearing progression."
+    },
+    "natural_ale_positive_trajectory": {
+      "status": "not_observed",
+      "environment_id": "ALE/Breakout-v5",
+      "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+      "exploratory_seed_range": [101, 132],
+      "maximum_observed_raw_score": 302,
+      "maximum_score_seed": 111,
+      "maximum_score_agent_steps": 1588,
+      "maximum_score_emulator_frame": 6365,
+      "outcome": "No trajectory reached 864 or emitted a clear event."
+    },
+    "limitation": "Positive completion detection is validated against a deterministic synthetic RAM/reward fixture derived from documented Breakout scoring semantics, but has not yet been observed on a naturally completed ALE trajectory."
+  },
+  "limitations": [
+    "The detector is enabled only for the pinned ale-py runtime, mode 0, difficulty 0, and exact packaged ROM checksum.",
+    "RAM[76:78] is the scoreboard, not a dedicated win flag; the manual's documented 864-point maximum supplies the full-clear meaning.",
+    "Completion time is reported in agent steps and ALE emulator frames; Python wall-clock time is not used.",
+    "No seconds conversion is reported.",
+    "Positive completion detection is validated against a deterministic synthetic RAM/reward fixture derived from documented Breakout scoring semantics, but has not yet been observed on a naturally completed ALE trajectory."
+  ],
+  "references": [
+    "https://www.atariage.com/manual_html_page.php?SoftwareID=889",
+    "https://ale.farama.org/environments/breakout/",
+    "https://github.com/Farama-Foundation/Arcade-Learning-Environment"
+  ]
+}

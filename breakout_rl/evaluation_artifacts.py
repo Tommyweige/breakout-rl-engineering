@@ -21,9 +21,62 @@ TIME_LIMIT_SUMMARY_FIELDS = (
     "mean_length_terminated",
     "mean_length_truncated",
 )
-EVALUATION_ARTIFACT_SCHEMA_VERSION = 2
-SUPPORTED_EVALUATION_ARTIFACT_SCHEMA_VERSIONS = (1, EVALUATION_ARTIFACT_SCHEMA_VERSION)
+EVALUATION_ARTIFACT_SCHEMA_VERSION = 3
+SUPPORTED_EVALUATION_ARTIFACT_SCHEMA_VERSIONS = (
+    1,
+    2,
+    EVALUATION_ARTIFACT_SCHEMA_VERSION,
+)
 ACTION_DISTRIBUTION_SEMANTICS = "executed/wrapper-resolved action"
+COMPLETION_EPISODE_FIELDS = (
+    "cleared",
+    "clear_agent_step",
+    "clear_emulator_frame",
+    "clear_score",
+    "lives_remaining_at_clear",
+    "completion_detection_source",
+    "completion_detection_reason",
+)
+COMPLETION_SUMMARY_FIELDS = (
+    "total_episodes",
+    "clear_detection_available",
+    "clear_detection_unknown_count",
+    "clear_count",
+    "clear_rate",
+    "per_seed_clears",
+    "failure_stop_reasons",
+    "clear_time_sample_count",
+    "clear_emulator_frame_sample_count",
+    "best_clear_steps",
+    "median_clear_steps",
+    "mean_clear_steps",
+    "p90_clear_steps",
+    "best_clear_emulator_frame",
+    "median_clear_emulator_frame",
+    "mean_clear_emulator_frame",
+    "p90_clear_emulator_frame",
+)
+VERIFIED_CLEAR_PROVENANCE_FIELDS = (
+    "checkpoint_id",
+    "training_seed",
+    "training_transition_count",
+    "evaluation_seed",
+    "episode_seed",
+    "episode_index",
+    "contract_id",
+    "contract_sha256",
+    "source_commit",
+    "source_working_tree_dirty",
+    "completion_source_sha256",
+    "raw_score",
+    "clear_score",
+    "clear_agent_step",
+    "clear_emulator_frame",
+    "lives_remaining_at_clear",
+    "completion_detection_source",
+    "completion_detector_id",
+    "contract_validation_status",
+)
 
 
 def read_evaluation_results(path: str | Path) -> dict[str, Any]:
@@ -46,7 +99,7 @@ def read_evaluation_results(path: str | Path) -> dict[str, Any]:
         )
     if not isinstance(payload.get("per_episode"), list):
         raise ValueError(f"{source}: per_episode must be an array")
-    if schema_version == EVALUATION_ARTIFACT_SCHEMA_VERSION:
+    if schema_version in (2, EVALUATION_ARTIFACT_SCHEMA_VERSION):
         required = (
             "action_distribution_semantics",
             "requested_action_distribution",
@@ -57,7 +110,8 @@ def read_evaluation_results(path: str | Path) -> dict[str, Any]:
         missing = [field for field in required if field not in payload]
         if missing:
             raise ValueError(
-                f"{source}: schema v2 is missing " + ", ".join(missing)
+                f"{source}: schema v{schema_version} is missing "
+                + ", ".join(missing)
             )
         if payload["action_distribution_semantics"] != ACTION_DISTRIBUTION_SEMANTICS:
             raise ValueError(
@@ -89,6 +143,127 @@ def read_evaluation_results(path: str | Path) -> dict[str, Any]:
                     f"{source}: schema v2 per_episode[{index}] has invalid "
                     "action_distribution_semantics"
                 )
+    if schema_version == EVALUATION_ARTIFACT_SCHEMA_VERSION:
+        required = (
+            "evaluation_status",
+            "completion_detector",
+            "source_provenance",
+            "contract_provenance",
+            "verified_clears",
+        )
+        missing = [field for field in required if field not in payload]
+        if missing:
+            raise ValueError(
+                f"{source}: schema v3 is missing " + ", ".join(missing)
+            )
+        if payload["evaluation_status"] != "completed":
+            raise ValueError(
+                f"{source}: schema v3 evaluation_status must be 'completed'"
+            )
+        for field in (
+            "completion_detector",
+            "source_provenance",
+            "contract_provenance",
+        ):
+            if not isinstance(payload[field], Mapping):
+                raise ValueError(f"{source}: schema v3 {field} must be an object")
+        if not isinstance(payload["verified_clears"], list):
+            raise ValueError(f"{source}: schema v3 verified_clears must be an array")
+        derived_clears: list[Mapping[str, Any]] = []
+        for index, row in enumerate(payload["per_episode"]):
+            if not isinstance(row, Mapping):
+                raise ValueError(f"{source}: per_episode[{index}] must be an object")
+            missing_row = [
+                field for field in COMPLETION_EPISODE_FIELDS if field not in row
+            ]
+            if missing_row:
+                raise ValueError(
+                    f"{source}: schema v3 per_episode[{index}] is missing "
+                    + ", ".join(missing_row)
+                )
+            if row["cleared"] is True and not isinstance(
+                row.get("completion_provenance"), Mapping
+            ):
+                raise ValueError(
+                    f"{source}: schema v3 per_episode[{index}] clear is missing "
+                    "completion_provenance"
+                )
+            if row["cleared"] is True:
+                provenance = row["completion_provenance"]
+                provenance_status = provenance.get("provenance_status")
+                missing_provenance_fields = provenance.get(
+                    "missing_provenance_fields"
+                )
+                if provenance_status not in {"complete", "incomplete"}:
+                    raise ValueError(
+                        f"{source}: schema v3 per_episode[{index}] has invalid "
+                        "completion provenance status"
+                    )
+                if not isinstance(missing_provenance_fields, list) or any(
+                    not isinstance(field, str) for field in missing_provenance_fields
+                ):
+                    raise ValueError(
+                        f"{source}: schema v3 per_episode[{index}] has invalid "
+                        "missing provenance fields"
+                    )
+                required_missing = [
+                    field
+                    for field in VERIFIED_CLEAR_PROVENANCE_FIELDS
+                    if provenance.get(field) is None
+                ]
+                if provenance_status == "complete":
+                    if (
+                        missing_provenance_fields
+                        or required_missing
+                        or provenance.get("contract_validation_status")
+                        != "canonical_contract_v2"
+                    ):
+                        raise ValueError(
+                            f"{source}: schema v3 per_episode[{index}] marks "
+                            "incomplete provenance as complete"
+                        )
+                    derived_clears.append(provenance)
+                elif not missing_provenance_fields:
+                    raise ValueError(
+                        f"{source}: schema v3 per_episode[{index}] marks "
+                        "complete provenance as incomplete"
+                    )
+                if (
+                    provenance.get("evaluation_seed") != row.get("evaluation_seed")
+                    or provenance.get("episode_seed") != row.get("episode_seed")
+                    or provenance.get("episode_index") != row.get("episode_index")
+                    or provenance.get("clear_agent_step") != row.get("clear_agent_step")
+                    or provenance.get("clear_emulator_frame")
+                    != row.get("clear_emulator_frame")
+                ):
+                    raise ValueError(
+                        f"{source}: schema v3 per_episode[{index}] completion "
+                        "provenance disagrees with its episode"
+                    )
+        if list(payload["verified_clears"]) != derived_clears:
+            raise ValueError(
+                f"{source}: schema v3 verified_clears disagrees with per_episode"
+            )
+        normalized_rows = validate_episode_rows(
+            payload,
+            source=source,
+            require_complete=False,
+        )
+        computed_summary = summary_from_episode_rows(normalized_rows)
+        validate_embedded_summary(
+            payload,
+            computed_summary,
+            source=source,
+            require_completion_fields=True,
+        )
+    else:
+        # Older artifacts did not distinguish clears from normal episode ends.
+        # Add explicit unknowns so `complete=true` is never inferred as a clear.
+        for row in payload["per_episode"]:
+            if isinstance(row, dict):
+                row.setdefault("cleared", None)
+                for field in COMPLETION_EPISODE_FIELDS[1:]:
+                    row.setdefault(field, None)
     return payload
 
 
@@ -132,6 +307,31 @@ def _optional_finite_float(value: Any, *, name: str, source: str | Path) -> floa
         raise ValueError(f"{source}: {name} must be finite when present") from error
     if not math.isfinite(parsed):
         raise ValueError(f"{source}: {name} must be finite when present")
+    return parsed
+
+
+def _optional_nonnegative_int(
+    value: Any,
+    *,
+    name: str,
+    source: str | Path,
+    minimum: int = 0,
+) -> int | None:
+    if value is None or value == "":
+        return None
+    if isinstance(value, bool):
+        raise ValueError(f"{source}: {name} must be an integer when present")
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError) as error:
+        raise ValueError(f"{source}: {name} must be an integer when present") from error
+    if isinstance(value, float) and (not math.isfinite(value) or value != parsed):
+        raise ValueError(f"{source}: {name} must be an integer when present")
+    if isinstance(value, str) and str(parsed) != value.strip():
+        raise ValueError(f"{source}: {name} must be an integer when present")
+    if parsed < minimum:
+        qualifier = "positive" if minimum == 1 else "non-negative"
+        raise ValueError(f"{source}: {name} must be a {qualifier} integer")
     return parsed
 
 
@@ -299,6 +499,125 @@ def validate_episode_rows(
             raise ValueError(
                 f"{source_path}: life_losses_per_1000_steps disagrees with life-loss count"
             )
+        raw_cleared = raw_row.get("cleared")
+        if raw_cleared is not None and not isinstance(raw_cleared, bool):
+            raise ValueError(f"{source_path}: cleared must be a boolean or null")
+        clear_agent_step = _optional_nonnegative_int(
+            raw_row.get("clear_agent_step"),
+            name="clear_agent_step",
+            source=source_path,
+            minimum=1,
+        )
+        clear_emulator_frame = _optional_nonnegative_int(
+            raw_row.get("clear_emulator_frame"),
+            name="clear_emulator_frame",
+            source=source_path,
+        )
+        clear_score = _optional_finite_float(
+            raw_row.get("clear_score"),
+            name="clear_score",
+            source=source_path,
+        )
+        lives_remaining_at_clear = _optional_nonnegative_int(
+            raw_row.get("lives_remaining_at_clear"),
+            name="lives_remaining_at_clear",
+            source=source_path,
+        )
+        completion_detection_source = raw_row.get("completion_detection_source")
+        if completion_detection_source in (None, ""):
+            completion_detection_source = None
+        elif not isinstance(completion_detection_source, str):
+            raise ValueError(
+                f"{source_path}: completion_detection_source must be a string or null"
+            )
+        completion_detection_reason = raw_row.get("completion_detection_reason")
+        if completion_detection_reason in (None, ""):
+            completion_detection_reason = None
+        elif not isinstance(completion_detection_reason, str):
+            raise ValueError(
+                f"{source_path}: completion_detection_reason must be a string or null"
+            )
+        if raw_cleared is True:
+            if clear_agent_step is None or clear_score is None:
+                raise ValueError(
+                    f"{source_path}: a verified clear requires clear_agent_step "
+                    "and clear_score"
+                )
+            if clear_agent_step > episode_length:
+                raise ValueError(
+                    f"{source_path}: clear_agent_step is outside episode bounds"
+                )
+            if clear_score > episode_return and not math.isclose(
+                clear_score, episode_return, rel_tol=0.0, abs_tol=1e-6
+            ):
+                raise ValueError(
+                    f"{source_path}: clear_score cannot exceed the episode raw score"
+                )
+            if completion_detection_source is None:
+                raise ValueError(
+                    f"{source_path}: a verified clear requires a detection source"
+                )
+            if completion_detection_reason is not None:
+                raise ValueError(
+                    f"{source_path}: a verified clear cannot have a detection error"
+                )
+        elif raw_cleared is False:
+            if completion_detection_source is None:
+                raise ValueError(
+                    f"{source_path}: cleared=false requires an available detector source"
+                )
+            if completion_detection_reason is not None:
+                raise ValueError(
+                    f"{source_path}: cleared=false cannot have a detection error"
+                )
+        elif any(
+            value is not None
+            for value in (
+                clear_agent_step,
+                clear_emulator_frame,
+                clear_score,
+                lives_remaining_at_clear,
+            )
+        ):
+            raise ValueError(
+                f"{source_path}: clear timing and score fields require cleared=true"
+            )
+        raw_completion_outcome = raw_row.get("completion_outcome")
+        if raw_completion_outcome is not None and not isinstance(
+            raw_completion_outcome, str
+        ):
+            raise ValueError(f"{source_path}: completion_outcome must be a string or null")
+        if raw_completion_outcome not in (None, ""):
+            allowed_outcomes = {
+                "cleared",
+                "clear_status_unavailable",
+                "game_over",
+                "time_limit",
+                "truncated",
+                "terminated",
+                "incomplete",
+            }
+            if raw_completion_outcome not in allowed_outcomes:
+                raise ValueError(f"{source_path}: invalid completion_outcome")
+            if raw_cleared is True and raw_completion_outcome != "cleared":
+                raise ValueError(
+                    f"{source_path}: cleared=true requires completion_outcome='cleared'"
+                )
+            if (
+                raw_cleared is None
+                and raw_completion_outcome != "clear_status_unavailable"
+            ):
+                raise ValueError(
+                    f"{source_path}: cleared=null requires completion_outcome="
+                    "'clear_status_unavailable'"
+                )
+            if raw_cleared is False and raw_completion_outcome in {
+                "cleared",
+                "clear_status_unavailable",
+            }:
+                raise ValueError(
+                    f"{source_path}: completion_outcome disagrees with cleared=false"
+                )
         rows.append(
             {
                 "evaluation_seed": evaluation_seed,
@@ -316,6 +635,15 @@ def validate_episode_rows(
                 "frames_between_life_losses": frames_between_life_losses,
                 "time_to_first_life_loss": time_to_first_life_loss,
                 "life_losses_per_1000_steps": life_losses_per_1000_steps,
+                "cleared": raw_cleared,
+                "clear_agent_step": clear_agent_step,
+                "clear_emulator_frame": clear_emulator_frame,
+                "clear_score": clear_score,
+                "lives_remaining_at_clear": lives_remaining_at_clear,
+                "completion_detection_source": completion_detection_source,
+                "completion_detection_reason": completion_detection_reason,
+                "completion_outcome": raw_completion_outcome,
+                "completion_provenance": raw_row.get("completion_provenance"),
             }
         )
 
@@ -381,6 +709,96 @@ def summary_from_episode_rows(
         * 1000.0
     )
     summary["complete_episodes"] = sum(bool(row["complete"]) for row in rows)
+    known_clear_rows = [row for row in rows if row.get("cleared") is not None]
+    clear_rows = [row for row in rows if row.get("cleared") is True]
+    clear_detection_available = len(known_clear_rows) == len(rows)
+    summary.update(
+        {
+            "total_episodes": len(rows),
+            "clear_detection_available": clear_detection_available,
+            "clear_detection_unknown_count": len(rows) - len(known_clear_rows),
+            "clear_count": len(clear_rows),
+            "clear_rate": (
+                float(len(clear_rows) / len(rows))
+                if clear_detection_available
+                else None
+            ),
+        }
+    )
+
+    per_seed_rows: dict[int, list[Mapping[str, Any]]] = {}
+    for row in rows:
+        seed_value = row.get("evaluation_seed")
+        if seed_value is None:
+            continue
+        try:
+            seed = int(seed_value)
+        except (TypeError, ValueError):
+            continue
+        per_seed_rows.setdefault(seed, []).append(row)
+    summary["per_seed_clears"] = [
+        {
+            "evaluation_seed": seed,
+            "total_episodes": len(seed_rows),
+            "clear_count": sum(item.get("cleared") is True for item in seed_rows),
+            "clear_rate": (
+                float(
+                    sum(item.get("cleared") is True for item in seed_rows)
+                    / len(seed_rows)
+                )
+                if all(item.get("cleared") is not None for item in seed_rows)
+                else None
+            ),
+        }
+        for seed, seed_rows in sorted(per_seed_rows.items())
+    ]
+
+    failure_stop_reasons: Counter[str] = Counter()
+    for row in rows:
+        if row.get("cleared") is not False:
+            continue
+        outcome = row.get("completion_outcome")
+        if outcome in (None, ""):
+            outcome = row.get("stop_reason", "unknown")
+        failure_stop_reasons[str(outcome)] += 1
+    summary["failure_stop_reasons"] = dict(sorted(failure_stop_reasons.items()))
+
+    def _clear_timing_stats(
+        field: str,
+    ) -> tuple[int, int | None, float | None, float | None, float | None]:
+        values = sorted(
+            int(row[field])
+            for row in clear_rows
+            if row.get(field) is not None
+        )
+        if not values:
+            return 0, None, None, None, None
+        # P90 uses the nearest-rank definition: ceil(0.9 * n) - 1.
+        p90_index = math.ceil(0.9 * len(values)) - 1
+        return (
+            len(values),
+            values[0],
+            float(median(values)),
+            float(fmean(values)),
+            float(values[p90_index]),
+        )
+
+    step_stats = _clear_timing_stats("clear_agent_step")
+    frame_stats = _clear_timing_stats("clear_emulator_frame")
+    summary.update(
+        {
+            "clear_time_sample_count": step_stats[0],
+            "clear_emulator_frame_sample_count": frame_stats[0],
+            "best_clear_steps": step_stats[1],
+            "median_clear_steps": step_stats[2],
+            "mean_clear_steps": step_stats[3],
+            "p90_clear_steps": step_stats[4],
+            "best_clear_emulator_frame": frame_stats[1],
+            "median_clear_emulator_frame": frame_stats[2],
+            "mean_clear_emulator_frame": frame_stats[3],
+            "p90_clear_emulator_frame": frame_stats[4],
+        }
+    )
     summary.update(
         {
             "finished_episode_count": sum(bool(row["complete"]) for row in rows),
@@ -452,6 +870,7 @@ def validate_embedded_summary(
     *,
     source: str | Path,
     require_time_limit_fields: bool = False,
+    require_completion_fields: bool = False,
 ) -> None:
     embedded = payload.get("summary")
     if not isinstance(embedded, Mapping):
@@ -468,6 +887,8 @@ def validate_embedded_summary(
     )
     if require_time_limit_fields:
         fields += TIME_LIMIT_SUMMARY_FIELDS
+    if require_completion_fields:
+        fields += COMPLETION_SUMMARY_FIELDS
     for field in fields:
         if field not in embedded:
             raise ValueError(f"{source}: summary is missing {field}")
@@ -477,12 +898,20 @@ def validate_embedded_summary(
                     f"{source}: summary.{field} does not match per_episode artifacts"
                 )
             continue
-        if not math.isclose(
-            float(embedded[field]),
-            float(computed[field]),
-            rel_tol=1e-9,
-            abs_tol=1e-9,
-        ):
+        expected = computed[field]
+        if isinstance(expected, (bool, dict, list, str)):
+            matches = embedded[field] == expected
+        else:
+            try:
+                matches = math.isclose(
+                    float(embedded[field]),
+                    float(expected),
+                    rel_tol=1e-9,
+                    abs_tol=1e-9,
+                )
+            except (TypeError, ValueError):
+                matches = False
+        if not matches:
             raise ValueError(
                 f"{source}: summary.{field} does not match per_episode artifacts"
             )
@@ -496,6 +925,7 @@ __all__ = [
     "summary_from_episode_rows",
     "SUPPORTED_EVALUATION_ARTIFACT_SCHEMA_VERSIONS",
     "TIME_LIMIT_SUMMARY_FIELDS",
+    "VERIFIED_CLEAR_PROVENANCE_FIELDS",
     "validate_embedded_summary",
     "validate_episode_rows",
 ]
