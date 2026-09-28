@@ -186,7 +186,7 @@ def main(argv: list[str] | None = None) -> int:
             else None
         )
         if contract is not None:
-            validate_breakout_runtime_contract(contract)
+            validate_breakout_runtime_contract(contract, allow_contract_v3=True)
             config = config.with_overrides(
                 contract_id=contract.contract_id,
                 contract_path=contract_path.as_posix(),
@@ -199,7 +199,9 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     env = (
-        make_breakout_env(**breakout_environment_kwargs(contract))
+        make_breakout_env(
+            **breakout_environment_kwargs(contract, allow_contract_v3=True)
+        )
         if contract is not None
         else make_breakout_env(fire_reset=args.fire_reset)
     )

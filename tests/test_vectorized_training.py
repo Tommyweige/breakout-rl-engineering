@@ -31,6 +31,19 @@ class FakeObservationSpace:
     shape = OBSERVATION_SHAPE
 
 
+class _NativeFrameEnvironment:
+    def __init__(self) -> None:
+        self.ale = self
+        self.frame = 0
+
+    @property
+    def unwrapped(self):
+        return self
+
+    def getEpisodeFrameNumber(self) -> int:
+        return self.frame
+
+
 class DeterministicVectorEnv:
     """A vector-environment-shaped seam with independent episode lifecycles."""
 
@@ -41,6 +54,7 @@ class DeterministicVectorEnv:
     def __init__(self) -> None:
         self.steps = np.zeros(self.num_envs, dtype=np.int64)
         self.reset_history: list[np.ndarray] = []
+        self.envs = [_NativeFrameEnvironment() for _ in range(self.num_envs)]
 
     def _observations(self) -> np.ndarray:
         observations = np.zeros(
@@ -64,6 +78,9 @@ class DeterministicVectorEnv:
         else:
             mask = np.asarray(options["reset_mask"], dtype=np.bool_)
             self.steps[mask] = 0
+        for index, should_reset in enumerate(mask):
+            if should_reset:
+                self.envs[index].frame = 0
         self.reset_history.append(mask.copy())
         return self._observations(), {}
 
@@ -73,6 +90,8 @@ class DeterministicVectorEnv:
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, dict[str, object]]:
         del actions
         self.steps += 1
+        for environment in self.envs:
+            environment.frame += 1
         terminated = self.steps == np.array([2, 3, 99], dtype=np.int64)
         truncated = self.steps == np.array([99, 99, 4], dtype=np.int64)
         observations = self._observations()
@@ -394,6 +413,12 @@ class VectorizedTrainingTests(unittest.TestCase):
                 rows = list(csv.DictReader(stream))
 
         self.assertEqual(summary["total_transitions"], 12)
+        self.assertEqual(summary["total_agent_steps"], 12)
+        self.assertEqual(summary["total_emulator_frames"], 12)
+        self.assertEqual(
+            summary["emulator_frame_count_source"],
+            "ALEInterface.getEpisodeFrameNumber",
+        )
         self.assertEqual(summary["vector_iterations"], 4)
         self.assertEqual(summary["physical_environment_steps"], 12)
         self.assertEqual(summary["optimizer_updates"], 5)

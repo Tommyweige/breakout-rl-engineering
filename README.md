@@ -66,13 +66,26 @@ The `main` branch contains the maintained implementation and product code. The 3
 
 Atari RL results are sensitive to environment semantics such as frame skip, frame stack, sticky actions, FIRE handling, life-loss handling, and episode limits.
 
-This project keeps the canonical evaluation semantics in:
+The historical benchmark contract remains:
 
 ```text
 configs/eval/breakout_contract_v2.json
 ```
 
-The same contract is used as the reference for training and evaluation workflows.
+Precision-control training and evaluation can select:
+
+```text
+configs/eval/breakout_contract_v3.json
+```
+
+Contract v2 makes one policy decision per four emulator frames. Contract v3
+makes one decision per emulator frame while keeping the same 108,000-frame ALE
+episode limit and other gameplay settings. Thus the corresponding agent-step
+limits are 27,000 and 108,000. Training and evaluation summaries keep agent
+steps separate from emulator frames, which are read from ALE's native counter.
+Select v3 explicitly with `--contract configs/eval/breakout_contract_v3.json`;
+the default remains v2. Use the contract ID and path recorded in each artifact
+when comparing results.
 
 ## Training
 

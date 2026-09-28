@@ -34,8 +34,18 @@ class ShortEpisodeEnv:
 
     def __init__(self) -> None:
         self.steps = 0
+        self.ale_frames = 0
+        self.ale = self
+
+    @property
+    def unwrapped(self):
+        return self
+
+    def getEpisodeFrameNumber(self) -> int:
+        return self.ale_frames
 
     def reset(self, *, seed: int | None = None) -> tuple[np.ndarray, dict[str, int]]:
+        self.ale_frames = 0
         if seed is not None:
             self.steps = 0
         return np.zeros(self.observation_space.shape, dtype=np.uint8), {}
@@ -43,6 +53,7 @@ class ShortEpisodeEnv:
     def step(self, action: int) -> tuple[np.ndarray, float, bool, bool, dict[str, int]]:
         del action
         self.steps += 1
+        self.ale_frames += 4
         observation = np.full(
             self.observation_space.shape,
             self.steps % 4,
@@ -89,6 +100,12 @@ class DQNTrainerTests(unittest.TestCase):
             summary = trainer.train()
 
         timings = summary["runtime"]["stage_timings"]
+        self.assertEqual(summary["total_agent_steps"], 8)
+        self.assertEqual(summary["total_emulator_frames"], 32)
+        self.assertEqual(
+            summary["emulator_frame_count_source"],
+            "ALEInterface.getEpisodeFrameNumber",
+        )
         for name in (
             "action_selection",
             "env_step",

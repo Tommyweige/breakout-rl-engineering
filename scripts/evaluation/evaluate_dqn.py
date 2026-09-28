@@ -19,6 +19,8 @@ from breakout_rl.evaluation import (
     write_evaluation_artifacts,
 )
 from breakout_rl.evaluation_contract import (
+    BREAKOUT_CONTRACT_V2_ID,
+    BREAKOUT_CONTRACT_V3_ID,
     BreakoutEvaluationContractV2,
     breakout_environment_kwargs,
     expand_concrete_episode_seeds,
@@ -47,6 +49,14 @@ CONTRACT_V2_OUTPUT_DIRS: dict[PolicyName, Path] = {
 CONTRACT_V2_EVALUATION_IDS: dict[PolicyName, str] = {
     "random": "day15-contract-v2-random",
     "dqn": "day15-contract-v2-dqn",
+}
+CONTRACT_V3_OUTPUT_DIRS: dict[PolicyName, Path] = {
+    "random": Path("evaluations/contract-v3-random-baseline"),
+    "dqn": Path("evaluations/contract-v3-dqn"),
+}
+CONTRACT_V3_EVALUATION_IDS: dict[PolicyName, str] = {
+    "random": "contract-v3-random-baseline",
+    "dqn": "contract-v3-dqn",
 }
 
 
@@ -87,7 +97,7 @@ def build_parser() -> argparse.ArgumentParser:
         dest="contract",
         type=Path,
         default=Path("configs/eval/breakout_contract_v2.json"),
-        help="load the machine-readable Contract v2 environment semantics",
+        help="load the machine-readable Breakout v2 or v3 environment semantics",
     )
     return parser
 
@@ -138,16 +148,40 @@ def _output_destination(
 ) -> tuple[Path, str]:
     requested_output_dir = Path(args.output_dir) if args.output_dir is not None else None
     if contract_id is not None:
-        output_dir = requested_output_dir or CONTRACT_V2_OUTPUT_DIRS[policy_name]
-        evaluation_id = args.evaluation_id or CONTRACT_V2_EVALUATION_IDS[policy_name]
-        legacy_paths = {path.resolve() for path in OUTPUT_DIRS.values()}
-        if output_dir.resolve() in legacy_paths:
-            raise ValueError(
-                "Contract v2 evaluation cannot overwrite Evaluation Contract v1 artifacts"
+        if contract_id == BREAKOUT_CONTRACT_V2_ID:
+            canonical_dirs = CONTRACT_V2_OUTPUT_DIRS
+            canonical_ids = CONTRACT_V2_EVALUATION_IDS
+            contract_label = "Contract v2"
+        elif contract_id == BREAKOUT_CONTRACT_V3_ID:
+            canonical_dirs = CONTRACT_V3_OUTPUT_DIRS
+            canonical_ids = CONTRACT_V3_EVALUATION_IDS
+            contract_label = "Contract v3"
+        else:
+            raise ValueError(f"unsupported Breakout contract id: {contract_id}")
+        output_dir = requested_output_dir or canonical_dirs[policy_name]
+        evaluation_id = args.evaluation_id or canonical_ids[policy_name]
+        all_contract_dirs = {
+            path.resolve()
+            for path in (
+                *OUTPUT_DIRS.values(),
+                *CONTRACT_V2_OUTPUT_DIRS.values(),
+                *CONTRACT_V3_OUTPUT_DIRS.values(),
             )
-        if evaluation_id in set(EVALUATION_IDS.values()):
+        }
+        all_contract_dirs.discard(canonical_dirs[policy_name].resolve())
+        if output_dir.resolve() in all_contract_dirs:
             raise ValueError(
-                "Contract v2 evaluation cannot reuse an Evaluation Contract v1 id"
+                f"{contract_label} evaluation cannot overwrite artifacts for another contract"
+            )
+        all_contract_ids = {
+            *EVALUATION_IDS.values(),
+            *CONTRACT_V2_EVALUATION_IDS.values(),
+            *CONTRACT_V3_EVALUATION_IDS.values(),
+        }
+        all_contract_ids.discard(canonical_ids[policy_name])
+        if evaluation_id in all_contract_ids:
+            raise ValueError(
+                f"{contract_label} evaluation cannot reuse an id from another contract"
             )
         return output_dir, evaluation_id
     if policy_name != "dqn" or _is_cuda_request(args.device):
@@ -173,7 +207,7 @@ def _validate_contract_for_config(
     contract: BreakoutEvaluationContractV2,
     evaluation_config: EvaluationConfig,
 ) -> None:
-    validate_breakout_runtime_contract(contract)
+    validate_breakout_runtime_contract(contract, allow_contract_v3=True)
     if contract.environment_id != evaluation_config.environment_id:
         raise ValueError(
             "evaluation config and contract must use the same environment_id"
@@ -195,7 +229,9 @@ def _validate_contract_for_config(
 def _contract_environment_factory(
     contract: BreakoutEvaluationContractV2,
 ) -> Callable[[], Any]:
-    return lambda: make_breakout_env(**breakout_environment_kwargs(contract))
+    return lambda: make_breakout_env(
+        **breakout_environment_kwargs(contract, allow_contract_v3=True)
+    )
 
 
 def _portable_command(
@@ -229,7 +265,7 @@ def run_evaluation(args: argparse.Namespace) -> tuple[Path, Path, dict[str, Any]
     contract = load_evaluation_contract(contract_path) if contract_path is not None else None
     if contract is None:
         raise ValueError(
-            "evaluation requires configs/eval/breakout_contract_v2.json"
+                "evaluation requires an explicit supported Breakout contract"
         )
     if contract is not None:
         _validate_contract_for_config(contract, evaluation_config)
@@ -254,66 +290,95 @@ def run_evaluation(args: argparse.Namespace) -> tuple[Path, Path, dict[str, Any]
     checkpoint_metadata: dict[str, Any] = {}
 
     if policy_name == "dqn":
-        manifest_path = args.source_day14_manifest or _resolve_manifest(
-            evaluation_config,
-            args.config,
-        )
-        profiling_path = args.source_day14_profiling_report or _resolve_profiling_report(
-            evaluation_config,
-            args.config,
-        )
-        provenance = load_day14_provenance(
-            manifest_path,
-            profiling_report_path=profiling_path,
-        )
-        day14_gate = provenance.get("day14_gate", {})
-        if not isinstance(day14_gate, Mapping) or day14_gate.get("status") != "passed":
-            raise ValueError(
-                "Day 14 Gate A is not satisfied; refusing to label this as the "
-                f"formal Day 15 DQN evaluation: {day14_gate.get('reasons', []) if isinstance(day14_gate, Mapping) else day14_gate}"
+        if contract.contract_id == BREAKOUT_CONTRACT_V2_ID:
+            manifest_path = args.source_day14_manifest or _resolve_manifest(
+                evaluation_config,
+                args.config,
             )
-        loaded = load_dqn_checkpoint(
-            args.checkpoint,
-            device=requested_device,
-            source_day14_manifest=manifest_path,
-        )
-        if contract is not None:
+            profiling_path = args.source_day14_profiling_report or _resolve_profiling_report(
+                evaluation_config,
+                args.config,
+            )
+            provenance = load_day14_provenance(
+                manifest_path,
+                profiling_report_path=profiling_path,
+            )
+            day14_gate = provenance.get("day14_gate", {})
+            if not isinstance(day14_gate, Mapping) or day14_gate.get("status") != "passed":
+                raise ValueError(
+                    "Day 14 Gate A is not satisfied; refusing to label this as the "
+                    f"formal Day 15 DQN evaluation: {day14_gate.get('reasons', []) if isinstance(day14_gate, Mapping) else day14_gate}"
+                )
+            loaded = load_dqn_checkpoint(
+                args.checkpoint,
+                device=requested_device,
+                source_day14_manifest=manifest_path,
+            )
             checkpoint_contract_id = loaded.training_metadata.get("contract_id")
             if (
                 checkpoint_contract_id is not None
                 and checkpoint_contract_id != contract.contract_id
             ):
                 raise ValueError(
-                    "checkpoint Contract v2 id does not match the evaluation contract"
+                    "checkpoint contract id does not match the evaluation contract"
                 )
-        validate_checkpoint_provenance(
-            loaded.checkpoint_metadata,
-            loaded.training_metadata,
-            provenance,
-        )
+            validate_checkpoint_provenance(
+                loaded.checkpoint_metadata,
+                loaded.training_metadata,
+                provenance,
+            )
+            training_metadata = {
+                **dict(loaded.training_metadata),
+                "source_of_truth": provenance["source_of_truth"],
+                "source_day14_manifest": provenance["manifest_path"],
+                "config_reference": provenance.get("config_reference"),
+                "selection_rule": provenance["selection_rule"],
+                "selection_rationale": provenance.get("selection_rationale"),
+                "day14_experiment_id": provenance.get("experiment_id"),
+                "day14_run_artifact_dir": provenance.get("run_dir"),
+                "trainer_runtime": provenance.get("runtime", {}),
+                "gpu_profiling_summary": provenance.get("gpu_profiling_summary", {}),
+                "source_day14_profiling_report": provenance.get(
+                    "source_day14_profiling_report"
+                ),
+                "day14_gate": day14_gate,
+            }
+            checkpoint_metadata = {
+                **dict(loaded.checkpoint_metadata),
+                "selection_rule": provenance["selection_rule"],
+                "manifest_run_id": provenance.get("run_id"),
+            }
+        else:
+            loaded = load_dqn_checkpoint(
+                args.checkpoint,
+                device=requested_device,
+                env_factory=_contract_environment_factory(contract),
+            )
+            checkpoint_contract_id = loaded.training_metadata.get("contract_id")
+            checkpoint_contract_path = loaded.training_metadata.get("contract_path")
+            if checkpoint_contract_id != contract.contract_id:
+                raise ValueError(
+                    "Contract v3 DQN checkpoint must record the matching contract id"
+                )
+            if not isinstance(checkpoint_contract_path, (str, Path)):
+                raise ValueError(
+                    "Contract v3 DQN checkpoint must record its contract path"
+                )
+            recorded_contract_path = Path(checkpoint_contract_path)
+            if not recorded_contract_path.is_absolute():
+                recorded_contract_path = Path.cwd() / recorded_contract_path
+            if recorded_contract_path.resolve() != Path(contract_path).resolve():
+                raise ValueError(
+                    "Contract v3 DQN checkpoint contract path does not match evaluation"
+                )
+            training_metadata = {
+                **dict(loaded.training_metadata),
+                "source_of_truth": "checkpoint training contract metadata",
+                "source_day14_manifest": None,
+            }
+            checkpoint_metadata = dict(loaded.checkpoint_metadata)
         model = loaded.model
         model_id = loaded.model_id
-        training_metadata = {
-            **dict(loaded.training_metadata),
-            "source_of_truth": provenance["source_of_truth"],
-            "source_day14_manifest": provenance["manifest_path"],
-            "config_reference": provenance.get("config_reference"),
-            "selection_rule": provenance["selection_rule"],
-            "selection_rationale": provenance.get("selection_rationale"),
-            "day14_experiment_id": provenance.get("experiment_id"),
-            "day14_run_artifact_dir": provenance.get("run_dir"),
-            "trainer_runtime": provenance.get("runtime", {}),
-            "gpu_profiling_summary": provenance.get("gpu_profiling_summary", {}),
-            "source_day14_profiling_report": provenance.get(
-                "source_day14_profiling_report"
-            ),
-            "day14_gate": day14_gate,
-        }
-        checkpoint_metadata = {
-            **dict(loaded.checkpoint_metadata),
-            "selection_rule": provenance["selection_rule"],
-            "manifest_run_id": provenance.get("run_id"),
-        }
 
     metadata: dict[str, Any] = {
         "evaluation_config_path": args.config.as_posix(),

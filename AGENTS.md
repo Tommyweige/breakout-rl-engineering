@@ -37,15 +37,23 @@ python -m scripts.evaluation.evaluate_dqn --help
 
 Do not use machine-specific `sys.path` hacks.
 
-## Canonical Breakout contract
+## Versioned Breakout contracts
 
-Task-defining environment and evaluation semantics come from:
+Use the historical benchmark contract for reproducibility with prior experiments:
 
 ```text
 configs/eval/breakout_contract_v2.json
 ```
 
-Do not silently drift frame skip/stack, sticky actions, FIRE ownership, life-loss handling, reward handling, seed lists, or episode limits between training and evaluation.
+Use the precision-control contract for First Clear / Reliable Clear work that needs one agent decision per emulator frame:
+
+```text
+configs/eval/breakout_contract_v3.json
+```
+
+The selected contract defines task semantics. Contract v2 remains unchanged; do not reinterpret its artifacts under v3. Do not silently drift frame skip/stack, sticky actions, FIRE ownership, life-loss handling, reward handling, seed lists, or episode limits between training and evaluation.
+
+Record both agent transitions and ALE-native emulator frames in training/evaluation summaries. Never use `agent_step * frame_skip` as the source of truth for emulator-frame timing.
 
 When the environment overrides a requested policy action with mandatory serve `FIRE`, Replay Buffer transitions must store the executed environment action.
 

@@ -22,7 +22,7 @@ from typing import Any, Callable, Mapping, Protocol, Sequence
 
 import numpy as np
 import torch
-from gymnasium.wrappers import AtariPreprocessing, FrameStackObservation
+from gymnasium.wrappers import AtariPreprocessing, FrameStackObservation, TimeLimit
 from torch import nn
 
 from breakout_env import BreakoutFireResetWrapper, ENVIRONMENT_ID, make_breakout_env
@@ -47,6 +47,8 @@ from breakout_rl.evaluation_artifacts import (
     summary_from_episode_rows,
 )
 from breakout_rl.evaluation_contract import (
+    BREAKOUT_CONTRACT_V2_ID,
+    BREAKOUT_CONTRACT_V3_ID,
     BreakoutEvaluationContractV2,
     breakout_environment_kwargs,
     validate_breakout_runtime_contract,
@@ -169,8 +171,14 @@ def _contract_provenance(
     try:
         file_contract = BreakoutEvaluationContractV2.from_mapping(file_payload)
         metadata_contract = BreakoutEvaluationContractV2.from_mapping(contract_value)
-        validate_breakout_runtime_contract(file_contract)
-        validate_breakout_runtime_contract(metadata_contract)
+        validate_breakout_runtime_contract(
+            file_contract,
+            allow_contract_v3=True,
+        )
+        validate_breakout_runtime_contract(
+            metadata_contract,
+            allow_contract_v3=True,
+        )
     except (TypeError, ValueError):
         return provenance
     if file_contract.to_dict() != metadata_contract.to_dict():
@@ -181,18 +189,62 @@ def _contract_provenance(
 
     try:
         audit = json.loads(BREAKOUT_AUDIT_CONFIG_PATH.read_text(encoding="utf-8"))
-        audit_environment = audit.get("environment", {})
-        expected_contract_id = audit_environment.get("contract_id")
-        expected_contract_sha256 = audit_environment.get("contract_sha256")
-    except (OSError, json.JSONDecodeError, AttributeError):
+    except (OSError, json.JSONDecodeError):
+        audit = {}
+    audit_environment = (
+        audit.get("environment", {}) if isinstance(audit, Mapping) else {}
+    )
+    if not isinstance(audit_environment, Mapping):
+        audit_environment = {}
+    expected_contract_id = audit_environment.get("contract_id")
+    expected_contract_sha256 = audit_environment.get("contract_sha256")
+    expected_contract_path = None
+    if file_contract.contract_id == BREAKOUT_CONTRACT_V2_ID:
+        validation_status = "canonical_contract_v2"
+    elif file_contract.contract_id == BREAKOUT_CONTRACT_V3_ID:
+        validation_status = "canonical_contract_v3"
+        additional_contracts = audit.get("additional_contracts", [])
+        if isinstance(additional_contracts, Sequence) and not isinstance(
+            additional_contracts, (str, bytes)
+        ):
+            matching_contract = next(
+                (
+                    item
+                    for item in additional_contracts
+                    if isinstance(item, Mapping)
+                    and item.get("contract_id") == file_contract.contract_id
+                ),
+                None,
+            )
+        else:
+            matching_contract = None
+        if matching_contract is None:
+            expected_contract_id = None
+            expected_contract_sha256 = None
+        else:
+            expected_contract_id = matching_contract.get("contract_id")
+            expected_contract_sha256 = matching_contract.get("contract_sha256")
+            expected_contract_path = matching_contract.get("contract_file")
+    else:
+        validation_status = None
         expected_contract_id = None
         expected_contract_sha256 = None
     if (
-        file_contract.contract_id != expected_contract_id
+        validation_status is None
+        or file_contract.contract_id != expected_contract_id
         or contract_sha256 != expected_contract_sha256
+        or (
+            file_contract.contract_id == BREAKOUT_CONTRACT_V3_ID
+            and not isinstance(expected_contract_path, str)
+        )
+        or (
+            expected_contract_path is not None
+            and relative_path != expected_contract_path
+        )
     ):
         provenance["definition_reason"] = (
-            "The explicit contract does not match the audited Contract v2 identity/hash."
+            "The explicit contract does not match an audited Breakout contract "
+            "identity, path, and hash."
         )
         return provenance
 
@@ -201,6 +253,7 @@ def _contract_provenance(
             "contract_id": file_contract.contract_id,
             "definition_status": "validated",
             "definition_reason": None,
+            "validation_status": validation_status,
         }
     )
     return provenance
@@ -215,43 +268,78 @@ def _contract_runtime_binding(
     episodes_per_seed: int,
     epsilon: float,
 ) -> tuple[bool, str | None]:
-    """Confirm the live wrappers and episode protocol match pinned Contract v2."""
+    """Confirm the live wrappers and episode protocol match the pinned contract."""
+
+    contract_label = "Breakout contract"
 
     if contract_provenance.get("definition_status") != "validated":
         return False, str(
             contract_provenance.get("definition_reason")
-            or "The canonical Contract v2 definition was not validated."
+            or "The canonical Breakout contract definition was not validated."
         )
     values = metadata or {}
     contract_value = values.get("evaluation_contract")
     if not isinstance(contract_value, Mapping):
-        return False, "The validated Contract v2 object is unavailable."
+        return False, "The validated Breakout contract object is unavailable."
     try:
         contract = BreakoutEvaluationContractV2.from_mapping(contract_value)
-        validate_breakout_runtime_contract(contract)
+        validate_breakout_runtime_contract(contract, allow_contract_v3=True)
     except (TypeError, ValueError) as error:
-        return False, f"The Contract v2 object is invalid: {error}"
+        return False, f"The Breakout contract object is invalid: {error}"
+    contract_label = (
+        "Contract v3"
+        if contract.contract_id == BREAKOUT_CONTRACT_V3_ID
+        else "Contract v2"
+    )
 
     if tuple(evaluation_seeds) != contract.concrete_episode_seeds:
-        return False, "The evaluation seed list does not match Contract v2."
+        return False, f"The evaluation seed list does not match {contract_label}."
     if episodes_per_seed != 1:
-        return False, "Canonical Contract v2 evaluation requires one episode per seed."
+        return False, f"Canonical {contract_label} evaluation requires one episode per seed."
     if epsilon != contract.evaluation_epsilon:
-        return False, "The evaluation epsilon does not match Contract v2."
+        return False, f"The evaluation epsilon does not match {contract_label}."
 
     if not isinstance(env, BreakoutFireResetWrapper):
-        return False, "The runtime is missing the Contract v2 FIRE-reset wrapper."
+        return False, f"The runtime is missing the {contract_label} FIRE-reset wrapper."
     fire_wrapper = env
     stack_wrapper = getattr(fire_wrapper, "env", None)
     if not isinstance(stack_wrapper, FrameStackObservation):
-        return False, "The runtime is missing the Contract v2 frame-stack wrapper."
+        return False, f"The runtime is missing the {contract_label} frame-stack wrapper."
     preprocessing = getattr(stack_wrapper, "env", None)
     if not isinstance(preprocessing, AtariPreprocessing):
-        return False, "The runtime is missing the Contract v2 Atari preprocessing wrapper."
+        return False, f"The runtime is missing the {contract_label} Atari preprocessing wrapper."
 
-    expected_kwargs = breakout_environment_kwargs(contract)
+    expected_kwargs = breakout_environment_kwargs(
+        contract,
+        allow_contract_v3=True,
+    )
     if stack_wrapper.stack_size != contract.frame_stack:
-        return False, "The runtime frame stack differs from Contract v2."
+        return False, f"The runtime frame stack differs from {contract_label}."
+    try:
+        runtime_action_count = _action_count(env)
+        runtime_action_names = _action_names(env, runtime_action_count)
+        runtime_observation_shape = _observation_shape(env)
+    except (TypeError, ValueError) as error:
+        return False, f"The runtime observation/action contract is invalid: {error}"
+    observation_dtype = getattr(
+        getattr(env, "observation_space", None),
+        "dtype",
+        None,
+    )
+    try:
+        observation_is_uint8 = (
+            observation_dtype is not None
+            and np.dtype(observation_dtype) == np.dtype(np.uint8)
+        )
+    except (TypeError, ValueError):
+        observation_is_uint8 = False
+    if (
+        runtime_action_count != 4
+        or runtime_action_names != ("NOOP", "FIRE", "RIGHT", "LEFT")
+        or runtime_observation_shape != (contract.frame_stack, 84, 84)
+        or not observation_is_uint8
+    ):
+        return False, f"The runtime observation/action contract differs from {contract_label}."
     if (
         preprocessing.frame_skip != contract.frame_skip
         or preprocessing.terminal_on_life_loss != contract.terminal_on_life_loss
@@ -259,7 +347,14 @@ def _contract_runtime_binding(
         or not preprocessing.grayscale_obs
         or preprocessing.scale_obs
     ):
-        return False, "The runtime preprocessing semantics differ from Contract v2."
+        return False, f"The runtime preprocessing semantics differ from {contract_label}."
+    wrapper = getattr(preprocessing, "env", None)
+    visited_wrappers: set[int] = set()
+    while wrapper is not None and id(wrapper) not in visited_wrappers:
+        if isinstance(wrapper, TimeLimit):
+            return False, "The runtime contains an external TimeLimit wrapper."
+        visited_wrappers.add(id(wrapper))
+        wrapper = getattr(wrapper, "env", None)
     if (
         fire_wrapper.max_fire_attempts != expected_kwargs["fire_reset_max_attempts"]
         or fire_wrapper.confirmation_steps != expected_kwargs["fire_confirmation_steps"]
@@ -270,7 +365,7 @@ def _contract_runtime_binding(
         or fire_wrapper.confirmation_signals
         != tuple(expected_kwargs["fire_confirmation_signals"])
     ):
-        return False, "The runtime FIRE-reset settings differ from Contract v2."
+        return False, f"The runtime FIRE-reset settings differ from {contract_label}."
 
     base = getattr(env, "unwrapped", env)
     spec = getattr(env, "spec", None)
@@ -288,7 +383,7 @@ def _contract_runtime_binding(
         or spec_kwargs.get("max_num_frames_per_episode")
         != contract.time_limit_semantics["max_num_frames_per_episode"]
     ):
-        return False, "The live ALE game identity or frame limit differs from Contract v2."
+        return False, f"The live ALE game identity or frame limit differs from {contract_label}."
     ale = getattr(base, "ale", None)
     get_float = getattr(ale, "getFloat", None)
     if not callable(get_float):
@@ -305,7 +400,7 @@ def _contract_runtime_binding(
         rel_tol=0.0,
         abs_tol=1e-12,
     ):
-        return False, "The live ALE sticky-action probability differs from Contract v2."
+        return False, f"The live ALE sticky-action probability differs from {contract_label}."
     return True, None
 
 
@@ -449,6 +544,7 @@ class EpisodeResult:
     frames_between_life_losses: float | None = None
     time_to_first_life_loss: int | None = None
     life_losses_per_1000_steps: float = 0.0
+    total_emulator_frames: int | None = None
     completion_state: CompletionState = CompletionState(cleared=None)
 
     @property
@@ -527,6 +623,8 @@ class EpisodeResult:
             "episode_return": self.episode_return,
             "return": self.episode_return,
             "episode_length": self.episode_length,
+            "total_agent_steps": self.episode_length,
+            "total_emulator_frames": self.total_emulator_frames,
             "terminated": self.terminated,
             "truncated": self.truncated,
             "time_limit": self.time_limit,
@@ -591,6 +689,13 @@ class EvaluationResult:
     @property
     def total_steps(self) -> int:
         return sum(episode.episode_length for episode in self.episodes)
+
+    @property
+    def total_emulator_frames(self) -> int | None:
+        values = [episode.total_emulator_frames for episode in self.episodes]
+        if not values or any(value is None for value in values):
+            return None
+        return sum(int(value) for value in values)
 
     @property
     def action_distribution(self) -> dict[str, int]:
@@ -703,9 +808,12 @@ class EvaluationResult:
                     for field in VERIFIED_CLEAR_PROVENANCE_FIELDS
                     if clear_provenance.get(field) is None
                 ]
-                if contract.get("validation_status") != "canonical_contract_v2":
+                if contract.get("validation_status") not in {
+                    "canonical_contract_v2",
+                    "canonical_contract_v3",
+                }:
                     missing_provenance_fields.append(
-                        "validated canonical Contract v2 runtime binding"
+                        "validated canonical Breakout contract runtime binding"
                     )
                 clear_provenance["provenance_status"] = (
                     "complete" if not missing_provenance_fields else "incomplete"
@@ -742,6 +850,16 @@ class EvaluationResult:
             "evaluation_seeds": list(self.evaluation_seeds),
             "episodes_per_seed": self.episodes_per_seed,
             "total_episodes": len(self.episodes),
+            "total_agent_steps": self.total_steps,
+            "total_emulator_frames": self.total_emulator_frames,
+            "emulator_frame_count_source": (
+                "ALEInterface.getEpisodeFrameNumber"
+                if self.total_emulator_frames is not None
+                else None
+            ),
+            "emulator_frame_count_scope": (
+                "native ALE frame delta from post-reset baseline through episode termination"
+            ),
             "evaluation_epsilon": self.evaluation_epsilon,
             "requested_device": self.requested_device,
             "resolved_device": self.resolved_device,
@@ -1107,7 +1225,7 @@ def evaluate_policy(
         {
             "runtime_binding_validated": runtime_contract_validated,
             "validation_status": (
-                "canonical_contract_v2"
+                contract_provenance.get("validation_status")
                 if runtime_contract_validated
                 else "unverified"
             ),
@@ -1144,11 +1262,7 @@ def evaluate_policy(
                     episode_seed = evaluation_seed + episode_index - 1
                     observation, _ = env.reset(seed=episode_seed)
                     completion_detector.reset()
-                    emulator_frame_origin = (
-                        read_ale_episode_frame(env)
-                        if completion_support.supported
-                        else None
-                    )
+                    emulator_frame_origin = read_ale_episode_frame(env)
                     _seed_action_space(env, episode_seed)
                     rng = np.random.default_rng(episode_seed)
                     episode_return = 0.0
@@ -1160,6 +1274,7 @@ def evaluate_policy(
                     life_loss_steps: list[int] = []
                     terminated = False
                     truncated = False
+                    emulator_frame_now: int | None = None
                     while True:
                         if (
                             max_steps_per_episode is not None
@@ -1183,6 +1298,7 @@ def evaluate_policy(
                             truncated_raw,
                             info,
                         ) = env.step(action)
+                        emulator_frame_now = read_ale_episode_frame(env)
                         executed_action, auto_fire, fire_reason = _resolved_action_from_info(
                             info,
                             requested_action=action,
@@ -1210,7 +1326,6 @@ def evaluate_policy(
                             info if isinstance(info, Mapping) else None,
                         )
                         if completion_support.supported:
-                            emulator_frame_now = read_ale_episode_frame(env)
                             elapsed_emulator_frame = (
                                 emulator_frame_now - emulator_frame_origin
                                 if emulator_frame_now is not None
@@ -1272,6 +1387,13 @@ def evaluate_policy(
                             ),
                             life_losses_per_1000_steps=float(
                                 survival_metrics["life_losses_per_1000_steps"]
+                            ),
+                            total_emulator_frames=(
+                                emulator_frame_now - emulator_frame_origin
+                                if emulator_frame_now is not None
+                                and emulator_frame_origin is not None
+                                and emulator_frame_now >= emulator_frame_origin
+                                else None
                             ),
                             completion_state=completion_detector.state,
                         )
@@ -1368,6 +1490,8 @@ def write_evaluation_artifacts(
         "episode_seed",
         "episode_return",
         "episode_length",
+        "total_agent_steps",
+        "total_emulator_frames",
         "terminated",
         "truncated",
         "time_limit",
@@ -1421,6 +1545,8 @@ def write_evaluation_artifacts(
                 "episode_seed": episode.episode_seed,
                 "episode_return": episode.episode_return,
                 "episode_length": episode.episode_length,
+                "total_agent_steps": episode.episode_length,
+                "total_emulator_frames": episode.total_emulator_frames,
                 "terminated": episode.terminated,
                 "truncated": episode.truncated,
                 "time_limit": episode.time_limit,

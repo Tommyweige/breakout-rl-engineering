@@ -14,6 +14,9 @@ from typing import Any, Mapping, Sequence
 CONTRACT_SCHEMA_VERSION = 2
 BREAKOUT_ENVIRONMENT_ID = "ALE/Breakout-v5"
 BREAKOUT_FRAME_SKIP = 4
+BREAKOUT_CONTRACT_V2_ID = "day15-breakout-evaluation-v2-fire-reset"
+BREAKOUT_CONTRACT_V3_ID = "breakout-evaluation-v3-frame-skip-1"
+BREAKOUT_CONTRACT_V3_FRAME_SKIP = 1
 BREAKOUT_STICKY_ACTION_PROBABILITY = 0.25
 FIRE_RESET_MAX_ATTEMPTS = 8
 FIRE_RESET_CONFIRMATION_STEPS = 2
@@ -307,8 +310,10 @@ def load_evaluation_contract(path: str | Path) -> BreakoutEvaluationContractV2:
 
 def validate_breakout_runtime_contract(
     contract: BreakoutEvaluationContractV2,
+    *,
+    allow_contract_v3: bool = False,
 ) -> None:
-    """Reject Contract v2 values that the shared Breakout constructor cannot honor."""
+    """Reject a contract whose declared Breakout semantics are unsupported."""
 
     if not isinstance(contract, BreakoutEvaluationContractV2):
         raise TypeError("contract must be a BreakoutEvaluationContractV2")
@@ -316,9 +321,20 @@ def validate_breakout_runtime_contract(
         raise ValueError(
             f"unsupported contract environment: {contract.environment_id}"
         )
-    if contract.frame_skip != BREAKOUT_FRAME_SKIP:
+    if contract.contract_id == BREAKOUT_CONTRACT_V2_ID:
+        expected_frame_skip = BREAKOUT_FRAME_SKIP
+    elif contract.contract_id == BREAKOUT_CONTRACT_V3_ID:
+        if not allow_contract_v3:
+            raise ValueError(
+                "Contract v3 requires allow_contract_v3=True"
+            )
+        expected_frame_skip = BREAKOUT_CONTRACT_V3_FRAME_SKIP
+    else:
+        raise ValueError(f"unsupported Breakout contract_id: {contract.contract_id}")
+    if contract.frame_skip != expected_frame_skip:
         raise ValueError(
-            f"Breakout runtime requires frame_skip={BREAKOUT_FRAME_SKIP}"
+            f"Breakout contract {contract.contract_id} requires "
+            f"frame_skip={expected_frame_skip}"
         )
     if contract.frame_stack != 4:
         raise ValueError("Breakout runtime requires frame_stack=4")
@@ -371,8 +387,22 @@ def validate_breakout_runtime_contract(
         raise ValueError(
             "Breakout runtime requires max_num_frames_per_episode=108000"
         )
-    if time_limit["agent_step_limit"] != 27000:
-        raise ValueError("Breakout runtime requires agent_step_limit=27000")
+    external_time_limit_wrapper = time_limit.get(
+        "external_time_limit_wrapper",
+        False,
+    )
+    if not isinstance(external_time_limit_wrapper, bool):
+        raise TypeError("external_time_limit_wrapper must be a boolean")
+    if external_time_limit_wrapper:
+        raise ValueError("Breakout runtime does not allow an external TimeLimit wrapper")
+    expected_agent_step_limit = (
+        time_limit["max_num_frames_per_episode"] // contract.frame_skip
+    )
+    if time_limit["agent_step_limit"] != expected_agent_step_limit:
+        raise ValueError(
+            "Breakout runtime requires agent_step_limit="
+            f"{expected_agent_step_limit} for frame_skip={contract.frame_skip}"
+        )
     if not time_limit["truncated_is_finished"]:
         raise ValueError("Breakout runtime treats truncated episodes as finished")
     if contract.evaluation_epsilon != 0.0:
@@ -386,12 +416,18 @@ def validate_breakout_runtime_contract(
 
 def breakout_environment_kwargs(
     contract: BreakoutEvaluationContractV2,
+    *,
+    allow_contract_v3: bool = False,
 ) -> dict[str, Any]:
-    """Return constructor arguments derived from the validated Contract v2."""
+    """Return constructor arguments derived from a validated Breakout contract."""
 
-    validate_breakout_runtime_contract(contract)
+    validate_breakout_runtime_contract(
+        contract,
+        allow_contract_v3=allow_contract_v3,
+    )
     confirmation = contract.fire_reset_confirmation
     return {
+        "frame_skip": contract.frame_skip,
         "stack_size": contract.frame_stack,
         "fire_reset": contract.fire_reset,
         "fire_reset_max_attempts": confirmation.max_fire_attempts,
@@ -409,6 +445,9 @@ __all__ = [
     "BreakoutEvaluationContractV2",
     "FireResetConfirmationContract",
     "BREAKOUT_ENVIRONMENT_ID",
+    "BREAKOUT_CONTRACT_V2_ID",
+    "BREAKOUT_CONTRACT_V3_ID",
+    "BREAKOUT_CONTRACT_V3_FRAME_SKIP",
     "BREAKOUT_FRAME_SKIP",
     "BREAKOUT_STICKY_ACTION_PROBABILITY",
     "CONTRACT_SCHEMA_VERSION",

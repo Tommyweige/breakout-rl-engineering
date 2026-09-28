@@ -22,6 +22,7 @@ from breakout_rl.evaluation_contract import (
 gym.register_envs(ale_py)
 
 ENVIRONMENT_ID = "ALE/Breakout-v5"
+SUPPORTED_FRAME_SKIPS = (1, 4)
 
 
 class BreakoutFireResetWrapper(gym.Wrapper):
@@ -284,9 +285,19 @@ def make_breakout_raw_env(
 def make_breakout_preprocessed_env(
     *,
     render_mode: str | None = None,
+    frame_skip: int = 4,
     sticky_action_probability: float = 0.25,
 ) -> gym.Env:
     """Create Breakout after Atari preprocessing but before frame stacking."""
+
+    if isinstance(frame_skip, bool):
+        raise TypeError("frame_skip must be 1 or 4")
+    try:
+        parsed_frame_skip = operator.index(frame_skip)
+    except TypeError as error:
+        raise TypeError("frame_skip must be 1 or 4") from error
+    if parsed_frame_skip not in SUPPORTED_FRAME_SKIPS:
+        raise ValueError("frame_skip must be 1 or 4")
 
     env = make_breakout_raw_env(
         render_mode=render_mode,
@@ -298,7 +309,7 @@ def make_breakout_preprocessed_env(
     return AtariPreprocessing(
         env,
         noop_max=30,
-        frame_skip=4,
+        frame_skip=parsed_frame_skip,
         screen_size=84,
         terminal_on_life_loss=False,
         grayscale_obs=True,
@@ -310,6 +321,7 @@ def make_breakout_preprocessed_env(
 def make_breakout_env(
     *,
     render_mode: str | None = None,
+    frame_skip: int = 4,
     stack_size: int = 4,
     fire_reset: bool = False,
     fire_reset_max_attempts: int = FIRE_RESET_MAX_ATTEMPTS,
@@ -335,6 +347,7 @@ def make_breakout_env(
 
     env = make_breakout_preprocessed_env(
         render_mode=render_mode,
+        frame_skip=frame_skip,
         sticky_action_probability=sticky_action_probability,
     )
 
@@ -359,6 +372,7 @@ def make_breakout_vector_env(
     num_envs: int,
     *,
     render_mode: str | None = None,
+    frame_skip: int = 4,
     stack_size: int = 4,
     fire_reset: bool = True,
     fire_reset_max_attempts: int = FIRE_RESET_MAX_ATTEMPTS,
@@ -389,6 +403,7 @@ def make_breakout_vector_env(
     def make_one() -> gym.Env:
         return make_breakout_env(
             render_mode=render_mode,
+            frame_skip=frame_skip,
             stack_size=stack_size,
             fire_reset=fire_reset,
             fire_reset_max_attempts=fire_reset_max_attempts,

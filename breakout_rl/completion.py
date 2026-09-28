@@ -9,7 +9,7 @@ import operator
 from dataclasses import dataclass
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Mapping, Sequence
 
 
 COMPLETION_SCHEMA_VERSION = 1
@@ -401,6 +401,54 @@ def read_ale_episode_frame(env: Any) -> int | None:
     return _read_ale_integer(env, "getEpisodeFrameNumber")
 
 
+class ALETransitionFrameCounter:
+    """Sum ALE-native frame deltas caused by agent transitions.
+
+    Reset-time no-ops and serve actions are excluded. A missing or reset ALE
+    counter makes the total unavailable rather than substituting a frame-skip
+    estimate.
+    """
+
+    source = "ALEInterface.getEpisodeFrameNumber"
+
+    def __init__(self, environments: Sequence[Any]) -> None:
+        self.environments = tuple(environments)
+        self.total_emulator_frames: int | None = (
+            0 if self.environments else None
+        )
+        self._last_frames: list[int | None] = [
+            None for _ in self.environments
+        ]
+
+    def reset(self, indices: Sequence[int] | None = None) -> None:
+        if not self.environments:
+            self.total_emulator_frames = None
+            return
+        selected = (
+            tuple(range(len(self.environments)))
+            if indices is None
+            else tuple(indices)
+        )
+        for index in selected:
+            if isinstance(index, bool) or not 0 <= index < len(self.environments):
+                raise ValueError("environment index is outside the ALE frame counter")
+            self._last_frames[index] = read_ale_episode_frame(
+                self.environments[index]
+            )
+            if self._last_frames[index] is None:
+                self.total_emulator_frames = None
+
+    def record_transitions(self) -> None:
+        for index, environment in enumerate(self.environments):
+            current = read_ale_episode_frame(environment)
+            previous = self._last_frames[index]
+            if current is None or previous is None or current < previous:
+                self.total_emulator_frames = None
+            elif self.total_emulator_frames is not None:
+                self.total_emulator_frames += current - previous
+            self._last_frames[index] = current
+
+
 def read_ale_lives(env: Any) -> int | None:
     return _read_ale_integer(env, "lives")
 
@@ -443,6 +491,7 @@ __all__ = [
     "BREAKOUT_SCORE_RAM_ADDRESSES",
     "COMPLETION_SCHEMA_VERSION",
     "BreakoutCompletionDetector",
+    "ALETransitionFrameCounter",
     "CompletionState",
     "CompletionSupport",
     "inspect_breakout_completion_support",

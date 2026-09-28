@@ -227,7 +227,7 @@ def main(argv: list[str] | None = None) -> int:
         config = _config_from_args(args)
         contract_path = _config_contract_path(args)
         contract: BreakoutEvaluationContractV2 | None = load_evaluation_contract(contract_path)
-        validate_breakout_runtime_contract(contract)
+        validate_breakout_runtime_contract(contract, allow_contract_v3=True)
         config = config.with_overrides(
             contract_id=contract.contract_id,
             contract_path=contract_path.as_posix(),
@@ -239,7 +239,7 @@ def main(argv: list[str] | None = None) -> int:
 
     env = make_breakout_vector_env(
         config.num_envs,
-        **breakout_environment_kwargs(contract),
+        **breakout_environment_kwargs(contract, allow_contract_v3=True),
     )
     try:
         trainer = VectorizedDQNTrainer(

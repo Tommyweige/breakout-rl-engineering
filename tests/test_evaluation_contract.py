@@ -2,13 +2,20 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import tempfile
 import unittest
 from argparse import Namespace
 from dataclasses import replace
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
 
+import numpy as np
+
+from breakout_env import make_breakout_env
+from breakout_rl.completion import read_ale_episode_frame
 from breakout_rl.evaluation import load_evaluation_config
 from breakout_rl.evaluation_contract import (
     BreakoutEvaluationContractV2,
@@ -20,13 +27,83 @@ from breakout_rl.evaluation_contract import (
 from breakout_rl.evaluation_artifacts import summary_from_episode_rows
 from scripts.evaluation.evaluate_dqn import (
     CONTRACT_V2_OUTPUT_DIRS,
+    CONTRACT_V3_OUTPUT_DIRS,
     FORMAL_DQN_OUTPUT_DIR,
     _validate_contract_for_config,
     _output_destination,
+    run_evaluation,
 )
 
 
 class Day15ContractTests(unittest.TestCase):
+    def test_v3_contract_selects_single_frame_decisions_without_changing_v2(self) -> None:
+        v2_path = Path("configs/eval/breakout_contract_v2.json")
+        v2 = load_evaluation_contract(v2_path)
+        v3 = load_evaluation_contract("configs/eval/breakout_contract_v3.json")
+
+        self.assertEqual(
+            hashlib.sha256(v2_path.read_bytes()).hexdigest(),
+            "7eca5ae5262a28aeabf3be658f8275a68f3d2ae40cc74379400be2890dc31a2a",
+        )
+        self.assertEqual(v2.frame_skip, 4)
+        self.assertEqual(v3.contract_id, "breakout-evaluation-v3-frame-skip-1")
+        self.assertEqual(v3.frame_skip, 1)
+        self.assertEqual(v3.frame_stack, v2.frame_stack)
+        self.assertEqual(
+            v3.sticky_action_probability,
+            v2.sticky_action_probability,
+        )
+        self.assertEqual(v3.fire_reset, v2.fire_reset)
+        self.assertEqual(v3.terminal_on_life_loss, v2.terminal_on_life_loss)
+        self.assertEqual(
+            v3.time_limit_semantics["max_num_frames_per_episode"],
+            v2.time_limit_semantics["max_num_frames_per_episode"],
+        )
+        self.assertEqual(v3.time_limit_semantics["agent_step_limit"], 108000)
+
+        kwargs = breakout_environment_kwargs(v3, allow_contract_v3=True)
+        self.assertEqual(kwargs["frame_skip"], 1)
+        validate_breakout_runtime_contract(v3, allow_contract_v3=True)
+
+        env = make_breakout_env(**kwargs)
+        try:
+            observation, _ = env.reset(seed=123)
+            self.assertEqual(observation.shape, (4, 84, 84))
+            self.assertEqual(observation.dtype, np.uint8)
+            before = read_ale_episode_frame(env)
+            self.assertIsNotNone(before)
+            env.step(0)
+            after = read_ale_episode_frame(env)
+            self.assertEqual(after - before, 1)
+            self.assertEqual(getattr(env.unwrapped, "_frameskip", None), 1)
+        finally:
+            env.close()
+
+    def test_contract_v3_requires_explicit_precision_opt_in(self) -> None:
+        contract = load_evaluation_contract("configs/eval/breakout_contract_v3.json")
+
+        with self.assertRaisesRegex(ValueError, "allow_contract_v3"):
+            validate_breakout_runtime_contract(contract)
+        with self.assertRaisesRegex(ValueError, "frame_skip=1"):
+            validate_breakout_runtime_contract(
+                replace(contract, frame_skip=4),
+                allow_contract_v3=True,
+            )
+
+    def test_contract_v2_keeps_four_native_frames_per_policy_decision(self) -> None:
+        contract = load_evaluation_contract("configs/eval/breakout_contract_v2.json")
+        env = make_breakout_env(**breakout_environment_kwargs(contract))
+        try:
+            env.reset(seed=123)
+            before = read_ale_episode_frame(env)
+            self.assertIsNotNone(before)
+            env.step(0)
+            after = read_ale_episode_frame(env)
+            self.assertEqual(after - before, 4)
+            self.assertEqual(getattr(env.unwrapped, "_frameskip", None), 1)
+        finally:
+            env.close()
+
     def test_concrete_seed_expansion_is_stable_and_traceable(self) -> None:
         self.assertEqual(
             expand_concrete_episode_seeds([101, 202, 303], episodes_per_seed=5),
@@ -201,10 +278,113 @@ class Day15ContractTests(unittest.TestCase):
 
         _validate_contract_for_config(contract, evaluation_config)
 
+    def test_contract_v3_uses_separate_evaluation_output_identity(self) -> None:
+        args = Namespace(device="cpu", output_dir=None, evaluation_id=None)
+
+        output_dir, evaluation_id = _output_destination(
+            "dqn",
+            args,
+            contract_id="breakout-evaluation-v3-frame-skip-1",
+        )
+
+        self.assertEqual(output_dir, CONTRACT_V3_OUTPUT_DIRS["dqn"])
+        self.assertEqual(evaluation_id, "contract-v3-dqn")
+        with self.assertRaisesRegex(ValueError, "another contract"):
+            _output_destination(
+                "dqn",
+                Namespace(
+                    device="cpu",
+                    output_dir=CONTRACT_V2_OUTPUT_DIRS["dqn"],
+                    evaluation_id=None,
+                ),
+                contract_id="breakout-evaluation-v3-frame-skip-1",
+            )
+
+    def test_contract_v3_matches_the_shared_seed_and_scoring_protocol(self) -> None:
+        contract = load_evaluation_contract(
+            Path("configs/eval/breakout_contract_v3.json")
+        )
+        evaluation_config = load_evaluation_config(
+            Path("configs/eval/breakout_eval.json")
+        )
+
+        _validate_contract_for_config(contract, evaluation_config)
+
+    def test_contract_v3_dqn_evaluation_uses_checkpoint_contract_provenance(self) -> None:
+        loaded = SimpleNamespace(
+            model=object(),
+            model_id="v3-checkpoint",
+            training_metadata={
+                "contract_id": "breakout-evaluation-v3-frame-skip-1",
+                "contract_path": "configs/eval/breakout_contract_v3.json",
+                "training_seed": 11,
+            },
+            checkpoint_metadata={
+                "path": "runs/v3/checkpoints/step-00000001.pth",
+                "sha256": "a" * 64,
+                "step": 1,
+            },
+        )
+        result = SimpleNamespace(
+            to_dict=lambda: {"model_id": "v3-checkpoint", "summary": {}}
+        )
+        args = Namespace(
+            policy="dqn",
+            checkpoint=Path("runs/v3/checkpoints/step-00000001.pth"),
+            config=Path("configs/eval/breakout_eval.json"),
+            contract=Path("configs/eval/breakout_contract_v3.json"),
+            device="cpu",
+            output_dir=None,
+            evaluation_id=None,
+            source_day14_manifest=None,
+            source_day14_profiling_report=None,
+        )
+
+        with (
+            patch(
+                "scripts.evaluation.evaluate_dqn.load_dqn_checkpoint",
+                return_value=loaded,
+            ) as load_checkpoint,
+            patch(
+                "scripts.evaluation.evaluate_dqn.load_day14_provenance",
+                side_effect=AssertionError("v3 evaluation must not use Day 14 v2 evidence"),
+            ),
+            patch(
+                "scripts.evaluation.evaluate_dqn.evaluate_policy",
+                return_value=result,
+            ) as evaluate,
+            patch(
+                "scripts.evaluation.evaluate_dqn.write_evaluation_artifacts",
+                return_value=(Path("results.json"), Path("episodes.csv")),
+            ) as write_artifacts,
+        ):
+            results_path, episodes_path, payload = run_evaluation(args)
+
+        self.assertEqual(results_path, Path("results.json"))
+        self.assertEqual(episodes_path, Path("episodes.csv"))
+        self.assertEqual(payload["model_id"], "v3-checkpoint")
+        checkpoint_env_factory = load_checkpoint.call_args.kwargs["env_factory"]
+        env = checkpoint_env_factory()
+        try:
+            self.assertEqual(env.env.env.frame_skip, 1)
+        finally:
+            env.close()
+        self.assertEqual(
+            evaluate.call_args.kwargs["training_metadata"]["source_of_truth"],
+            "checkpoint training contract metadata",
+        )
+        self.assertEqual(
+            evaluate.call_args.kwargs["evaluation_id"],
+            "contract-v3-dqn",
+        )
+        self.assertEqual(write_artifacts.call_args.args[1], CONTRACT_V3_OUTPUT_DIRS["dqn"])
+
     def test_runtime_validator_rejects_noncanonical_stack_or_fire_reset(self) -> None:
         contract = load_evaluation_contract(
             Path("configs/eval/breakout_contract_v2.json")
         )
+        with self.assertRaisesRegex(ValueError, "frame_skip=4"):
+            validate_breakout_runtime_contract(replace(contract, frame_skip=1))
         with self.assertRaisesRegex(ValueError, "frame_stack=4"):
             validate_breakout_runtime_contract(replace(contract, frame_stack=3))
         with self.assertRaisesRegex(ValueError, "fire_reset=true"):
@@ -232,6 +412,18 @@ class Day15ContractTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "raw_reward_rule"):
             validate_breakout_runtime_contract(
                 replace(contract, raw_reward_rule="clip")
+            )
+
+    def test_runtime_validator_rejects_external_time_limit_semantics(self) -> None:
+        contract = load_evaluation_contract(
+            Path("configs/eval/breakout_contract_v2.json")
+        )
+        time_limit = dict(contract.time_limit_semantics)
+        time_limit["external_time_limit_wrapper"] = True
+
+        with self.assertRaisesRegex(ValueError, "external TimeLimit"):
+            validate_breakout_runtime_contract(
+                replace(contract, time_limit_semantics=time_limit)
             )
 
 

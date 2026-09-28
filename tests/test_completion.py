@@ -15,10 +15,16 @@ from breakout_rl.completion import (
     BREAKOUT_FULL_CLEAR_SCORE,
     BREAKOUT_MODE,
     BREAKOUT_ROM_SHA256,
+    ALETransitionFrameCounter,
     BreakoutCompletionDetector,
     CompletionSupport,
     inspect_breakout_completion_support,
     read_breakout_score,
+    read_ale_episode_frame,
+)
+from breakout_rl.evaluation_contract import (
+    breakout_environment_kwargs,
+    load_evaluation_contract,
 )
 from breakout_rl.evaluation_artifacts import (
     summary_from_episode_rows,
@@ -73,6 +79,45 @@ def _episode_row(
         "lives_remaining_at_clear": 2 if cleared else None,
         "completion_detection_source": BREAKOUT_COMPLETION_SOURCE,
     }
+
+
+class _NativeFrameEnv:
+    def __init__(self, frame: int) -> None:
+        self.ale = self
+        self.frame = frame
+
+    @property
+    def unwrapped(self):
+        return self
+
+    def getEpisodeFrameNumber(self) -> int:
+        return self.frame
+
+
+class ALETransitionFrameCounterTests(unittest.TestCase):
+    def test_counts_native_transition_deltas_and_excludes_reset_frames(self) -> None:
+        environments = [_NativeFrameEnv(100), _NativeFrameEnv(200)]
+        counter = ALETransitionFrameCounter(environments)
+        counter.reset()
+
+        environments[0].frame += 4
+        environments[1].frame += 1
+        counter.record_transitions()
+        self.assertEqual(counter.total_emulator_frames, 5)
+
+        environments[0].frame = 7
+        counter.reset((0,))
+        environments[0].frame += 1
+        environments[1].frame += 2
+        counter.record_transitions()
+        self.assertEqual(counter.total_emulator_frames, 8)
+
+    def test_missing_native_counter_fails_closed(self) -> None:
+        counter = ALETransitionFrameCounter([object()])
+        counter.reset()
+        counter.record_transitions()
+
+        self.assertIsNone(counter.total_emulator_frames)
 
 
 class BreakoutCompletionDetectorTests(unittest.TestCase):
@@ -225,6 +270,41 @@ class BreakoutCompletionDetectorTests(unittest.TestCase):
         )
         self.assertTrue(state.cleared)
         self.assertEqual(state.clear_score, float(BREAKOUT_FULL_CLEAR_SCORE))
+
+    def test_contract_v3_clear_timing_uses_native_ale_frame_count(self) -> None:
+        contract = load_evaluation_contract("configs/eval/breakout_contract_v3.json")
+        env = make_breakout_env(
+            **breakout_environment_kwargs(contract, allow_contract_v3=True)
+        )
+        try:
+            env.reset(seed=101)
+            support = inspect_breakout_completion_support(env)
+            frame_origin = read_ale_episode_frame(env)
+            env.step(2)
+            ale = env.unwrapped.ale
+            ale.setRAM(76, 0x08)
+            ale.setRAM(77, 0x64)
+            _, reward, terminated, truncated, _ = env.step(0)
+            score_from_ram = read_breakout_score(env)
+            frame_now = read_ale_episode_frame(env)
+            emulator_frame = frame_now - frame_origin
+            lives = ale.lives()
+        finally:
+            env.close()
+
+        self.assertTrue(support.supported, support.reason)
+        self.assertFalse(terminated or truncated)
+        detector = BreakoutCompletionDetector(support)
+        state = detector.observe(
+            cumulative_score=float(reward),
+            ram_score=score_from_ram,
+            agent_step=2,
+            emulator_frame=emulator_frame,
+            lives_remaining=lives,
+        )
+        self.assertTrue(state.cleared)
+        self.assertEqual(state.clear_agent_step, 2)
+        self.assertEqual(state.clear_emulator_frame, emulator_frame)
 
     def test_repository_environment_matches_the_audited_runtime(self) -> None:
         env = make_breakout_env(fire_reset=True)
