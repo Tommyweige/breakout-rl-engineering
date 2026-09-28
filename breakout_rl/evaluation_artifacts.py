@@ -56,6 +56,25 @@ COMPLETION_SUMMARY_FIELDS = (
     "mean_clear_emulator_frame",
     "p90_clear_emulator_frame",
 )
+VERIFIED_CLEAR_PROVENANCE_FIELDS = (
+    "checkpoint_id",
+    "training_seed",
+    "training_transition_count",
+    "evaluation_seed",
+    "episode_seed",
+    "episode_index",
+    "contract_id",
+    "contract_sha256",
+    "completion_source_sha256",
+    "raw_score",
+    "clear_score",
+    "clear_agent_step",
+    "clear_emulator_frame",
+    "lives_remaining_at_clear",
+    "completion_detection_source",
+    "completion_detector_id",
+    "contract_validation_status",
+)
 
 
 def read_evaluation_results(path: str | Path) -> dict[str, Any]:
@@ -169,6 +188,44 @@ def read_evaluation_results(path: str | Path) -> dict[str, Any]:
                 )
             if row["cleared"] is True:
                 provenance = row["completion_provenance"]
+                provenance_status = provenance.get("provenance_status")
+                missing_provenance_fields = provenance.get(
+                    "missing_provenance_fields"
+                )
+                if provenance_status not in {"complete", "incomplete"}:
+                    raise ValueError(
+                        f"{source}: schema v3 per_episode[{index}] has invalid "
+                        "completion provenance status"
+                    )
+                if not isinstance(missing_provenance_fields, list) or any(
+                    not isinstance(field, str) for field in missing_provenance_fields
+                ):
+                    raise ValueError(
+                        f"{source}: schema v3 per_episode[{index}] has invalid "
+                        "missing provenance fields"
+                    )
+                required_missing = [
+                    field
+                    for field in VERIFIED_CLEAR_PROVENANCE_FIELDS
+                    if provenance.get(field) is None
+                ]
+                if provenance_status == "complete":
+                    if (
+                        missing_provenance_fields
+                        or required_missing
+                        or provenance.get("contract_validation_status")
+                        != "canonical_contract_v2"
+                    ):
+                        raise ValueError(
+                            f"{source}: schema v3 per_episode[{index}] marks "
+                            "incomplete provenance as complete"
+                        )
+                    derived_clears.append(provenance)
+                elif not missing_provenance_fields:
+                    raise ValueError(
+                        f"{source}: schema v3 per_episode[{index}] marks "
+                        "complete provenance as incomplete"
+                    )
                 if (
                     provenance.get("evaluation_seed") != row.get("evaluation_seed")
                     or provenance.get("episode_seed") != row.get("episode_seed")
@@ -181,7 +238,6 @@ def read_evaluation_results(path: str | Path) -> dict[str, Any]:
                         f"{source}: schema v3 per_episode[{index}] completion "
                         "provenance disagrees with its episode"
                     )
-                derived_clears.append(provenance)
         if list(payload["verified_clears"]) != derived_clears:
             raise ValueError(
                 f"{source}: schema v3 verified_clears disagrees with per_episode"
@@ -867,6 +923,7 @@ __all__ = [
     "summary_from_episode_rows",
     "SUPPORTED_EVALUATION_ARTIFACT_SCHEMA_VERSIONS",
     "TIME_LIMIT_SUMMARY_FIELDS",
+    "VERIFIED_CLEAR_PROVENANCE_FIELDS",
     "validate_embedded_summary",
     "validate_episode_rows",
 ]

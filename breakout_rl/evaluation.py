@@ -22,10 +22,12 @@ from typing import Any, Callable, Mapping, Protocol, Sequence
 
 import numpy as np
 import torch
+from gymnasium.wrappers import AtariPreprocessing, FrameStackObservation
 from torch import nn
 
-from breakout_env import ENVIRONMENT_ID, make_breakout_env
+from breakout_env import BreakoutFireResetWrapper, ENVIRONMENT_ID, make_breakout_env
 from breakout_rl.completion import (
+    BREAKOUT_AUDIT_CONFIG_PATH,
     BreakoutCompletionDetector,
     CompletionState,
     inspect_breakout_completion_support,
@@ -39,9 +41,15 @@ from breakout_rl.experiments import load_experiment_config
 from breakout_rl.evaluation_artifacts import (
     ACTION_DISTRIBUTION_SEMANTICS,
     EVALUATION_ARTIFACT_SCHEMA_VERSION,
+    VERIFIED_CLEAR_PROVENANCE_FIELDS,
     read_evaluation_results,
     summarize_returns,
     summary_from_episode_rows,
+)
+from breakout_rl.evaluation_contract import (
+    BreakoutEvaluationContractV2,
+    breakout_environment_kwargs,
+    validate_breakout_runtime_contract,
 )
 from breakout_rl.training.diagnostics import ATARI_ACTION_NAMES
 from breakout_rl.training.dqn_trainer import resolve_device
@@ -89,6 +97,7 @@ def _capture_source_provenance(repository_root: Path) -> dict[str, Any]:
         Path("breakout_rl/completion.py"),
         Path("breakout_rl/evaluation.py"),
         Path("breakout_rl/evaluation_artifacts.py"),
+        Path("breakout_rl/evaluation_contract.py"),
         Path("configs/eval/breakout_completion_audit_v1.json"),
     )
     source_digest = hashlib.sha256()
@@ -117,16 +126,19 @@ def _contract_provenance(
     values = metadata or {}
     path_value = values.get("evaluation_contract_path")
     contract_value = values.get("evaluation_contract")
-    if isinstance(path_value, (str, Path)) and str(path_value).strip():
-        path = Path(path_value)
-    else:
-        path = Path("configs/eval/breakout_contract_v2.json")
+    provenance: dict[str, Any] = {
+        "contract_id": None,
+        "contract_path": None,
+        "contract_sha256": None,
+        "hash_semantics": "SHA-256 of the exact contract file bytes",
+        "definition_status": "not_supplied",
+        "definition_reason": "No explicit evaluation contract was supplied.",
+    }
+    if not isinstance(path_value, (str, Path)) or not str(path_value).strip():
+        return provenance
+    path = Path(path_value)
     if not path.is_absolute():
         path = repository_root / path
-
-    payload: Mapping[str, Any] = (
-        contract_value if isinstance(contract_value, Mapping) else {}
-    )
     try:
         raw = path.read_bytes()
         parsed = json.loads(raw.decode("utf-8"))
@@ -135,17 +147,166 @@ def _contract_provenance(
     except (OSError, UnicodeDecodeError, json.JSONDecodeError):
         file_payload = {}
         contract_sha256 = None
-    contract_id = file_payload.get("contract_id", payload.get("contract_id"))
     try:
         relative_path = path.resolve().relative_to(repository_root.resolve()).as_posix()
     except ValueError:
         relative_path = path.as_posix()
-    return {
-        "contract_id": contract_id if isinstance(contract_id, str) else None,
-        "contract_path": relative_path,
-        "contract_sha256": contract_sha256,
-        "hash_semantics": "SHA-256 of the exact contract file bytes",
-    }
+    provenance.update(
+        {
+            "contract_id": file_payload.get("contract_id"),
+            "contract_path": relative_path,
+            "contract_sha256": contract_sha256,
+            "definition_status": "invalid",
+            "definition_reason": "The explicit contract file or metadata is invalid.",
+        }
+    )
+    if not isinstance(contract_value, Mapping):
+        provenance["definition_reason"] = (
+            "The contract file was supplied without its validated contract object."
+        )
+        return provenance
+
+    try:
+        file_contract = BreakoutEvaluationContractV2.from_mapping(file_payload)
+        metadata_contract = BreakoutEvaluationContractV2.from_mapping(contract_value)
+        validate_breakout_runtime_contract(file_contract)
+        validate_breakout_runtime_contract(metadata_contract)
+    except (TypeError, ValueError):
+        return provenance
+    if file_contract.to_dict() != metadata_contract.to_dict():
+        provenance["definition_reason"] = (
+            "The supplied contract object does not match the contract file."
+        )
+        return provenance
+
+    try:
+        audit = json.loads(BREAKOUT_AUDIT_CONFIG_PATH.read_text(encoding="utf-8"))
+        audit_environment = audit.get("environment", {})
+        expected_contract_id = audit_environment.get("contract_id")
+        expected_contract_sha256 = audit_environment.get("contract_sha256")
+    except (OSError, json.JSONDecodeError, AttributeError):
+        expected_contract_id = None
+        expected_contract_sha256 = None
+    if (
+        file_contract.contract_id != expected_contract_id
+        or contract_sha256 != expected_contract_sha256
+    ):
+        provenance["definition_reason"] = (
+            "The explicit contract does not match the audited Contract v2 identity/hash."
+        )
+        return provenance
+
+    provenance.update(
+        {
+            "contract_id": file_contract.contract_id,
+            "definition_status": "validated",
+            "definition_reason": None,
+        }
+    )
+    return provenance
+
+
+def _contract_runtime_binding(
+    env: Any,
+    metadata: Mapping[str, Any] | None,
+    contract_provenance: Mapping[str, Any],
+    *,
+    evaluation_seeds: Sequence[int],
+    episodes_per_seed: int,
+    epsilon: float,
+) -> tuple[bool, str | None]:
+    """Confirm the live wrappers and episode protocol match pinned Contract v2."""
+
+    if contract_provenance.get("definition_status") != "validated":
+        return False, str(
+            contract_provenance.get("definition_reason")
+            or "The canonical Contract v2 definition was not validated."
+        )
+    values = metadata or {}
+    contract_value = values.get("evaluation_contract")
+    if not isinstance(contract_value, Mapping):
+        return False, "The validated Contract v2 object is unavailable."
+    try:
+        contract = BreakoutEvaluationContractV2.from_mapping(contract_value)
+        validate_breakout_runtime_contract(contract)
+    except (TypeError, ValueError) as error:
+        return False, f"The Contract v2 object is invalid: {error}"
+
+    if tuple(evaluation_seeds) != contract.concrete_episode_seeds:
+        return False, "The evaluation seed list does not match Contract v2."
+    if episodes_per_seed != 1:
+        return False, "Canonical Contract v2 evaluation requires one episode per seed."
+    if epsilon != contract.evaluation_epsilon:
+        return False, "The evaluation epsilon does not match Contract v2."
+
+    if not isinstance(env, BreakoutFireResetWrapper):
+        return False, "The runtime is missing the Contract v2 FIRE-reset wrapper."
+    fire_wrapper = env
+    stack_wrapper = getattr(fire_wrapper, "env", None)
+    if not isinstance(stack_wrapper, FrameStackObservation):
+        return False, "The runtime is missing the Contract v2 frame-stack wrapper."
+    preprocessing = getattr(stack_wrapper, "env", None)
+    if not isinstance(preprocessing, AtariPreprocessing):
+        return False, "The runtime is missing the Contract v2 Atari preprocessing wrapper."
+
+    expected_kwargs = breakout_environment_kwargs(contract)
+    if stack_wrapper.stack_size != contract.frame_stack:
+        return False, "The runtime frame stack differs from Contract v2."
+    if (
+        preprocessing.frame_skip != contract.frame_skip
+        or preprocessing.terminal_on_life_loss != contract.terminal_on_life_loss
+        or tuple(preprocessing.screen_size) != (84, 84)
+        or not preprocessing.grayscale_obs
+        or preprocessing.scale_obs
+    ):
+        return False, "The runtime preprocessing semantics differ from Contract v2."
+    if (
+        fire_wrapper.max_fire_attempts != expected_kwargs["fire_reset_max_attempts"]
+        or fire_wrapper.confirmation_steps != expected_kwargs["fire_confirmation_steps"]
+        or fire_wrapper.min_observation_change_fraction
+        != expected_kwargs["fire_confirmation_change_fraction"]
+        or fire_wrapper.confirmation_operator
+        != expected_kwargs["fire_confirmation_operator"]
+        or fire_wrapper.confirmation_signals
+        != tuple(expected_kwargs["fire_confirmation_signals"])
+    ):
+        return False, "The runtime FIRE-reset settings differ from Contract v2."
+
+    base = getattr(env, "unwrapped", env)
+    spec = getattr(env, "spec", None)
+    spec_kwargs = getattr(spec, "kwargs", {})
+    if not isinstance(spec_kwargs, Mapping):
+        spec_kwargs = {}
+    if (
+        getattr(spec, "id", None) != contract.environment_id
+        or getattr(base, "_game", None) != "breakout"
+        or getattr(base, "_game_mode", None) != 0
+        or getattr(base, "_game_difficulty", None) != 0
+        or getattr(base, "_frameskip", None) != 1
+        or spec_kwargs.get("mode") != 0
+        or spec_kwargs.get("difficulty") != 0
+        or spec_kwargs.get("max_num_frames_per_episode")
+        != contract.time_limit_semantics["max_num_frames_per_episode"]
+    ):
+        return False, "The live ALE game identity or frame limit differs from Contract v2."
+    ale = getattr(base, "ale", None)
+    get_float = getattr(ale, "getFloat", None)
+    if not callable(get_float):
+        return False, "The live ALE runtime does not expose sticky-action probability."
+    try:
+        sticky_action_probability = float(
+            get_float("repeat_action_probability")
+        )
+    except (RuntimeError, TypeError, ValueError):
+        return False, "The live ALE sticky-action probability is unavailable."
+    if not math.isclose(
+        sticky_action_probability,
+        contract.sticky_action_probability,
+        rel_tol=0.0,
+        abs_tol=1e-12,
+    ):
+        return False, "The live ALE sticky-action probability differs from Contract v2."
+    return True, None
 
 
 def _first_present(mapping: Mapping[str, Any], *names: str) -> Any:
@@ -533,9 +694,28 @@ class EvaluationResult:
                         episode.completion_detection_source
                     ),
                     "completion_detector_id": detector.get("detector_id"),
+                    "contract_validation_status": contract.get(
+                        "validation_status"
+                    ),
                 }
+                missing_provenance_fields = [
+                    field
+                    for field in VERIFIED_CLEAR_PROVENANCE_FIELDS
+                    if clear_provenance.get(field) is None
+                ]
+                if contract.get("validation_status") != "canonical_contract_v2":
+                    missing_provenance_fields.append(
+                        "validated canonical Contract v2 runtime binding"
+                    )
+                clear_provenance["provenance_status"] = (
+                    "complete" if not missing_provenance_fields else "incomplete"
+                )
+                clear_provenance["missing_provenance_fields"] = (
+                    missing_provenance_fields
+                )
                 row["completion_provenance"] = clear_provenance
-                verified_clears.append(clear_provenance)
+                if clear_provenance["provenance_status"] == "complete":
+                    verified_clears.append(clear_provenance)
             per_episode.append(row)
         summary = summary_from_episode_rows(
             per_episode
@@ -912,6 +1092,27 @@ def evaluate_policy(
     contract_provenance = _contract_provenance(
         metadata,
         repository_root=repository_root,
+    )
+    runtime_contract_validated, runtime_contract_reason = (
+        _contract_runtime_binding(
+            env,
+            metadata,
+            contract_provenance,
+            evaluation_seeds=evaluation_seeds,
+            episodes_per_seed=episodes_per_seed,
+            epsilon=epsilon,
+        )
+    )
+    contract_provenance.update(
+        {
+            "runtime_binding_validated": runtime_contract_validated,
+            "validation_status": (
+                "canonical_contract_v2"
+                if runtime_contract_validated
+                else "unverified"
+            ),
+            "validation_reason": runtime_contract_reason,
+        }
     )
     result_metadata = dict(metadata or {})
     result_metadata["completion_detector"] = completion_support.to_dict()
