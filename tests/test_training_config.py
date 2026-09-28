@@ -164,6 +164,59 @@ class DQNConfigTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             DQNConfig(replay_backend="gpu", replay_transfer="preallocated")
 
+    def test_prioritized_replay_parameters_are_validated(self) -> None:
+        defaults = DQNConfig()
+        self.assertEqual(defaults.replay_sampling, "uniform")
+        self.assertEqual(defaults.per_alpha, 0.6)
+        self.assertEqual(defaults.per_beta_start, 0.4)
+        self.assertEqual(defaults.per_beta_end, 1.0)
+        self.assertEqual(defaults.per_beta_anneal_transitions, 500_000)
+        self.assertEqual(defaults.priority_epsilon, 1e-6)
+
+        config = DQNConfig(
+            replay_sampling="PRIORITIZED",
+            replay_backend="gpu",
+            device="cuda",
+        )
+        self.assertEqual(config.replay_sampling, "prioritized")
+        self.assertEqual(DQNConfig.from_dict(config.to_dict()), config)
+
+        invalid_values = (
+            {"replay_sampling": "unknown"},
+            {"replay_sampling": "prioritized"},
+            {"replay_sampling": "prioritized", "replay_backend": "cpu"},
+            {"replay_sampling": "prioritized", "replay_backend": "gpu", "per_alpha": 1.1},
+            {"replay_sampling": "prioritized", "replay_backend": "gpu", "per_beta_start": -0.1},
+            {"replay_sampling": "prioritized", "replay_backend": "gpu", "per_beta_end": 1.1},
+            {"replay_sampling": "prioritized", "replay_backend": "gpu", "per_beta_anneal_transitions": 0},
+            {"replay_sampling": "prioritized", "replay_backend": "gpu", "priority_epsilon": 0.0},
+        )
+        for overrides in invalid_values:
+            with self.subTest(overrides=overrides):
+                with self.assertRaises((TypeError, ValueError)):
+                    DQNConfig(**overrides)
+
+    def test_explicit_checkpoint_steps_are_normalized_and_validated(self) -> None:
+        config = DQNConfig(
+            total_steps=12,
+            num_envs=3,
+            checkpoint_steps=[12, 6, 6],
+        )
+        self.assertEqual(config.checkpoint_steps, (6, 12))
+        self.assertEqual(
+            DQNConfig.from_dict(config.to_dict()).checkpoint_steps,
+            (6, 12),
+        )
+
+        for overrides in (
+            {"total_steps": 12, "checkpoint_steps": [13]},
+            {"total_steps": 12, "num_envs": 3, "checkpoint_steps": [5]},
+            {"total_steps": 12, "checkpoint_steps": "6"},
+        ):
+            with self.subTest(overrides=overrides):
+                with self.assertRaises((TypeError, ValueError)):
+                    DQNConfig(**overrides)
+
     def test_stage_profiling_flag_is_boolean(self) -> None:
         self.assertTrue(DQNConfig(profile_stages=True).profile_stages)
         with self.assertRaises(TypeError):

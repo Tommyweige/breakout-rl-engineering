@@ -1140,6 +1140,7 @@ def load_dqn_checkpoint(
         "contract_id": payload.get("contract_id", saved_config.get("contract_id")),
         "contract_path": payload.get("contract_path", saved_config.get("contract_path")),
         "source_day14_manifest": manifest_value,
+        "trainer_runtime": dict(runtime_payload),
     }
     checkpoint_metadata: dict[str, Any] = {
         "path": _repository_path(checkpoint_path),
@@ -1168,6 +1169,7 @@ def load_dqn_checkpoint(
         "requested_device": requested_device,
         "device": payload.get("device", str(resolved_device)),
         "resolved_device": str(resolved_device),
+        "trainer_runtime": dict(runtime_payload),
     }
     return LoadedDQNCheckpoint(
         model=model,

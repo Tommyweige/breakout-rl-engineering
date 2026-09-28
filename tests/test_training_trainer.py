@@ -153,6 +153,52 @@ class DQNTrainerTests(unittest.TestCase):
                 0.0,
             )
 
+    @unittest.skipUnless(torch.cuda.is_available(), "CUDA is required for PER trainer integration")
+    def test_prioritized_gpu_replay_updates_and_checkpoints_resume_contract(self) -> None:
+        config = DQNConfig(
+            total_steps=8,
+            seed=11,
+            batch_size=2,
+            replay_capacity=8,
+            learning_starts=2,
+            train_frequency=2,
+            target_update_interval=4,
+            checkpoint_interval=8,
+            diagnostics_interval=1,
+            device="cuda",
+            replay_backend="gpu",
+            replay_sampling="prioritized",
+            profile_stages=True,
+        )
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            run_dir = Path(temporary_directory) / "per-trainer"
+            trainer = DQNTrainer(
+                ShortEpisodeEnv(),
+                config,
+                run_dir=run_dir,
+                online_network=TinyImageQNetwork(),
+            )
+            summary = trainer.train()
+            checkpoint = next((run_dir / "checkpoints").glob("*.pt"))
+            payload = torch.load(checkpoint, map_location="cpu", weights_only=False)
+
+        self.assertEqual(summary["replay_sampling"], "prioritized")
+        self.assertIsInstance(trainer.replay, GPUReplayBuffer)
+        self.assertTrue(trainer.replay.prioritized)
+        self.assertGreater(summary["per_diagnostics"]["priority_std"], 0.0)
+        self.assertEqual(payload["replay_sampling"], "prioritized")
+        self.assertFalse(payload["prioritized_replay_state_saved"])
+        self.assertEqual(payload["per_beta_schedule_transitions"], 8)
+        self.assertGreater(
+            summary["runtime"]["stage_timings"]["per_replay_sample"]["gpu_seconds"],
+            0.0,
+        )
+        self.assertGreater(
+            summary["runtime"]["stage_timings"]["per_priority_update"]["gpu_seconds"],
+            0.0,
+        )
+
     def test_gpu_replay_backend_rejects_non_cuda_trainer_device(self) -> None:
         config = DQNConfig(
             total_steps=1,

@@ -183,6 +183,38 @@ class VectorizedTrainingTests(unittest.TestCase):
                     online_network=CountingQNetwork(),
                 )
 
+    def test_explicit_checkpoint_step_saves_an_extra_vector_boundary(self) -> None:
+        config = DQNConfig(
+            total_steps=6,
+            num_envs=3,
+            batch_size=3,
+            replay_capacity=6,
+            learning_starts=3,
+            train_frequency=3,
+            target_update_interval=3,
+            checkpoint_interval=6,
+            checkpoint_steps=(3,),
+            device="cpu",
+        )
+
+        with tempfile.TemporaryDirectory() as directory:
+            run_dir = Path(directory) / "explicit-checkpoint"
+            trainer = VectorizedDQNTrainer(
+                DeterministicVectorEnv(),
+                config,
+                run_dir=run_dir,
+                online_network=SwitchingQNetwork(),
+            )
+            trainer.train()
+            checkpoint_names = sorted(
+                path.name for path in (run_dir / "checkpoints").glob("*.pt")
+            )
+
+        self.assertEqual(
+            checkpoint_names,
+            ["step-00000003.pt", "step-00000006.pt"],
+        )
+
     def test_checkpoint_boundaries_are_captured_inside_a_vector_step(self) -> None:
         config = DQNConfig(
             total_steps=6,
@@ -540,6 +572,70 @@ class VectorizedTrainingTests(unittest.TestCase):
         self.assertEqual(summary["model_config"]["architecture"], "dueling")
         self.assertEqual(payload["architecture"], "dueling")
 
+
+    @unittest.skipUnless(torch.cuda.is_available(), "CUDA is required for PER training integration")
+    def test_prioritized_gpu_training_updates_priorities_and_records_resume_state(self) -> None:
+        config = DQNConfig(
+            total_steps=12,
+            seed=11,
+            algorithm="double_dqn",
+            architecture="dueling",
+            batch_size=3,
+            replay_capacity=12,
+            learning_starts=3,
+            train_frequency=3,
+            target_update_interval=3,
+            checkpoint_interval=12,
+            diagnostics_interval=1,
+            device="cuda",
+            replay_backend="gpu",
+            replay_sampling="prioritized",
+            profile_stages=True,
+            num_envs=3,
+            strict_action_selection_parity=True,
+        )
+
+        with tempfile.TemporaryDirectory() as directory:
+            run_dir = Path(directory) / "per-vectorized"
+            trainer = VectorizedDQNTrainer(
+                DeterministicVectorEnv(),
+                config,
+                run_dir=run_dir,
+                online_network=CountingQNetwork(),
+            )
+            summary = trainer.train()
+            checkpoint = next((run_dir / "checkpoints").glob("*.pt"))
+            checkpoint_payload = torch.load(
+                checkpoint,
+                map_location="cpu",
+                weights_only=False,
+            )
+            with (run_dir / "metrics.csv").open(
+                newline="",
+                encoding="utf-8",
+            ) as stream:
+                rows = list(csv.DictReader(stream))
+
+        self.assertEqual(summary["replay_sampling"], "prioritized")
+        self.assertEqual(summary["prioritized_replay"]["priority_state_saved"], False)
+        self.assertEqual(summary["prioritized_replay"]["resume_semantics"], "fresh replay and max-priority initialization; not exact continuation")
+        self.assertEqual(checkpoint_payload["replay_sampling"], "prioritized")
+        self.assertEqual(checkpoint_payload["prioritized_replay_state_saved"], False)
+        self.assertEqual(checkpoint_payload["replay_saved"], False)
+        self.assertEqual(checkpoint_payload["per_beta_schedule_transitions"], 12)
+        self.assertEqual(trainer.replay.priorities.device.type, "cuda")
+        self.assertGreater(summary["optimizer_updates"], 0)
+        self.assertGreater(
+            summary["runtime"]["stage_timings"]["per_replay_sample"]["gpu_seconds"],
+            0.0,
+        )
+        self.assertGreater(
+            summary["runtime"]["stage_timings"]["per_priority_update"]["gpu_seconds"],
+            0.0,
+        )
+        self.assertGreater(summary["per_diagnostics"]["priority_max"], 0.0)
+        self.assertIn("importance_weight_mean", rows[-1])
+        self.assertTrue(any(row["importance_weight_mean"] for row in rows))
 
 if __name__ == "__main__":
     unittest.main()

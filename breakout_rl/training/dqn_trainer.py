@@ -18,6 +18,7 @@ from torch import nn
 
 from breakout_rl.exploration import LinearEpsilonSchedule, select_epsilon_greedy_action
 from breakout_rl.models.factory import build_q_network, checkpoint_architecture
+from breakout_rl.prioritized_replay import beta_for_transition
 from breakout_rl.replay import ReplayBuffer
 from breakout_rl.replay_gpu import GPUReplayBuffer
 from breakout_rl.replay_tensors import (
@@ -39,6 +40,10 @@ from breakout_rl.training.diagnostics import (
     replay_occupancy,
 )
 from breakout_rl.training.metrics import MetricsLogger
+from breakout_rl.training.prioritized import (
+    sample_prioritized_update,
+    update_priorities_after_optimizer,
+)
 from breakout_rl.training.reward_shaping import (
     LIFE_LOSS_INFO_KEY,
     reward_design_metadata,
@@ -156,6 +161,7 @@ class DQNTrainingStepResult:
     td_error_mean_abs: float | None
     td_error_max_abs: float | None
     gradient_norm: float | None
+    absolute_td_errors: torch.Tensor | None = None
 
     @property
     def td_loss(self) -> float | None:
@@ -309,6 +315,7 @@ def dqn_training_step(
     gradient_clip_norm: float | None,
     algorithm: str = "dqn",
     loss_fn: nn.Module | None = None,
+    importance_sampling_weights: torch.Tensor | None = None,
     collect_diagnostics: bool = True,
     stage_measure: Callable[[str, Callable[[], Any]], Any] | None = None,
 ) -> DQNTrainingStepResult:
@@ -385,13 +392,66 @@ def dqn_training_step(
     if collect_diagnostics:
         _require_finite(targets, name="Bellman targets")
 
-    criterion = loss_fn if loss_fn is not None else nn.SmoothL1Loss()
-    loss = measure_stage(
-        "loss",
-        lambda: criterion(selected_q_values, targets),
-    )
-    if not isinstance(loss, torch.Tensor) or loss.ndim != 0:
-        raise ValueError("loss_fn must return a scalar tensor")
+    absolute_td_errors = (
+        targets.detach() - selected_q_values.detach()
+    ).abs().detach()
+    if collect_diagnostics:
+        _require_finite(absolute_td_errors, name="absolute TD errors")
+
+    if importance_sampling_weights is None:
+        criterion = loss_fn if loss_fn is not None else nn.SmoothL1Loss()
+        loss = measure_stage(
+            "loss",
+            lambda: criterion(selected_q_values, targets),
+        )
+        if not isinstance(loss, torch.Tensor) or loss.ndim != 0:
+            raise ValueError("loss_fn must return a scalar tensor")
+    else:
+        if not isinstance(importance_sampling_weights, torch.Tensor):
+            raise TypeError("importance_sampling_weights must be a torch.Tensor")
+        if importance_sampling_weights.shape != (batch_size,):
+            raise ValueError("importance_sampling_weights must have shape (B,)")
+        if not importance_sampling_weights.is_floating_point():
+            raise TypeError("importance_sampling_weights must be floating point")
+        if importance_sampling_weights.device != selected_q_values.device:
+            raise ValueError(
+                "importance_sampling_weights must be on the training device"
+            )
+        weights = importance_sampling_weights.detach().to(
+            dtype=selected_q_values.dtype
+        )
+        valid_weights = torch.all(torch.isfinite(weights) & (weights > 0.0))
+        if weights.device.type == "cuda" and hasattr(torch, "_assert_async"):
+            torch._assert_async(
+                valid_weights,
+                "importance_sampling_weights must be finite and positive",
+            )
+        elif not bool(valid_weights):
+            raise ValueError(
+                "importance_sampling_weights must be finite and positive"
+            )
+        if collect_diagnostics:
+            _require_finite(weights, name="importance-sampling weights")
+        criterion = (
+            loss_fn
+            if loss_fn is not None
+            else nn.SmoothL1Loss(reduction="none")
+        )
+
+        def weighted_loss() -> torch.Tensor:
+            per_sample_loss = criterion(selected_q_values, targets)
+            if (
+                not isinstance(per_sample_loss, torch.Tensor)
+                or per_sample_loss.shape != (batch_size,)
+            ):
+                raise ValueError(
+                    "PER loss_fn must return one loss value per sampled transition"
+                )
+            return (per_sample_loss * weights).mean()
+
+        loss = measure_stage("loss", weighted_loss)
+        if not isinstance(loss, torch.Tensor) or loss.ndim != 0:
+            raise ValueError("weighted loss must be a scalar tensor")
     if collect_diagnostics:
         _require_finite(loss, name="loss")
 
@@ -430,7 +490,6 @@ def dqn_training_step(
 
             detached_selected_q_values = selected_q_values.detach()
             detached_targets = targets.detach()
-            absolute_td_errors = (detached_targets - detached_selected_q_values).abs()
             return DQNTrainingStepResult(
                 loss=float(loss.detach().item()),
                 selected_q_values=detached_selected_q_values.clone(),
@@ -443,6 +502,7 @@ def dqn_training_step(
                 td_error_mean_abs=float(absolute_td_errors.mean().item()),
                 td_error_max_abs=float(absolute_td_errors.max().item()),
                 gradient_norm=gradient_norm,
+                absolute_td_errors=absolute_td_errors,
             )
 
         return measure_stage("diagnostics", diagnostics)
@@ -459,6 +519,7 @@ def dqn_training_step(
         td_error_mean_abs=None,
         td_error_max_abs=None,
         gradient_norm=None,
+        absolute_td_errors=absolute_td_errors,
     )
 
 
@@ -648,6 +709,8 @@ class DQNTrainer:
                 config.replay_capacity,
                 observation_shape=self.observation_shape,
                 device=self.device,
+                prioritized=config.replay_sampling == "prioritized",
+                priority_epsilon=config.priority_epsilon,
             )
         else:
             self.replay = ReplayBuffer(
@@ -693,6 +756,7 @@ class DQNTrainer:
         self._life_loss_count = 0
         self._life_loss_penalty_total = 0.0
         self._last_result: DQNTrainingStepResult | None = None
+        self._last_per_metrics: dict[str, Any] = {}
         self._action_counts = [0 for _ in range(self.action_count)]
         self._random_decision_count = 0
         self._greedy_decision_count = 0
@@ -757,11 +821,30 @@ class DQNTrainer:
         return action, source
 
     def _update_once(self) -> DQNTrainingStepResult:
+        next_update = self.optimizer_updates + 1
+        collect_diagnostics = (
+            next_update % self.config.diagnostics_interval == 0
+            or self.global_step % self.config.checkpoint_interval == 0
+            or self.global_step in self.config.checkpoint_steps
+            or self.global_step >= self.config.total_steps
+        )
+        prioritized_update = None
         if self.config.replay_backend == "gpu":
-            tensor_batch = self._stage_profiler.measure_cuda(
-                "gpu_replay_gather_cast",
-                lambda: self.replay.sample(self.config.batch_size),
-            )
+            if self.config.replay_sampling == "prioritized":
+                if not isinstance(self.replay, GPUReplayBuffer):
+                    raise RuntimeError("prioritized replay requires GPUReplayBuffer")
+                prioritized_update = sample_prioritized_update(
+                    self.replay,
+                    self.config,
+                    transitions=self.global_step,
+                    measure_cuda=self._stage_profiler.measure_cuda,
+                )
+                tensor_batch = prioritized_update.sample.batch
+            else:
+                tensor_batch = self._stage_profiler.measure_cuda(
+                    "gpu_replay_gather_cast",
+                    lambda: self.replay.sample(self.config.batch_size),
+                )
         else:
             batch = self._stage_profiler.measure(
                 "replay_sample",
@@ -777,12 +860,6 @@ class DQNTrainer:
                     "replay_transfer",
                     lambda: self._replay_transfer.transfer(batch),
                 )
-        next_update = self.optimizer_updates + 1
-        collect_diagnostics = (
-            next_update % self.config.diagnostics_interval == 0
-            or self.global_step % self.config.checkpoint_interval == 0
-            or self.global_step >= self.config.total_steps
-        )
         result = self._stage_profiler.measure_cuda(
             "dqn_update",
             lambda: dqn_training_step(
@@ -793,10 +870,26 @@ class DQNTrainer:
                 gamma=self.config.gamma,
                 gradient_clip_norm=self.config.gradient_clip_norm,
                 algorithm=self.config.algorithm,
+                importance_sampling_weights=(
+                    None
+                    if prioritized_update is None
+                    else prioritized_update.sample.importance_weights
+                ),
                 collect_diagnostics=collect_diagnostics,
                 stage_measure=self._stage_profiler.measure_cuda,
             ),
         )
+        if prioritized_update is not None:
+            if not isinstance(self.replay, GPUReplayBuffer):
+                raise RuntimeError("prioritized replay requires GPUReplayBuffer")
+            self._last_per_metrics = update_priorities_after_optimizer(
+                self.replay,
+                prioritized_update,
+                result.absolute_td_errors,
+                self.config,
+                collect_diagnostics=collect_diagnostics,
+                measure_cuda=self._stage_profiler.measure_cuda,
+            )
         self.optimizer_updates += 1
         self._last_result = result
         return result
@@ -950,6 +1043,7 @@ class DQNTrainer:
             "gradient_norm": None if result is None else result.gradient_norm,
             "replay_size": len(self.replay),
             "replay_capacity": self.config.replay_capacity,
+            **self._last_per_metrics,
             "replay_occupancy": len(self.replay) / self.config.replay_capacity,
             "steps_per_second": sps,
             "sps": sps,
@@ -1105,6 +1199,29 @@ class DQNTrainer:
             "optimizer_updates": self.optimizer_updates,
             "replay_backend": self.config.replay_backend,
             "replay_transfer": self.config.replay_transfer,
+            "replay_sampling": self.config.replay_sampling,
+            "prioritized_replay": (
+                {
+                    "alpha": self.config.per_alpha,
+                    "beta": beta_for_transition(
+                        self.global_step,
+                        beta_start=self.config.per_beta_start,
+                        beta_end=self.config.per_beta_end,
+                        anneal_transitions=self.config.per_beta_anneal_transitions,
+                    ),
+                    "beta_start": self.config.per_beta_start,
+                    "beta_end": self.config.per_beta_end,
+                    "beta_anneal_transitions": self.config.per_beta_anneal_transitions,
+                    "priority_epsilon": self.config.priority_epsilon,
+                    "priority_state_saved": False,
+                    "resume_semantics": (
+                        "fresh replay and max-priority initialization; not exact continuation"
+                    ),
+                }
+                if self.config.replay_sampling == "prioritized"
+                else None
+            ),
+            "per_diagnostics": dict(self._last_per_metrics),
             "replay_bytes": int(self.replay.allocated_bytes),
             "replay_rewarm_steps_remaining": self._resume_rewarm_steps_remaining,
             "target_sync_count": self.target_sync_count,
@@ -1212,6 +1329,19 @@ class DQNTrainer:
             "contract_path": self.config.contract_path,
             "num_envs": 1,
             "replay_backend": self.config.replay_backend,
+            "replay_sampling": self.config.replay_sampling,
+            "prioritized_replay_state_saved": False,
+            "per_beta_schedule_transitions": self.global_step,
+            "per_beta_at_checkpoint": (
+                beta_for_transition(
+                    self.global_step,
+                    beta_start=self.config.per_beta_start,
+                    beta_end=self.config.per_beta_end,
+                    anneal_transitions=self.config.per_beta_anneal_transitions,
+                )
+                if self.config.replay_sampling == "prioritized"
+                else None
+            ),
             "training_steps": self.global_step,
             "runtime": self._runtime_metadata(elapsed),
             "model_config": {
@@ -1555,7 +1685,10 @@ class DQNTrainer:
                     ),
                 )
 
-                if self.global_step % self.config.checkpoint_interval == 0:
+                if (
+                    self.global_step % self.config.checkpoint_interval == 0
+                    or self.global_step in self.config.checkpoint_steps
+                ):
                     self._stage_profiler.measure(
                         "checkpoint",
                         self.save_checkpoint,

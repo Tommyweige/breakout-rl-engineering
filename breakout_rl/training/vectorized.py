@@ -28,6 +28,7 @@ from breakout_rl.exploration import (
     select_epsilon_greedy_actions,
 )
 from breakout_rl.models.factory import build_q_network, checkpoint_architecture
+from breakout_rl.prioritized_replay import beta_for_transition
 from breakout_rl.replay import ReplayBuffer
 from breakout_rl.replay_gpu import GPUReplayBuffer
 from breakout_rl.replay_tensors import (
@@ -55,6 +56,10 @@ from breakout_rl.training.dqn_trainer import (
     seed_everything,
 )
 from breakout_rl.training.metrics import MetricsLogger
+from breakout_rl.training.prioritized import (
+    sample_prioritized_update,
+    update_priorities_after_optimizer,
+)
 from breakout_rl.training.reward_shaping import (
     LIFE_LOSS_INFO_KEY,
     reward_design_metadata,
@@ -187,6 +192,7 @@ def _schedule_events(
     train_frequency: int,
     target_update_interval: int,
     checkpoint_interval: int | None = None,
+    checkpoint_steps: Sequence[int] = (),
 ) -> tuple[tuple[int, int, VectorScheduleEventKind], ...]:
     events: list[tuple[int, int, VectorScheduleEventKind]] = []
     events.extend(
@@ -205,15 +211,24 @@ def _schedule_events(
             target_update_interval,
         )
     )
+    checkpoint_boundaries = set()
     if checkpoint_interval is not None:
-        events.extend(
-            (boundary, 2, "checkpoint")
-            for boundary in crossed_transition_boundaries(
+        checkpoint_boundaries.update(
+            crossed_transition_boundaries(
                 previous_step,
                 current_step,
                 checkpoint_interval,
             )
         )
+    checkpoint_boundaries.update(
+        int(step)
+        for step in checkpoint_steps
+        if previous_step < int(step) <= current_step
+    )
+    events.extend(
+        (boundary, 2, "checkpoint")
+        for boundary in sorted(checkpoint_boundaries)
+    )
     return tuple(sorted(events))
 
 
@@ -538,6 +553,8 @@ class VectorizedDQNTrainer:
                 config.replay_capacity,
                 observation_shape=self.observation_shape,
                 device=self.device,
+                prioritized=config.replay_sampling == "prioritized",
+                priority_epsilon=config.priority_epsilon,
             )
         else:
             self.replay = ReplayBuffer(
@@ -570,6 +587,7 @@ class VectorizedDQNTrainer:
         self._resume_rewarm_steps_remaining = 0
         self._last_checkpoint: Path | None = None
         self._last_result: DQNTrainingStepResult | None = None
+        self._last_per_metrics: dict[str, Any] = {}
         self._episode_counts = np.zeros(self.num_envs, dtype=np.int64)
         self._episode_returns = np.zeros(self.num_envs, dtype=np.float64)
         self._episode_training_returns = np.zeros(self.num_envs, dtype=np.float64)
@@ -876,11 +894,30 @@ class VectorizedDQNTrainer:
         return executed_actions, sources, overridden, fire_reset_reasons
 
     def _update_once(self) -> DQNTrainingStepResult:
+        next_update = self.optimizer_updates + 1
+        collect_diagnostics = (
+            next_update % self.config.diagnostics_interval == 0
+            or self.global_step % self.config.checkpoint_interval == 0
+            or self.global_step in self.config.checkpoint_steps
+            or self.global_step >= self.config.total_steps
+        )
+        prioritized_update = None
         if self.config.replay_backend == "gpu":
-            tensor_batch = self._stage_profiler.measure_cuda(
-                "gpu_replay_gather_cast",
-                lambda: self.replay.sample(self.config.batch_size),  # type: ignore[union-attr]
-            )
+            if self.config.replay_sampling == "prioritized":
+                if not isinstance(self.replay, GPUReplayBuffer):
+                    raise RuntimeError("prioritized replay requires GPUReplayBuffer")
+                prioritized_update = sample_prioritized_update(
+                    self.replay,
+                    self.config,
+                    transitions=self.global_step,
+                    measure_cuda=self._stage_profiler.measure_cuda,
+                )
+                tensor_batch = prioritized_update.sample.batch
+            else:
+                tensor_batch = self._stage_profiler.measure_cuda(
+                    "gpu_replay_gather_cast",
+                    lambda: self.replay.sample(self.config.batch_size),  # type: ignore[union-attr]
+                )
         else:
             batch = self._stage_profiler.measure(
                 "replay_sample",
@@ -896,12 +933,6 @@ class VectorizedDQNTrainer:
                     "replay_transfer",
                     lambda: self._replay_transfer.transfer(batch),
                 )
-        next_update = self.optimizer_updates + 1
-        collect_diagnostics = (
-            next_update % self.config.diagnostics_interval == 0
-            or self.global_step % self.config.checkpoint_interval == 0
-            or self.global_step >= self.config.total_steps
-        )
         result = self._stage_profiler.measure_cuda(
             "dqn_update",
             lambda: dqn_training_step(
@@ -912,10 +943,26 @@ class VectorizedDQNTrainer:
                 gamma=self.config.gamma,
                 gradient_clip_norm=self.config.gradient_clip_norm,
                 algorithm=self.config.algorithm,
+                importance_sampling_weights=(
+                    None
+                    if prioritized_update is None
+                    else prioritized_update.sample.importance_weights
+                ),
                 collect_diagnostics=collect_diagnostics,
                 stage_measure=self._stage_profiler.measure_cuda,
             ),
         )
+        if prioritized_update is not None:
+            if not isinstance(self.replay, GPUReplayBuffer):
+                raise RuntimeError("prioritized replay requires GPUReplayBuffer")
+            self._last_per_metrics = update_priorities_after_optimizer(
+                self.replay,
+                prioritized_update,
+                result.absolute_td_errors,
+                self.config,
+                collect_diagnostics=collect_diagnostics,
+                measure_cuda=self._stage_profiler.measure_cuda,
+            )
         self.optimizer_updates += 1
         self._last_result = result
         return result
@@ -935,6 +982,7 @@ class VectorizedDQNTrainer:
             train_frequency=self.config.train_frequency,
             target_update_interval=self.config.target_update_interval,
             checkpoint_interval=self.config.checkpoint_interval,
+            checkpoint_steps=self.config.checkpoint_steps,
         ):
             if kind == "optimizer_update":
                 if (
@@ -1029,6 +1077,7 @@ class VectorizedDQNTrainer:
             "gradient_norm": None if result is None else result.gradient_norm,
             "replay_size": len(self.replay),
             "replay_capacity": self.config.replay_capacity,
+            **self._last_per_metrics,
             "replay_occupancy": len(self.replay) / self.config.replay_capacity,
             "steps_per_second": environment_sps,
             "sps": environment_sps,
@@ -1244,6 +1293,29 @@ class VectorizedDQNTrainer:
             "last_target_sync_step": self.last_target_sync_step,
             "replay_backend": self.config.replay_backend,
             "replay_transfer": self.config.replay_transfer,
+            "replay_sampling": self.config.replay_sampling,
+            "prioritized_replay": (
+                {
+                    "alpha": self.config.per_alpha,
+                    "beta": beta_for_transition(
+                        self.global_step,
+                        beta_start=self.config.per_beta_start,
+                        beta_end=self.config.per_beta_end,
+                        anneal_transitions=self.config.per_beta_anneal_transitions,
+                    ),
+                    "beta_start": self.config.per_beta_start,
+                    "beta_end": self.config.per_beta_end,
+                    "beta_anneal_transitions": self.config.per_beta_anneal_transitions,
+                    "priority_epsilon": self.config.priority_epsilon,
+                    "priority_state_saved": False,
+                    "resume_semantics": (
+                        "fresh replay and max-priority initialization; not exact continuation"
+                    ),
+                }
+                if self.config.replay_sampling == "prioritized"
+                else None
+            ),
+            "per_diagnostics": dict(self._last_per_metrics),
             "replay_bytes": int(self.replay.allocated_bytes),
             "replay_rewarm_steps_remaining": self._resume_rewarm_steps_remaining,
             "replay_size": len(self.replay),
@@ -1380,6 +1452,19 @@ class VectorizedDQNTrainer:
             "contract_path": self.config.contract_path,
             "num_envs": self.num_envs,
             "replay_backend": self.config.replay_backend,
+            "replay_sampling": self.config.replay_sampling,
+            "prioritized_replay_state_saved": False,
+            "per_beta_schedule_transitions": self.global_step,
+            "per_beta_at_checkpoint": (
+                beta_for_transition(
+                    self.global_step,
+                    beta_start=self.config.per_beta_start,
+                    beta_end=self.config.per_beta_end,
+                    anneal_transitions=self.config.per_beta_anneal_transitions,
+                )
+                if self.config.replay_sampling == "prioritized"
+                else None
+            ),
             "training_steps": self.global_step,
             "runtime": self._runtime_metadata(elapsed),
             "metadata": dict(self.metadata),
@@ -1629,6 +1714,7 @@ class VectorizedDQNTrainer:
                     train_frequency=self.config.train_frequency,
                     target_update_interval=self.config.target_update_interval,
                     checkpoint_interval=self.config.checkpoint_interval,
+                    checkpoint_steps=self.config.checkpoint_steps,
                 )
             }
         )
