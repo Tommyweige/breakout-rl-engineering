@@ -65,6 +65,8 @@ VERIFIED_CLEAR_PROVENANCE_FIELDS = (
     "episode_index",
     "contract_id",
     "contract_sha256",
+    "source_commit",
+    "source_working_tree_dirty",
     "completion_source_sha256",
     "raw_score",
     "clear_score",

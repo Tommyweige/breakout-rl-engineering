@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import tempfile
 import unittest
+from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -174,6 +175,25 @@ class EvaluationCompletionPipelineTests(unittest.TestCase):
         self.assertEqual(provenance["contract_sha256"], "b" * 64)
         self.assertEqual(provenance["source_commit"], "a" * 40)
         self.assertEqual(provenance["provenance_status"], "complete")
+
+        without_git_source = replace(
+            result,
+            source_provenance={
+                "source_commit": None,
+                "working_tree_dirty": None,
+                "completion_source_sha256": "d" * 64,
+            },
+        ).to_dict()
+        incomplete_provenance = without_git_source["per_episode"][0][
+            "completion_provenance"
+        ]
+        self.assertEqual(incomplete_provenance["provenance_status"], "incomplete")
+        self.assertIn("source_commit", incomplete_provenance["missing_provenance_fields"])
+        self.assertIn(
+            "source_working_tree_dirty",
+            incomplete_provenance["missing_provenance_fields"],
+        )
+        self.assertEqual(without_git_source["verified_clears"], [])
 
     def test_contract_runtime_binding_rejects_default_fire_reset_semantics(self) -> None:
         repository_root = Path(__file__).resolve().parents[1]
