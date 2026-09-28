@@ -360,6 +360,88 @@ class EvaluationCompletionPipelineTests(unittest.TestCase):
 
         self.assertTrue(validated, reason)
 
+    def test_evaluation_fails_closed_when_runtime_contract_does_not_match(self) -> None:
+        repository_root = Path(__file__).resolve().parents[1]
+        contract_path = Path("configs/eval/breakout_contract_v3.json")
+        contract = load_evaluation_contract(repository_root / contract_path)
+        metadata = {
+            "evaluation_contract_path": contract_path.as_posix(),
+            "evaluation_contract": contract.to_dict(),
+        }
+        mismatched_env = make_breakout_env(
+            **breakout_environment_kwargs(
+                load_evaluation_contract(
+                    repository_root / "configs/eval/breakout_contract_v2.json"
+                )
+            )
+        )
+
+        try:
+            with self.assertRaisesRegex(
+                RuntimeError,
+                "Breakout contract runtime validation failed",
+            ):
+                evaluate_policy(
+                    None,
+                    episodes=1,
+                    seeds=contract.concrete_episode_seeds,
+                    epsilon=contract.evaluation_epsilon,
+                    device="cpu",
+                    env_factory=lambda: mismatched_env,
+                    metadata=metadata,
+                )
+        finally:
+            mismatched_env.close()
+
+    def test_unvalidated_canonical_contract_declaration_fails_closed(self) -> None:
+        with (
+            patch(
+                "breakout_rl.evaluation.inspect_breakout_completion_support",
+                return_value=CompletionSupport(
+                    supported=False,
+                    environment_id="ALE/Breakout-v5",
+                    game="breakout",
+                    mode=0,
+                    difficulty=0,
+                    ale_py_version=None,
+                    rom_sha256=None,
+                    reason="unsupported test environment",
+                ),
+            ),
+            patch(
+                "breakout_rl.evaluation._capture_source_provenance",
+                return_value={},
+            ),
+            patch(
+                "breakout_rl.evaluation._contract_provenance",
+                return_value={
+                    "contract_id": "breakout-evaluation-v3-frame-skip-1",
+                    "definition_status": "invalid",
+                    "definition_reason": "contract audit failed",
+                },
+            ),
+            patch(
+                "breakout_rl.evaluation._contract_runtime_binding",
+                return_value=(False, "contract audit failed"),
+            ),
+        ):
+            with self.assertRaisesRegex(
+                RuntimeError,
+                "Breakout contract runtime validation failed",
+            ):
+                evaluate_policy(
+                    None,
+                    episodes=1,
+                    seeds=[101],
+                    device="cpu",
+                    env_factory=SingleClearEnv,
+                    metadata={
+                        "evaluation_contract": {
+                            "contract_id": "breakout-evaluation-v3-frame-skip-1"
+                        }
+                    },
+                )
+
     def test_noncanonical_positive_clear_is_not_listed_as_verified(self) -> None:
         support = CompletionSupport(
             supported=True,

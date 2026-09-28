@@ -98,10 +98,17 @@ class DQNTrainerTests(unittest.TestCase):
                 online_network=TinyImageQNetwork(),
             )
             summary = trainer.train()
+            checkpoint_payload = torch.load(
+                trainer.save_checkpoint(),
+                map_location="cpu",
+                weights_only=False,
+            )
 
         timings = summary["runtime"]["stage_timings"]
         self.assertEqual(summary["total_agent_steps"], 8)
         self.assertEqual(summary["total_emulator_frames"], 32)
+        self.assertEqual(checkpoint_payload["total_agent_steps"], 8)
+        self.assertEqual(checkpoint_payload["total_emulator_frames"], 32)
         self.assertEqual(
             summary["emulator_frame_count_source"],
             "ALEInterface.getEpisodeFrameNumber",

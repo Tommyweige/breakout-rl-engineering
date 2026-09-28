@@ -1487,6 +1487,13 @@ class VectorizedDQNTrainer:
                 else None
             ),
             "training_steps": self.global_step,
+            "total_agent_steps": self.global_step,
+            "total_emulator_frames": self._ale_frame_counter.total_emulator_frames,
+            "emulator_frame_count_source": (
+                self._ale_frame_counter.source
+                if self._ale_frame_counter.total_emulator_frames is not None
+                else None
+            ),
             "runtime": self._runtime_metadata(elapsed),
             "metadata": dict(self.metadata),
             "environment_contract": (

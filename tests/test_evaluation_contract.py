@@ -70,11 +70,12 @@ class Day15ContractTests(unittest.TestCase):
             observation, _ = env.reset(seed=123)
             self.assertEqual(observation.shape, (4, 84, 84))
             self.assertEqual(observation.dtype, np.uint8)
-            before = read_ale_episode_frame(env)
-            self.assertIsNotNone(before)
-            env.step(0)
-            after = read_ale_episode_frame(env)
-            self.assertEqual(after - before, 1)
+            for action in (0, 2, 3, 0, 3, 2, 0, 2):
+                before = read_ale_episode_frame(env)
+                self.assertIsNotNone(before)
+                env.step(action)
+                after = read_ale_episode_frame(env)
+                self.assertEqual(after - before, 1)
             self.assertEqual(getattr(env.unwrapped, "_frameskip", None), 1)
         finally:
             env.close()

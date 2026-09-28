@@ -405,6 +405,11 @@ class VectorizedTrainingTests(unittest.TestCase):
                 online_network=network,
             )
             summary = trainer.train()
+            checkpoint_payload = torch.load(
+                trainer.save_checkpoint(),
+                map_location="cpu",
+                weights_only=False,
+            )
 
             with (Path(directory) / "vectorized/metrics.csv").open(
                 newline="",
@@ -415,6 +420,8 @@ class VectorizedTrainingTests(unittest.TestCase):
         self.assertEqual(summary["total_transitions"], 12)
         self.assertEqual(summary["total_agent_steps"], 12)
         self.assertEqual(summary["total_emulator_frames"], 12)
+        self.assertEqual(checkpoint_payload["total_agent_steps"], 12)
+        self.assertEqual(checkpoint_payload["total_emulator_frames"], 12)
         self.assertEqual(
             summary["emulator_frame_count_source"],
             "ALEInterface.getEpisodeFrameNumber",

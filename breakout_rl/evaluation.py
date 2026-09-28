@@ -404,6 +404,25 @@ def _contract_runtime_binding(
     return True, None
 
 
+def _declares_canonical_breakout_contract(
+    metadata: Mapping[str, Any] | None,
+) -> bool:
+    values = metadata or {}
+    contract_value = values.get("evaluation_contract")
+    if isinstance(contract_value, Mapping) and contract_value.get("contract_id") in {
+        BREAKOUT_CONTRACT_V2_ID,
+        BREAKOUT_CONTRACT_V3_ID,
+    }:
+        return True
+    path_value = values.get("evaluation_contract_path")
+    if isinstance(path_value, (str, Path)) and str(path_value).strip():
+        return Path(path_value).name.casefold() in {
+            "breakout_contract_v2.json",
+            "breakout_contract_v3.json",
+        }
+    return False
+
+
 def _first_present(mapping: Mapping[str, Any], *names: str) -> Any:
     for name in names:
         value = mapping.get(name)
@@ -1236,6 +1255,19 @@ def evaluate_policy(
     result_metadata["completion_detector"] = completion_support.to_dict()
     result_metadata["source_provenance"] = source_provenance
     result_metadata["contract_provenance"] = contract_provenance
+    canonical_contract_declared = _declares_canonical_breakout_contract(metadata)
+    if (
+        (
+            contract_provenance.get("definition_status") == "validated"
+            or canonical_contract_declared
+        )
+        and not runtime_contract_validated
+    ):
+        env.close()
+        raise RuntimeError(
+            "Breakout contract runtime validation failed; refusing to evaluate: "
+            f"{runtime_contract_reason or 'runtime semantics are unverified'}"
+        )
     started_at = time.perf_counter()
     try:
         action_count = _action_count(env)
@@ -1760,6 +1792,11 @@ def load_dqn_checkpoint(
         "num_envs": payload.get("num_envs", saved_config.get("num_envs", 1)),
         "training_seed": saved_config.get("seed"),
         "training_budget": saved_config.get("total_steps"),
+        "total_agent_steps": payload.get(
+            "total_agent_steps",
+            payload.get("training_steps", payload.get("global_step")),
+        ),
+        "total_emulator_frames": payload.get("total_emulator_frames"),
         "learning_rate": saved_config.get("learning_rate"),
         "batch_size": saved_config.get("batch_size"),
         "train_frequency": saved_config.get("train_frequency"),
@@ -1794,6 +1831,11 @@ def load_dqn_checkpoint(
             saved_config.get("replay_backend", "cpu"),
         ),
         "training_steps": payload.get("training_steps", payload.get("global_step")),
+        "total_agent_steps": payload.get(
+            "total_agent_steps",
+            payload.get("training_steps", payload.get("global_step")),
+        ),
+        "total_emulator_frames": payload.get("total_emulator_frames"),
         "model_config": {
             "num_actions": action_count,
             "input_shape": list(saved_input_shape),
