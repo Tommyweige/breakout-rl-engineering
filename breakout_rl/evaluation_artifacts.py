@@ -167,6 +167,7 @@ def read_evaluation_results(path: str | Path) -> dict[str, Any]:
         ):
             if not isinstance(payload[field], Mapping):
                 raise ValueError(f"{source}: schema v3 {field} must be an object")
+        contract_provenance = payload["contract_provenance"]
         if not isinstance(payload["verified_clears"], list):
             raise ValueError(f"{source}: schema v3 verified_clears must be an array")
         derived_clears: list[Mapping[str, Any]] = []
@@ -216,11 +217,23 @@ def read_evaluation_results(path: str | Path) -> dict[str, Any]:
                         missing_provenance_fields
                         or required_missing
                         or provenance.get("contract_validation_status")
-                        != "canonical_contract_v2"
+                        not in {"canonical_contract_v2", "canonical_contract_v3"}
                     ):
                         raise ValueError(
                             f"{source}: schema v3 per_episode[{index}] marks "
                             "incomplete provenance as complete"
+                        )
+                    if (
+                        provenance.get("contract_id")
+                        != contract_provenance.get("contract_id")
+                        or provenance.get("contract_sha256")
+                        != contract_provenance.get("contract_sha256")
+                        or provenance.get("contract_validation_status")
+                        != contract_provenance.get("validation_status")
+                    ):
+                        raise ValueError(
+                            f"{source}: schema v3 per_episode[{index}] clear "
+                            "contract provenance disagrees with the evaluation contract"
                         )
                     derived_clears.append(provenance)
                 elif not missing_provenance_fields:
@@ -250,6 +263,11 @@ def read_evaluation_results(path: str | Path) -> dict[str, Any]:
             require_complete=False,
         )
         computed_summary = summary_from_episode_rows(normalized_rows)
+        for field in ("total_agent_steps", "total_emulator_frames"):
+            if field in payload and payload[field] != computed_summary[field]:
+                raise ValueError(
+                    f"{source}: {field} does not match per_episode artifacts"
+                )
         validate_embedded_summary(
             payload,
             computed_summary,
@@ -381,6 +399,20 @@ def validate_episode_rows(
             raise ValueError(f"{source_path}: malformed episode identity or value") from error
         if not math.isfinite(episode_return) or episode_length < 1:
             raise ValueError(f"{source_path}: episode return/length must be valid")
+        total_agent_steps = _optional_nonnegative_int(
+            raw_row.get("total_agent_steps", episode_length),
+            name="total_agent_steps",
+            source=source_path,
+        )
+        if total_agent_steps != episode_length:
+            raise ValueError(
+                f"{source_path}: total_agent_steps must match episode_length"
+            )
+        total_emulator_frames = _optional_nonnegative_int(
+            raw_row.get("total_emulator_frames"),
+            name="total_emulator_frames",
+            source=source_path,
+        )
         identity = (evaluation_seed, episode_index)
         if identity in identities:
             raise ValueError(f"{source_path}: duplicate episode identity {identity}")
@@ -625,6 +657,8 @@ def validate_episode_rows(
                 "episode_seed": episode_seed,
                 "episode_return": episode_return,
                 "episode_length": episode_length,
+                "total_agent_steps": total_agent_steps,
+                "total_emulator_frames": total_emulator_frames,
                 "terminated": terminated,
                 "truncated": truncated,
                 "time_limit": time_limit,
@@ -680,6 +714,18 @@ def summary_from_episode_rows(
 
     summary["mean_episode_length"] = float(
         fmean([int(row["episode_length"]) for row in rows])
+    )
+    summary["total_agent_steps"] = sum(
+        int(row.get("total_agent_steps", row["episode_length"])) for row in rows
+    )
+    native_frame_counts = [row.get("total_emulator_frames") for row in rows]
+    summary["total_emulator_frames"] = (
+        sum(int(value) for value in native_frame_counts)
+        if all(
+            isinstance(value, int) and not isinstance(value, bool) and value >= 0
+            for value in native_frame_counts
+        )
+        else None
     )
     life_loss_counts = [int(row.get("life_loss_count", 0)) for row in rows]
     summary["life_loss_count"] = int(sum(life_loss_counts))

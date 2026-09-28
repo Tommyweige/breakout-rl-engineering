@@ -16,6 +16,7 @@ import numpy as np
 import torch
 from torch import nn
 
+from breakout_rl.completion import ALETransitionFrameCounter
 from breakout_rl.exploration import LinearEpsilonSchedule, select_epsilon_greedy_action
 from breakout_rl.models.factory import build_q_network, checkpoint_architecture
 from breakout_rl.prioritized_replay import beta_for_transition
@@ -623,6 +624,7 @@ class DQNTrainer:
         if not isinstance(config, DQNConfig):
             raise TypeError("config must be a DQNConfig")
         self.env = env
+        self._ale_frame_counter = ALETransitionFrameCounter((env,))
         self.config = config
         if not isinstance(allow_replay_rewarm, bool):
             raise TypeError("allow_replay_rewarm must be a boolean")
@@ -1188,6 +1190,16 @@ class DQNTrainer:
             "contract_id": self.config.contract_id,
             "contract_path": self.config.contract_path,
             "total_steps": self.global_step,
+            "total_agent_steps": self.global_step,
+            "total_emulator_frames": self._ale_frame_counter.total_emulator_frames,
+            "emulator_frame_count_source": (
+                self._ale_frame_counter.source
+                if self._ale_frame_counter.total_emulator_frames is not None
+                else None
+            ),
+            "emulator_frame_count_scope": (
+                "ALE frame deltas during agent transitions; excludes environment reset actions"
+            ),
             "training_steps": self.global_step,
             "episodes": self.episode,
             "life_loss_count": self._life_loss_count,
@@ -1343,6 +1355,13 @@ class DQNTrainer:
                 else None
             ),
             "training_steps": self.global_step,
+            "total_agent_steps": self.global_step,
+            "total_emulator_frames": self._ale_frame_counter.total_emulator_frames,
+            "emulator_frame_count_source": (
+                self._ale_frame_counter.source
+                if self._ale_frame_counter.total_emulator_frames is not None
+                else None
+            ),
             "runtime": self._runtime_metadata(elapsed),
             "model_config": {
                 "architecture": self.config.architecture,
@@ -1431,6 +1450,9 @@ class DQNTrainer:
         self.target_network.load_state_dict(payload["target_network"])
         self.optimizer.load_state_dict(payload["optimizer"])
         self.global_step = int(payload["global_step"])
+        self._ale_frame_counter.restore_total_emulator_frames(
+            payload.get("total_emulator_frames")
+        )
         self.optimizer_updates = int(payload["optimizer_updates"])
         self.episode = int(payload["episode"])
         self.target_sync_count = int(payload["target_sync_count"])
@@ -1470,6 +1492,7 @@ class DQNTrainer:
             "env_reset",
             lambda: self.env.reset(seed=reset_seed),
         )
+        self._ale_frame_counter.reset((0,))
         current_observation = _as_uint8_observation(
             observation,
             expected_shape=self.observation_shape,
@@ -1497,6 +1520,7 @@ class DQNTrainer:
                         lambda: self.env.step(action),
                     )
                 )
+                self._ale_frame_counter.record_transitions()
                 executed_action = action
                 action_overridden = False
                 auto_fire = False
@@ -1651,6 +1675,7 @@ class DQNTrainer:
                         "env_reset",
                         lambda: self.env.reset(),
                     )
+                    self._ale_frame_counter.reset((0,))
                     current_observation = _as_uint8_observation(
                         reset_observation,
                         expected_shape=self.observation_shape,

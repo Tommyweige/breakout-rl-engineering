@@ -23,6 +23,7 @@ import numpy as np
 import torch
 from torch import nn
 
+from breakout_rl.completion import ALETransitionFrameCounter
 from breakout_rl.exploration import (
     LinearEpsilonSchedule,
     select_epsilon_greedy_actions,
@@ -444,6 +445,13 @@ class VectorizedDQNTrainer:
                 )
             self.metadata["environment_contract"] = dict(self.environment_contract)
         self.num_envs = _vector_num_envs(env)
+        vector_environments = getattr(env, "envs", ())
+        if not isinstance(vector_environments, Sequence) or isinstance(
+            vector_environments,
+            (str, bytes),
+        ):
+            vector_environments = ()
+        self._ale_frame_counter = ALETransitionFrameCounter(vector_environments)
         if config.num_envs != self.num_envs:
             raise ValueError(
                 f"config.num_envs ({config.num_envs}) must match env.num_envs "
@@ -815,6 +823,9 @@ class VectorizedDQNTrainer:
                     "or reset_done(mask) to preserve per-environment episodes"
                 ) from error
             result = reset_done(reset_mask)
+        self._ale_frame_counter.reset(
+            tuple(int(index) for index in np.flatnonzero(reset_mask))
+        )
         return self._reset_result_observation(result)
 
     def _select_actions(
@@ -1274,6 +1285,16 @@ class VectorizedDQNTrainer:
             "contract_id": self.config.contract_id,
             "contract_path": self.config.contract_path,
             "total_steps": self.global_step,
+            "total_agent_steps": self.global_step,
+            "total_emulator_frames": self._ale_frame_counter.total_emulator_frames,
+            "emulator_frame_count_source": (
+                self._ale_frame_counter.source
+                if self._ale_frame_counter.total_emulator_frames is not None
+                else None
+            ),
+            "emulator_frame_count_scope": (
+                "sum of ALE frame deltas during agent transitions; excludes environment reset actions"
+            ),
             "total_transitions": self.global_step,
             "training_steps": self.global_step,
             "physical_environment_steps": self.physical_environment_steps,
@@ -1466,6 +1487,13 @@ class VectorizedDQNTrainer:
                 else None
             ),
             "training_steps": self.global_step,
+            "total_agent_steps": self.global_step,
+            "total_emulator_frames": self._ale_frame_counter.total_emulator_frames,
+            "emulator_frame_count_source": (
+                self._ale_frame_counter.source
+                if self._ale_frame_counter.total_emulator_frames is not None
+                else None
+            ),
             "runtime": self._runtime_metadata(elapsed),
             "metadata": dict(self.metadata),
             "environment_contract": (
@@ -1596,6 +1624,9 @@ class VectorizedDQNTrainer:
         self.target_network.load_state_dict(payload["target_network"])
         self.optimizer.load_state_dict(payload["optimizer"])
         self.global_step = int(payload["global_step"])
+        self._ale_frame_counter.restore_total_emulator_frames(
+            payload.get("total_emulator_frames")
+        )
         self.vector_iterations = int(payload.get("vector_iterations", 0))
         self.physical_environment_steps = int(
             payload.get("physical_environment_steps", self.global_step)
@@ -1816,6 +1847,7 @@ class VectorizedDQNTrainer:
             self._observations = self._reset_result_observation(
                 self.env.reset(seed=reset_seed)
             )
+            self._ale_frame_counter.reset()
         observations = self._observations
 
         try:
@@ -1835,6 +1867,7 @@ class VectorizedDQNTrainer:
                     "env_step",
                     lambda: self.env.step(actions),
                 )
+                self._ale_frame_counter.record_transitions()
                 if not isinstance(step_result, tuple) or len(step_result) != 5:
                     raise ValueError(
                         "vector environment step must return "

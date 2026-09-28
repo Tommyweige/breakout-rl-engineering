@@ -66,13 +66,24 @@ web/           瀏覽器應用與 runtime model assets
 
 Atari RL 的結果會受到 frame skip、frame stack、sticky actions、FIRE handling、life-loss handling 與 episode limit 等環境條件影響。
 
-本專案將 canonical evaluation semantics 固定在：
+歷史 benchmark 使用：
 
 ```text
 configs/eval/breakout_contract_v2.json
 ```
 
-訓練與評估流程都以這份 contract 作為環境與任務語義的參考。
+需要精細控制時，訓練與評估可明確選用：
+
+```text
+configs/eval/breakout_contract_v3.json
+```
+
+Contract v2 每個 policy decision 推進四個模擬器影格；v3 每個 decision
+推進一個影格，並保留相同的 108,000 個 ALE episode 影格上限與其他遊戲
+設定。因此兩者的 agent-step 上限分別是 27,000 與 108,000。訓練和評估
+摘要會分開記錄 agent steps 與 emulator frames；影格數取自 ALE 原生計數器。
+使用 `--contract configs/eval/breakout_contract_v3.json` 明確選用 v3；預設仍是
+v2。比較結果時請一併確認 artifact 記錄的 contract ID 與路徑。
 
 ## 訓練
 

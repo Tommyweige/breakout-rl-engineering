@@ -73,6 +73,91 @@ class SingleClearEnv(gym.Env):
 
 
 class EvaluationCompletionPipelineTests(unittest.TestCase):
+    def test_contract_v3_provenance_and_runtime_binding_are_versioned(self) -> None:
+        repository_root = Path(__file__).resolve().parents[1]
+        contract_path = Path("configs/eval/breakout_contract_v3.json")
+        contract = load_evaluation_contract(repository_root / contract_path)
+        metadata = {
+            "evaluation_contract_path": contract_path.as_posix(),
+            "evaluation_contract": contract.to_dict(),
+        }
+        provenance = _contract_provenance(
+            metadata,
+            repository_root=repository_root,
+        )
+
+        self.assertEqual(provenance["definition_status"], "validated")
+        self.assertEqual(
+            provenance["contract_id"],
+            "breakout-evaluation-v3-frame-skip-1",
+        )
+        self.assertEqual(provenance["validation_status"], "canonical_contract_v3")
+        self.assertNotEqual(
+            provenance["contract_sha256"],
+            "7eca5ae5262a28aeabf3be658f8275a68f3d2ae40cc74379400be2890dc31a2a",
+        )
+
+        env = make_breakout_env(
+            **breakout_environment_kwargs(contract, allow_contract_v3=True)
+        )
+        try:
+            validated, reason = _contract_runtime_binding(
+                env,
+                metadata,
+                provenance,
+                evaluation_seeds=contract.concrete_episode_seeds,
+                episodes_per_seed=1,
+                epsilon=contract.evaluation_epsilon,
+            )
+        finally:
+            env.close()
+
+        self.assertTrue(validated, reason)
+
+        v2_contract_path = Path("configs/eval/breakout_contract_v2.json")
+        v2_contract = load_evaluation_contract(repository_root / v2_contract_path)
+        v2_metadata = {
+            "evaluation_contract_path": v2_contract_path.as_posix(),
+            "evaluation_contract": v2_contract.to_dict(),
+        }
+        v2_provenance = _contract_provenance(
+            v2_metadata,
+            repository_root=repository_root,
+        )
+        mismatched_env = make_breakout_env(
+            **breakout_environment_kwargs(v2_contract)
+        )
+        try:
+            validated, reason = _contract_runtime_binding(
+                mismatched_env,
+                metadata,
+                provenance,
+                evaluation_seeds=contract.concrete_episode_seeds,
+                episodes_per_seed=1,
+                epsilon=contract.evaluation_epsilon,
+            )
+        finally:
+            mismatched_env.close()
+        self.assertFalse(validated)
+        self.assertIn("preprocessing semantics", reason)
+
+        mismatched_env = make_breakout_env(
+            **breakout_environment_kwargs(contract, allow_contract_v3=True)
+        )
+        try:
+            validated, reason = _contract_runtime_binding(
+                mismatched_env,
+                v2_metadata,
+                v2_provenance,
+                evaluation_seeds=v2_contract.concrete_episode_seeds,
+                episodes_per_seed=1,
+                epsilon=v2_contract.evaluation_epsilon,
+            )
+        finally:
+            mismatched_env.close()
+        self.assertFalse(validated)
+        self.assertIn("preprocessing semantics", reason)
+
     def test_verified_clear_preserves_checkpoint_and_protocol_provenance(self) -> None:
         support = CompletionSupport(
             supported=True,
@@ -145,6 +230,7 @@ class EvaluationCompletionPipelineTests(unittest.TestCase):
         self.assertEqual(episode.completion_outcome, "cleared")
         self.assertEqual(episode.clear_agent_step, 1)
         self.assertEqual(episode.clear_emulator_frame, 4)
+        self.assertEqual(episode.total_emulator_frames, 4)
         self.assertEqual(episode.clear_score, 864.0)
         self.assertEqual(episode.lives_remaining_at_clear, 4)
         self.assertEqual(
@@ -164,6 +250,10 @@ class EvaluationCompletionPipelineTests(unittest.TestCase):
         self.assertEqual(loaded["summary"]["clear_time_sample_count"], 1)
         self.assertEqual(loaded["summary"]["p90_clear_steps"], 1.0)
         self.assertEqual(loaded["summary"]["p90_clear_emulator_frame"], 4.0)
+        self.assertEqual(loaded["total_agent_steps"], 1)
+        self.assertEqual(loaded["total_emulator_frames"], 4)
+        self.assertEqual(loaded["summary"]["total_agent_steps"], 1)
+        self.assertEqual(loaded["summary"]["total_emulator_frames"], 4)
         self.assertEqual(loaded["evaluation_status"], "completed")
         self.assertEqual(len(loaded["verified_clears"]), 1)
         provenance = loaded["verified_clears"][0]
@@ -175,6 +265,34 @@ class EvaluationCompletionPipelineTests(unittest.TestCase):
         self.assertEqual(provenance["contract_sha256"], "b" * 64)
         self.assertEqual(provenance["source_commit"], "a" * 40)
         self.assertEqual(provenance["provenance_status"], "complete")
+
+        v3_result = replace(
+            result,
+            contract_provenance={
+                **dict(result.contract_provenance or {}),
+                "contract_id": "breakout-evaluation-v3-frame-skip-1",
+                "validation_status": "canonical_contract_v3",
+            },
+        )
+        v3_payload = v3_result.to_dict()
+        self.assertEqual(v3_payload["per_episode"][0]["total_agent_steps"], 1)
+        self.assertEqual(v3_payload["per_episode"][0]["total_emulator_frames"], 4)
+        self.assertEqual(len(v3_payload["verified_clears"]), 1)
+        self.assertEqual(
+            v3_payload["verified_clears"][0]["contract_id"],
+            "breakout-evaluation-v3-frame-skip-1",
+        )
+        self.assertEqual(
+            v3_payload["verified_clears"][0]["contract_validation_status"],
+            "canonical_contract_v3",
+        )
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            v3_path, _ = write_evaluation_artifacts(
+                v3_result,
+                Path(temporary_directory) / "v3-clear-evaluation",
+            )
+            v3_loaded = read_evaluation_results(v3_path)
+        self.assertEqual(len(v3_loaded["verified_clears"]), 1)
 
         without_git_source = replace(
             result,
@@ -241,6 +359,88 @@ class EvaluationCompletionPipelineTests(unittest.TestCase):
             canonical_env.close()
 
         self.assertTrue(validated, reason)
+
+    def test_evaluation_fails_closed_when_runtime_contract_does_not_match(self) -> None:
+        repository_root = Path(__file__).resolve().parents[1]
+        contract_path = Path("configs/eval/breakout_contract_v3.json")
+        contract = load_evaluation_contract(repository_root / contract_path)
+        metadata = {
+            "evaluation_contract_path": contract_path.as_posix(),
+            "evaluation_contract": contract.to_dict(),
+        }
+        mismatched_env = make_breakout_env(
+            **breakout_environment_kwargs(
+                load_evaluation_contract(
+                    repository_root / "configs/eval/breakout_contract_v2.json"
+                )
+            )
+        )
+
+        try:
+            with self.assertRaisesRegex(
+                RuntimeError,
+                "Breakout contract runtime validation failed",
+            ):
+                evaluate_policy(
+                    None,
+                    episodes=1,
+                    seeds=contract.concrete_episode_seeds,
+                    epsilon=contract.evaluation_epsilon,
+                    device="cpu",
+                    env_factory=lambda: mismatched_env,
+                    metadata=metadata,
+                )
+        finally:
+            mismatched_env.close()
+
+    def test_unvalidated_canonical_contract_declaration_fails_closed(self) -> None:
+        with (
+            patch(
+                "breakout_rl.evaluation.inspect_breakout_completion_support",
+                return_value=CompletionSupport(
+                    supported=False,
+                    environment_id="ALE/Breakout-v5",
+                    game="breakout",
+                    mode=0,
+                    difficulty=0,
+                    ale_py_version=None,
+                    rom_sha256=None,
+                    reason="unsupported test environment",
+                ),
+            ),
+            patch(
+                "breakout_rl.evaluation._capture_source_provenance",
+                return_value={},
+            ),
+            patch(
+                "breakout_rl.evaluation._contract_provenance",
+                return_value={
+                    "contract_id": "breakout-evaluation-v3-frame-skip-1",
+                    "definition_status": "invalid",
+                    "definition_reason": "contract audit failed",
+                },
+            ),
+            patch(
+                "breakout_rl.evaluation._contract_runtime_binding",
+                return_value=(False, "contract audit failed"),
+            ),
+        ):
+            with self.assertRaisesRegex(
+                RuntimeError,
+                "Breakout contract runtime validation failed",
+            ):
+                evaluate_policy(
+                    None,
+                    episodes=1,
+                    seeds=[101],
+                    device="cpu",
+                    env_factory=SingleClearEnv,
+                    metadata={
+                        "evaluation_contract": {
+                            "contract_id": "breakout-evaluation-v3-frame-skip-1"
+                        }
+                    },
+                )
 
     def test_noncanonical_positive_clear_is_not_listed_as_verified(self) -> None:
         support = CompletionSupport(

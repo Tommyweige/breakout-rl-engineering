@@ -34,8 +34,18 @@ class ShortEpisodeEnv:
 
     def __init__(self) -> None:
         self.steps = 0
+        self.ale_frames = 0
+        self.ale = self
+
+    @property
+    def unwrapped(self):
+        return self
+
+    def getEpisodeFrameNumber(self) -> int:
+        return self.ale_frames
 
     def reset(self, *, seed: int | None = None) -> tuple[np.ndarray, dict[str, int]]:
+        self.ale_frames = 0
         if seed is not None:
             self.steps = 0
         return np.zeros(self.observation_space.shape, dtype=np.uint8), {}
@@ -43,6 +53,7 @@ class ShortEpisodeEnv:
     def step(self, action: int) -> tuple[np.ndarray, float, bool, bool, dict[str, int]]:
         del action
         self.steps += 1
+        self.ale_frames += 4
         observation = np.full(
             self.observation_space.shape,
             self.steps % 4,
@@ -87,8 +98,21 @@ class DQNTrainerTests(unittest.TestCase):
                 online_network=TinyImageQNetwork(),
             )
             summary = trainer.train()
+            checkpoint_payload = torch.load(
+                trainer.save_checkpoint(),
+                map_location="cpu",
+                weights_only=False,
+            )
 
         timings = summary["runtime"]["stage_timings"]
+        self.assertEqual(summary["total_agent_steps"], 8)
+        self.assertEqual(summary["total_emulator_frames"], 32)
+        self.assertEqual(checkpoint_payload["total_agent_steps"], 8)
+        self.assertEqual(checkpoint_payload["total_emulator_frames"], 32)
+        self.assertEqual(
+            summary["emulator_frame_count_source"],
+            "ALEInterface.getEpisodeFrameNumber",
+        )
         for name in (
             "action_selection",
             "env_step",
@@ -622,6 +646,7 @@ class DQNTrainerTests(unittest.TestCase):
                 map_location="cpu",
                 weights_only=False,
             )
+            self.assertEqual(checkpoint_payload["total_emulator_frames"], 32)
             checkpoint_payload["replay_saved"] = True
             torch.save(checkpoint_payload, advertised_replay_checkpoint)
             with self.assertRaisesRegex(ValueError, "does not restore replay"):
@@ -653,11 +678,19 @@ class DQNTrainerTests(unittest.TestCase):
             resumed_summary = resumed_trainer.train()
 
             self.assertEqual(resumed_summary["total_steps"], 16)
+            self.assertEqual(resumed_summary["total_agent_steps"], 16)
+            self.assertEqual(resumed_summary["total_emulator_frames"], 64)
             self.assertGreater(
                 resumed_summary["optimizer_updates"],
                 first_summary["optimizer_updates"],
             )
             self.assertEqual(resumed_summary["replay_size"], 8)
+            resumed_checkpoint = torch.load(
+                resumed_summary["last_checkpoint"],
+                map_location="cpu",
+                weights_only=False,
+            )
+            self.assertEqual(resumed_checkpoint["total_emulator_frames"], 64)
 
             with (run_dir / "metrics.csv").open(
                 "r",

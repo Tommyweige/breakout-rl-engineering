@@ -12,6 +12,13 @@
     "contract_id": "day15-breakout-evaluation-v2-fire-reset",
     "contract_sha256": "7eca5ae5262a28aeabf3be658f8275a68f3d2ae40cc74379400be2890dc31a2a"
   },
+  "additional_contracts": [
+    {
+      "contract_id": "breakout-evaluation-v3-frame-skip-1",
+      "contract_file": "configs/eval/breakout_contract_v3.json",
+      "contract_sha256": "d97b7fcb5758cba495857b3972a119ed3eb7db74fb0145d151e9d82725c5a786"
+    }
+  ],
   "runtime": {
     "ale_py_version": "0.12.0",
     "gymnasium_version": "1.3.0",
