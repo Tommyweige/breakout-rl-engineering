@@ -211,7 +211,10 @@ class EvaluationTests(unittest.TestCase):
 
         self.assertEqual(payload["schema_version"], EVALUATION_SCHEMA_VERSION)
         self.assertEqual(loaded_v2["schema_version"], EVALUATION_SCHEMA_VERSION)
+        self.assertIsNone(payload["per_episode"][0]["cleared"])
+        self.assertIsNone(payload["summary"]["clear_rate"])
         self.assertEqual(row["schema_version"], str(EVALUATION_SCHEMA_VERSION))
+        self.assertEqual(row["cleared"], "null")
         self.assertEqual(
             row["action_distribution_semantics"],
             "executed/wrapper-resolved action",
@@ -249,6 +252,8 @@ class EvaluationTests(unittest.TestCase):
             loaded = read_evaluation_results(path)
 
         self.assertEqual(loaded["schema_version"], 1)
+        self.assertIsNone(loaded["per_episode"][0]["cleared"])
+        self.assertIsNone(loaded["per_episode"][0]["clear_agent_step"])
 
     def test_v2_evaluation_results_require_provenance_fields(self) -> None:
         payload = {

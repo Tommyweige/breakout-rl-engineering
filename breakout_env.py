@@ -270,6 +270,11 @@ def make_breakout_raw_env(
     return gym.make(
         ENVIRONMENT_ID,
         render_mode=render_mode,
+        # Contract v2 uses ALE's default Breakout Game 1 / difficulty A.
+        # Keep those defaults explicit so completion detection can fail closed
+        # if a future environment factory selects another game variation.
+        mode=0,
+        difficulty=0,
         # AtariPreprocessing must be the only component that skips frames.
         frameskip=1,
         repeat_action_probability=sticky_probability,

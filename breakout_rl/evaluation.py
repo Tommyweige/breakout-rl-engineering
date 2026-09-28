@@ -9,6 +9,7 @@ import math
 import operator
 import platform
 import re
+import subprocess
 import time
 from collections import Counter
 from contextlib import nullcontext
@@ -24,6 +25,12 @@ import torch
 from torch import nn
 
 from breakout_env import ENVIRONMENT_ID, make_breakout_env
+from breakout_rl.completion import (
+    BreakoutCompletionDetector,
+    inspect_breakout_completion_support,
+    read_ale_episode_frame,
+    read_ale_lives,
+)
 from breakout_rl.models.factory import build_q_network, checkpoint_architecture
 from breakout_rl.tensors import observation_to_tensor
 from breakout_rl.experiments import load_experiment_config
@@ -42,6 +49,108 @@ from breakout_rl.training.survival import compute_episode_survival_metrics
 EVALUATION_CONFIG_SCHEMA_VERSION = 1
 EVALUATION_SCHEMA_VERSION = EVALUATION_ARTIFACT_SCHEMA_VERSION
 EnvironmentFactory = Callable[[], Any]
+
+
+def _capture_source_provenance(repository_root: Path) -> dict[str, Any]:
+    """Record the evaluator's Git revision when it runs inside a checkout."""
+
+    try:
+        revision = subprocess.run(
+            ["git", "-C", str(repository_root), "rev-parse", "HEAD"],
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        ).stdout.strip()
+    except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        revision = None
+    try:
+        status = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(repository_root),
+                "status",
+                "--porcelain",
+                "--untracked-files=normal",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        working_tree_dirty: bool | None = bool(status.stdout.strip())
+    except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        working_tree_dirty = None
+    source_files = (
+        Path("breakout_env.py"),
+        Path("breakout_rl/completion.py"),
+        Path("breakout_rl/evaluation.py"),
+        Path("breakout_rl/evaluation_artifacts.py"),
+    )
+    source_digest = hashlib.sha256()
+    try:
+        for relative_path in source_files:
+            source_digest.update(relative_path.as_posix().encode("utf-8"))
+            source_digest.update(b"\0")
+            source_digest.update((repository_root / relative_path).read_bytes())
+            source_digest.update(b"\0")
+        completion_source_sha256: str | None = source_digest.hexdigest()
+    except OSError:
+        completion_source_sha256 = None
+    return {
+        "source_commit": revision or None,
+        "working_tree_dirty": working_tree_dirty,
+        "completion_source_sha256": completion_source_sha256,
+        "completion_source_files": [path.as_posix() for path in source_files],
+    }
+
+
+def _contract_provenance(
+    metadata: Mapping[str, Any] | None,
+    *,
+    repository_root: Path,
+) -> dict[str, Any]:
+    values = metadata or {}
+    path_value = values.get("evaluation_contract_path")
+    contract_value = values.get("evaluation_contract")
+    if isinstance(path_value, (str, Path)) and str(path_value).strip():
+        path = Path(path_value)
+    else:
+        path = Path("configs/eval/breakout_contract_v2.json")
+    if not path.is_absolute():
+        path = repository_root / path
+
+    payload: Mapping[str, Any] = (
+        contract_value if isinstance(contract_value, Mapping) else {}
+    )
+    try:
+        raw = path.read_bytes()
+        parsed = json.loads(raw.decode("utf-8"))
+        file_payload = parsed if isinstance(parsed, Mapping) else {}
+        contract_sha256: str | None = hashlib.sha256(raw).hexdigest()
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        file_payload = {}
+        contract_sha256 = None
+    contract_id = file_payload.get("contract_id", payload.get("contract_id"))
+    try:
+        relative_path = path.resolve().relative_to(repository_root.resolve()).as_posix()
+    except ValueError:
+        relative_path = path.as_posix()
+    return {
+        "contract_id": contract_id if isinstance(contract_id, str) else None,
+        "contract_path": relative_path,
+        "contract_sha256": contract_sha256,
+        "hash_semantics": "SHA-256 of the exact contract file bytes",
+    }
+
+
+def _first_present(mapping: Mapping[str, Any], *names: str) -> Any:
+    for name in names:
+        value = mapping.get(name)
+        if value is not None:
+            return value
+    return None
 
 
 def _integer(value: Any, *, name: str, minimum: int) -> int:
@@ -176,6 +285,12 @@ class EpisodeResult:
     frames_between_life_losses: float | None = None
     time_to_first_life_loss: int | None = None
     life_losses_per_1000_steps: float = 0.0
+    cleared: bool | None = None
+    clear_agent_step: int | None = None
+    clear_emulator_frame: int | None = None
+    clear_score: float | None = None
+    lives_remaining_at_clear: int | None = None
+    completion_detection_source: str | None = None
 
     @property
     def complete(self) -> bool:
@@ -189,6 +304,24 @@ class EpisodeResult:
             return "terminated"
         if self.truncated:
             return "truncated"
+        return "incomplete"
+
+    @property
+    def completion_outcome(self) -> str:
+        if self.cleared is True:
+            return "cleared"
+        if self.cleared is None:
+            return "clear_status_unavailable"
+        if self.time_limit:
+            return "time_limit"
+        if self.truncated:
+            return "truncated"
+        if self.terminated:
+            return (
+                "game_over"
+                if self.completion_detection_source is not None
+                else "terminated"
+            )
         return "incomplete"
 
     def to_dict(self) -> dict[str, Any]:
@@ -213,6 +346,13 @@ class EpisodeResult:
             "time_limit_source": self.time_limit_source,
             "complete": self.complete,
             "stop_reason": self.stop_reason,
+            "completion_outcome": self.completion_outcome,
+            "cleared": self.cleared,
+            "clear_agent_step": self.clear_agent_step,
+            "clear_emulator_frame": self.clear_emulator_frame,
+            "clear_score": self.clear_score,
+            "lives_remaining_at_clear": self.lives_remaining_at_clear,
+            "completion_detection_source": self.completion_detection_source,
             # Keep the historical field, but define it explicitly as the
             # action sent to the wrapped environment.
             "action_distribution": executed_distribution,
@@ -250,6 +390,9 @@ class EvaluationResult:
     checkpoint: Mapping[str, Any] | None = None
     evaluation_id: str | None = None
     metadata: Mapping[str, Any] | None = None
+    completion_detector: Mapping[str, Any] | None = None
+    source_provenance: Mapping[str, Any] | None = None
+    contract_provenance: Mapping[str, Any] | None = None
 
     @property
     def total_steps(self) -> int:
@@ -301,11 +444,72 @@ class EvaluationResult:
     def to_dict(self) -> dict[str, Any]:
         returns = [episode.episode_return for episode in self.episodes]
         lengths = [episode.episode_length for episode in self.episodes]
+        per_episode: list[dict[str, Any]] = []
+        verified_clears: list[dict[str, Any]] = []
+        for episode in self.episodes:
+            row = episode.to_dict()
+            if episode.cleared is True:
+                training = dict(self.training or {})
+                checkpoint = dict(self.checkpoint or {})
+                contract = dict(self.contract_provenance or {})
+                source = dict(self.source_provenance or {})
+                detector = dict(self.completion_detector or {})
+                training_config = training.get("training_config")
+                if not isinstance(training_config, Mapping):
+                    training_config = {}
+                training_seed = _first_present(training, "training_seed", "seed")
+                if training_seed is None:
+                    training_seed = training_config.get("seed")
+                training_transition_count = _first_present(
+                    training,
+                    "training_steps",
+                    "training_transitions",
+                    "global_step",
+                    "training_budget",
+                )
+                if training_transition_count is None:
+                    training_transition_count = training_config.get("total_steps")
+                clear_provenance = {
+                    "model_id": self.model_id,
+                    "checkpoint_id": _first_present(
+                        checkpoint, "sha256", "path", "step"
+                    ),
+                    "checkpoint": checkpoint,
+                    "training_seed": training_seed,
+                    "training_transition_count": training_transition_count,
+                    "training": training,
+                    "evaluation_seed": episode.evaluation_seed,
+                    "episode_seed": episode.episode_seed,
+                    "episode_index": episode.episode_index,
+                    "contract_id": contract.get("contract_id"),
+                    "contract_sha256": contract.get("contract_sha256"),
+                    "contract_hash_semantics": contract.get("hash_semantics"),
+                    "source_commit": source.get("source_commit"),
+                    "source_working_tree_dirty": source.get(
+                        "working_tree_dirty"
+                    ),
+                    "completion_source_sha256": source.get(
+                        "completion_source_sha256"
+                    ),
+                    "raw_score": episode.episode_return,
+                    "clear_score": episode.clear_score,
+                    "clear_agent_step": episode.clear_agent_step,
+                    "clear_emulator_frame": episode.clear_emulator_frame,
+                    "lives_remaining_at_clear": episode.lives_remaining_at_clear,
+                    "completion_detection_source": (
+                        episode.completion_detection_source
+                    ),
+                    "completion_detector_id": detector.get("detector_id"),
+                }
+                row["completion_provenance"] = clear_provenance
+                verified_clears.append(clear_provenance)
+            per_episode.append(row)
         summary = summary_from_episode_rows(
-            [episode.to_dict() for episode in self.episodes]
+            per_episode
         )
         return {
             "schema_version": EVALUATION_SCHEMA_VERSION,
+            "evaluation_status": "completed",
             "created_at_utc": datetime.now(timezone.utc).isoformat().replace(
                 "+00:00", "Z"
             ),
@@ -331,7 +535,7 @@ class EvaluationResult:
             "runtime": dict(self.runtime),
             "training": dict(self.training or {}),
             "checkpoint": dict(self.checkpoint or {}),
-            "per_episode": [episode.to_dict() for episode in self.episodes],
+            "per_episode": per_episode,
             "per_episode_returns": returns,
             "per_episode_lengths": lengths,
             "action_distribution": self.executed_action_distribution,
@@ -375,6 +579,10 @@ class EvaluationResult:
             "life_losses_per_1000_steps": float(
                 self.life_loss_count / max(1, self.total_steps) * 1000.0
             ),
+            "completion_detector": dict(self.completion_detector or {}),
+            "source_provenance": dict(self.source_provenance or {}),
+            "contract_provenance": dict(self.contract_provenance or {}),
+            "verified_clears": verified_clears,
             "summary": summary,
             "metadata": dict(self.metadata or {}),
         }
@@ -664,6 +872,18 @@ def evaluate_policy(
         model.eval()
 
     env = env_factory()
+    repository_root = Path(__file__).resolve().parents[1]
+    completion_support = inspect_breakout_completion_support(env)
+    completion_detector = BreakoutCompletionDetector(completion_support)
+    source_provenance = _capture_source_provenance(repository_root)
+    contract_provenance = _contract_provenance(
+        metadata,
+        repository_root=repository_root,
+    )
+    result_metadata = dict(metadata or {})
+    result_metadata["completion_detector"] = completion_support.to_dict()
+    result_metadata["source_provenance"] = source_provenance
+    result_metadata["contract_provenance"] = contract_provenance
     started_at = time.perf_counter()
     try:
         action_count = _action_count(env)
@@ -689,6 +909,12 @@ def evaluate_policy(
                 for episode_index in range(1, episodes_per_seed + 1):
                     episode_seed = evaluation_seed + episode_index - 1
                     observation, _ = env.reset(seed=episode_seed)
+                    completion_detector.reset()
+                    emulator_frame_origin = (
+                        read_ale_episode_frame(env)
+                        if completion_support.supported
+                        else None
+                    )
                     _seed_action_space(env, episode_seed)
                     rng = np.random.default_rng(episode_seed)
                     episode_return = 0.0
@@ -749,6 +975,21 @@ def evaluate_policy(
                             truncated,
                             info if isinstance(info, Mapping) else None,
                         )
+                        if completion_support.supported:
+                            emulator_frame_now = read_ale_episode_frame(env)
+                            elapsed_emulator_frame = (
+                                emulator_frame_now - emulator_frame_origin
+                                if emulator_frame_now is not None
+                                and emulator_frame_origin is not None
+                                and emulator_frame_now >= emulator_frame_origin
+                                else None
+                            )
+                            completion_detector.observe(
+                                cumulative_score=episode_return,
+                                agent_step=len(executed_action_values),
+                                emulator_frame=elapsed_emulator_frame,
+                                lives_remaining=read_ale_lives(env),
+                            )
                         if terminated or truncated:
                             break
 
@@ -797,6 +1038,20 @@ def evaluate_policy(
                             life_losses_per_1000_steps=float(
                                 survival_metrics["life_losses_per_1000_steps"]
                             ),
+                            cleared=completion_detector.state.cleared,
+                            clear_agent_step=(
+                                completion_detector.state.clear_agent_step
+                            ),
+                            clear_emulator_frame=(
+                                completion_detector.state.clear_emulator_frame
+                            ),
+                            clear_score=completion_detector.state.clear_score,
+                            lives_remaining_at_clear=(
+                                completion_detector.state.lives_remaining_at_clear
+                            ),
+                            completion_detection_source=(
+                                completion_detector.state.completion_detection_source
+                            ),
                         )
                     )
     finally:
@@ -830,7 +1085,10 @@ def evaluate_policy(
         training=training_metadata,
         checkpoint=checkpoint_metadata,
         evaluation_id=evaluation_id,
-        metadata=metadata,
+        metadata=result_metadata,
+        completion_detector=completion_support.to_dict(),
+        source_provenance=source_provenance,
+        contract_provenance=contract_provenance,
     )
 
 
@@ -839,6 +1097,8 @@ def _json_default(value: Any) -> Any:
         return value.tolist()
     if isinstance(value, (np.integer, np.floating)):
         return value.item()
+    if isinstance(value, Path):
+        return value.as_posix()
     raise TypeError(f"cannot serialize {type(value).__name__}")
 
 
@@ -892,6 +1152,14 @@ def write_evaluation_artifacts(
         "time_limit_source",
         "complete",
         "stop_reason",
+        "completion_outcome",
+        "cleared",
+        "clear_agent_step",
+        "clear_emulator_frame",
+        "clear_score",
+        "lives_remaining_at_clear",
+        "completion_detection_source",
+        "completion_provenance_json",
         *action_columns,
         "action_distribution_json",
         *requested_action_columns,
@@ -909,7 +1177,11 @@ def write_evaluation_artifacts(
     with episodes_path.open("w", newline="", encoding="utf-8") as stream:
         writer = csv.DictWriter(stream, fieldnames=fieldnames)
         writer.writeheader()
-        for episode in result.episodes:
+        for episode, episode_payload in zip(
+            result.episodes,
+            payload["per_episode"],
+            strict=True,
+        ):
             executed_distribution = dict(
                 episode.executed_action_distribution or episode.action_distribution
             )
@@ -932,6 +1204,19 @@ def write_evaluation_artifacts(
                 "time_limit_source": episode.time_limit_source,
                 "complete": episode.complete,
                 "stop_reason": episode.stop_reason,
+                "completion_outcome": episode.completion_outcome,
+                "cleared": json.dumps(episode.cleared),
+                "clear_agent_step": episode.clear_agent_step,
+                "clear_emulator_frame": episode.clear_emulator_frame,
+                "clear_score": episode.clear_score,
+                "lives_remaining_at_clear": episode.lives_remaining_at_clear,
+                "completion_detection_source": episode.completion_detection_source,
+                "completion_provenance_json": json.dumps(
+                    episode_payload.get("completion_provenance"),
+                    ensure_ascii=False,
+                    sort_keys=True,
+                    default=_json_default,
+                ),
                 "action_distribution_json": json.dumps(
                     executed_distribution,
                     ensure_ascii=False,
