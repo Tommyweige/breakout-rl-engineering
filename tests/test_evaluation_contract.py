@@ -378,6 +378,14 @@ class Day15ContractTests(unittest.TestCase):
             evaluate.call_args.kwargs["evaluation_id"],
             "contract-v3-dqn",
         )
+        contract = load_evaluation_contract(
+            Path("configs/eval/breakout_contract_v3.json")
+        )
+        self.assertEqual(
+            evaluate.call_args.kwargs["seeds"],
+            contract.concrete_episode_seeds,
+        )
+        self.assertEqual(evaluate.call_args.kwargs["episodes"], 1)
         self.assertEqual(write_artifacts.call_args.args[1], CONTRACT_V3_OUTPUT_DIRS["dqn"])
 
     def test_runtime_validator_rejects_noncanonical_stack_or_fire_reset(self) -> None:

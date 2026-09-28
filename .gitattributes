@@ -1,5 +1,6 @@
 # Browser asset digests bind raw bytes and must be stable across checkouts.
 configs/eval/breakout_contract_v2.json text eol=lf
+configs/eval/breakout_contract_v3.json text eol=lf
 configs/inference/inference_spec.json text eol=lf
 web/public/inference_spec.json text eol=lf
 web/public/fixtures/day22-reference.json text eol=lf

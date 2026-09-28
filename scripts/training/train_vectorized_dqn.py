@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping
 
 from breakout_env import make_breakout_vector_env
+from breakout_rl.artifacts import sha256_file
 from breakout_rl.evaluation_contract import (
     BreakoutEvaluationContractV2,
     breakout_environment_kwargs,
@@ -231,7 +231,7 @@ def _environment_contract_metadata(
     return {
         "contract_id": contract.contract_id,
         "contract_path": contract_path.as_posix(),
-        "contract_sha256": hashlib.sha256(contract_path.read_bytes()).hexdigest(),
+        "contract_sha256": sha256_file(contract_path),
         "hash_semantics": "SHA-256 of the exact contract file bytes",
         "frame_skip": contract.frame_skip,
     }

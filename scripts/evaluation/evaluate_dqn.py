@@ -390,6 +390,18 @@ def run_evaluation(args: argparse.Namespace) -> tuple[Path, Path, dict[str, Any]
         "raw_reward": True,
         "policy_protocol": "shared environment construction, seed handling, episode loop, and schema",
     }
+    evaluation_seeds = evaluation_config.seeds
+    episodes_per_seed = evaluation_config.episodes_per_seed
+    if contract.contract_id == BREAKOUT_CONTRACT_V3_ID:
+        evaluation_seeds = contract.concrete_episode_seeds
+        episodes_per_seed = 1
+        metadata["evaluation_seed_expansion"] = {
+            "configured_seed_groups": list(evaluation_config.seeds),
+            "configured_episodes_per_seed": evaluation_config.episodes_per_seed,
+            "executed_episode_seeds": list(evaluation_seeds),
+            "executed_episodes_per_seed": episodes_per_seed,
+            "rule": "Use the Contract v3 concrete episode seed list exactly once.",
+        }
     env_factory = None
     if contract is not None:
         metadata["evaluation_contract_path"] = Path(contract_path).as_posix()
@@ -398,8 +410,8 @@ def run_evaluation(args: argparse.Namespace) -> tuple[Path, Path, dict[str, Any]
 
     result = evaluate_policy(
         model,
-        episodes=evaluation_config.episodes_per_seed,
-        seeds=evaluation_config.seeds,
+        episodes=episodes_per_seed,
+        seeds=evaluation_seeds,
         device=requested_device,
         epsilon=evaluation_config.epsilon,
         model_id=model_id,
