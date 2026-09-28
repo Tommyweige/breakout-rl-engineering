@@ -1,0 +1,935 @@
+"""Run, evaluate, and report the canonical Issue 21 Contract v3 baseline."""
+
+from __future__ import annotations
+
+import argparse
+import csv
+import hashlib
+import json
+import math
+import platform
+import subprocess
+import sys
+import tempfile
+from collections.abc import Mapping, Sequence
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+
+import ale_py
+import gymnasium
+import numpy as np
+import torch
+
+from breakout_env import make_breakout_env
+from breakout_rl.analysis.control import summarize_training_control_metrics
+from breakout_rl.completion import read_ale_episode_frame
+from breakout_rl.evaluation import load_evaluation_config
+from breakout_rl.evaluation_contract import (
+    BREAKOUT_CONTRACT_V3_ID,
+    BreakoutEvaluationContractV2,
+    breakout_environment_kwargs,
+    expand_concrete_episode_seeds,
+    load_evaluation_contract,
+    validate_breakout_runtime_contract,
+)
+from breakout_rl.training.config import DQNConfig
+
+
+REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_CONFIG = Path("configs/training/issue21_contract_v3_baseline.json")
+DEFAULT_RUN_DIR = Path("runs/issue21-contract-v3-seed11")
+EXPECTED_MILESTONES = (400_000, 1_000_000, 2_000_000)
+
+
+def _utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def _read_json_object(path: Path) -> dict[str, Any]:
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as error:
+        raise ValueError(f"{path}: invalid JSON") from error
+    if not isinstance(value, dict):
+        raise ValueError(f"{path}: expected a JSON object")
+    return value
+
+
+def _write_json(path: Path, value: Mapping[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary_path = path.with_suffix(path.suffix + ".tmp")
+    temporary_path.write_text(
+        json.dumps(dict(value), indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    temporary_path.replace(path)
+
+
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _resolve_path(value: str | Path, *, root: Path = REPOSITORY_ROOT) -> Path:
+    path = Path(value)
+    return path.resolve() if path.is_absolute() else (root / path).resolve()
+
+
+def _portable_path(path: Path, *, root: Path = REPOSITORY_ROOT) -> str:
+    try:
+        return path.resolve().relative_to(root.resolve()).as_posix()
+    except ValueError:
+        return str(path.resolve())
+
+
+def _validate_plan(
+    config_path: Path,
+) -> tuple[dict[str, Any], DQNConfig, BreakoutEvaluationContractV2, Path, Path]:
+    payload = _read_json_object(config_path)
+    if payload.get("issue") != 21:
+        raise ValueError("baseline config must identify Issue 21")
+    if payload.get("training_lifecycle") != "continuous_single_run":
+        raise ValueError("Issue 21 requires one continuous training lifecycle")
+    raw_training = payload.get("training_config")
+    if not isinstance(raw_training, Mapping):
+        raise ValueError("baseline config training_config must be an object")
+    training = DQNConfig.from_dict(raw_training)
+    milestones = payload.get("milestones")
+    if not isinstance(milestones, Sequence) or isinstance(milestones, (str, bytes)):
+        raise ValueError("baseline config milestones must be a sequence")
+    parsed_milestones = tuple(int(step) for step in milestones)
+    if parsed_milestones != EXPECTED_MILESTONES:
+        raise ValueError("Issue 21 milestones must be 400K, 1M, and 2M transitions")
+    if training.checkpoint_steps != EXPECTED_MILESTONES:
+        raise ValueError("training checkpoint_steps must match the Issue 21 milestones")
+    if training.total_steps != 2_000_000 or training.seed != 11:
+        raise ValueError("Issue 21 training must use seed 11 through 2M transitions")
+    if (
+        training.algorithm != "double_dqn"
+        or training.architecture != "dueling"
+        or training.replay_sampling != "uniform"
+        or training.life_loss_penalty != 0.0
+    ):
+        raise ValueError(
+            "Issue 21 requires unshaped Dueling Double DQN with Uniform Replay"
+        )
+    if training.replay_backend != "gpu" or training.device != "cuda":
+        raise ValueError(
+            "Issue 21 baseline must use the configured CUDA/GPU Replay path"
+        )
+    if training.num_envs != 2 or not training.strict_action_selection_parity:
+        raise ValueError(
+            "Issue 21 baseline requires the validated two-environment schedule"
+        )
+
+    contract_value = payload.get("contract")
+    if not isinstance(contract_value, str):
+        raise ValueError("baseline config must name its environment contract")
+    contract_path = _resolve_path(contract_value)
+    contract = load_evaluation_contract(contract_path)
+    validate_breakout_runtime_contract(contract, allow_contract_v3=True)
+    if contract.contract_id != BREAKOUT_CONTRACT_V3_ID or contract.frame_skip != 1:
+        raise ValueError(
+            "Issue 21 requires the canonical Contract v3 frame-skip-1 runtime"
+        )
+
+    evaluation = payload.get("evaluation")
+    if not isinstance(evaluation, Mapping):
+        raise ValueError("baseline config evaluation section must be an object")
+    evaluation_config_path = _resolve_path(str(evaluation.get("config", "")))
+    evaluation_contract_path = _resolve_path(str(evaluation.get("contract", "")))
+    if evaluation_contract_path != contract_path:
+        raise ValueError("training and evaluation must use the same Contract v3 file")
+    evaluation_config = load_evaluation_config(evaluation_config_path)
+    if evaluation_config.environment_id != contract.environment_id:
+        raise ValueError("evaluation environment does not match Contract v3")
+    if evaluation_config.epsilon != contract.evaluation_epsilon:
+        raise ValueError("evaluation epsilon does not match Contract v3")
+    if (
+        expand_concrete_episode_seeds(
+            evaluation_config.seeds,
+            episodes_per_seed=evaluation_config.episodes_per_seed,
+        )
+        != contract.concrete_episode_seeds
+    ):
+        raise ValueError("evaluation seeds do not match the Contract v3 seed list")
+    if int(evaluation.get("episodes_per_checkpoint", 0)) != len(
+        contract.concrete_episode_seeds
+    ):
+        raise ValueError(
+            "each checkpoint must use the complete canonical evaluation set"
+        )
+    if float(evaluation.get("epsilon", -1.0)) != contract.evaluation_epsilon:
+        raise ValueError(
+            "baseline config evaluation epsilon does not match Contract v3"
+        )
+
+    control = payload.get("control_diagnostics")
+    if not isinstance(control, Mapping):
+        raise ValueError("baseline config control_diagnostics must be an object")
+    return (
+        payload,
+        training,
+        contract,
+        contract_path,
+        evaluation_config_path,
+    )
+
+
+def _runtime_metadata() -> dict[str, Any]:
+    if not torch.cuda.is_available():
+        raise RuntimeError("Issue 21 training config requires an available CUDA device")
+    return {
+        "python": sys.version.split()[0],
+        "python_executable": sys.executable,
+        "platform": platform.platform(),
+        "torch": torch.__version__,
+        "torch_cuda": torch.version.cuda,
+        "gymnasium": gymnasium.__version__,
+        "ale_py": ale_py.__version__,
+        "cuda_available": torch.cuda.is_available(),
+        "cuda_device_index": 0,
+        "cuda_device_name": torch.cuda.get_device_name(0),
+    }
+
+
+def _smoke_environment(
+    contract: BreakoutEvaluationContractV2,
+    *,
+    seed: int,
+) -> dict[str, Any]:
+    env = make_breakout_env(
+        **breakout_environment_kwargs(contract, allow_contract_v3=True)
+    )
+    try:
+        observation, _info = env.reset(seed=seed)
+        if not isinstance(observation, np.ndarray):
+            raise ValueError("Contract v3 reset observation must be a NumPy array")
+        if observation.shape != (4, 84, 84) or observation.dtype != np.uint8:
+            raise ValueError(
+                "Contract v3 observation must retain shape (4, 84, 84) and uint8 dtype"
+            )
+        frame_before = read_ale_episode_frame(env)
+        next_observation, reward, _terminated, _truncated, _step_info = env.step(0)
+        frame_after = read_ale_episode_frame(env)
+        if frame_before is None or frame_after is None:
+            raise ValueError(
+                "Contract v3 smoke did not expose the ALE-native frame counter"
+            )
+        frame_delta = frame_after - frame_before
+        if frame_delta != 1:
+            raise ValueError(
+                "Contract v3 must advance exactly one ALE frame per agent decision; "
+                f"observed delta={frame_delta}"
+            )
+        if not isinstance(next_observation, np.ndarray):
+            raise ValueError("Contract v3 step observation must be a NumPy array")
+        if next_observation.shape != (4, 84, 84) or next_observation.dtype != np.uint8:
+            raise ValueError("Contract v3 step observation shape/dtype changed")
+        if not math.isfinite(float(reward)):
+            raise ValueError("Contract v3 smoke produced a non-finite reward")
+        return {
+            "status": "passed",
+            "frame_skip": contract.frame_skip,
+            "ale_frame_before": frame_before,
+            "ale_frame_after": frame_after,
+            "ale_frame_delta": frame_delta,
+            "observation_shape": list(observation.shape),
+            "observation_dtype": str(observation.dtype),
+        }
+    finally:
+        env.close()
+
+
+def _training_smoke(
+    payload: Mapping[str, Any],
+    *,
+    contract_path: Path,
+    contract: BreakoutEvaluationContractV2,
+) -> dict[str, Any]:
+    raw_training = payload.get("training_config")
+    if not isinstance(raw_training, Mapping):
+        raise ValueError("baseline config training_config must be an object")
+    smoke_training = dict(raw_training)
+    smoke_training.update(
+        {
+            "total_steps": 256,
+            "epsilon_decay_steps": 256,
+            "replay_capacity": 512,
+            "learning_starts": 32,
+            "target_update_interval": 128,
+            "checkpoint_interval": 256,
+            "checkpoint_steps": [256],
+            "diagnostics_interval": 128,
+            "metrics_flush_interval": 256,
+            "profile_stages": False,
+        }
+    )
+    DQNConfig.from_dict(smoke_training)
+    smoke_config = dict(payload)
+    smoke_config["milestones"] = [256]
+    smoke_config["training_config"] = smoke_training
+
+    with tempfile.TemporaryDirectory(prefix="issue21-v3-smoke-") as temporary:
+        temporary_root = Path(temporary)
+        smoke_config_path = temporary_root / "smoke-config.json"
+        smoke_config_path.write_text(
+            json.dumps(smoke_config, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        run_id = "issue21-preflight"
+        run_dir = temporary_root / run_id
+        summary_path = run_dir / "training_summary.json"
+        command = [
+            sys.executable,
+            "-m",
+            "scripts.training.train_vectorized_dqn",
+            "--config",
+            str(smoke_config_path),
+            "--contract",
+            _portable_path(contract_path),
+            "--run-dir",
+            str(temporary_root),
+            "--run-id",
+            run_id,
+            "--output",
+            str(summary_path),
+        ]
+        completed = subprocess.run(
+            command,
+            cwd=REPOSITORY_ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if completed.returncode != 0:
+            output = (completed.stdout + "\n" + completed.stderr)[-6000:]
+            raise RuntimeError(f"real-ALE training smoke failed:\n{output}")
+        summary = _read_json_object(summary_path)
+        if summary.get("total_agent_steps") != 256:
+            raise ValueError("real-ALE training smoke did not complete 256 transitions")
+        if summary.get("total_emulator_frames") is None:
+            raise ValueError("real-ALE training smoke did not record native ALE frames")
+        if int(summary.get("optimizer_updates", 0)) <= 0:
+            raise ValueError(
+                "Dueling Double DQN smoke did not perform optimizer updates"
+            )
+        if (
+            summary.get("algorithm") != "double_dqn"
+            or summary.get("architecture") != "dueling"
+        ):
+            raise ValueError("training smoke did not use Dueling Double DQN")
+        if summary.get("replay_sampling") != "uniform":
+            raise ValueError("training smoke did not use Uniform Replay")
+        if summary.get("strict_action_selection_parity_satisfied") is not True:
+            raise ValueError("training smoke failed vectorized action-selection parity")
+        if summary.get("model_config", {}).get("input_shape") != [4, 84, 84]:
+            raise ValueError("training smoke changed the Contract v3 observation shape")
+
+        checkpoint_path = run_dir / "checkpoints" / "step-00000256.pt"
+        if not checkpoint_path.is_file():
+            raise FileNotFoundError("training smoke did not write its checkpoint")
+        checkpoint = torch.load(
+            checkpoint_path,
+            map_location="cpu",
+            weights_only=False,
+        )
+        contract_metadata = checkpoint.get("environment_contract")
+        if not isinstance(contract_metadata, Mapping):
+            raise ValueError(
+                "training checkpoint omitted environment contract provenance"
+            )
+        if contract_metadata.get("contract_id") != contract.contract_id:
+            raise ValueError("training checkpoint recorded the wrong contract id")
+        if contract_metadata.get("contract_sha256") != _sha256(contract_path):
+            raise ValueError("training checkpoint recorded the wrong contract hash")
+        if checkpoint.get("global_step") != 256:
+            raise ValueError("training smoke checkpoint has the wrong transition count")
+        if checkpoint.get("total_emulator_frames") is None:
+            raise ValueError("training smoke checkpoint omitted native ALE frame count")
+        return {
+            "status": "passed",
+            "total_agent_steps": summary["total_agent_steps"],
+            "total_emulator_frames": summary["total_emulator_frames"],
+            "optimizer_updates": summary["optimizer_updates"],
+            "replay_sampling": summary["replay_sampling"],
+            "observation_shape": summary["model_config"]["input_shape"],
+            "contract_sha256": contract_metadata["contract_sha256"],
+        }
+
+
+def run_preflight(config_path: Path) -> dict[str, Any]:
+    payload, training, contract, contract_path, evaluation_config_path = _validate_plan(
+        config_path
+    )
+    runtime = _runtime_metadata()
+    environment = _smoke_environment(contract, seed=training.seed)
+    smoke = _training_smoke(
+        payload,
+        contract_path=contract_path,
+        contract=contract,
+    )
+    return {
+        "status": "passed",
+        "runtime": runtime,
+        "environment_smoke": environment,
+        "training_smoke": smoke,
+        "contract_path": _portable_path(contract_path),
+        "evaluation_config_path": _portable_path(evaluation_config_path),
+    }
+
+
+def _checkpoint_payload(path: Path) -> dict[str, Any]:
+    payload = torch.load(path, map_location="cpu", weights_only=False)
+    if not isinstance(payload, dict):
+        raise ValueError(f"{path}: checkpoint must contain a mapping")
+    return payload
+
+
+def _validate_training_result(
+    summary: Mapping[str, Any],
+    *,
+    training: DQNConfig,
+    contract: BreakoutEvaluationContractV2,
+    contract_path: Path,
+    run_dir: Path,
+) -> None:
+    if summary.get("status") != "completed":
+        raise ValueError("formal training did not complete successfully")
+    if summary.get("total_agent_steps") != training.total_steps:
+        raise ValueError("formal training transition count does not equal 2M")
+    if summary.get("seed") != 11:
+        raise ValueError("formal training summary does not report seed 11")
+    if summary.get("contract_id") != contract.contract_id:
+        raise ValueError("formal training summary does not identify Contract v3")
+    if summary.get("total_emulator_frames") is None:
+        raise ValueError("formal training summary omitted native ALE frame count")
+    if summary.get("replay_sampling") != "uniform":
+        raise ValueError("formal training summary does not report Uniform Replay")
+    if int(summary.get("optimizer_updates", 0)) <= 0:
+        raise ValueError("formal training completed without optimizer updates")
+    if summary.get("strict_action_selection_parity_satisfied") is not True:
+        raise ValueError("formal training did not satisfy action-selection parity")
+    contract_metadata = summary.get("environment_contract")
+    if not isinstance(contract_metadata, Mapping):
+        raise ValueError("formal training summary omitted contract hash provenance")
+    if contract_metadata.get("contract_sha256") != _sha256(contract_path):
+        raise ValueError("formal training contract hash does not match the source file")
+    if contract_metadata.get("contract_id") != contract.contract_id:
+        raise ValueError("formal training contract id does not match the source file")
+    metrics_path = run_dir / "metrics.csv"
+    if not metrics_path.is_file() or metrics_path.stat().st_size == 0:
+        raise ValueError(
+            "formal training did not preserve per-transition action metrics"
+        )
+
+
+def _validate_evaluation_result(
+    path: Path,
+    *,
+    checkpoint: Mapping[str, Any],
+    expected_checkpoint_step: int,
+    expected_contract_hash: str,
+    expected_seeds: Sequence[int],
+    expected_episode_count: int,
+) -> dict[str, Any]:
+    result = _read_json_object(path)
+    if result.get("evaluation_status") != "completed":
+        raise ValueError(f"{path}: evaluation did not complete")
+    if result.get("evaluation_seeds") != list(expected_seeds):
+        raise ValueError(f"{path}: evaluation seed list does not match the protocol")
+    if result.get("total_episodes") != expected_episode_count:
+        raise ValueError(f"{path}: evaluation episode count is incomplete")
+    training = result.get("training")
+    if not isinstance(training, Mapping):
+        raise ValueError(f"{path}: checkpoint training metadata is missing")
+    if training.get("total_agent_steps") != expected_checkpoint_step:
+        raise ValueError(f"{path}: evaluation loaded the wrong checkpoint transition")
+    if training.get("contract_id") != checkpoint.get("contract_id"):
+        raise ValueError(f"{path}: checkpoint contract id is inconsistent")
+    contract = result.get("contract_provenance")
+    if not isinstance(contract, Mapping):
+        raise ValueError(f"{path}: evaluation contract provenance is missing")
+    if contract.get("contract_id") != BREAKOUT_CONTRACT_V3_ID:
+        raise ValueError(f"{path}: evaluation is not labeled Contract v3")
+    if contract.get("contract_sha256") != expected_contract_hash:
+        raise ValueError(f"{path}: evaluation recorded the wrong contract hash")
+    if contract.get("validation_status") != "canonical_contract_v3":
+        raise ValueError(f"{path}: Contract v3 runtime binding was not validated")
+    if result.get("total_emulator_frames") is None:
+        raise ValueError(f"{path}: evaluation omitted native ALE frame counts")
+
+    summary = result.get("summary")
+    if not isinstance(summary, Mapping):
+        raise ValueError(f"{path}: evaluation summary is missing")
+    if summary.get("clear_detection_available") is not True:
+        raise ValueError(
+            f"{path}: clear detection is unavailable for one or more episodes"
+        )
+    clear_count = summary.get("clear_count")
+    clear_rate = summary.get("clear_rate")
+    if (
+        not isinstance(clear_count, int)
+        or isinstance(clear_count, bool)
+        or clear_count < 0
+    ):
+        raise ValueError(f"{path}: clear_count must be a non-negative integer")
+    if clear_count == 0 and clear_rate != 0:
+        raise ValueError(f"{path}: zero-clear result must report clear_rate=0")
+    if clear_count > 0 and not isinstance(clear_rate, (int, float)):
+        raise ValueError(f"{path}: nonzero clears require a numeric clear_rate")
+    if (
+        "mean_return" not in summary
+        or "median_return" not in summary
+        or "max_return" not in summary
+    ):
+        raise ValueError(f"{path}: raw score summary is incomplete")
+    checkpoint_result = result.get("checkpoint")
+    if not isinstance(checkpoint_result, Mapping):
+        raise ValueError(f"{path}: checkpoint identity is missing")
+    if checkpoint_result.get("sha256") is None:
+        raise ValueError(f"{path}: checkpoint SHA-256 is missing")
+    return result
+
+
+def _markdown_number(value: Any, digits: int = 2) -> str:
+    if value is None:
+        return "n/a"
+    if isinstance(value, bool):
+        return str(value)
+    if isinstance(value, int):
+        return f"{value:,}"
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return str(value)
+    return f"{number:,.{digits}f}"
+
+
+def _build_report(
+    *,
+    manifest: Mapping[str, Any],
+    evaluation_results: Sequence[Mapping[str, Any]],
+    controls: Mapping[str, Any],
+) -> str:
+    checkpoint_rows = []
+    observed_clears: list[tuple[int, int]] = []
+    for item, result in zip(manifest["milestones"], evaluation_results, strict=True):
+        summary = result["summary"]
+        checkpoint_step = int(item["agent_steps"])
+        clear_count = int(summary["clear_count"])
+        if clear_count:
+            observed_clears.append((checkpoint_step, clear_count))
+        checkpoint_rows.append(
+            "| {steps} | {frames} | {mean} / {median} / {maximum} | {clears} / "
+            "{rate} | {best_step} / {median_step} | {best_frame} / {median_frame} | "
+            "{life_losses} |".format(
+                steps=f"{checkpoint_step:,}",
+                frames=_markdown_number(item["total_emulator_frames"], 0),
+                mean=_markdown_number(summary.get("mean_return")),
+                median=_markdown_number(summary.get("median_return")),
+                maximum=_markdown_number(summary.get("max_return"), 0),
+                clears=f"{clear_count} / {summary['total_episodes']}",
+                rate=f"{float(summary['clear_rate']):.1%}",
+                best_step=_markdown_number(summary.get("best_clear_steps"), 0),
+                median_step=_markdown_number(summary.get("median_clear_steps"), 0),
+                best_frame=_markdown_number(
+                    summary.get("best_clear_emulator_frame"), 0
+                ),
+                median_frame=_markdown_number(
+                    summary.get("median_clear_emulator_frame"),
+                    0,
+                ),
+                life_losses=_markdown_number(summary.get("mean_life_loss_count")),
+            )
+        )
+
+    if observed_clears:
+        decision = (
+            "Promising for follow-up: canonical Contract v3 evaluation recorded a "
+            f"verified clear at {observed_clears[0][0]:,} agent steps."
+        )
+    else:
+        decision = (
+            "The screen did not demonstrate a verified clear at any checkpoint. "
+            "Use matched emulator-frame references and the control diagnostics before "
+            "deciding whether the next n-step experiment should proceed."
+        )
+
+    runtime = manifest["runtime"]
+    contract = manifest["contract"]
+    control_lines = [
+        f"- Transitions inspected: {_markdown_number(controls['transition_count'], 0)}",
+        f"- NOOP use: {_markdown_number(controls['noop_rate'] * 100, 1)}% "
+        f"({_markdown_number(controls['noop_count'], 0)} transitions)",
+        f"- Paddle-control cadence (LEFT or RIGHT): "
+        f"{_markdown_number(controls['paddle_control_cadence'] * 100, 1)}%",
+        f"- Action-switch rate: {_markdown_number(controls['action_switch_rate'] * 100, 1)}% "
+        f"({controls['action_switch_count']:,} of "
+        f"{controls['adjacent_action_pairs']:,} adjacent pairs)",
+        f"- Direct LEFT/RIGHT reversals: "
+        f"{_markdown_number(controls['left_right_reversal_count'], 0)} "
+        f"({_markdown_number(controls['left_right_reversal_rate'] * 100, 1)}% of pairs)",
+        f"- Late-episode action distribution: "
+        f"`{json.dumps(controls['late_episode']['action_distribution'], sort_keys=True)}` "
+        f"across {controls['late_episode']['sample_count']:,} decisions.",
+        f"- High-score action distribution (raw score >= "
+        f"{controls['high_score']['threshold_raw_score']:g}): "
+        f"`{json.dumps(controls['high_score']['action_distribution'], sort_keys=True)}` "
+        f"across {controls['high_score']['sample_count']:,} decisions.",
+    ]
+    return "\n".join(
+        [
+            "# Contract v3 Dueling Double DQN baseline",
+            "",
+            "## Training",
+            "",
+            f"- Training seed: 11; continuous lifecycle: 0 to 2,000,000 transitions.",
+            f"- Replay: Uniform; algorithm: Dueling Double DQN; frame skip: 1.",
+            f"- Contract: `{contract['contract_id']}` "
+            f"(SHA-256 `{contract['sha256']}`).",
+            f"- Source commit: `{manifest['source_commit']}`.",
+            f"- Runtime: Python {runtime['python']}, PyTorch {runtime['torch']}, "
+            f"CUDA {runtime['torch_cuda']}, {runtime['cuda_device_name']}.",
+            f"- Actual training emulator frames at 2M transitions: "
+            f"{_markdown_number(manifest['training']['total_emulator_frames'], 0)} "
+            "from `ALEInterface.getEpisodeFrameNumber`; reset-time serve actions are excluded.",
+            "",
+            "## Canonical Contract v3 evaluation",
+            "",
+            "Each checkpoint used the same 15 evaluation episodes and raw rewards. "
+            "Mean, median, and max are raw Breakout scores.",
+            "",
+            "| Agent steps | Training ALE frames | Mean / median / max raw score | Clears / episodes; clear rate | Best / median clear agent step | Best / median clear ALE frame | Mean life losses |",
+            "| ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+            *checkpoint_rows,
+            "",
+            "Clear-time fields are `n/a` when no clears were observed; zero clears are "
+            "reported as `clear_count = 0`, `clear_rate = 0`.",
+            "",
+            "## Control diagnostics",
+            "",
+            *control_lines,
+            "",
+            "The late-episode distribution covers the final 25% of completed training "
+            "episodes by agent-transition count. The high-score view starts when raw "
+            "episode score reaches 500. These are descriptive action summaries and do "
+            "not change training rewards.",
+            "",
+            "## Screening assessment",
+            "",
+            decision,
+            "",
+            "Contract v2 uses a different frame-skip contract and different agent-step "
+            "semantics. The step counts above are not v2-equivalent budgets; use the "
+            "recorded ALE-native frame counts for any historical reference. This is a "
+            "single-seed screen and does not establish statistical superiority.",
+            "",
+        ]
+    )
+
+
+def _run_formal_experiment(
+    *,
+    config_path: Path,
+    run_dir: Path,
+    evaluation_device: str,
+) -> dict[str, Any]:
+    payload, training, contract, contract_path, evaluation_config_path = _validate_plan(
+        config_path
+    )
+    if run_dir.exists():
+        raise FileExistsError(
+            f"{run_dir} already exists; refusing to overwrite or continue a run "
+            "without replay-state resume"
+        )
+    preflight = run_preflight(config_path)
+    run_dir.mkdir(parents=True)
+    manifest_path = run_dir / "run_manifest.json"
+    source = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=REPOSITORY_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    dirty = bool(
+        subprocess.run(
+            ["git", "status", "--porcelain", "--untracked-files=no"],
+            cwd=REPOSITORY_ROOT,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+    )
+    milestone_records: list[dict[str, Any]] = []
+    evaluation_results: list[dict[str, Any]] = []
+    control_threshold = float(payload["control_diagnostics"]["high_score_threshold"])
+    late_episode_fraction = float(
+        payload["control_diagnostics"]["late_episode_fraction"]
+    )
+    eval_config = load_evaluation_config(evaluation_config_path)
+    expected_seeds = expand_concrete_episode_seeds(
+        eval_config.seeds,
+        episodes_per_seed=eval_config.episodes_per_seed,
+    )
+    manifest: dict[str, Any] = {
+        "schema_version": 1,
+        "experiment_id": payload["experiment_id"],
+        "issue": 21,
+        "status": "running",
+        "started_at_utc": _utc_now(),
+        "source_commit": source,
+        "source_working_tree_dirty": dirty,
+        "config_path": _portable_path(config_path),
+        "config_sha256": _sha256(config_path),
+        "contract": {
+            "contract_id": contract.contract_id,
+            "path": _portable_path(contract_path),
+            "sha256": _sha256(contract_path),
+            "frame_skip": contract.frame_skip,
+        },
+        "runtime": preflight["runtime"],
+        "preflight": preflight,
+        "training_config": training.to_dict(),
+        "evaluation_protocol": {
+            "config_path": _portable_path(evaluation_config_path),
+            "contract_path": _portable_path(contract_path),
+            "evaluation_seeds": list(eval_config.seeds),
+            "episodes_per_seed": eval_config.episodes_per_seed,
+            "expanded_episode_seeds": list(expected_seeds),
+            "epsilon": eval_config.epsilon,
+            "device": evaluation_device,
+        },
+        "completion_detector": {
+            "path": "breakout_rl/completion.py",
+            "sha256": _sha256(REPOSITORY_ROOT / "breakout_rl/completion.py"),
+        },
+        "milestone_steps": list(EXPECTED_MILESTONES),
+        "milestones": milestone_records,
+        "training": None,
+        "control_diagnostics": None,
+        "screening_assessment": None,
+    }
+    _write_json(manifest_path, manifest)
+
+    try:
+        training_summary_path = run_dir / "training_summary.json"
+        training_command = [
+            sys.executable,
+            "-m",
+            "scripts.training.train_vectorized_dqn",
+            "--config",
+            _portable_path(config_path),
+            "--run-dir",
+            str(run_dir.parent),
+            "--run-id",
+            run_dir.name,
+            "--output",
+            str(training_summary_path),
+        ]
+        completed = subprocess.run(training_command, cwd=REPOSITORY_ROOT, check=False)
+        if completed.returncode != 0:
+            raise RuntimeError(
+                f"continuous training returned exit code {completed.returncode}"
+            )
+        training_summary = _read_json_object(training_summary_path)
+        _validate_training_result(
+            training_summary,
+            training=training,
+            contract=contract,
+            contract_path=contract_path,
+            run_dir=run_dir,
+        )
+        manifest["training"] = {
+            "status": "completed",
+            "summary_path": "training_summary.json",
+            "summary_sha256": _sha256(training_summary_path),
+            "total_agent_steps": training_summary["total_agent_steps"],
+            "total_emulator_frames": training_summary["total_emulator_frames"],
+            "emulator_frame_count_source": training_summary.get(
+                "emulator_frame_count_source"
+            ),
+            "optimizer_updates": training_summary["optimizer_updates"],
+            "replay_sampling": training_summary["replay_sampling"],
+            "wall_clock_seconds": training_summary["runtime"].get("wall_clock_seconds"),
+        }
+        manifest["status"] = "evaluating_checkpoints"
+        _write_json(manifest_path, manifest)
+
+        evaluation_root = run_dir / "evaluations"
+        for step in EXPECTED_MILESTONES:
+            checkpoint_path = run_dir / "checkpoints" / f"step-{step:08d}.pt"
+            if not checkpoint_path.is_file():
+                raise FileNotFoundError(
+                    f"missing Issue 21 checkpoint: {checkpoint_path}"
+                )
+            checkpoint = _checkpoint_payload(checkpoint_path)
+            if checkpoint.get("global_step") != step:
+                raise ValueError(
+                    f"{checkpoint_path}: wrong checkpoint transition count"
+                )
+            if checkpoint.get("total_emulator_frames") is None:
+                raise ValueError(f"{checkpoint_path}: missing native ALE frame count")
+            checkpoint_contract = checkpoint.get("environment_contract")
+            if not isinstance(checkpoint_contract, Mapping):
+                raise ValueError(f"{checkpoint_path}: missing contract provenance")
+            if checkpoint_contract.get("contract_sha256") != _sha256(contract_path):
+                raise ValueError(f"{checkpoint_path}: contract hash mismatch")
+
+            output_dir = evaluation_root / f"step-{step:08d}"
+            evaluation_id = f"issue21-contract-v3-seed11-step-{step:08d}"
+            evaluation_command = [
+                sys.executable,
+                "-m",
+                "scripts.evaluation.evaluate_dqn",
+                "--policy",
+                "dqn",
+                "--checkpoint",
+                str(checkpoint_path),
+                "--config",
+                _portable_path(evaluation_config_path),
+                "--contract",
+                _portable_path(contract_path),
+                "--device",
+                evaluation_device,
+                "--output-dir",
+                str(output_dir),
+                "--evaluation-id",
+                evaluation_id,
+            ]
+            evaluation_process = subprocess.run(
+                evaluation_command,
+                cwd=REPOSITORY_ROOT,
+                check=False,
+            )
+            if evaluation_process.returncode != 0:
+                raise RuntimeError(
+                    f"evaluation at {step:,} transitions returned exit code "
+                    f"{evaluation_process.returncode}"
+                )
+            results_path = output_dir / "results.json"
+            result = _validate_evaluation_result(
+                results_path,
+                checkpoint=checkpoint,
+                expected_checkpoint_step=step,
+                expected_contract_hash=_sha256(contract_path),
+                expected_seeds=eval_config.seeds,
+                expected_episode_count=len(expected_seeds),
+            )
+            checkpoint_record = {
+                "agent_steps": step,
+                "total_emulator_frames": checkpoint["total_emulator_frames"],
+                "checkpoint_path": checkpoint_path.relative_to(run_dir).as_posix(),
+                "checkpoint_sha256": _sha256(checkpoint_path),
+                "evaluation_id": evaluation_id,
+                "evaluation_results_path": results_path.relative_to(run_dir).as_posix(),
+                "evaluation_results_sha256": _sha256(results_path),
+                "evaluation_total_agent_steps": result["total_agent_steps"],
+                "evaluation_total_emulator_frames": result["total_emulator_frames"],
+                "summary": dict(result["summary"]),
+            }
+            milestone_records.append(checkpoint_record)
+            evaluation_results.append(result)
+            _write_json(manifest_path, manifest)
+
+        metrics_path = run_dir / "metrics.csv"
+        with metrics_path.open("r", newline="", encoding="utf-8") as stream:
+            controls = summarize_training_control_metrics(
+                csv.DictReader(stream),
+                high_score_threshold=control_threshold,
+                late_episode_fraction=late_episode_fraction,
+            )
+        manifest["control_diagnostics"] = controls
+        clear_checkpoints = [
+            item["agent_steps"]
+            for item in milestone_records
+            if int(item["summary"]["clear_count"]) > 0
+        ]
+        manifest["screening_assessment"] = {
+            "promising": bool(clear_checkpoints),
+            "basis": (
+                "at least one canonical Contract v3 evaluation episode recorded a verified clear"
+                if clear_checkpoints
+                else "no verified clear was observed at any checkpoint"
+            ),
+            "clear_checkpoints": clear_checkpoints,
+            "second_training_seed_started": False,
+            "next_algorithm_started": False,
+        }
+        manifest["status"] = "completed"
+        manifest["completed_at_utc"] = _utc_now()
+        report_path = run_dir / "RESULTS.md"
+        report_path.write_text(
+            _build_report(
+                manifest=manifest,
+                evaluation_results=evaluation_results,
+                controls=controls,
+            ),
+            encoding="utf-8",
+        )
+        manifest["report_path"] = "RESULTS.md"
+        manifest["report_sha256"] = _sha256(report_path)
+        _write_json(manifest_path, manifest)
+        return manifest
+    except BaseException as error:
+        manifest["status"] = (
+            "interrupted" if isinstance(error, KeyboardInterrupt) else "failed"
+        )
+        manifest["last_error"] = f"{type(error).__name__}: {error}"
+        manifest["updated_at_utc"] = _utc_now()
+        _write_json(manifest_path, manifest)
+        raise
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description=(
+            "Run the continuous Issue 21 Contract v3 baseline, evaluate its "
+            "400K/1M/2M checkpoints, and write a local provenance report."
+        )
+    )
+    parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
+    parser.add_argument("--run-dir", type=Path, default=DEFAULT_RUN_DIR)
+    parser.add_argument("--evaluation-device", default="cuda")
+    parser.add_argument(
+        "--preflight-only",
+        action="store_true",
+        help="validate the contract and run a short real-ALE optimizer smoke",
+    )
+    return parser
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    args = build_parser().parse_args(argv)
+    config_path = _resolve_path(args.config)
+    run_dir = _resolve_path(args.run_dir)
+    try:
+        if args.preflight_only:
+            print(json.dumps(run_preflight(config_path), indent=2, ensure_ascii=False))
+            return 0
+        manifest = _run_formal_experiment(
+            config_path=config_path,
+            run_dir=run_dir,
+            evaluation_device=args.evaluation_device,
+        )
+    except KeyboardInterrupt:
+        print(
+            "Issue 21 run interrupted; the local manifest preserves its status.",
+            file=sys.stderr,
+        )
+        return 130
+    except (FileNotFoundError, OSError, TypeError, ValueError, RuntimeError) as error:
+        print(f"Issue 21 run failed: {error}", file=sys.stderr)
+        return 2
+    print(json.dumps(manifest, indent=2, ensure_ascii=False))
+    print(f"Issue 21 artifacts written to: {run_dir}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

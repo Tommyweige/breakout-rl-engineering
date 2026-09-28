@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "experiment_id": "issue-21-contract-v3-baseline",
+  "issue": 21,
+  "title": "Contract v3 Dueling Double DQN single-seed baseline",
+  "source_of_truth": "Tommyweige/breakout-rl-engineering#21",
+  "trainer": "vectorized_dqn",
+  "algorithm": "double_dqn",
+  "architecture": "dueling",
+  "contract": "configs/eval/breakout_contract_v3.json",
+  "training_lifecycle": "continuous_single_run",
+  "milestones": [
+    400000,
+    1000000,
+    2000000
+  ],
+  "training_config": {
+    "total_steps": 2000000,
+    "seed": 11,
+    "algorithm": "double_dqn",
+    "architecture": "dueling",
+    "gamma": 0.99,
+    "learning_rate": 0.0001,
+    "batch_size": 32,
+    "replay_capacity": 10000,
+    "learning_starts": 1000,
+    "train_frequency": 4,
+    "target_update_interval": 500,
+    "epsilon_start": 0.9,
+    "epsilon_end": 0.05,
+    "epsilon_decay_steps": 10000,
+    "gradient_clip_norm": 10.0,
+    "reward_clip": true,
+    "life_loss_penalty": 0.0,
+    "device": "cuda",
+    "precision": "float32",
+    "checkpoint_interval": 2000000,
+    "checkpoint_steps": [
+      400000,
+      1000000,
+      2000000
+    ],
+    "diagnostics_interval": 100,
+    "metrics_flush_interval": 500,
+    "cpu_threads": 2,
+    "replay_transfer": "direct",
+    "replay_backend": "gpu",
+    "replay_sampling": "uniform",
+    "profile_stages": true,
+    "num_envs": 2,
+    "strict_action_selection_parity": true
+  },
+  "evaluation": {
+    "config": "configs/eval/breakout_eval.json",
+    "contract": "configs/eval/breakout_contract_v3.json",
+    "device": "cuda",
+    "episodes_per_checkpoint": 15,
+    "epsilon": 0.0
+  },
+  "control_diagnostics": {
+    "high_score_threshold": 500,
+    "late_episode_fraction": 0.75
+  }
+}

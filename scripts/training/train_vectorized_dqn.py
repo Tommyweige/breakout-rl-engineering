@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from datetime import datetime, timezone
 from pathlib import Path
@@ -221,6 +222,21 @@ def _run_path(args: argparse.Namespace, config: DQNConfig) -> Path:
     return root / run_id
 
 
+def _environment_contract_metadata(
+    contract_path: Path,
+    contract: BreakoutEvaluationContractV2,
+) -> dict[str, Any]:
+    """Bind training checkpoints to the exact validated contract file bytes."""
+
+    return {
+        "contract_id": contract.contract_id,
+        "contract_path": contract_path.as_posix(),
+        "contract_sha256": hashlib.sha256(contract_path.read_bytes()).hexdigest(),
+        "hash_semantics": "SHA-256 of the exact contract file bytes",
+        "frame_skip": contract.frame_skip,
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
@@ -242,12 +258,28 @@ def main(argv: list[str] | None = None) -> int:
         **breakout_environment_kwargs(contract, allow_contract_v3=True),
     )
     try:
+        milestones = set(config.checkpoint_steps)
+
+        def report_checkpoint_milestone(snapshot: Any) -> None:
+            if snapshot.global_step in milestones:
+                print(
+                    "Checkpoint milestone saved: "
+                    f"agent_steps={snapshot.global_step:,}, "
+                    f"optimizer_updates={snapshot.optimizer_updates:,}",
+                    flush=True,
+                )
+
         trainer = VectorizedDQNTrainer(
             env,
             config,
             run_dir=run_path,
             resume_from=args.resume,
             allow_replay_rewarm=args.allow_replay_rewarm,
+            environment_contract=_environment_contract_metadata(
+                contract_path,
+                contract,
+            ),
+            on_step=report_checkpoint_milestone,
         )
         summary = trainer.train()
     except (RuntimeError, ValueError) as error:
