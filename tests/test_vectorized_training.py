@@ -6,6 +6,7 @@ import csv
 import tempfile
 import unittest
 import warnings
+from dataclasses import replace
 from pathlib import Path
 
 import numpy as np
@@ -398,15 +399,17 @@ class VectorizedTrainingTests(unittest.TestCase):
         )
 
         with tempfile.TemporaryDirectory() as directory:
+            run_dir = Path(directory) / "vectorized"
             trainer = VectorizedDQNTrainer(
                 env,
                 config,
-                run_dir=Path(directory) / "vectorized",
+                run_dir=run_dir,
                 online_network=network,
             )
             summary = trainer.train()
+            checkpoint_path = trainer.save_checkpoint()
             checkpoint_payload = torch.load(
-                trainer.save_checkpoint(),
+                checkpoint_path,
                 map_location="cpu",
                 weights_only=False,
             )
@@ -417,11 +420,29 @@ class VectorizedTrainingTests(unittest.TestCase):
             ) as stream:
                 rows = list(csv.DictReader(stream))
 
+            resumed_trainer = VectorizedDQNTrainer(
+                DeterministicVectorEnv(),
+                replace(config, total_steps=24),
+                run_dir=run_dir,
+                online_network=CountingQNetwork(),
+                resume_from=checkpoint_path,
+                allow_replay_rewarm=True,
+            )
+            resumed_summary = resumed_trainer.train()
+            resumed_checkpoint = torch.load(
+                resumed_summary["last_checkpoint"],
+                map_location="cpu",
+                weights_only=False,
+            )
+
         self.assertEqual(summary["total_transitions"], 12)
         self.assertEqual(summary["total_agent_steps"], 12)
         self.assertEqual(summary["total_emulator_frames"], 12)
         self.assertEqual(checkpoint_payload["total_agent_steps"], 12)
         self.assertEqual(checkpoint_payload["total_emulator_frames"], 12)
+        self.assertEqual(resumed_summary["total_agent_steps"], 24)
+        self.assertEqual(resumed_summary["total_emulator_frames"], 24)
+        self.assertEqual(resumed_checkpoint["total_emulator_frames"], 24)
         self.assertEqual(
             summary["emulator_frame_count_source"],
             "ALEInterface.getEpisodeFrameNumber",

@@ -420,6 +420,26 @@ class ALETransitionFrameCounter:
             None for _ in self.environments
         ]
 
+    def restore_total_emulator_frames(self, value: Any | None) -> None:
+        """Restore a saved native total, or mark it unknown for legacy checkpoints."""
+
+        if value is None:
+            self.total_emulator_frames = None
+            return
+        if isinstance(value, bool):
+            raise TypeError(
+                "total_emulator_frames must be a non-negative integer or None"
+            )
+        try:
+            parsed_value = operator.index(value)
+        except TypeError as error:
+            raise TypeError(
+                "total_emulator_frames must be a non-negative integer or None"
+            ) from error
+        if parsed_value < 0:
+            raise ValueError("total_emulator_frames must not be negative")
+        self.total_emulator_frames = int(parsed_value)
+
     def reset(self, indices: Sequence[int] | None = None) -> None:
         if not self.environments:
             self.total_emulator_frames = None

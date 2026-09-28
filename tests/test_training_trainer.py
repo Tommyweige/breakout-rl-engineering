@@ -646,6 +646,7 @@ class DQNTrainerTests(unittest.TestCase):
                 map_location="cpu",
                 weights_only=False,
             )
+            self.assertEqual(checkpoint_payload["total_emulator_frames"], 32)
             checkpoint_payload["replay_saved"] = True
             torch.save(checkpoint_payload, advertised_replay_checkpoint)
             with self.assertRaisesRegex(ValueError, "does not restore replay"):
@@ -677,11 +678,19 @@ class DQNTrainerTests(unittest.TestCase):
             resumed_summary = resumed_trainer.train()
 
             self.assertEqual(resumed_summary["total_steps"], 16)
+            self.assertEqual(resumed_summary["total_agent_steps"], 16)
+            self.assertEqual(resumed_summary["total_emulator_frames"], 64)
             self.assertGreater(
                 resumed_summary["optimizer_updates"],
                 first_summary["optimizer_updates"],
             )
             self.assertEqual(resumed_summary["replay_size"], 8)
+            resumed_checkpoint = torch.load(
+                resumed_summary["last_checkpoint"],
+                map_location="cpu",
+                weights_only=False,
+            )
+            self.assertEqual(resumed_checkpoint["total_emulator_frames"], 64)
 
             with (run_dir / "metrics.csv").open(
                 "r",

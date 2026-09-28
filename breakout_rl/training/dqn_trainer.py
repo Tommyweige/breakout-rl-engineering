@@ -1450,6 +1450,9 @@ class DQNTrainer:
         self.target_network.load_state_dict(payload["target_network"])
         self.optimizer.load_state_dict(payload["optimizer"])
         self.global_step = int(payload["global_step"])
+        self._ale_frame_counter.restore_total_emulator_frames(
+            payload.get("total_emulator_frames")
+        )
         self.optimizer_updates = int(payload["optimizer_updates"])
         self.episode = int(payload["episode"])
         self.target_sync_count = int(payload["target_sync_count"])

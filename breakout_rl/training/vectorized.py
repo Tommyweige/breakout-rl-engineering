@@ -1624,6 +1624,9 @@ class VectorizedDQNTrainer:
         self.target_network.load_state_dict(payload["target_network"])
         self.optimizer.load_state_dict(payload["optimizer"])
         self.global_step = int(payload["global_step"])
+        self._ale_frame_counter.restore_total_emulator_frames(
+            payload.get("total_emulator_frames")
+        )
         self.vector_iterations = int(payload.get("vector_iterations", 0))
         self.physical_environment_steps = int(
             payload.get("physical_environment_steps", self.global_step)

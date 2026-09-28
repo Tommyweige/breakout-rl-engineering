@@ -112,6 +112,31 @@ class ALETransitionFrameCounterTests(unittest.TestCase):
         counter.record_transitions()
         self.assertEqual(counter.total_emulator_frames, 8)
 
+    def test_restores_saved_total_and_marks_missing_legacy_total_unknown(self) -> None:
+        environment = _NativeFrameEnv(100)
+        counter = ALETransitionFrameCounter([environment])
+        counter.restore_total_emulator_frames(12)
+        counter.reset()
+
+        environment.frame += 3
+        counter.record_transitions()
+        self.assertEqual(counter.total_emulator_frames, 15)
+
+        counter.restore_total_emulator_frames(None)
+        environment.frame += 2
+        counter.record_transitions()
+        self.assertIsNone(counter.total_emulator_frames)
+
+    def test_restore_rejects_invalid_native_total(self) -> None:
+        counter = ALETransitionFrameCounter([_NativeFrameEnv(0)])
+
+        with self.assertRaises(TypeError):
+            counter.restore_total_emulator_frames(True)
+        with self.assertRaises(TypeError):
+            counter.restore_total_emulator_frames(1.5)
+        with self.assertRaises(ValueError):
+            counter.restore_total_emulator_frames(-1)
+
     def test_missing_native_counter_fails_closed(self) -> None:
         counter = ALETransitionFrameCounter([object()])
         counter.reset()
