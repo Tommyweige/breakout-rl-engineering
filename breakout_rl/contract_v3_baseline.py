@@ -9,7 +9,7 @@ import platform
 import subprocess
 import sys
 import tempfile
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -21,7 +21,6 @@ import torch
 
 from breakout_rl.artifacts import sha256_file
 from breakout_env import make_breakout_env
-from breakout_rl.analysis.control import summarize_training_control_metrics
 from breakout_rl.completion import (
     BREAKOUT_COMPLETION_DETECTOR_ID,
     read_ale_episode_frame,
@@ -249,28 +248,95 @@ def _smoke_environment(
         env.close()
 
 
+def _validate_evaluation_summary(
+    summary: Mapping[str, Any],
+    *,
+    source: str | Path,
+    expected_episode_count: int,
+) -> None:
+    if summary.get("clear_detection_available") is not True:
+        raise ValueError(f"{source}: clear detection is unavailable")
+    if summary.get("total_episodes") != expected_episode_count:
+        raise ValueError(f"{source}: summary episode count is inconsistent")
+    clear_count = summary.get("clear_count")
+    clear_rate = summary.get("clear_rate")
+    if (
+        not isinstance(clear_count, int)
+        or isinstance(clear_count, bool)
+        or not 0 <= clear_count <= expected_episode_count
+    ):
+        raise ValueError(f"{source}: clear_count is invalid")
+    if (
+        isinstance(clear_rate, bool)
+        or not isinstance(clear_rate, (int, float))
+        or not math.isfinite(float(clear_rate))
+        or not 0.0 <= float(clear_rate) <= 1.0
+    ):
+        raise ValueError(f"{source}: clear_rate must be a finite probability")
+    if not math.isclose(
+        float(clear_rate),
+        clear_count / expected_episode_count,
+        abs_tol=1e-12,
+    ):
+        raise ValueError(f"{source}: clear_rate does not match clear_count")
+
+    for field in ("mean_return", "median_return", "max_return"):
+        value = summary.get(field)
+        if (
+            isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not math.isfinite(float(value))
+        ):
+            raise ValueError(f"{source}: raw score field {field} is missing or invalid")
+
+    timing_fields = (
+        "best_clear_steps",
+        "median_clear_steps",
+        "best_clear_emulator_frame",
+        "median_clear_emulator_frame",
+    )
+    step_samples = summary.get("clear_time_sample_count")
+    frame_samples = summary.get("clear_emulator_frame_sample_count")
+    if clear_count == 0:
+        if step_samples != 0 or frame_samples != 0:
+            raise ValueError(f"{source}: zero-clear result has clear-time samples")
+        if any(summary.get(field) is not None for field in timing_fields):
+            raise ValueError(f"{source}: zero-clear result has clear-time values")
+    else:
+        if not isinstance(step_samples, int) or step_samples <= 0:
+            raise ValueError(f"{source}: clear-time agent-step metrics are missing")
+        if not isinstance(frame_samples, int) or frame_samples <= 0:
+            raise ValueError(f"{source}: clear-time emulator-frame metrics are missing")
+        if any(summary.get(field) is None for field in timing_fields):
+            raise ValueError(f"{source}: clear-time metrics are incomplete")
+
+    for field in (
+        "mean_life_loss_count",
+        "mean_score_per_life",
+        "mean_frames_between_life_losses",
+        "mean_time_to_first_life_loss",
+        "life_losses_per_1000_steps",
+    ):
+        if field not in summary:
+            raise ValueError(f"{source}: survival metric {field} is missing")
+
+
 def _evaluation_smoke(
     contract: BreakoutEvaluationContractV2,
     *,
     contract_path: Path,
-    evaluation_config_path: Path,
 ) -> dict[str, Any]:
     """Run the complete canonical seed set through the Contract v3 evaluator."""
 
-    evaluation_config = load_evaluation_config(evaluation_config_path)
-    evaluation_seeds = expand_concrete_episode_seeds(
-        evaluation_config.seeds,
-        episodes_per_seed=evaluation_config.episodes_per_seed,
-    )
     env_factory = lambda: make_breakout_env(
         **breakout_environment_kwargs(contract, allow_contract_v3=True)
     )
     result = evaluate_policy(
         None,
         episodes=1,
-        seeds=evaluation_seeds,
+        seeds=contract.concrete_episode_seeds,
         device="cpu",
-        epsilon=evaluation_config.epsilon,
+        epsilon=contract.evaluation_epsilon,
         env_factory=env_factory,
         max_steps_per_episode=contract.time_limit_semantics["agent_step_limit"],
         model_id="issue21-contract-v3-evaluation-smoke",
@@ -281,12 +347,11 @@ def _evaluation_smoke(
         },
     ).to_dict()
     summary = result["summary"]
-    if summary.get("clear_detection_available") is not True:
-        raise ValueError(
-            "Contract v3 evaluation smoke could not determine clear status"
-        )
-    if summary.get("clear_count") == 0 and summary.get("clear_rate") != 0:
-        raise ValueError("zero-clear Contract v3 smoke must report clear_rate=0")
+    _validate_evaluation_summary(
+        summary,
+        source="Contract v3 evaluation smoke",
+        expected_episode_count=len(contract.concrete_episode_seeds),
+    )
     if result.get("total_emulator_frames") is None:
         raise ValueError("Contract v3 evaluation smoke omitted native ALE frame counts")
     provenance = result.get("contract_provenance")
@@ -303,13 +368,27 @@ def _evaluation_smoke(
         raise ValueError("Contract v3 evaluation smoke used an unexpected detector")
     return {
         "status": "passed",
-        "evaluation_seeds": list(evaluation_seeds),
+        "evaluation_seeds": list(contract.concrete_episode_seeds),
         "episodes_per_seed": 1,
         "total_episodes": result["total_episodes"],
         "total_agent_steps": result["total_agent_steps"],
         "total_emulator_frames": result["total_emulator_frames"],
         "clear_count": summary["clear_count"],
         "clear_rate": summary["clear_rate"],
+        "mean_return": summary["mean_return"],
+        "median_return": summary["median_return"],
+        "max_return": summary["max_return"],
+        "clear_time_sample_count": summary["clear_time_sample_count"],
+        "survival_metrics": {
+            field: summary[field]
+            for field in (
+                "mean_life_loss_count",
+                "mean_score_per_life",
+                "mean_frames_between_life_losses",
+                "mean_time_to_first_life_loss",
+                "life_losses_per_1000_steps",
+            )
+        },
         "clear_detection_available": summary["clear_detection_available"],
         "contract_validation_status": provenance["validation_status"],
         "completion_detector_id": detector["detector_id"],
@@ -442,7 +521,6 @@ def run_preflight(config_path: Path) -> dict[str, Any]:
     evaluation = _evaluation_smoke(
         contract,
         contract_path=contract_path,
-        evaluation_config_path=evaluation_config_path,
     )
     smoke = _training_smoke(
         payload,
@@ -564,69 +642,11 @@ def _validate_evaluation_result(
     summary = result.get("summary")
     if not isinstance(summary, Mapping):
         raise ValueError(f"{path}: evaluation summary is missing")
-    if summary.get("clear_detection_available") is not True:
-        raise ValueError(
-            f"{path}: clear detection is unavailable for one or more episodes"
-        )
-    clear_count = summary.get("clear_count")
-    clear_rate = summary.get("clear_rate")
-    if (
-        not isinstance(clear_count, int)
-        or isinstance(clear_count, bool)
-        or clear_count < 0
-    ):
-        raise ValueError(f"{path}: clear_count must be a non-negative integer")
-    if clear_count > expected_episode_count:
-        raise ValueError(f"{path}: clear_count exceeds the evaluated episode count")
-    if (
-        isinstance(clear_rate, bool)
-        or not isinstance(clear_rate, (int, float))
-        or not math.isfinite(float(clear_rate))
-        or not 0.0 <= float(clear_rate) <= 1.0
-    ):
-        raise ValueError(f"{path}: clear_rate must be a finite probability")
-    if summary.get("total_episodes") != expected_episode_count:
-        raise ValueError(f"{path}: summary episode count is inconsistent")
-    expected_clear_rate = clear_count / expected_episode_count
-    if not math.isclose(float(clear_rate), expected_clear_rate, abs_tol=1e-12):
-        raise ValueError(f"{path}: clear_rate does not match clear_count")
-    for field in ("mean_return", "median_return", "max_return"):
-        value = summary.get(field)
-        if (
-            isinstance(value, bool)
-            or not isinstance(value, (int, float))
-            or not math.isfinite(float(value))
-        ):
-            raise ValueError(f"{path}: raw score field {field} is missing or invalid")
-    timing_fields = (
-        "best_clear_steps",
-        "median_clear_steps",
-        "best_clear_emulator_frame",
-        "median_clear_emulator_frame",
+    _validate_evaluation_summary(
+        summary,
+        source=path,
+        expected_episode_count=expected_episode_count,
     )
-    if clear_count == 0:
-        if summary.get("clear_time_sample_count") != 0:
-            raise ValueError(f"{path}: zero-clear result has clear-time samples")
-        if summary.get("clear_emulator_frame_sample_count") != 0:
-            raise ValueError(f"{path}: zero-clear result has clear-frame samples")
-        if any(summary.get(field) is not None for field in timing_fields):
-            raise ValueError(f"{path}: zero-clear result has clear-time values")
-    else:
-        if int(summary.get("clear_time_sample_count", 0)) <= 0:
-            raise ValueError(f"{path}: clear-time agent-step metrics are missing")
-        if int(summary.get("clear_emulator_frame_sample_count", 0)) <= 0:
-            raise ValueError(f"{path}: clear-time emulator-frame metrics are missing")
-        if any(summary.get(field) is None for field in timing_fields):
-            raise ValueError(f"{path}: clear-time metrics are incomplete")
-    for field in (
-        "mean_life_loss_count",
-        "mean_score_per_life",
-        "mean_frames_between_life_losses",
-        "mean_time_to_first_life_loss",
-        "life_losses_per_1000_steps",
-    ):
-        if field not in summary:
-            raise ValueError(f"{path}: survival metric {field} is missing")
     checkpoint_result = result.get("checkpoint")
     if not isinstance(checkpoint_result, Mapping):
         raise ValueError(f"{path}: checkpoint identity is missing")
@@ -668,7 +688,7 @@ def _build_report(
         checkpoint_rows.append(
             "| {steps} | {frames} | {mean} / {median} / {maximum} | {clears} / "
             "{rate} | {best_step} / {median_step} | {best_frame} / {median_frame} | "
-            "{survival} |".format(
+            "{clear_samples} | {survival} |".format(
                 steps=f"{checkpoint_step:,}",
                 frames=_markdown_number(item["total_emulator_frames"], 0),
                 mean=_markdown_number(summary.get("mean_return")),
@@ -683,6 +703,10 @@ def _build_report(
                 ),
                 median_frame=_markdown_number(
                     summary.get("median_clear_emulator_frame"),
+                    0,
+                ),
+                clear_samples=_markdown_number(
+                    summary.get("clear_time_sample_count"),
                     0,
                 ),
                 survival=(
@@ -753,8 +777,8 @@ def _build_report(
             "Each checkpoint used the same 15 evaluation episodes and raw rewards. "
             "Mean, median, and max are raw Breakout scores.",
             "",
-            "| Agent steps | Training ALE frames | Mean / median / max raw score | Clears / episodes; clear rate | Best / median clear agent step | Best / median clear ALE frame | Survival metrics |",
-            "| ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+            "| Agent steps | Training ALE frames | Mean / median / max raw score | Clears / episodes; clear rate | Best / median clear agent step | Best / median clear ALE frame | Clear-time samples | Survival metrics |",
+            "| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
             *checkpoint_rows,
             "",
             "Clear-time fields are `n/a` when no clears were observed; zero clears are "
@@ -787,7 +811,10 @@ def run_formal_experiment(
     config_path: Path,
     run_dir: Path,
     evaluation_device: str,
+    control_summarizer: Callable[..., Mapping[str, Any]],
 ) -> dict[str, Any]:
+    if not callable(control_summarizer):
+        raise TypeError("control_summarizer must be callable")
     evaluation_device = _validated_evaluation_device(evaluation_device)
     payload, training, contract, contract_path, evaluation_config_path = _validate_plan(
         config_path
@@ -809,7 +836,7 @@ def run_formal_experiment(
     ).stdout.strip()
     dirty = bool(
         subprocess.run(
-            ["git", "status", "--porcelain", "--untracked-files=no"],
+            ["git", "status", "--porcelain", "--untracked-files=normal"],
             cwd=REPOSITORY_ROOT,
             check=True,
             capture_output=True,
@@ -823,10 +850,7 @@ def run_formal_experiment(
         payload["control_diagnostics"]["late_episode_fraction"]
     )
     eval_config = load_evaluation_config(evaluation_config_path)
-    expected_seeds = expand_concrete_episode_seeds(
-        eval_config.seeds,
-        episodes_per_seed=eval_config.episodes_per_seed,
-    )
+    expected_seeds = contract.concrete_episode_seeds
     manifest: dict[str, Any] = {
         "schema_version": 1,
         "experiment_id": payload["experiment_id"],
@@ -996,7 +1020,7 @@ def run_formal_experiment(
 
         metrics_path = run_dir / "metrics.csv"
         with metrics_path.open("r", newline="", encoding="utf-8") as stream:
-            controls = summarize_training_control_metrics(
+            controls = control_summarizer(
                 csv.DictReader(stream),
                 high_score_threshold=control_threshold,
                 late_episode_fraction=late_episode_fraction,

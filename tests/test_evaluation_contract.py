@@ -36,7 +36,9 @@ from scripts.evaluation.evaluate_dqn import (
 
 
 class Day15ContractTests(unittest.TestCase):
-    def test_v3_contract_selects_single_frame_decisions_without_changing_v2(self) -> None:
+    def test_v3_contract_selects_single_frame_decisions_without_changing_v2(
+        self,
+    ) -> None:
         v2_path = Path("configs/eval/breakout_contract_v2.json")
         v2 = load_evaluation_contract(v2_path)
         v3 = load_evaluation_contract("configs/eval/breakout_contract_v3.json")
@@ -199,7 +201,9 @@ class Day15ContractTests(unittest.TestCase):
             Path("configs/eval/breakout_contract_v2.json")
         )
 
-        self.assertEqual(contract.contract_id, "day15-breakout-evaluation-v2-fire-reset")
+        self.assertEqual(
+            contract.contract_id, "day15-breakout-evaluation-v2-fire-reset"
+        )
         self.assertTrue(contract.fire_reset)
         self.assertEqual(
             contract.fire_reset_confirmation.confirmation_operator,
@@ -311,7 +315,9 @@ class Day15ContractTests(unittest.TestCase):
 
         _validate_contract_for_config(contract, evaluation_config)
 
-    def test_contract_v3_dqn_evaluation_uses_checkpoint_contract_provenance(self) -> None:
+    def test_contract_v3_dqn_evaluation_uses_checkpoint_contract_provenance(
+        self,
+    ) -> None:
         loaded = SimpleNamespace(
             model=object(),
             model_id="v3-checkpoint",
@@ -348,7 +354,9 @@ class Day15ContractTests(unittest.TestCase):
             ) as load_checkpoint,
             patch(
                 "scripts.evaluation.evaluate_dqn.load_day14_provenance",
-                side_effect=AssertionError("v3 evaluation must not use Day 14 v2 evidence"),
+                side_effect=AssertionError(
+                    "v3 evaluation must not use Day 14 v2 evidence"
+                ),
             ),
             patch(
                 "scripts.evaluation.evaluate_dqn.evaluate_policy",
@@ -386,7 +394,9 @@ class Day15ContractTests(unittest.TestCase):
             contract.concrete_episode_seeds,
         )
         self.assertEqual(evaluate.call_args.kwargs["episodes"], 1)
-        self.assertEqual(write_artifacts.call_args.args[1], CONTRACT_V3_OUTPUT_DIRS["dqn"])
+        self.assertEqual(
+            write_artifacts.call_args.args[1], CONTRACT_V3_OUTPUT_DIRS["dqn"]
+        )
 
     def test_runtime_validator_rejects_noncanonical_stack_or_fire_reset(self) -> None:
         contract = load_evaluation_contract(

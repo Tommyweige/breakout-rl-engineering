@@ -14,6 +14,7 @@ from breakout_rl.contract_v3_baseline import (
     run_formal_experiment,
     run_preflight,
 )
+from scripts.analysis.control_diagnostics import summarize_training_control_metrics
 
 
 DEFAULT_CONFIG = Path("configs/training/issue21_contract_v3_baseline.json")
@@ -54,6 +55,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 config_path=config_path,
                 run_dir=run_dir,
                 evaluation_device=args.evaluation_device,
+                control_summarizer=summarize_training_control_metrics,
             )
     except KeyboardInterrupt:
         print(

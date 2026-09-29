@@ -4,9 +4,9 @@ import json
 import unittest
 from pathlib import Path
 
-from breakout_rl.analysis.control import summarize_training_control_metrics
 from breakout_rl.evaluation_contract import load_evaluation_contract
 from breakout_rl.training.config import DQNConfig
+from scripts.analysis.control_diagnostics import summarize_training_control_metrics
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
