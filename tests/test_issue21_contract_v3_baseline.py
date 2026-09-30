@@ -4,6 +4,7 @@ import json
 import unittest
 from pathlib import Path
 
+from breakout_rl.contract_v3_baseline import _build_screening_assessment
 from breakout_rl.evaluation_contract import load_evaluation_contract
 from breakout_rl.training.config import DQNConfig
 from scripts.analysis.control_diagnostics import summarize_training_control_metrics
@@ -13,6 +14,42 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 
 
 class Issue21ContractV3BaselineTests(unittest.TestCase):
+    def test_no_clear_without_a_matched_control_is_inconclusive(self) -> None:
+        assessment = _build_screening_assessment(
+            [
+                {"agent_steps": 400_000, "summary": {"clear_count": 0}},
+                {"agent_steps": 1_000_000, "summary": {"clear_count": 0}},
+                {"agent_steps": 2_000_000, "summary": {"clear_count": 0}},
+            ]
+        )
+
+        self.assertEqual(assessment["status"], "inconclusive")
+        self.assertIsNone(assessment["promising"])
+        self.assertEqual(assessment["decision"], "hold_for_more_evidence")
+        self.assertEqual(
+            assessment["criteria"]["first_verified_clear"]["status"], "not_met"
+        )
+        self.assertEqual(
+            assessment["criteria"]["materially_higher_max_score"]["status"],
+            "not_assessed",
+        )
+        self.assertFalse(assessment["second_training_seed_started"])
+        self.assertFalse(assessment["next_algorithm_started"])
+
+    def test_any_verified_clear_makes_the_screen_promising(self) -> None:
+        assessment = _build_screening_assessment(
+            [
+                {"agent_steps": 400_000, "summary": {"clear_count": 0}},
+                {"agent_steps": 1_000_000, "summary": {"clear_count": 1}},
+                {"agent_steps": 2_000_000, "summary": {"clear_count": 0}},
+            ]
+        )
+
+        self.assertEqual(assessment["status"], "promising")
+        self.assertTrue(assessment["promising"])
+        self.assertEqual(assessment["decision"], "promote_for_follow_up")
+        self.assertEqual(assessment["clear_checkpoints"], [1_000_000])
+
     def test_screening_config_declares_the_requested_continuous_baseline(self) -> None:
         config_path = (
             REPOSITORY_ROOT

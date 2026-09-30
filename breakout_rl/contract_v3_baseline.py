@@ -671,6 +671,73 @@ def _markdown_number(value: Any, digits: int = 2) -> str:
     return f"{number:,.{digits}f}"
 
 
+def _build_screening_assessment(
+    milestone_records: Sequence[Mapping[str, Any]],
+) -> dict[str, Any]:
+    clear_checkpoints = [
+        int(item["agent_steps"])
+        for item in milestone_records
+        if int(item["summary"]["clear_count"]) > 0
+    ]
+    comparative_criteria = {
+        "higher_clear_count_or_rate": {
+            "status": "not_assessed",
+            "reason": "no matched Contract v3 control is included",
+        },
+        "materially_higher_max_score": {
+            "status": "not_assessed",
+            "reason": "no matched Contract v3 control is included",
+        },
+        "materially_better_late_game_survival": {
+            "status": "not_assessed",
+            "reason": "no matched Contract v3 control is included",
+        },
+        "visibly_improved_high_speed_paddle_control": {
+            "status": "not_assessed",
+            "reason": "no matched Contract v3 control is included",
+        },
+        "better_performance_at_matched_emulator_frame_budget": {
+            "status": "not_assessed",
+            "reason": "no matched Contract v3 control is included",
+        },
+    }
+    first_clear = {
+        "status": "met" if clear_checkpoints else "not_met",
+        "clear_checkpoints": clear_checkpoints,
+    }
+    criteria = {
+        "first_verified_clear": first_clear,
+        **comparative_criteria,
+    }
+    if clear_checkpoints:
+        return {
+            "status": "promising",
+            "promising": True,
+            "decision": "promote_for_follow_up",
+            "basis": (
+                "at least one canonical Contract v3 evaluation episode recorded a verified clear"
+            ),
+            "criteria": criteria,
+            "clear_checkpoints": clear_checkpoints,
+            "second_training_seed_started": False,
+            "next_algorithm_started": False,
+        }
+    return {
+        "status": "inconclusive",
+        "promising": None,
+        "decision": "hold_for_more_evidence",
+        "basis": (
+            "no verified clear was recorded; relative score, clear-rate, survival, "
+            "control, and matched-frame criteria could not be assessed without a "
+            "matched Contract v3 control"
+        ),
+        "criteria": criteria,
+        "clear_checkpoints": [],
+        "second_training_seed_started": False,
+        "next_algorithm_started": False,
+    }
+
+
 def _build_report(
     *,
     manifest: Mapping[str, Any],
@@ -719,17 +786,19 @@ def _build_report(
             )
         )
 
-    if observed_clears:
+    assessment = manifest["screening_assessment"]
+    if assessment["status"] == "promising":
         decision = (
             "Promising for follow-up: canonical Contract v3 evaluation recorded a "
             f"verified clear at {observed_clears[0][0]:,} agent steps."
         )
     else:
         decision = (
-            "Promising enough to advance: no. This screen recorded no verified clear "
-            "and includes no matched Contract v3 control for the relative score, "
-            "survival, or control criteria. Keep the result descriptive and make any "
-            "follow-up decision explicitly; this run does not automatically launch "
+            "Screening assessment: inconclusive; do not promote yet. No verified clear "
+            "was recorded, and the relative score, clear-rate, survival, control, and "
+            "matched-frame criteria are unassessed because this screen has no matched "
+            "Contract v3 control. This is a lack of comparative evidence, not evidence "
+            "that the baseline performed worse. The run does not automatically launch "
             "another seed or the n-step experiment."
         )
 
@@ -1026,25 +1095,9 @@ def run_formal_experiment(
                 late_episode_fraction=late_episode_fraction,
             )
         manifest["control_diagnostics"] = controls
-        clear_checkpoints = [
-            item["agent_steps"]
-            for item in milestone_records
-            if int(item["summary"]["clear_count"]) > 0
-        ]
-        manifest["screening_assessment"] = {
-            "promising": bool(clear_checkpoints),
-            "basis": (
-                "at least one canonical Contract v3 evaluation episode recorded a verified clear"
-                if clear_checkpoints
-                else (
-                    "no verified clear or matched Contract v3 control was available "
-                    "to support a promotion claim"
-                )
-            ),
-            "clear_checkpoints": clear_checkpoints,
-            "second_training_seed_started": False,
-            "next_algorithm_started": False,
-        }
+        manifest["screening_assessment"] = _build_screening_assessment(
+            milestone_records
+        )
         manifest["status"] = "completed"
         manifest["completed_at_utc"] = _utc_now()
         report_path = run_dir / "RESULTS.md"
