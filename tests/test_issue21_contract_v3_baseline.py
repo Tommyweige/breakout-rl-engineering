@@ -13,13 +13,44 @@ from scripts.analysis.control_diagnostics import summarize_training_control_metr
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 
 
+def _milestone_record(
+    agent_steps: int,
+    *,
+    mean_score: float,
+    median_score: float,
+    max_score: float,
+    clear_count: int = 0,
+) -> dict[str, object]:
+    return {
+        "agent_steps": agent_steps,
+        "summary": {
+            "mean_return": mean_score,
+            "median_return": median_score,
+            "max_return": max_score,
+            "clear_count": clear_count,
+            "clear_rate": clear_count / 15,
+            "mean_life_loss_count": 4.0,
+            "life_losses_per_1000_steps": 0.1,
+            "mean_score_per_life": 0.5,
+            "mean_frames_between_life_losses": 150.0,
+            "mean_time_to_first_life_loss": 200.0,
+        },
+    }
+
+
 class Issue21ContractV3BaselineTests(unittest.TestCase):
-    def test_no_clear_without_a_matched_control_is_inconclusive(self) -> None:
+    def test_no_clear_without_score_progression_is_inconclusive(self) -> None:
         assessment = _build_screening_assessment(
             [
-                {"agent_steps": 400_000, "summary": {"clear_count": 0}},
-                {"agent_steps": 1_000_000, "summary": {"clear_count": 0}},
-                {"agent_steps": 2_000_000, "summary": {"clear_count": 0}},
+                _milestone_record(
+                    400_000, mean_score=2.0, median_score=2.0, max_score=4.0
+                ),
+                _milestone_record(
+                    1_000_000, mean_score=2.0, median_score=2.0, max_score=4.0
+                ),
+                _milestone_record(
+                    2_000_000, mean_score=1.5, median_score=1.0, max_score=3.0
+                ),
             ]
         )
 
@@ -30,8 +61,8 @@ class Issue21ContractV3BaselineTests(unittest.TestCase):
             assessment["criteria"]["first_verified_clear"]["status"], "not_met"
         )
         self.assertEqual(
-            assessment["criteria"]["materially_higher_max_score"]["status"],
-            "not_assessed",
+            assessment["criteria"]["consistent_raw_score_progression"]["status"],
+            "not_observed",
         )
         self.assertFalse(assessment["second_training_seed_started"])
         self.assertFalse(assessment["next_algorithm_started"])
@@ -39,9 +70,19 @@ class Issue21ContractV3BaselineTests(unittest.TestCase):
     def test_any_verified_clear_makes_the_screen_promising(self) -> None:
         assessment = _build_screening_assessment(
             [
-                {"agent_steps": 400_000, "summary": {"clear_count": 0}},
-                {"agent_steps": 1_000_000, "summary": {"clear_count": 1}},
-                {"agent_steps": 2_000_000, "summary": {"clear_count": 0}},
+                _milestone_record(
+                    400_000, mean_score=2.0, median_score=2.0, max_score=4.0
+                ),
+                _milestone_record(
+                    1_000_000,
+                    mean_score=3.0,
+                    median_score=3.0,
+                    max_score=5.0,
+                    clear_count=1,
+                ),
+                _milestone_record(
+                    2_000_000, mean_score=2.0, median_score=2.0, max_score=4.0
+                ),
             ]
         )
 
@@ -49,6 +90,34 @@ class Issue21ContractV3BaselineTests(unittest.TestCase):
         self.assertTrue(assessment["promising"])
         self.assertEqual(assessment["decision"], "promote_for_follow_up")
         self.assertEqual(assessment["clear_checkpoints"], [1_000_000])
+
+    def test_consistent_raw_score_progression_makes_the_screen_promising(self) -> None:
+        assessment = _build_screening_assessment(
+            [
+                _milestone_record(
+                    400_000, mean_score=2.13, median_score=2.0, max_score=4.0
+                ),
+                _milestone_record(
+                    1_000_000, mean_score=4.6, median_score=5.0, max_score=7.0
+                ),
+                _milestone_record(
+                    2_000_000, mean_score=6.93, median_score=7.0, max_score=12.0
+                ),
+            ]
+        )
+
+        self.assertEqual(assessment["status"], "promising")
+        self.assertTrue(assessment["promising"])
+        self.assertEqual(assessment["decision"], "promote_for_follow_up")
+        self.assertEqual(assessment["clear_checkpoints"], [])
+        self.assertEqual(
+            assessment["criteria"]["consistent_raw_score_progression"]["status"],
+            "observed",
+        )
+        self.assertEqual(
+            assessment["criteria"]["materially_higher_max_score"]["increase_points"],
+            8.0,
+        )
 
     def test_screening_config_declares_the_requested_continuous_baseline(self) -> None:
         config_path = (
