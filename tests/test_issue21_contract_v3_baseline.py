@@ -4,7 +4,7 @@ import json
 import unittest
 from pathlib import Path
 
-from breakout_rl.contract_v3_baseline import _build_screening_assessment
+from breakout_rl.contract_v3_screening import build_screening_assessment
 from breakout_rl.evaluation_contract import load_evaluation_contract
 from breakout_rl.training.config import DQNConfig
 from scripts.analysis.control_diagnostics import summarize_training_control_metrics
@@ -40,7 +40,7 @@ def _milestone_record(
 
 class Issue21ContractV3BaselineTests(unittest.TestCase):
     def test_no_clear_without_score_progression_is_inconclusive(self) -> None:
-        assessment = _build_screening_assessment(
+        assessment = build_screening_assessment(
             [
                 _milestone_record(
                     400_000, mean_score=2.0, median_score=2.0, max_score=4.0
@@ -68,7 +68,7 @@ class Issue21ContractV3BaselineTests(unittest.TestCase):
         self.assertFalse(assessment["next_algorithm_started"])
 
     def test_any_verified_clear_makes_the_screen_promising(self) -> None:
-        assessment = _build_screening_assessment(
+        assessment = build_screening_assessment(
             [
                 _milestone_record(
                     400_000, mean_score=2.0, median_score=2.0, max_score=4.0
@@ -92,7 +92,7 @@ class Issue21ContractV3BaselineTests(unittest.TestCase):
         self.assertEqual(assessment["clear_checkpoints"], [1_000_000])
 
     def test_consistent_raw_score_progression_makes_the_screen_promising(self) -> None:
-        assessment = _build_screening_assessment(
+        assessment = build_screening_assessment(
             [
                 _milestone_record(
                     400_000, mean_score=2.13, median_score=2.0, max_score=4.0
