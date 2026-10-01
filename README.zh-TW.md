@@ -151,9 +151,13 @@ python -m scripts.evaluation.evaluate_predictive_controller \
   --output-dir outputs/issue25-vision-controller
 ```
 
-執行後會保存每局分數與 verified clear、感知/控制診斷、第一局 ALE 逐步軌跡，
-以及精簡比較報告。控制器只讀取畫面；FIRE handling 和 canonical clear 驗證
-仍由外部環境與評估流程負責。
+執行後會保存每局分數與 canonical clear detections、感知/控制診斷、第一局 ALE 逐步軌跡，
+以及精簡比較報告。控制器只讀取畫面；FIRE handling 和 canonical clear detection
+仍由外部環境與評估流程負責。Clear 計數使用 audited `BreakoutCompletionDetector`，
+不代表已通過 repository `verified_clears` 所要求的 contract/source/provenance validation。
+軌跡與動作分布區分 `requested_action`（controller 原始決策）與 `ale_input_action`
+（FIRE wrapper 覆寫後送進 ALE 的動作）。ALE sticky actions 可能重複上一個動作；
+目前無法觀察 ALE 決定後真正執行的 physical action。
 
 ## 瀏覽器 Demo
 

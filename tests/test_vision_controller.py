@@ -3,11 +3,23 @@
 from __future__ import annotations
 
 import inspect
+import csv
+import json
+from dataclasses import replace
+from pathlib import Path
+from tempfile import TemporaryDirectory
+from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
 
 import numpy as np
 
-from breakout_rl.completion import inspect_breakout_completion_support, read_ale_episode_frame
+from breakout_rl.completion import (
+    BREAKOUT_FULL_CLEAR_SCORE,
+    CompletionSupport,
+    inspect_breakout_completion_support,
+    read_ale_episode_frame,
+)
 from breakout_rl.vision_controller import (
     LEFT,
     NOOP,
@@ -20,8 +32,10 @@ from breakout_rl.vision_controller import (
     reflect_x,
 )
 from breakout_rl.vision_evaluation import (
+    evaluate_predictive_controller,
     load_vision_evaluation_protocol,
     make_vision_breakout_env,
+    write_vision_evaluation_artifacts,
 )
 
 
@@ -205,6 +219,109 @@ class PredictiveControlMathTests(unittest.TestCase):
         self.assertIn(decision.action, (NOOP, LEFT, RIGHT))
         self.assertFalse(hasattr(controller, "ale"))
         self.assertFalse(hasattr(controller, "completion_detector"))
+
+
+class VisionEvaluationSemanticsTests(unittest.TestCase):
+    def evaluate_fixture(self, *, clear: bool = True) -> dict:
+        """Exercise reporting with synthetic detector events, not an ALE evaluation."""
+        class FixtureEnv:
+            spec = SimpleNamespace(id="ALE/Breakout-v5")
+
+            @property
+            def unwrapped(self):
+                return self
+
+            def get_action_meanings(self):
+                return ("NOOP", "FIRE", "RIGHT", "LEFT")
+
+            def reset(self, *, seed):
+                self.frame = 0
+                self.score = 0
+                return screen_fixture(), {}
+
+            def step(self, action):
+                self.frame += 1
+                self.score = BREAKOUT_FULL_CLEAR_SCORE if clear and self.frame == 2 else 0
+                # The wrapper sends FIRE on step 1. No physical/sticky-resolved
+                # action is exposed, and step 2 tests the requested-action fallback.
+                info = {"fire_reset_executed_action": 1, "fire_reset_auto": True} if self.frame == 1 else {}
+                return screen_fixture(), self.score, self.frame == 2, False, info
+
+            def close(self):
+                pass
+
+        support = CompletionSupport(
+            supported=True, environment_id="ALE/Breakout-v5", game="breakout",
+            mode=0, difficulty=0, ale_py_version="fixture", rom_sha256="fixture",
+        )
+        protocol = replace(load_vision_evaluation_protocol(), seeds=(101,), trace_episodes=1)
+        with (
+            patch("breakout_rl.vision_evaluation.inspect_breakout_completion_support", return_value=support),
+            patch("breakout_rl.vision_evaluation.read_ale_episode_frame", side_effect=lambda env: env.frame),
+            patch("breakout_rl.vision_evaluation.read_breakout_score", side_effect=lambda env: env.score),
+            patch("breakout_rl.vision_evaluation.read_ale_lives", return_value=2),
+            patch("breakout_rl.vision_evaluation._source_provenance", return_value={"fixture": True}),
+        ):
+            return evaluate_predictive_controller(protocol, env_factory=FixtureEnv, max_steps_per_episode=2)
+
+    def test_detector_events_are_reported_as_canonical_detections(self) -> None:
+        for clear in (False, True):
+            with self.subTest(clear=clear), TemporaryDirectory() as directory:
+                payload = self.evaluate_fixture(clear=clear)
+                self.assertIs(payload["episodes"][0]["cleared"], clear)
+                self.assertEqual(payload["summary"]["clear_count"], int(clear))
+                self.assertEqual(payload["summary"]["clear_rate"], float(clear))
+                if clear:
+                    self.assertEqual(payload["episodes"][0]["failure_reason"], "canonical_clear_detected")
+                self.assertNotIn("verified_clears", payload["summary"])
+                write_vision_evaluation_artifacts(payload, directory)
+                report = (Path(directory) / "report.md").read_text()
+                self.assertIn(f"| Canonical clear detections | {int(clear)} / 1 |", report)
+                self.assertNotIn("Verified clears", report)
+                self.assertNotIn("verified clear.", report)
+                self.assertIn("audited `BreakoutCompletionDetector`", report)
+                self.assertIn("separate contract/source/provenance validation", report)
+
+    def test_ale_input_action_preserves_fire_override_and_requested_fallback(self) -> None:
+        payload = self.evaluate_fixture()
+        rows = payload["step_traces"][0]["rows"]
+        self.assertEqual(rows[0]["requested_action"], "NOOP")
+        self.assertEqual(rows[0]["ale_input_action"], "FIRE")
+        self.assertEqual(rows[1]["ale_input_action"], rows[1]["requested_action"])
+        for row in rows:
+            self.assertNotIn("executed_action", row)
+        for metrics in (payload["summary"], payload["episodes"][0]):
+            self.assertEqual(metrics["requested_action_distribution"]["NOOP"], 2)
+            self.assertEqual(metrics["ale_input_action_distribution"]["FIRE"], 1)
+            self.assertEqual(metrics["ale_input_action_distribution"]["NOOP"], 1)
+            self.assertNotIn("executed_action_distribution", metrics)
+        self.assertEqual(payload["environment"]["sticky_action_probability"], 0.25)
+        self.assertIn("physical action resolved by ALE is not observed", payload["evaluation_protocol"]["action_semantics"]["ale_input_action"])
+
+    def test_csv_diagnostics_and_report_use_ale_input_terminology(self) -> None:
+        payload = self.evaluate_fixture()
+        with TemporaryDirectory() as directory:
+            results, episodes, diagnostics = write_vision_evaluation_artifacts(payload, directory)
+            with episodes.open(newline="") as stream:
+                episode = next(csv.DictReader(stream))
+            self.assertIn("ale_input_action_distribution", episode)
+            self.assertNotIn("executed_action_distribution", episode)
+            self.assertEqual(json.loads(episode["ale_input_action_distribution"])["FIRE"], 1)
+            trace_path = Path(directory) / "controller_trace_seed_101.csv"
+            with trace_path.open(newline="") as stream:
+                trace = next(csv.DictReader(stream))
+            self.assertEqual(trace["requested_action"], "NOOP")
+            self.assertEqual(trace["ale_input_action"], "FIRE")
+            self.assertNotIn("executed_action", trace)
+            for path in (results, diagnostics):
+                summary = json.loads(path.read_text())["summary"]
+                self.assertIn("ale_input_action_distribution", summary)
+                self.assertNotIn("executed_action_distribution", summary)
+            report = (Path(directory) / "report.md").read_text()
+            self.assertIn("ALE input actions (after FIRE wrapper)", report)
+            self.assertNotIn("Executed actions", report)
+            self.assertIn("sticky-action probability 0.25", report)
+            self.assertIn("physical action resolved by ALE is not observed", report)
 
 
 class RealALEVisionSmokeTests(unittest.TestCase):

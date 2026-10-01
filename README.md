@@ -155,10 +155,15 @@ python -m scripts.evaluation.evaluate_predictive_controller \
   --output-dir outputs/issue25-vision-controller
 ```
 
-The run writes per-episode scores and verified clears, perception/control
+The run writes per-episode scores and canonical clear detections, perception/control
 diagnostics, a first-episode ALE step trace, and a compact comparison report.
 The controller consumes screen frames only; FIRE handling and canonical clear
-verification stay in the external environment/evaluation pipeline.
+detection stay in the external environment/evaluation pipeline. Clear counts use
+the audited `BreakoutCompletionDetector`; they do not establish the repository's
+`verified_clears`, which requires separate contract/source/provenance validation.
+Trace and distribution fields distinguish `requested_action` (controller decision)
+from `ale_input_action` (after FIRE wrapper overrides, sent to ALE). ALE sticky
+actions may repeat a previous action; the physical action resolved by ALE is not observed.
 
 ## Browser Demo
 

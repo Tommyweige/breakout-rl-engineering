@@ -333,7 +333,7 @@ def evaluate_predictive_controller(
                     raise RuntimeError("ALE episode-frame counter is unavailable")
                 episode_return = 0.0
                 requested_actions: Counter[str] = Counter({name: 0 for name in action_names})
-                executed_actions: Counter[str] = Counter({name: 0 for name in action_names})
+                ale_input_actions: Counter[str] = Counter({name: 0 for name in action_names})
                 auto_fire_reasons: Counter[str] = Counter()
                 life_loss_count = 0
                 terminated = False
@@ -356,9 +356,10 @@ def evaluate_predictive_controller(
                         raise ValueError("environment reward must be finite")
                     episode_return += reward_value
                     info = info if isinstance(info, Mapping) else {}
-                    executed_index = info.get("fire_reset_executed_action", requested_index)
-                    executed_name = _action_name(int(executed_index), action_names)
-                    executed_actions[executed_name] += 1
+                    # Wrapper metadata identifies ALE input, before ALE sticky actions.
+                    ale_input_index = info.get("fire_reset_executed_action", requested_index)
+                    ale_input_name = _action_name(int(ale_input_index), action_names)
+                    ale_input_actions[ale_input_name] += 1
                     auto_fire = bool(info.get("fire_reset_auto", False))
                     if auto_fire:
                         reason = info.get("fire_reset_reason")
@@ -393,7 +394,7 @@ def evaluate_predictive_controller(
                                 "agent_step": step_number,
                                 "ale_emulator_frame": elapsed_frames,
                                 "requested_action": decision.action,
-                                "executed_action": executed_name,
+                                "ale_input_action": ale_input_name,
                                 "auto_fire": auto_fire,
                                 "raw_reward": reward_value,
                                 "cumulative_score": episode_return,
@@ -423,7 +424,7 @@ def evaluate_predictive_controller(
                     )
 
                 if completion.state.cleared is True:
-                    failure_reason = "verified_clear"
+                    failure_reason = "canonical_clear_detected"
                 elif completion.state.cleared is None:
                     failure_reason = "completion_status_unavailable"
                 elif truncated:
@@ -457,7 +458,7 @@ def evaluate_predictive_controller(
                     "auto_fire_reason_counts": dict(auto_fire_reasons),
                     "life_loss_count": life_loss_count,
                     "requested_action_distribution": dict(requested_actions),
-                    "executed_action_distribution": dict(executed_actions),
+                    "ale_input_action_distribution": dict(ale_input_actions),
                     "ball_detected_frames": diagnostics["ball_detected_frames"],
                     "ball_detection_success_rate": diagnostics["ball_detection_success_rate"],
                     "paddle_detected_frames": diagnostics["paddle_detected_frames"],
@@ -487,10 +488,10 @@ def evaluate_predictive_controller(
     total_paddle_detections = sum(int(row["paddle_detected_frames"]) for row in episode_rows)
     total_predictions = sum(int(row["trajectory_prediction_count"]) for row in episode_rows)
     total_reversals = sum(int(row["left_right_reversal_count"]) for row in episode_rows)
-    action_distribution: Counter[str] = Counter({name: 0 for name in action_names})
+    ale_input_distribution: Counter[str] = Counter({name: 0 for name in action_names})
     requested_distribution: Counter[str] = Counter({name: 0 for name in action_names})
     for row in episode_rows:
-        action_distribution.update(row["executed_action_distribution"])
+        ale_input_distribution.update(row["ale_input_action_distribution"])
         requested_distribution.update(row["requested_action_distribution"])
     failure_counts = Counter(str(row["failure_reason"]) for row in episode_rows)
     latency_values = np.asarray(all_latencies, dtype=np.float64)
@@ -539,6 +540,17 @@ def evaluate_predictive_controller(
             "evaluation_epsilon": 0.0,
             "max_steps_per_episode": step_limit,
             "completion_detector": support.to_dict(),
+            "clear_count_semantics": (
+                "Audited BreakoutCompletionDetector clear events; repository verified_clears "
+                "requires separate contract/source/provenance validation, which this evaluator does not perform."
+            ),
+            "action_semantics": {
+                "requested_action": "Controller decision before FIRE wrapper overrides.",
+                "ale_input_action": (
+                    "Action sent to ALE after FIRE wrapper overrides, before sticky-action stochasticity; "
+                    "the physical action resolved by ALE is not observed."
+                ),
+            },
         },
         "controller": {
             "name": "visual ball tracking with side-wall-aware paddle-plane intercept",
@@ -574,7 +586,7 @@ def evaluate_predictive_controller(
                 else None
             ),
             "requested_action_distribution": dict(requested_distribution),
-            "executed_action_distribution": dict(action_distribution),
+            "ale_input_action_distribution": dict(ale_input_distribution),
             "left_right_reversal_count": total_reversals,
             "left_right_reversal_rate": (
                 total_reversals / sum(requested_distribution.values())
@@ -630,6 +642,13 @@ def _render_report(payload: Mapping[str, Any]) -> str:
         f"- Observation: {env['observation_type']}; one ALE frame per controller action",
         "- Training seed: none; all runs use the same deterministic controller configuration.",
         "",
+        "Canonical clear detections are events from the audited `BreakoutCompletionDetector`. "
+        "They do not establish repository `verified_clears`, which requires separate contract/source/provenance validation.",
+        "",
+        "`requested_action` is the controller decision; `ale_input_action` is the action sent to ALE after "
+        "FIRE wrapper overrides. With sticky-action probability "
+        f"{env['sticky_action_probability']}, ALE may repeat the previous action; the physical action resolved by ALE is not observed.",
+        "",
         "## Results",
         "",
         "| Metric | Result |",
@@ -637,8 +656,8 @@ def _render_report(payload: Mapping[str, Any]) -> str:
         f"| Mean raw score | {_format_number(summary['mean_score'])} |",
         f"| Median raw score | {_format_number(summary['median_score'])} |",
         f"| Maximum raw score | {_format_number(summary['max_score'])} |",
-        f"| Verified clears | {summary['clear_count']} / {payload['evaluation_protocol']['episode_count']} |",
-        f"| Clear rate | {_format_number(summary['clear_rate'] * 100 if summary['clear_rate'] is not None else None)}% |",
+        f"| Canonical clear detections | {summary['clear_count']} / {payload['evaluation_protocol']['episode_count']} |",
+        f"| Canonical clear detection rate | {_format_number(summary['clear_rate'] * 100 if summary['clear_rate'] is not None else None)}% |",
         f"| Best clear ALE frame | {_format_number(summary['best_clear_ale_frame'], 0)} |",
         f"| Median clear ALE frame | {_format_number(summary['median_clear_ale_frame'], 0)} |",
         f"| Mean lives remaining at clear | {_format_number(summary['mean_lives_remaining_at_clear'])} |",
@@ -647,7 +666,7 @@ def _render_report(payload: Mapping[str, Any]) -> str:
         f"| Paddle detection success | {_format_number(summary['paddle_detection_success_rate'] * 100 if summary['paddle_detection_success_rate'] is not None else None)}% |",
         f"| Intercept predictions | {summary['trajectory_prediction_count']} |",
         f"| Requested actions | `{json.dumps(summary['requested_action_distribution'], sort_keys=True)}` |",
-        f"| Executed actions | `{json.dumps(summary['executed_action_distribution'], sort_keys=True)}` |",
+        f"| ALE input actions (after FIRE wrapper) | `{json.dumps(summary['ale_input_action_distribution'], sort_keys=True)}` |",
         f"| LEFT↔RIGHT reversals / rate | {summary['left_right_reversal_count']} / {_format_number(summary['left_right_reversal_rate'] * 100)}% |",
         f"| NOOP rate | {_format_number(summary['noop_rate'] * 100)}% |",
         f"| Controller decision latency, CPU mean / p95 | {_format_number(summary['controller_decision_latency_ms']['mean'], 4)} / {_format_number(summary['controller_decision_latency_ms']['p95'], 4)} ms |",
@@ -689,20 +708,20 @@ def _render_report(payload: Mapping[str, Any]) -> str:
             f"| Training required / compute | no / 0 transitions | yes / 2.5M transitions | comparable |",
             f"| Mean raw score | {_format_number(summary['mean_score'])} (this run) | 51.4 selected eval; 30.933 holdout | not directly comparable: RL results use Contract v2 (frame skip 4), controller uses v3 task semantics (frame skip 1) and different seed roles |",
             f"| Maximum score | {_format_number(summary['max_score'])} (this run) | not reported in the source summary | unavailable |",
-            f"| Verified clears / clear rate | {summary['clear_count']} / {_format_number(summary['clear_rate'])} | not recorded with the canonical clear detector | unavailable |",
+            f"| Canonical clear detections / clear rate | {summary['clear_count']} / {_format_number(summary['clear_rate'])} | not recorded with the canonical clear detector | unavailable |",
             f"| Best clear ALE frame | {_format_number(summary['best_clear_ale_frame'], 0)} | not recorded | unavailable |",
             f"| Controller / inference cost | CPU mean {_format_number(summary['controller_decision_latency_ms']['mean'], 4)} ms per screen | not benchmarked here on the same machine and evaluation harness | no matched benchmark |",
             "",
             "The score figures are kept as historical context. They do not support a ranking because the older RL evaluation used frame skip 4 and selected/holdout seed sets, while this controller uses one ALE frame per decision and the fixed v3 concrete episode seeds. No DQN checkpoint or compatible v3 RL evaluation artifact is present in this checkout, so the report does not infer an RL clear rate or matched inference cost.",
             "",
-            "The promotion criterion was not met: none of these 15 episodes produced a verified clear. The controller collected points reliably enough to show that pixel perception and receding-horizon movement work, but these results do not establish that learning is unnecessary for the full-clear objective. The next controller experiment should target paddle-contact angles and brick-lane creation, following the issue's proposed path.",
+            f"This run recorded {summary['clear_count']} / {payload['evaluation_protocol']['episode_count']} canonical clear detections. The controller collected points reliably enough to show that pixel perception and receding-horizon movement work, but these results do not establish that learning is unnecessary for the full-clear objective. The next controller experiment should target paddle-contact angles and brick-lane creation, following the issue's proposed path.",
             "",
             "## Artifacts and provenance",
             "",
             "- `results.json`: protocol, per-episode outcomes, aggregate metrics, detector support, and source provenance.",
             "- `episodes.csv`: one row per fixed episode.",
             "- `diagnostics.json`: perception/control metrics and preserved trace file names.",
-            "- `controller_trace_seed_<seed>.csv`: first real ALE episode's per-step pixels-derived state, requested/executed action, score, lives, and external clear outcome.",
+            "- `controller_trace_seed_<seed>.csv`: first real ALE episode's per-step pixels-derived state, `requested_action` / `ale_input_action`, score, lives, and external clear outcome.",
             f"- Canonical completion detector: `{payload['evaluation_protocol']['completion_detector']['detector_id']}`; supported={payload['evaluation_protocol']['completion_detector']['supported']}; clear threshold={BREAKOUT_FULL_CLEAR_SCORE}.",
             "",
         ]
@@ -745,7 +764,7 @@ def write_vision_evaluation_artifacts(
         "left_right_reversal_rate",
         "noop_rate",
         "requested_action_distribution",
-        "executed_action_distribution",
+        "ale_input_action_distribution",
     )
     with episodes_path.open("w", encoding="utf-8", newline="") as stream:
         writer = csv.DictWriter(stream, fieldnames=episode_columns)
