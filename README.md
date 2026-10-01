@@ -139,9 +139,31 @@ scripts/evaluation/evaluate_dqn.py
 scripts/evaluation/evaluate_vectorized_dqn.py
 scripts/evaluation/evaluate_reward_shaping.py
 scripts/evaluation/evaluate_reward_shaping_sweep.py
+scripts/evaluation/evaluate_predictive_controller.py
 ```
 
 Evaluation is separated from training so model comparisons can run under consistent task semantics.
+
+The deterministic predictive controller uses raw ALE RGB pixels and does not
+train a model. Its versioned config references Breakout Contract v3, preserving
+the one-frame decision cadence and fixed evaluation seeds without changing the
+shared v2 or v3 contracts:
+
+```bash
+python -m scripts.evaluation.evaluate_predictive_controller \
+  --config configs/eval/breakout_vision_controller_v1.json \
+  --output-dir outputs/issue25-vision-controller
+```
+
+The run writes per-episode scores and canonical clear detections, perception/control
+diagnostics, a first-episode ALE step trace, and a compact comparison report.
+The controller consumes screen frames only; FIRE handling and canonical clear
+detection stay in the external environment/evaluation pipeline. Clear counts use
+the audited `BreakoutCompletionDetector`; they do not establish the repository's
+`verified_clears`, which requires separate contract/source/provenance validation.
+Trace and distribution fields distinguish `requested_action` (controller decision)
+from `ale_input_action` (after FIRE wrapper overrides, sent to ALE). ALE sticky
+actions may repeat a previous action; the physical action resolved by ALE is not observed.
 
 ## Browser Demo
 
