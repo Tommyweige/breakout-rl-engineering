@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "contract_id": "breakout-vision-controller-v1-frame-skip-1",
+  "base_environment_contract": "breakout_contract_v3.json",
+  "observation": {
+    "type": "ale_raw_rgb",
+    "expected_shape": [210, 160, 3],
+    "controller_history_frames": 2
+  },
+  "concrete_episode_seeds": [
+    101, 102, 103, 104, 105,
+    202, 203, 204, 205, 206,
+    303, 304, 305, 306, 307
+  ],
+  "episodes_per_seed": 1,
+  "trace_episodes": 1,
+  "controller": {
+    "deadband_pixels": 3.0,
+    "hysteresis_pixels": 1.0,
+    "max_missing_frames": 4,
+    "max_ball_speed_pixels_per_frame": 8.0
+  }
+}

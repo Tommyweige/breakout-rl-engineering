@@ -136,9 +136,24 @@ scripts/evaluation/evaluate_dqn.py
 scripts/evaluation/evaluate_vectorized_dqn.py
 scripts/evaluation/evaluate_reward_shaping.py
 scripts/evaluation/evaluate_reward_shaping_sweep.py
+scripts/evaluation/evaluate_predictive_controller.py
 ```
 
 評估流程與訓練流程分離，讓不同模型能在一致的 task semantics 下進行比較。
+
+確定性預測控制器直接使用 ALE RGB 畫面，不需要訓練模型。版本化設定檔
+沿用 Breakout Contract v3 的一影格決策頻率與固定 evaluation seeds，不修改
+共用的 v2 或 v3 contract：
+
+```bash
+python -m scripts.evaluation.evaluate_predictive_controller \
+  --config configs/eval/breakout_vision_controller_v1.json \
+  --output-dir outputs/issue25-vision-controller
+```
+
+執行後會保存每局分數與 verified clear、感知/控制診斷、第一局 ALE 逐步軌跡，
+以及精簡比較報告。控制器只讀取畫面；FIRE handling 和 canonical clear 驗證
+仍由外部環境與評估流程負責。
 
 ## 瀏覽器 Demo
 

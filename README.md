@@ -139,9 +139,26 @@ scripts/evaluation/evaluate_dqn.py
 scripts/evaluation/evaluate_vectorized_dqn.py
 scripts/evaluation/evaluate_reward_shaping.py
 scripts/evaluation/evaluate_reward_shaping_sweep.py
+scripts/evaluation/evaluate_predictive_controller.py
 ```
 
 Evaluation is separated from training so model comparisons can run under consistent task semantics.
+
+The deterministic predictive controller uses raw ALE RGB pixels and does not
+train a model. Its versioned config references Breakout Contract v3, preserving
+the one-frame decision cadence and fixed evaluation seeds without changing the
+shared v2 or v3 contracts:
+
+```bash
+python -m scripts.evaluation.evaluate_predictive_controller \
+  --config configs/eval/breakout_vision_controller_v1.json \
+  --output-dir outputs/issue25-vision-controller
+```
+
+The run writes per-episode scores and verified clears, perception/control
+diagnostics, a first-episode ALE step trace, and a compact comparison report.
+The controller consumes screen frames only; FIRE handling and canonical clear
+verification stay in the external environment/evaluation pipeline.
 
 ## Browser Demo
 
