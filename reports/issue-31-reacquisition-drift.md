@@ -26,7 +26,7 @@ No causal inference is made from forecast error; sticky-resolved physical action
 
 ## Reproducibility
 
-Trace SHA-256: `36f6c52d0814e873431eae46cd48061b367164725158513417e35c7eba03d8fe`; #29 results SHA-256: `638fb46ce23ffd425ea766c85d71a71db058717f3a5adfab933f34d2b6e87e50`. Command: `python -m scripts.analysis.analyze_reacquisition_drift --output-dir outputs/issue-31-reacquisition-drift`. Analyzer SHA-256: `526b7c326b259bc4c3e01710bf6f6f053d7ee6122f79954352fa20797d025a39`. Base SHA: `f8311b55a05f4f901d63e70a89a49d6dc39a02c8`. Source: `scripts/analysis/analyze_reacquisition_drift.py`.
+Trace SHA-256: `36f6c52d0814e873431eae46cd48061b367164725158513417e35c7eba03d8fe`; #29 results SHA-256: `638fb46ce23ffd425ea766c85d71a71db058717f3a5adfab933f34d2b6e87e50`. Command: `python -m scripts.analysis.analyze_reacquisition_drift --output-dir outputs/issue-31-reacquisition-drift`. The completed offline run used analyzer source SHA-256 `526b7c326b259bc4c3e01710bf6f6f053d7ee6122f79954352fa20797d025a39` on the original base SHA `f8311b55a05f4f901d63e70a89a49d6dc39a02c8`. After rebasing PR #32, the analyzer source SHA-256 remains `526b7c326b259bc4c3e01710bf6f6f053d7ee6122f79954352fa20797d025a39`; the PR base is `1f9c31f39c786f8db801f1b2d086e5cabdc2b73d`. These identify the run provenance and rebased PR state separately; the offline analysis was not rerun. Source: `scripts/analysis/analyze_reacquisition_drift.py`.
 
 ## Tests
 
