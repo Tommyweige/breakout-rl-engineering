@@ -44,3 +44,11 @@ Stdout: `/tmp/issue54-formal.stdout` (preserved as `formal.stdout`) SHA-256 `da9
 Stderr: `/tmp/issue54-formal.stderr` (preserved as `formal.stderr`) SHA-256 `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
 
 Post-run capture/hash attachment: 0.002315s. Combined measured-component elapsed (excluding supervisor startup and final metadata refresh): 1.108307s (including failure-bundle and capture/hash finalization).
+
+## Timing provenance reconciliation
+
+The preserved, unchanged raw formal stdout has SHA-256 `da90c38623bb739de157518ee00651d0a70aa1a6f72f7de944b3cae496c5c0d9`. Its embedded runner snapshot reports 9 focused tests in 0.139993s, compile in 0.031404s, diff check in 0.002714s, and preflight in 0.271024s. Those are stale internal runner metadata. The raw CLI reports `pre_run_validation_seconds=1.0s`, which is the conservative internal PRE_RUN_VALIDATION_SECONDS reservation, not measured validation. Its `combined_pre_run_and_formal_seconds=1.389896886991s` is that reservation plus the CLI run wall (0.389896886991s); it excludes external capture/hash attachment and final manifest refresh.
+
+The authoritative exact-HEAD external record (`pre_run_validation.json`, source `6b232266ad996e671c735054bb7dda88ab249db0`) reports 11 focused tests in 0.258762s, compile in 0.033386s, diff check in 0.003589s, and zero-inference preflight in 0.274068s: measured validation total 0.569804712009s.
+
+The final measured-component total is 0.569804712009s validation + 0.536070108996s frozen-command wall + 0.000117342992s failure-bundle finalization + 0.002315306003s capture/hash attachment = 1.108307470000s. The separately measured one-shot supervisor wrapper wall was 0.754350845004s; validation plus wrapper wall was 1.324155557013s. The external record is authoritative for the pre-run gate; all timing scopes remain below the 20-second cap.

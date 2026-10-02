@@ -49,8 +49,8 @@
     "formal.stdout": "da90c38623bb739de157518ee00651d0a70aa1a6f72f7de944b3cae496c5c0d9",
     "pre_run_validation.json": "6060515fd155f432881a76bb52a8faf0f4601dfc25b4200c658787bd5e3789b7",
     "q_comparisons.json": "14045669d391bba87e23ad2998368abf7e2c470c242cae8b604d62090468ea33",
-    "report.md": "5d81d74097b42602e176d3b73de3f62c92b7f97f8919ba3ab37a12c16db58ca0",
-    "results.json": "ea33c8d469f82b8b51c6441cac27bbfcb6bc5bd95d5a5bdc7be0f603396fc116"
+    "report.md": "b351ff86ce420d1aeec20ea9c71fe1bed2f8b82fafa7f5b830468be53fff52bb",
+    "results.json": "1473325ecfcfff778ab25ae460e5f544a4bef8804035c49c60b6272f699486ee"
   },
   "post_run_capture_attachment_wall_seconds": 0.0023153060028562322,
   "pre_run_validation": {
@@ -132,5 +132,63 @@
   "replay_source_digest": "098727eede673410dfc4d54ea12ff046e27031626261efa83c602c93f72eb578",
   "research_base_commit": "a8641d99d6a0eb5b7226dae2b82ed3479f35e55f",
   "source_commit": "6b232266ad996e671c735054bb7dda88ab249db0",
-  "supervisor_startup_allowance_seconds": 0.25
+  "supervisor_startup_allowance_seconds": 0.25,
+  "timing_provenance": {
+    "authoritative_exact_head_validation_record": {
+      "authority_note": "This external record ran on the exact executable HEAD and is authoritative for the pre-run gate; raw stdout contains stale embedded runner metadata.",
+      "combined_validation_wall_seconds": 0.5698047120094998,
+      "entries": {
+        "compile": {
+          "command": "python -m py_compile breakout_rl/issue54_q_replay_consistency.py scripts/analysis/run_issue54_q_replay_consistency.py scripts/analysis/attach_issue54_capture.py scripts/analysis/run_issue54_once.py tests/test_issue54_q_replay_consistency.py",
+          "status": "passed",
+          "wall_seconds": 0.033386069000698626
+        },
+        "diff_check": {
+          "command": "git show --check --oneline HEAD",
+          "status": "passed",
+          "wall_seconds": 0.0035885300021618605
+        },
+        "focused_test": {
+          "command": "env PYTHONPATH=/tmp/issue41-onnxruntime python -m unittest tests.test_issue54_q_replay_consistency -v",
+          "count": 11,
+          "status": "passed",
+          "wall_seconds": 0.25876184400112834
+        },
+        "preflight": {
+          "command": "timeout --signal=INT --kill-after=2s 20s env PYTHONPATH=/tmp/issue41-onnxruntime python -m scripts.analysis.run_issue54_q_replay_consistency --output-dir /tmp/issue54-preflight-6b23226 --preflight-only",
+          "status": "passed",
+          "wall_seconds": 0.27406826900551096
+        }
+      },
+      "experiment_branch": "codex/issue-54-q-replay-consistency",
+      "path": "pre_run_validation.json",
+      "source_commit": "6b232266ad996e671c735054bb7dda88ab249db0"
+    },
+    "measured_formal_components": {
+      "capture_hash_attachment_seconds": 0.0023153060028562322,
+      "combined_cap_seconds": 20.0,
+      "combined_measured_components_seconds": 1.1083074699999997,
+      "external_supervisor_wrapper_wall_seconds": 0.7543508450035006,
+      "failure_bundle_finalization_seconds": 0.00011734299187082797,
+      "formal_command_wall_seconds": 0.5360701089957729,
+      "validation_plus_external_wrapper_seconds": 1.3241555570130004
+    },
+    "raw_cli_stdout": {
+      "cli_run_wall_seconds": 0.38989688699075487,
+      "combined_pre_run_and_formal_seconds": 1.3898968869907549,
+      "combined_scope": "internal 1.0 second reservation plus CLI run wall; excludes external capture/hash attachment and final manifest refresh",
+      "embedded_pre_run_validation_snapshot": {
+        "compile_wall_seconds": 0.03140434200759046,
+        "diff_check_wall_seconds": 0.002714288988499902,
+        "focused_test_count": 9,
+        "focused_test_wall_seconds": 0.13999250099004712,
+        "preflight_wall_seconds": 0.27102403600292746
+      },
+      "path": "formal.stdout",
+      "pre_run_validation_seconds": 1.0,
+      "pre_run_value_scope": "conservative internal PRE_RUN_VALIDATION_SECONDS reservation, not measured validation",
+      "preserved_unchanged": true,
+      "sha256": "da90c38623bb739de157518ee00651d0a70aa1a6f72f7de944b3cae496c5c0d9"
+    }
+  }
 }
