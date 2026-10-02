@@ -6,7 +6,8 @@ Classification: **INCONCLUSIVE**; round status: **CONTINUE_RESEARCH**; HVC: **NO
 
 - Hypothesis: **PROMOTED for this sampled input window only**; overall Phase 1 outcome: **INCONCLUSIVE**.
 - Baseline: no controller-performance baseline or performance comparison; the pinned ONNX policy followed unchanged raw-greedy.
-- Primary diagnostic: `R/N = 0/87`; performance delta vs baseline: **N/A**.
+- Input-range reference: Issue #50 archived channel-3 maxima were 148 over the full plane and 110 in each frozen ROI. This fresh 87-decision window matches those maxima; the sample lengths and contexts differ, and the match does not establish detector quality.
+- Primary diagnostic: `R/N = 0/87`; delta vs a controller-performance baseline: **N/A**.
 - Failure/deviation analysis: no fixed-ROI pixel reached 200. The first preflight created/closed an ALE environment contrary to the no-create rule, with 0 resets, 0 steps, and 0 frames; its 0.605s validation-bundle elapsed remains in the cumulative 1.741s budget and it is not accepted as a successful preflight.
 - Reproducibility: source commit `bf839c7395d24b021b5cbbe1fb3382e9b57a9332`, source digest `9f575455dd1a3959e22f6ac3327b90d9445dd380d4f34db62158c41fe6e2433e`; model/spec/metadata/contract hashes are recorded in `results.json`. Exact command: `timeout --signal=INT --kill-after=5s 90s env PYTHONPATH=/tmp/issue41-onnxruntime python -m scripts.evaluation.run_issue56_fresh_range --output-dir research/issue-56-fresh-range-artifacts`. Runtime: Python 3.12.14, NumPy 2.3.5, ONNX Runtime 1.22.1 CPUExecutionProvider.
 - Validation: 12 focused tests passed against the recorded test file path/hash; compile and range diff checks passed; corrected CPU-only preflight created no ALE environment.
