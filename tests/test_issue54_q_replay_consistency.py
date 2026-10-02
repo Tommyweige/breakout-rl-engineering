@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -11,7 +12,8 @@ import numpy as np
 
 from breakout_rl.issue54_q_replay_consistency import (
     STACK_SHA256, classify_diagnostic, match_rows, max_q_error, prepare_model_input,
-    aggregate_q_error, create_cpu_session, remaining_budget, validate_capture_offsets, verify_stack_row,
+    aggregate_q_error, attach_log_capture_hashes, create_cpu_session, remaining_budget,
+    validate_capture_offsets, verify_stack_row,
 )
 
 
@@ -106,6 +108,26 @@ class Issue54PureTests(unittest.TestCase):
         self.assertEqual(remaining_budget(1.25), 18.75)
         with self.assertRaises(TimeoutError):
             remaining_budget(20.0)
+
+    def test_post_run_capture_attachment_preserves_and_hashes_logs(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            output = root / "artifacts"
+            output.mkdir()
+            (output / "q_comparisons.json").write_text("[]\n")
+            (output / "results.json").write_text("{}\n")
+            (output / "report.md").write_text("report\n")
+            (output / "manifest.json").write_text(json.dumps({"output_hashes": {}}))
+            stdout, stderr = root / "stdout", root / "stderr"
+            stdout.write_bytes(b"full stdout\n")
+            stderr.write_bytes(b"full stderr\n")
+            captures = attach_log_capture_hashes(output, stdout, stderr)
+            self.assertEqual((output / "formal.stdout").read_bytes(), stdout.read_bytes())
+            self.assertEqual((output / "formal.stderr").read_bytes(), stderr.read_bytes())
+            manifest = json.loads((output / "manifest.json").read_text())
+            self.assertEqual(manifest["output_hashes"]["formal.stdout"], captures["stdout_sha256"])
+            self.assertEqual(manifest["output_hashes"]["formal.stderr"], captures["stderr_sha256"])
+            self.assertTrue(manifest["manifest_self_hash_excluded"])
 
 
 if __name__ == "__main__":

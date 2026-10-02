@@ -50,7 +50,7 @@ REPLAY_SOURCE_FILES = (
 )
 PRE_RUN_VALIDATION = {
     "focused_test_command": "env PYTHONPATH=/tmp/issue41-onnxruntime python -m unittest tests.test_issue54_q_replay_consistency -v",
-    "focused_test_count": 8,
+    "focused_test_count": 9,
     "focused_test_status": "passed",
     "focused_test_wall_seconds": 0.1437395370012382,
     "compile_command": "python -m py_compile breakout_rl/issue54_q_replay_consistency.py scripts/analysis/run_issue54_q_replay_consistency.py tests/test_issue54_q_replay_consistency.py",
@@ -434,9 +434,14 @@ def cli(argv: list[str] | None = None) -> int:
 
 def attach_log_capture_hashes(output_dir: Path, stdout_path: Path, stderr_path: Path) -> dict[str, str]:
     """Attach hashes of the one formal command's externally captured streams."""
+    stdout_artifact = output_dir / "formal.stdout"
+    stderr_artifact = output_dir / "formal.stderr"
+    stdout_artifact.write_bytes(stdout_path.read_bytes())
+    stderr_artifact.write_bytes(stderr_path.read_bytes())
     captures = {
         "stdout_path": str(stdout_path), "stdout_sha256": sha256_file(stdout_path),
         "stderr_path": str(stderr_path), "stderr_sha256": sha256_file(stderr_path),
+        "stdout_artifact": stdout_artifact.name, "stderr_artifact": stderr_artifact.name,
     }
     results_path, report_path, manifest_path = (output_dir / name for name in
                                                 ("results.json", "report.md", "manifest.json"))
@@ -445,15 +450,16 @@ def attach_log_capture_hashes(output_dir: Path, stdout_path: Path, stderr_path: 
     _atomic_json(results_path, results)
     report = report_path.read_text().rstrip()
     report += ("\n\n## Formal command capture\n\n"
-               f"Stdout: `{captures['stdout_path']}` SHA-256 `{captures['stdout_sha256']}`.\n\n"
-               f"Stderr: `{captures['stderr_path']}` SHA-256 `{captures['stderr_sha256']}`.\n")
+               f"Stdout: `{captures['stdout_path']}` (preserved as `{stdout_artifact.name}`) SHA-256 `{captures['stdout_sha256']}`.\n\n"
+               f"Stderr: `{captures['stderr_path']}` (preserved as `{stderr_artifact.name}`) SHA-256 `{captures['stderr_sha256']}`.\n")
     report_path.write_text(report)
     manifest = json.loads(manifest_path.read_text())
     manifest["formal_capture_hashes"] = captures
     manifest["output_hashes"] = {
         name: sha256_file(output_dir / name)
-        for name in ("q_comparisons.json", "results.json", "report.md")
+        for name in ("q_comparisons.json", "results.json", "report.md", "formal.stdout", "formal.stderr")
     }
+    manifest["manifest_self_hash_excluded"] = True
     _atomic_json(manifest_path, manifest)
     captures["manifest_sha256"] = sha256_file(manifest_path)
     return captures
