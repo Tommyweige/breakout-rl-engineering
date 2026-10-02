@@ -38,9 +38,9 @@ python -m scripts.evaluation.run_issue39_rgb_brick_observability --config config
 - Config SHA-256: `5e1ab1c8a47027f04cdedfa5a6df56128d169bd5e9d6f10e095901b8393db25b`.
 - Contract v3 SHA-256: `d97b7fcb5758cba495857b3972a119ed3eb7db74fb0145d151e9d82725c5a786`.
 - Controller config SHA-256: `25ddff6756747a6539ddd6a1eb570e7ef4c274f3e700ae011e68c87cae37c724`.
-- Lossless RGB crop artifact: `research/issue-39-rgb-brick-observability/rgb_brick_crops.npz`, 808,068 bytes, SHA-256 `52b2162544cc8b7b71510b4a001b9fa680c6c9c79646eebe8c5c2bbf3b56bb41`. Verified array shape `(15003, 48, 144, 3)`, dtype `uint8`; this stores the initial post-serve crop and every post-action crop for all three episodes.
-- Offline labels, detector outputs, full action/reward traces, and result JSON are in `research/issue-39-rgb-brick-observability/results.json`.
-- Generated run report: `research/issue-39-rgb-brick-observability/report.md`.
+- Lossless RGB crop artifact: `research/issue-39-rgb-brick-observability-artifacts/rgb_brick_crops.npz`, 808,068 bytes, SHA-256 `52b2162544cc8b7b71510b4a001b9fa680c6c9c79646eebe8c5c2bbf3b56bb41`. Verified array shape `(15003, 48, 144, 3)`, dtype `uint8`; this stores the initial post-serve crop and every post-action crop for all three episodes.
+- Offline labels, detector outputs, full action/reward traces, and result JSON are in [`results.json`](issue-39-rgb-brick-observability-artifacts/results.json).
+- Generated run report: [`report.md`](issue-39-rgb-brick-observability-artifacts/report.md).
 
 The existing canonical completion evaluator read reward/RAM for the frozen clear-stop rule. The detector consumed only captured RGB crops; offline label rows were joined after all action selection. Neither score nor RAM entered controller input, detector input, or action choice.
 
