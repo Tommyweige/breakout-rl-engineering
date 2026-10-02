@@ -1,0 +1,232 @@
+{
+  "artifacts": {
+    "report.md": "dad24011b593260b42000a0b5b7aa7f8edeec5e7d2b53a24c92ce20abc509c9b",
+    "results.json": "2b0bf7285d9d203e496fa58f4f75506f0c71c9277d0f424adb53be8c648f03d5",
+    "trajectory.jsonl": "29f052e311de8a0a37a8d9f7647198a10798ba8d03cb4a542ce14356316eb4b9"
+  },
+  "classification": "INCONCLUSIVE",
+  "episodes": [
+    {
+      "agent_steps": 1119,
+      "arm": "raw-greedy",
+      "clear_status": "NO_CLEAR",
+      "episode_index": 1,
+      "life_losses": 5,
+      "native_frames": 4476,
+      "raw_score": 45.0,
+      "seed": 102,
+      "stop_reason": "terminated"
+    },
+    {
+      "agent_steps": 344,
+      "arm": "rolling-q4",
+      "clear_status": "NO_CLEAR",
+      "episode_index": 2,
+      "life_losses": 5,
+      "native_frames": 1373,
+      "raw_score": 5.0,
+      "seed": 102,
+      "stop_reason": "terminated"
+    },
+    {
+      "agent_steps": 773,
+      "arm": "raw-greedy",
+      "clear_status": "NO_CLEAR",
+      "episode_index": 3,
+      "life_losses": 5,
+      "native_frames": 3089,
+      "raw_score": 26.0,
+      "seed": 203,
+      "stop_reason": "terminated"
+    },
+    {
+      "agent_steps": 547,
+      "arm": "rolling-q4",
+      "clear_status": "NO_CLEAR",
+      "episode_index": 4,
+      "life_losses": 5,
+      "native_frames": 2187,
+      "raw_score": 11.0,
+      "seed": 203,
+      "stop_reason": "terminated"
+    },
+    {
+      "agent_steps": 1398,
+      "arm": "raw-greedy",
+      "clear_status": "NO_CLEAR",
+      "episode_index": 5,
+      "life_losses": 5,
+      "native_frames": 5590,
+      "raw_score": 60.0,
+      "seed": 304,
+      "stop_reason": "terminated"
+    },
+    {
+      "agent_steps": 686,
+      "arm": "rolling-q4",
+      "clear_status": "NO_CLEAR",
+      "episode_index": 6,
+      "life_losses": 5,
+      "native_frames": 2744,
+      "raw_score": 18.0,
+      "seed": 304,
+      "stop_reason": "terminated"
+    }
+  ],
+  "evaluation_status": "completed",
+  "formal_command": "timeout --signal=TERM --kill-after=5s 560s env PYTHONPATH=/tmp/issue41-onnxruntime python -m scripts.evaluation.run_issue43_rolling_q_survival_eval --contract configs/eval/breakout_contract_v2.json --inference-spec configs/inference/inference_spec.json --model web/public/models/final_model/model.onnx --episode-seeds 102,203,304 --arm-order raw-greedy,rolling-q4 --smoothing-window 4 --max-native-frames-per-episode 108000 --output-dir outputs/issue-43-rolling-q-survival",
+  "formal_invocations": 1,
+  "frame_accounting": {
+    "combined_native_frame_limit": 648350,
+    "formal_native_frame_limit": 648000,
+    "formal_native_frames": 19459,
+    "unused_setup_test_native_frame_reserve": 350
+  },
+  "has_verified_clear": false,
+  "issue": 43,
+  "model": {
+    "completion_audit_sha256": "43d431e77a4a3b60dd720933ee399767d456a6c633ee93aab7265d92e4f1b64b",
+    "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+    "contract_sha256": "7eca5ae5262a28aeabf3be658f8275a68f3d2ae40cc74379400be2890dc31a2a",
+    "contract_validation_status": "canonical_contract_v2",
+    "detector_id": "ale-breakout-two-wall-score-864-v2",
+    "inference_spec_sha256": "b396989041eff00396789c0f878fa783b071b0d3327aa1638c891a25d3f84507",
+    "metadata_inference_spec_sha256": "68637a63d3f0242f74089314049251521bec14a6fa3267b57fa46470acfff8ec",
+    "metadata_lineage": {
+      "original_pt_independently_rehashed": false,
+      "source_checkpoint_sha256": "ab07c0a48202428ddbb377c81f4091b3c434ce95e19d19fb1ec335df79841c48",
+      "source_model_sha256": "6002029dcdbcbb7c93fca0c589880611aed2e2e7924db0f6b0c1f5160824389a",
+      "training_seed": 2022,
+      "training_transitions": 2500000
+    },
+    "metadata_sha256": "fbb9868fa0fb0ad7ce511e59b368efbef984279178c554dede0ae7e950731512",
+    "model_sha256": "cf90c74b1d09d5d7e2e0c71014f2daef2b5e1833425d300da06e34d1e4ef7f12"
+  },
+  "paired_diagnostics": [
+    {
+      "censoring_explanation": null,
+      "native_frame_difference_rolling_minus_raw": -3103,
+      "native_frame_percent_difference": -69.32529043789097,
+      "raw_greedy_action_switch_rate": 0.46332737030411447,
+      "raw_greedy_clear_status": "NO_CLEAR",
+      "raw_greedy_life_losses": 5,
+      "raw_greedy_median_q_margin": 0.006571769714355469,
+      "raw_greedy_native_frames": 4476,
+      "raw_greedy_raw_score": 45.0,
+      "rolling_q4_action_switch_rate": 0.22157434402332363,
+      "rolling_q4_clear_status": "NO_CLEAR",
+      "rolling_q4_life_losses": 5,
+      "rolling_q4_median_q_margin": 0.006378293037414551,
+      "rolling_q4_native_frames": 1373,
+      "rolling_q4_raw_score": 5.0,
+      "seed": 102,
+      "status": "paired_complete"
+    },
+    {
+      "censoring_explanation": null,
+      "native_frame_difference_rolling_minus_raw": -902,
+      "native_frame_percent_difference": -29.200388475234703,
+      "raw_greedy_action_switch_rate": 0.4585492227979275,
+      "raw_greedy_clear_status": "NO_CLEAR",
+      "raw_greedy_life_losses": 5,
+      "raw_greedy_median_q_margin": 0.005383491516113281,
+      "raw_greedy_native_frames": 3089,
+      "raw_greedy_raw_score": 26.0,
+      "rolling_q4_action_switch_rate": 0.2619047619047619,
+      "rolling_q4_clear_status": "NO_CLEAR",
+      "rolling_q4_life_losses": 5,
+      "rolling_q4_median_q_margin": 0.005033969879150391,
+      "rolling_q4_native_frames": 2187,
+      "rolling_q4_raw_score": 11.0,
+      "seed": 203,
+      "status": "paired_complete"
+    },
+    {
+      "censoring_explanation": null,
+      "native_frame_difference_rolling_minus_raw": -2846,
+      "native_frame_percent_difference": -50.91234347048301,
+      "raw_greedy_action_switch_rate": 0.4523979957050823,
+      "raw_greedy_clear_status": "NO_CLEAR",
+      "raw_greedy_life_losses": 5,
+      "raw_greedy_median_q_margin": 0.006498098373413086,
+      "raw_greedy_native_frames": 5590,
+      "raw_greedy_raw_score": 60.0,
+      "rolling_q4_action_switch_rate": 0.2569343065693431,
+      "rolling_q4_clear_status": "NO_CLEAR",
+      "rolling_q4_life_losses": 5,
+      "rolling_q4_median_q_margin": 0.0055582523345947266,
+      "rolling_q4_native_frames": 2744,
+      "rolling_q4_raw_score": 18.0,
+      "seed": 304,
+      "status": "paired_complete"
+    }
+  ],
+  "runtime": {
+    "model_input_preflight": "zero uint8 [4,84,84], cast float32 and divide by 255 once; no ALE frames",
+    "onnx_input": {
+      "dtype": "float32",
+      "name": "observation",
+      "shape": [
+        1,
+        4,
+        84,
+        84
+      ]
+    },
+    "onnx_output": {
+      "dtype": "float32",
+      "name": "q_values",
+      "shape": [
+        1,
+        4
+      ]
+    },
+    "onnxruntime": "1.22.1",
+    "providers": [
+      "CPUExecutionProvider"
+    ],
+    "python": "3.12.14",
+    "requested_providers": [
+      "CPUExecutionProvider"
+    ]
+  },
+  "runtime_accounting": {
+    "collection_caps_hit": false,
+    "collection_stop_seconds": 530,
+    "finalization_reserve_seconds": 30,
+    "formal_command_limit_seconds": 560,
+    "observed_setup_plus_runner_wall_seconds_approx": 11.643,
+    "post_run_artifact_finalization": "completed within 30-second reserve",
+    "runner_wall_seconds": 8.443422078998992,
+    "total_wall_limit_seconds": 600
+  },
+  "setup_accounting": {
+    "focused_tests": "6 passed",
+    "git_diff_check": "passed",
+    "onnxruntime_install_seconds": 0,
+    "onnxruntime_isolated_path": "/tmp/issue41-onnxruntime",
+    "onnxruntime_version": "1.22.1",
+    "preflight_native_frames": 0,
+    "py_compile": "passed",
+    "repository_dependency_changes": false,
+    "setup_test_compile_diff_preflight_wall_seconds_approx": 3.2,
+    "setup_test_compile_diff_wall_limit_seconds": 20
+  },
+  "source_provenance": {
+    "completion_audit_sha256": "43d431e77a4a3b60dd720933ee399767d456a6c633ee93aab7265d92e4f1b64b",
+    "completion_source_files": [
+      "breakout_env.py",
+      "breakout_rl/completion.py",
+      "breakout_rl/evaluation.py",
+      "breakout_rl/evaluation_artifacts.py",
+      "breakout_rl/evaluation_contract.py",
+      "breakout_rl/issue41_onnx_dqn_clear.py",
+      "breakout_rl/issue43_rolling_q_survival.py",
+      "scripts/evaluation/run_issue43_rolling_q_survival_eval.py",
+      "configs/eval/breakout_completion_audit_v1.json"
+    ],
+    "completion_source_sha256": "c3e7aa81739833eb6b2070516b842c1772449b64dc513164388b06022f677126",
+    "source_commit": "cacbae2c596f5888fb1950db5f9dd24a68cf739a",
+    "source_working_tree_dirty": false
+  }
+}
