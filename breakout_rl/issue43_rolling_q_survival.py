@@ -306,7 +306,9 @@ def run(contract_path: Path, spec_path: Path, model_path: Path,
     finally:
         env.close()
 
-    verified_clears = [row["verified_clear_provenance"] for row in episodes if row["clear_status"] == "VERIFIED_CLEAR"]
+    verified_clears = [{"seed": row["seed"], "arm": row["arm"],
+        "episode_index": row["episode_index"], "provenance": row["verified_clear_provenance"]}
+        for row in episodes if row["clear_status"] == "VERIFIED_CLEAR"]
     has_verified_clear = bool(verified_clears)
     classification = "GOAL_REACHED" if has_verified_clear else "INCONCLUSIVE"
     if len(episodes) != len(SEEDS) * len(ARM_ORDER):
@@ -383,10 +385,15 @@ def run(contract_path: Path, spec_path: Path, model_path: Path,
         f"", f"ONNX Runtime `{policy.ort.__version__}`, providers `{policy.session.get_providers()}`. Source commit `{commit}`, dirty `{dirty}`. Original PyTorch `.pt` bytes were absent and lineage remains metadata-declared.",
         f"Requested execution context: `{REQUESTED_MODEL}` / `{REQUESTED_REASONING_EFFORT}`; `MODEL_ROUTING_VERIFICATION: {MODEL_ROUTING_VERIFICATION}` (no identity introspection is available).",
         "", "## Paired descriptive diagnostics", "", "| Seed | Status | Raw frames | Q4 frames | Difference | Raw lives lost | Q4 lives lost | Raw score | Q4 score | Raw switch rate | Q4 switch rate | Raw median Q margin | Q4 median Q margin |",
-        "|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|"]
+        "|---:|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|"]
     for pair in pairs:
-        report.append(f"| {pair['seed']} | {pair['status']} | {pair.get('raw_greedy_native_frames', '—')} | {pair.get('rolling_q4_native_frames', '—')} | {pair.get('native_frame_difference_rolling_minus_raw', '—')} | {pair.get('raw_greedy_life_losses', '—')} | {pair.get('rolling_q4_life_losses', '—')} | {pair.get('raw_greedy_raw_score', '—')} | {pair.get('rolling_q4_raw_score', '—')} | {pair.get('raw_greedy_action_switch_rate', '—')} | {pair.get('rolling_q4_action_switch_rate', '—')} | {pair.get('raw_greedy_median_q_margin', '—')} | {pair.get('rolling_q4_median_q_margin', '—')} |")
-    report += ["", "Requested and wrapper ALE-input actions are stored separately; sticky-resolved physical actions remain unknown. Raw and smoothed float32 Q-vectors and per-step trajectories are in `trajectory.jsonl`; full episode details are in `results.json`.", ""]
+        raw_clear = pair.get("raw_greedy", {}).get("clear_status", "—") if pair.get("raw_greedy") else "—"
+        q4_clear = pair.get("rolling_q4", {}).get("clear_status", "—") if pair.get("rolling_q4") else "—"
+        report.append(f"| {pair['seed']} | {pair['status']} | {raw_clear} | {q4_clear} | {pair.get('raw_greedy_native_frames', '—')} | {pair.get('rolling_q4_native_frames', '—')} | {pair.get('native_frame_difference_rolling_minus_raw', '—')} | {pair.get('raw_greedy_life_losses', '—')} | {pair.get('rolling_q4_life_losses', '—')} | {pair.get('raw_greedy_raw_score', '—')} | {pair.get('rolling_q4_raw_score', '—')} | {pair.get('raw_greedy_action_switch_rate', '—')} | {pair.get('rolling_q4_action_switch_rate', '—')} | {pair.get('raw_greedy_median_q_margin', '—')} | {pair.get('rolling_q4_median_q_margin', '—')} |")
+    verified_lines = [f"- Seed {row['seed']}, arm `{row['arm']}`, episode index {row['episode_index']}." for row in verified_clears] or ["- None."]
+    unverified_rows = [row for row in episodes if row["clear_status"] == "CANONICAL_CLEAR_UNVERIFIED"]
+    unverified_lines = [f"- Seed {row['seed']}, arm `{row['arm']}`, episode index {row['episode_index']}; missing/invalid provenance: `{row['missing_provenance_fields']}`." for row in unverified_rows] or ["- None."]
+    report += ["", "## Verified clear events", ""] + verified_lines + ["", "## Canonical clears without complete provenance", ""] + unverified_lines + ["", "Requested and wrapper ALE-input actions are stored separately; sticky-resolved physical actions remain unknown. Raw and smoothed float32 Q-vectors and per-step trajectories are in `trajectory.jsonl`; full episode details are in `results.json`.", ""]
     (output_dir / "report.md").write_text("\n".join(report), encoding="utf-8")
     return result
 
