@@ -1,0 +1,217 @@
+{
+  "MODEL_ROUTING_MARKER": "MODEL_ROUTING_VERIFICATION: UNAVAILABLE",
+  "MODEL_ROUTING_VERIFICATION": "UNAVAILABLE",
+  "combined_pre_run_and_formal_seconds": 1.1083074699999997,
+  "controller_or_champion_implication": false,
+  "diagnostic": "PROMOTED",
+  "diagnostic_hypothesis": "Exact Issue #50 uint8 stacks normalized once with Contract v2 reproduce logged ONNX Q vectors within 1e-6.",
+  "experiment_branch": "codex/issue-54-q-replay-consistency",
+  "failure_analysis": "All integrity gates passed; max_abs_error 0 is at or below 1e-6.",
+  "failure_bundle_wall_seconds": 0.00011734299187082797,
+  "finalization_margin_seconds": 1.5,
+  "formal_capture_hashes": {
+    "post_run_capture_attachment_wall_seconds": 0.0023153060028562322,
+    "stderr_artifact": "formal.stderr",
+    "stderr_path": "/tmp/issue54-formal.stderr",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout_artifact": "formal.stdout",
+    "stdout_path": "/tmp/issue54-formal.stdout",
+    "stdout_sha256": "da90c38623bb739de157518ee00651d0a70aa1a6f72f7de944b3cae496c5c0d9"
+  },
+  "formal_cli_timed_out": false,
+  "formal_cli_timeout_seconds": 17.6801952879905,
+  "formal_command": "timeout --signal=INT --kill-after=2s 20s env PYTHONPATH=/tmp/issue41-onnxruntime python -m scripts.analysis.run_issue54_q_replay_consistency --output-dir research/issue-54-q-replay-consistency-artifacts",
+  "formal_command_wall_seconds": 0.5360701089957729,
+  "has_verified_clear": "NO",
+  "input_hashes": {
+    "configs/eval/breakout_contract_v2.json": "7eca5ae5262a28aeabf3be658f8275a68f3d2ae40cc74379400be2890dc31a2a",
+    "configs/inference/inference_spec.json": "b396989041eff00396789c0f878fa783b071b0d3327aa1638c891a25d3f84507",
+    "issue50/decision_stack_index.jsonl": "757eab8a54327e0663e2d83e5156958b776c1c5e7a09521a3355a9af43746978",
+    "issue50/decision_stacks/seed105_baseline_ep1.uint8": "78f506be322d2faa03aa5770468ae45729e963f8d4d47859d9e74e956fc9c9fa",
+    "issue50/decision_stacks/seed105_candidate_ep2.uint8": "78f506be322d2faa03aa5770468ae45729e963f8d4d47859d9e74e956fc9c9fa",
+    "issue50/decision_stacks/seed206_baseline_ep3.uint8": "e973922e1390fb6dc32f849b036968a92083c8c3b673dd3d911aba346760dc55",
+    "issue50/decision_stacks/seed206_candidate_ep4.uint8": "e973922e1390fb6dc32f849b036968a92083c8c3b673dd3d911aba346760dc55",
+    "issue50/decision_stacks/seed307_baseline_ep5.uint8": "27ad2a34d6be0b01ae69764eb7ea8a930d7e77decc22a0f9cd83e4fd79197a95",
+    "issue50/decision_stacks/seed307_candidate_ep6.uint8": "27ad2a34d6be0b01ae69764eb7ea8a930d7e77decc22a0f9cd83e4fd79197a95",
+    "issue50/manifest.json": "91d7e7528d12644a5de154400ea479581d68b9d5e44650709b635568bbce7063",
+    "issue50/report.md": "1c9a57bf3ce850b836f5768276b64829f29faf6842089c37022f80318b2247d1",
+    "issue50/results.json": "6954370d9270b154de55c38c26d107b25347a82d3ecf86bc723cdf03b68cf582",
+    "issue50/trajectory.jsonl": "48c3ad056962862ba8a80219909caa6f4349a704642cef65b3210f62b47a2398",
+    "web/public/models/final_model/model.onnx": "cf90c74b1d09d5d7e2e0c71014f2daef2b5e1833425d300da06e34d1e4ef7f12",
+    "web/public/models/final_model/model.onnx.metadata.json": "fbb9868fa0fb0ad7ce511e59b368efbef984279178c554dede0ae7e950731512"
+  },
+  "integrity_passed": true,
+  "issue": 54,
+  "issue50_source_digest": "e32be297ba474635708fefd7da311e5db37b6076439e759be2701d4aaf2fee2f",
+  "issue52_context": "Issue #52 fresh-range probe failed before environment creation/collection (N=0); no fresh-input evidence.",
+  "logged_q_baseline": {
+    "matched_observations": 300,
+    "q_values_per_observation": 4,
+    "source": "Issue #50 trajectory.jsonl"
+  },
+  "matched_observation_count": 300,
+  "max_abs_error": 0.0,
+  "measured_combined_elapsed_scope": "Pre-run validation + frozen CLI + failure-bundle finalization + measured capture/hash attachment; excludes pre-launch supervisor startup and final metadata refresh. The outer timeout is reduced by a 0.25s startup allowance and enforces the inclusive 20-second cap.",
+  "metric": "max_i max_a |Q_replayed[i,a] - Q_logged[i,a]|",
+  "numpy_version": "2.3.5",
+  "observation_count": 300,
+  "phase1": "INCONCLUSIVE",
+  "phase2_transition": false,
+  "post_run_capture_attachment_wall_seconds": 0.0023153060028562322,
+  "pre_run_validation": {
+    "combined_validation_wall_seconds": 0.5698047120094998,
+    "compile": {
+      "command": "python -m py_compile breakout_rl/issue54_q_replay_consistency.py scripts/analysis/run_issue54_q_replay_consistency.py scripts/analysis/attach_issue54_capture.py scripts/analysis/run_issue54_once.py tests/test_issue54_q_replay_consistency.py",
+      "return_code": 0,
+      "status": "passed",
+      "stderr_path": "/tmp/issue54-final-6b23226-compile.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_path": "/tmp/issue54-final-6b23226-compile.stdout",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "wall_seconds": 0.033386069000698626
+    },
+    "diff_check": {
+      "command": "git show --check --oneline HEAD",
+      "return_code": 0,
+      "status": "passed",
+      "stderr_path": "/tmp/issue54-final-6b23226-diff_check.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_path": "/tmp/issue54-final-6b23226-diff_check.stdout",
+      "stdout_sha256": "7980d78564698597e844b26165bfc9e5da5a9186638b575cd5afb076ac84a068",
+      "wall_seconds": 0.0035885300021618605
+    },
+    "experiment_branch": "codex/issue-54-q-replay-consistency",
+    "focused_test": {
+      "command": "env PYTHONPATH=/tmp/issue41-onnxruntime python -m unittest tests.test_issue54_q_replay_consistency -v",
+      "count": 11,
+      "return_code": 0,
+      "status": "passed",
+      "stderr_path": "/tmp/issue54-final-6b23226-focused_test.stderr",
+      "stderr_sha256": "f78217936094af3723ff574a98dad41cbeb54b957f95ca69c7fa8119e1c0e6f0",
+      "stdout_path": "/tmp/issue54-final-6b23226-focused_test.stdout",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "wall_seconds": 0.25876184400112834
+    },
+    "preflight": {
+      "command": "timeout --signal=INT --kill-after=2s 20s env PYTHONPATH=/tmp/issue41-onnxruntime python -m scripts.analysis.run_issue54_q_replay_consistency --output-dir /tmp/issue54-preflight-6b23226 --preflight-only",
+      "preflight_result": {
+        "MODEL_ROUTING_VERIFICATION": "UNAVAILABLE",
+        "failure_reason": null,
+        "input_hashes": {
+          "configs/eval/breakout_contract_v2.json": "7eca5ae5262a28aeabf3be658f8275a68f3d2ae40cc74379400be2890dc31a2a",
+          "configs/inference/inference_spec.json": "b396989041eff00396789c0f878fa783b071b0d3327aa1638c891a25d3f84507",
+          "issue50/decision_stack_index.jsonl": "757eab8a54327e0663e2d83e5156958b776c1c5e7a09521a3355a9af43746978",
+          "issue50/decision_stacks/seed105_baseline_ep1.uint8": "78f506be322d2faa03aa5770468ae45729e963f8d4d47859d9e74e956fc9c9fa",
+          "issue50/decision_stacks/seed105_candidate_ep2.uint8": "78f506be322d2faa03aa5770468ae45729e963f8d4d47859d9e74e956fc9c9fa",
+          "issue50/decision_stacks/seed206_baseline_ep3.uint8": "e973922e1390fb6dc32f849b036968a92083c8c3b673dd3d911aba346760dc55",
+          "issue50/decision_stacks/seed206_candidate_ep4.uint8": "e973922e1390fb6dc32f849b036968a92083c8c3b673dd3d911aba346760dc55",
+          "issue50/decision_stacks/seed307_baseline_ep5.uint8": "27ad2a34d6be0b01ae69764eb7ea8a930d7e77decc22a0f9cd83e4fd79197a95",
+          "issue50/decision_stacks/seed307_candidate_ep6.uint8": "27ad2a34d6be0b01ae69764eb7ea8a930d7e77decc22a0f9cd83e4fd79197a95",
+          "issue50/manifest.json": "91d7e7528d12644a5de154400ea479581d68b9d5e44650709b635568bbce7063",
+          "issue50/report.md": "1c9a57bf3ce850b836f5768276b64829f29faf6842089c37022f80318b2247d1",
+          "issue50/results.json": "6954370d9270b154de55c38c26d107b25347a82d3ecf86bc723cdf03b68cf582",
+          "issue50/trajectory.jsonl": "48c3ad056962862ba8a80219909caa6f4349a704642cef65b3210f62b47a2398",
+          "web/public/models/final_model/model.onnx": "cf90c74b1d09d5d7e2e0c71014f2daef2b5e1833425d300da06e34d1e4ef7f12",
+          "web/public/models/final_model/model.onnx.metadata.json": "fbb9868fa0fb0ad7ce511e59b368efbef984279178c554dede0ae7e950731512"
+        },
+        "matched_rows": 300,
+        "native_frames": 0,
+        "replay_started": false,
+        "status": "preflight_passed",
+        "wall_seconds": 0.18651622800098266
+      },
+      "return_code": 0,
+      "status": "passed",
+      "stderr_path": "/tmp/issue54-final-6b23226-preflight.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_path": "/tmp/issue54-final-6b23226-preflight.stdout",
+      "stdout_sha256": "757b41efdd29681162b7c912cb62d41e174b0865de58acde709decd376476d64",
+      "wall_seconds": 0.27406826900551096
+    },
+    "repo_clean_after_validation": true,
+    "source_commit": "6b232266ad996e671c735054bb7dda88ab249db0",
+    "supervisor_startup_allowance_seconds": 0.25
+  },
+  "pre_run_validation_seconds": 0.5698047120094998,
+  "python_version": "3.12.14",
+  "recommended_next_decision": "Use this result only to decide whether replay implementation fidelity merits further investigation; do not infer controller/champion or Phase 2 status.",
+  "replay_source_digest": "098727eede673410dfc4d54ea12ff046e27031626261efa83c602c93f72eb578",
+  "research_base_commit": "a8641d99d6a0eb5b7226dae2b82ed3479f35e55f",
+  "round_status": "CONTINUE_RESEARCH",
+  "runtime": {
+    "active_providers": [
+      "CPUExecutionProvider"
+    ],
+    "actual_provider": "CPUExecutionProvider",
+    "available_providers": [
+      "AzureExecutionProvider",
+      "CPUExecutionProvider"
+    ],
+    "onnxruntime_version": "1.22.1",
+    "session_options": "ONNX Runtime defaults; matches Issue #50 CpuOnnxPolicy"
+  },
+  "runtime_comparability": "CPUExecutionProvider with ONNX Runtime default SessionOptions, matching Issue #50 CpuOnnxPolicy.",
+  "scope_limit": "Only the 300 selected Issue #50 life-window stacks are tested; no HVC inference.",
+  "source_commit": "6b232266ad996e671c735054bb7dda88ab249db0",
+  "spec_lineage_note": "Metadata names historical spec SHA 68637a63d3f0242f74089314049251521bec14a6fa3267b57fa46470acfff8ec; pinned current spec only changed the embedded Contract v2 digest; preprocessing, inputs, outputs and action semantics remain unchanged.",
+  "supervisor_startup_allowance_seconds": 0.25,
+  "timing_provenance": {
+    "authoritative_exact_head_validation_record": {
+      "authority_note": "This external record ran on the exact executable HEAD and is authoritative for the pre-run gate; raw stdout contains stale embedded runner metadata.",
+      "combined_validation_wall_seconds": 0.5698047120094998,
+      "entries": {
+        "compile": {
+          "command": "python -m py_compile breakout_rl/issue54_q_replay_consistency.py scripts/analysis/run_issue54_q_replay_consistency.py scripts/analysis/attach_issue54_capture.py scripts/analysis/run_issue54_once.py tests/test_issue54_q_replay_consistency.py",
+          "status": "passed",
+          "wall_seconds": 0.033386069000698626
+        },
+        "diff_check": {
+          "command": "git show --check --oneline HEAD",
+          "status": "passed",
+          "wall_seconds": 0.0035885300021618605
+        },
+        "focused_test": {
+          "command": "env PYTHONPATH=/tmp/issue41-onnxruntime python -m unittest tests.test_issue54_q_replay_consistency -v",
+          "count": 11,
+          "status": "passed",
+          "wall_seconds": 0.25876184400112834
+        },
+        "preflight": {
+          "command": "timeout --signal=INT --kill-after=2s 20s env PYTHONPATH=/tmp/issue41-onnxruntime python -m scripts.analysis.run_issue54_q_replay_consistency --output-dir /tmp/issue54-preflight-6b23226 --preflight-only",
+          "status": "passed",
+          "wall_seconds": 0.27406826900551096
+        }
+      },
+      "experiment_branch": "codex/issue-54-q-replay-consistency",
+      "path": "pre_run_validation.json",
+      "source_commit": "6b232266ad996e671c735054bb7dda88ab249db0"
+    },
+    "measured_formal_components": {
+      "capture_hash_attachment_seconds": 0.0023153060028562322,
+      "combined_cap_seconds": 20.0,
+      "combined_measured_components_seconds": 1.1083074699999997,
+      "external_supervisor_wrapper_wall_seconds": 0.7543508450035006,
+      "failure_bundle_finalization_seconds": 0.00011734299187082797,
+      "formal_command_wall_seconds": 0.5360701089957729,
+      "validation_plus_external_wrapper_seconds": 1.3241555570130004
+    },
+    "raw_cli_stdout": {
+      "cli_run_wall_seconds": 0.38989688699075487,
+      "combined_pre_run_and_formal_seconds": 1.3898968869907549,
+      "combined_scope": "internal 1.0 second reservation plus CLI run wall; excludes external capture/hash attachment and final manifest refresh",
+      "embedded_pre_run_validation_snapshot": {
+        "compile_wall_seconds": 0.03140434200759046,
+        "diff_check_wall_seconds": 0.002714288988499902,
+        "focused_test_count": 9,
+        "focused_test_wall_seconds": 0.13999250099004712,
+        "preflight_wall_seconds": 0.27102403600292746
+      },
+      "path": "formal.stdout",
+      "pre_run_validation_seconds": 1.0,
+      "pre_run_value_scope": "conservative internal PRE_RUN_VALIDATION_SECONDS reservation, not measured validation",
+      "preserved_unchanged": true,
+      "sha256": "da90c38623bb739de157518ee00651d0a70aa1a6f72f7de944b3cae496c5c0d9"
+    }
+  },
+  "wall_seconds_before_report_write": 0.3415644799970323
+}
