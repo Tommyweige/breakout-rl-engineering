@@ -12,7 +12,10 @@ from breakout_rl.paddle_contact_probe import (
     EXPECTED_ORDER, _process_contact_event, analyze_probe_runs, clamp_target_center,
     load_probe_config, select_outgoing_vx,
 )
-from breakout_rl.vision_controller import PredictiveBreakoutController
+from breakout_rl.vision_controller import (
+    BallEstimate, PaddleDetection, PlayfieldBounds, PredictiveBreakoutController,
+    VisionObservation, choose_paddle_action, predict_paddle_intercept,
+)
 
 
 def row(*, frame=10, direct=True, vy=2.0, vx=1.0, horizon=2.0, y=185.0, top=189.0,
@@ -59,6 +62,41 @@ class ProbeTargetTests(unittest.TestCase):
     def test_probe_action_api_has_no_evaluator_arguments(self):
         signature = inspect.signature(PredictiveBreakoutController.select_action_with_target_offset)
         self.assertEqual(tuple(signature.parameters), ("self", "frame", "target_offset_px"))
+
+    def test_zero_offset_preserves_unclamped_baseline_near_both_side_bounds(self):
+        bounds = PlayfieldBounds(8.0, 151.0, 32.0, 192.0, 1.0)
+        paddle = PaddleDetection(72.0, 87.0, 79.5, 189.0, 192.0, 1.0)
+
+        class ObservationFixtureController(PredictiveBreakoutController):
+            def __init__(self, observation):
+                super().__init__()
+                self.fixture_observation = observation
+
+            def observe(self, _frame):
+                return self.fixture_observation
+
+        for side, ball_x in (("left", 10.0), ("right", 149.0)):
+            with self.subTest(side=side):
+                ball = BallEstimate(ball_x, 170.0, 0.0, 2.0, 1.0, 1, 0, True)
+                observation = VisionObservation(1, bounds, paddle, ball, 1)
+                controller = ObservationFixtureController(observation)
+                predicted = predict_paddle_intercept(
+                    ball_x=ball_x, ball_y=170.0, ball_vx=0.0, ball_vy=2.0,
+                    paddle_plane_y=paddle.top - 2.0, bounds=bounds,
+                )
+                self.assertIsNotNone(predicted)
+                intercept, _horizon = predicted
+                legal_min, legal_max = bounds.left + 7.5, bounds.right - 7.5
+                self.assertTrue(intercept < legal_min if side == "left" else intercept > legal_max)
+
+                decision = controller.select_action_with_target_offset(object(), target_offset_px=0.0)
+                expected_error = intercept - paddle.center_x
+                expected_action = choose_paddle_action(
+                    error=expected_error, previous_direction="NOOP", deadband=3.0, hysteresis=1.0,
+                )
+                self.assertEqual(decision.predicted_intercept_x, intercept)
+                self.assertEqual(decision.paddle_error, expected_error)
+                self.assertEqual(decision.action, expected_action)
 
 
 class ProbeContactTests(unittest.TestCase):
