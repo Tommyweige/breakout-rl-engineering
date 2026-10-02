@@ -9,7 +9,7 @@ from pathlib import Path
 
 import numpy as np
 
-from breakout_rl.paddle_contact_probe import (
+from breakout_rl.issue37_reachable_contact_probe import (
     EXPECTED_ORDER, _process_contact_event, analyze_probe_runs, clamp_target_center,
     load_probe_config, select_outgoing_vx,
 )
