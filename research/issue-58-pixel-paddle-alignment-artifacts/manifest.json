@@ -1,0 +1,220 @@
+{
+  "artifacts": {
+    "formal_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "formal_stdout_sha256": "e96d83e31300d3432278b7676afd23fe32522fd03ded3dfbaee008fe10f710d5",
+    "report_sha256": "716f5179226bca19200272e094f2dbc184e86b09568fd189f918ee8d2c83ee96",
+    "results_sha256": "82abe6ce4e4f1e81027144de4aecdea27750642728db951c2f1649cbc947fd27",
+    "stack_index_sha256": "1f68e2a5197567ba9b2627adf57ce30fc705a84fdfd10e4a2dcbde92544e5a32",
+    "terminal_wrapper_timing_sha256": "5a129767e0f8715c4978e6656d9c16ce2a532b5ed50acd27b66e370f43a1aaf8",
+    "trajectory_sha256": "4cffd725616cffcc061745873865da55bebdf0b5a9a1d1b1c1661ecb0ee6d17a",
+    "wrapper_timing_sha256": "d49659c71dd73cfce10ed1968e42030c1f2e8fa2f204e9a950d72cb31a52287b"
+  },
+  "calibration_selection": {
+    "activation_counts_by_threshold": {
+      "100": 42,
+      "105": 12,
+      "110": 2,
+      "115": 0,
+      "120": 0,
+      "130": 0,
+      "148": 0,
+      "200": 0,
+      "80": 64,
+      "90": 52,
+      "95": 50
+    },
+    "activation_is_object_truth": false,
+    "candidate_activation_at_selected_threshold": "64/300 indexed rows = 32/150 unique observations",
+    "detector_source_sha256": "9c58280398839cde85f554a79193e28e562c4c72a5101ff2be9def731b000c04",
+    "index_sha256": "757eab8a54327e0663e2d83e5156958b776c1c5e7a09521a3355a9af43746978",
+    "indexed_rows": 300,
+    "results_sha256": "6954370d9270b154de55c38c26d107b25347a82d3ecf86bc723cdf03b68cf582",
+    "selected_threshold": 80,
+    "selection_rule": "maximize indexed stacks with exactly one valid ball and one valid paddle; ties choose higher threshold",
+    "source_issue": 50,
+    "stack_sha256s": {
+      "seed105_baseline_ep1.uint8": "78f506be322d2faa03aa5770468ae45729e963f8d4d47859d9e74e956fc9c9fa",
+      "seed105_candidate_ep2.uint8": "78f506be322d2faa03aa5770468ae45729e963f8d4d47859d9e74e956fc9c9fa",
+      "seed206_baseline_ep3.uint8": "e973922e1390fb6dc32f849b036968a92083c8c3b673dd3d911aba346760dc55",
+      "seed206_candidate_ep4.uint8": "e973922e1390fb6dc32f849b036968a92083c8c3b673dd3d911aba346760dc55",
+      "seed307_baseline_ep5.uint8": "27ad2a34d6be0b01ae69764eb7ea8a930d7e77decc22a0f9cd83e4fd79197a95",
+      "seed307_candidate_ep6.uint8": "27ad2a34d6be0b01ae69764eb7ea8a930d7e77decc22a0f9cd83e4fd79197a95"
+    },
+    "trajectory_sha256": "48c3ad056962862ba8a80219909caa6f4349a704642cef65b3210f62b47a2398",
+    "unique_pixel_observations": 150
+  },
+  "classification": "INCONCLUSIVE",
+  "exact_formal_command": [
+    "timeout",
+    "--signal=INT",
+    "--kill-after=5s",
+    "600s",
+    "env",
+    "PYTHONPATH=/tmp/issue41-onnxruntime",
+    "python",
+    "-m",
+    "scripts.evaluation.run_issue58_pixel_paddle_alignment",
+    "--output-dir",
+    "research/issue-58-pixel-paddle-alignment-artifacts"
+  ],
+  "issue": 58,
+  "issue58_source_sha256": "e35f2524c6d71c84a3a5e24d0821bdc36c6a3b222b59f6347bc7aa9773605dae",
+  "manifest_sha256_at_formal_completion": "759fd665bbbd54a556ea0614391ae2d2bee73fd440946b828d3c693a4883a426",
+  "manifest_sha256_sidecar": "/tmp/issue58-formal-manifest.sha256",
+  "pre_run_validation_package": {
+    "package": "/tmp/issue58-pre-run-validation.json",
+    "package_sha256": "c05b29ece39c258c3835ed1934bf78147a25f21de2e64dc722b72ff196fe50cc",
+    "source_sha256": "e35f2524c6d71c84a3a5e24d0821bdc36c6a3b222b59f6347bc7aa9773605dae",
+    "validation": {
+      "ale_environment_created": false,
+      "combined_wall_seconds": 7.540607285995335,
+      "compile_command": "env PYTHONPATH=/tmp/issue41-onnxruntime python -m compileall -q breakout_rl/issue58_pixel_paddle_alignment.py scripts/evaluation/run_issue58_pixel_paddle_alignment.py tests/test_issue58_pixel_paddle_alignment.py",
+      "compile_wall_seconds": 0.039585597,
+      "current_final_validation_wall_seconds": 0.676663039,
+      "earlier_validation_attempts": [
+        {
+          "ale_environment_created": false,
+          "ale_native_frames": 0,
+          "ale_resets": 0,
+          "ale_steps": 0,
+          "command": "env PYTHONPATH=/tmp/issue41-onnxruntime python -m unittest tests.test_issue58_pixel_paddle_alignment -v",
+          "name": "threshold_fixture_assertion",
+          "result": "failed one assertion: the fixture used 199 but expected it below T=80; corrected to 79",
+          "test_count": 11,
+          "wall_seconds": 0.511703
+        },
+        {
+          "ale_environment_created": false,
+          "ale_native_frames": 0,
+          "ale_resets": 0,
+          "ale_steps": 0,
+          "command": "env PYTHONPATH=/tmp/issue41-onnxruntime python -m unittest tests.test_issue58_pixel_paddle_alignment -v",
+          "name": "calibration_json_key_normalization_assertion",
+          "result": "failed one assertion comparing integer threshold keys to JSON string keys; comparison normalized through JSON round-trip",
+          "test_count": 11,
+          "wall_seconds": 0.399508
+        }
+      ],
+      "earlier_validation_work_wall_seconds": 3.14098,
+      "other_earlier_validation_work_wall_seconds": 3.722964246995335,
+      "passed": true,
+      "preflight_command": "env PYTHONPATH=/tmp/issue41-onnxruntime python -m scripts.evaluation.run_issue58_pixel_paddle_alignment --output-dir /tmp/issue58-preflight --preflight-only",
+      "preflight_native_frames": 0,
+      "preflight_status": "preflight_passed",
+      "preflight_wall_seconds": 0.238442585,
+      "prior_passing_validation_runs_seconds": [
+        0.7378490000000002,
+        0.7522075269953348,
+        0.759421371,
+        0.752562087,
+        0.720924262
+      ],
+      "test_command": "env PYTHONPATH=/tmp/issue41-onnxruntime python -m unittest tests.test_issue58_pixel_paddle_alignment -v",
+      "test_count": 11,
+      "test_wall_seconds": 0.398634857,
+      "validation_cap_seconds": 20.0
+    }
+  },
+  "raw_console_outputs": {
+    "artifact_stderr": "formal.stderr",
+    "artifact_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "artifact_stdout": "formal.stdout",
+    "artifact_stdout_sha256": "e96d83e31300d3432278b7676afd23fe32522fd03ded3dfbaee008fe10f710d5",
+    "capture_location": "outside the isolated worktree; byte-identical copies are included in the run artifacts",
+    "stderr_path": "/tmp/issue58-formal.stderr",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout_path": "/tmp/issue58-formal.stdout",
+    "stdout_sha256": "e96d83e31300d3432278b7676afd23fe32522fd03ded3dfbaee008fe10f710d5"
+  },
+  "round_status": "CONTINUE_RESEARCH",
+  "source_branch": "codex/issue-58-pixel-paddle-alignment",
+  "source_commit": "d591af16faae00dc8286b13a0de2df17e2556a38",
+  "terminal_wrapper_timing": {
+    "bytes": 961,
+    "file": "terminal_wrapper_timing.json",
+    "sha256": "5a129767e0f8715c4978e6656d9c16ce2a532b5ed50acd27b66e370f43a1aaf8"
+  },
+  "validation": {
+    "ale_environment_created": false,
+    "combined_wall_seconds": 7.540607285995335,
+    "compile_command": "env PYTHONPATH=/tmp/issue41-onnxruntime python -m compileall -q breakout_rl/issue58_pixel_paddle_alignment.py scripts/evaluation/run_issue58_pixel_paddle_alignment.py tests/test_issue58_pixel_paddle_alignment.py",
+    "compile_wall_seconds": 0.039585597,
+    "current_final_validation_wall_seconds": 0.676663039,
+    "earlier_validation_attempts": [
+      {
+        "ale_environment_created": false,
+        "ale_native_frames": 0,
+        "ale_resets": 0,
+        "ale_steps": 0,
+        "command": "env PYTHONPATH=/tmp/issue41-onnxruntime python -m unittest tests.test_issue58_pixel_paddle_alignment -v",
+        "name": "threshold_fixture_assertion",
+        "result": "failed one assertion: the fixture used 199 but expected it below T=80; corrected to 79",
+        "test_count": 11,
+        "wall_seconds": 0.511703
+      },
+      {
+        "ale_environment_created": false,
+        "ale_native_frames": 0,
+        "ale_resets": 0,
+        "ale_steps": 0,
+        "command": "env PYTHONPATH=/tmp/issue41-onnxruntime python -m unittest tests.test_issue58_pixel_paddle_alignment -v",
+        "name": "calibration_json_key_normalization_assertion",
+        "result": "failed one assertion comparing integer threshold keys to JSON string keys; comparison normalized through JSON round-trip",
+        "test_count": 11,
+        "wall_seconds": 0.399508
+      }
+    ],
+    "earlier_validation_work_wall_seconds": 3.14098,
+    "other_earlier_validation_work_wall_seconds": 3.722964246995335,
+    "passed": true,
+    "preflight_command": "env PYTHONPATH=/tmp/issue41-onnxruntime python -m scripts.evaluation.run_issue58_pixel_paddle_alignment --output-dir /tmp/issue58-preflight --preflight-only",
+    "preflight_native_frames": 0,
+    "preflight_status": "preflight_passed",
+    "preflight_wall_seconds": 0.238442585,
+    "prior_passing_validation_runs_seconds": [
+      0.7378490000000002,
+      0.7522075269953348,
+      0.759421371,
+      0.752562087,
+      0.720924262
+    ],
+    "test_command": "env PYTHONPATH=/tmp/issue41-onnxruntime python -m unittest tests.test_issue58_pixel_paddle_alignment -v",
+    "test_count": 11,
+    "test_wall_seconds": 0.398634857,
+    "validation_cap_seconds": 20.0
+  },
+  "wall_accounting": {
+    "collection_cap_seconds": 560.0,
+    "collection_seconds": 10.958743864001008,
+    "combined_validation_setup_seconds": 12.733860394994096,
+    "finalization_cap_seconds": 20.0,
+    "finalization_reserve_seconds": 20.0,
+    "finalization_seconds": 0.09781554799701553,
+    "finalization_seconds_through_terminal_writes": 0.09781554799701553,
+    "formal_seconds": 11.24472311900172,
+    "measurement_complete_through": "terminal report/results/manifest/manifest-sidecar writes; excludes writing terminal_wrapper_timing.json reconciliation copy",
+    "measurement_scope": "runner elapsed and finalization are measured through the completed runner manifest write; disjoint CLI finalization starts at runner return and includes console summary, capture-stream restoration, artifact packaging, and terminal report/results/manifest/sidecar writes",
+    "outer_command_elapsed_seconds": 11.40316659900418,
+    "outer_command_elapsed_seconds_through_terminal_writes": 11.40316659900418,
+    "outer_elapsed_tail_seconds": 0.0010429890098748729,
+    "post_run_artifact_packaging_seconds": 0.004048385002533905,
+    "process_launch_reserve_seconds": 5.0,
+    "runner_elapsed_through_manifest_seconds": 11.24472311900172,
+    "runner_finalization_through_manifest_seconds": 0.09272432299621869,
+    "setup_native_frames": 0,
+    "setup_plus_test_cap_seconds": 20.0,
+    "setup_seconds": 0.19325310899876058,
+    "terminal_write_tail_seconds": 0.0010428399982629344,
+    "total_formal_seconds": 11.24472311900172,
+    "total_including_validation_and_packaging_seconds": 23.943773884999516,
+    "total_including_validation_seconds": 23.785330404997055,
+    "total_seconds": 23.785330404997055,
+    "total_wall_cap_seconds": 600.0,
+    "validation_plus_launch_reserve_plus_formal_seconds_through_terminal_writes": 23.943773884999516
+  },
+  "wrapper_timing": {
+    "file": "wrapper_timing.json",
+    "sha256": "d49659c71dd73cfce10ed1968e42030c1f2e8fa2f204e9a950d72cb31a52287b"
+  },
+  "wrapper_timing_sidecar": "/tmp/issue58-formal-wrapper-timing.json"
+}

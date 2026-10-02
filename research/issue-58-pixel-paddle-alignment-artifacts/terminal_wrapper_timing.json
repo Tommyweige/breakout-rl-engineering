@@ -1,0 +1,13 @@
+{
+  "combined_time_tail_seconds": 0.0010429890098748729,
+  "finalization_tail_seconds": 0.0010428399982629344,
+  "manifest_provisional_packaging_seconds_reconciled": 0.0005280899931676686,
+  "manifest_sha256_at_formal_completion": "759fd665bbbd54a556ea0614391ae2d2bee73fd440946b828d3c693a4883a426",
+  "outer_artifact_finalization_seconds_through_terminal_writes": 0.09781554799701553,
+  "outer_command_elapsed_seconds_through_terminal_writes": 11.40316659900418,
+  "outer_command_elapsed_tail_seconds": 0.0010429890098748729,
+  "post_run_artifact_packaging_seconds": 0.004048385002533905,
+  "schema_version": 1,
+  "scope": "Derived from /tmp/issue58-formal-wrapper-timing.json. Measures through terminal report/results/manifest/manifest-sidecar writes; excludes writing this later reconciliation artifact and the subsequent reconciled manifest hash sidecar.",
+  "validation_plus_launch_reserve_plus_formal_seconds_through_terminal_writes": 23.943773884999516
+}

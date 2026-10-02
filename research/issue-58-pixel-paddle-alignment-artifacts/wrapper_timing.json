@@ -1,0 +1,8 @@
+{
+  "final_manifest_sha256_sidecar": "/tmp/issue58-formal-manifest.sha256",
+  "measurement_complete_through": "manifest hash sidecar write before binding wrapper_timing.json",
+  "outer_artifact_finalization_seconds": 0.0967727079987526,
+  "outer_command_elapsed_seconds": 11.402123609994305,
+  "process_launch_reserve_seconds": 5.0,
+  "validation_plus_outer_command_elapsed_seconds": 23.94273089598964
+}
