@@ -1,0 +1,473 @@
+{
+  "artifacts": {
+    "decision_stack_files": {
+      "seed105_baseline_ep1.uint8": {
+        "bytes": 1411200,
+        "sha256": "78f506be322d2faa03aa5770468ae45729e963f8d4d47859d9e74e956fc9c9fa"
+      },
+      "seed105_candidate_ep2.uint8": {
+        "bytes": 1411200,
+        "sha256": "78f506be322d2faa03aa5770468ae45729e963f8d4d47859d9e74e956fc9c9fa"
+      },
+      "seed206_baseline_ep3.uint8": {
+        "bytes": 1411200,
+        "sha256": "e973922e1390fb6dc32f849b036968a92083c8c3b673dd3d911aba346760dc55"
+      },
+      "seed206_candidate_ep4.uint8": {
+        "bytes": 1411200,
+        "sha256": "e973922e1390fb6dc32f849b036968a92083c8c3b673dd3d911aba346760dc55"
+      },
+      "seed307_baseline_ep5.uint8": {
+        "bytes": 1411200,
+        "sha256": "27ad2a34d6be0b01ae69764eb7ea8a930d7e77decc22a0f9cd83e4fd79197a95"
+      },
+      "seed307_candidate_ep6.uint8": {
+        "bytes": 1411200,
+        "sha256": "27ad2a34d6be0b01ae69764eb7ea8a930d7e77decc22a0f9cd83e4fd79197a95"
+      }
+    },
+    "decision_stack_index": "decision_stack_index.jsonl",
+    "decision_stack_index_sha256": "757eab8a54327e0663e2d83e5156958b776c1c5e7a09521a3355a9af43746978",
+    "decision_stacks": "decision_stacks",
+    "trajectory": "trajectory.jsonl",
+    "trajectory_sha256": "48c3ad056962862ba8a80219909caa6f4349a704642cef65b3210f62b47a2398"
+  },
+  "candidate_hypothesis_status": "INCONCLUSIVE",
+  "classification": "INCONCLUSIVE",
+  "completion_support": {
+    "ale_py_version": "0.12.0",
+    "audit_config_path": "configs/eval/breakout_completion_audit_v1.json",
+    "completion_detection_source": "ale_ram_bcd_score_and_raw_reward_agreement",
+    "completion_rule": "destroy both brick walls; exact documented maximum score",
+    "detector_id": "ale-breakout-two-wall-score-864-v2",
+    "difficulty": 0,
+    "environment_id": "ALE/Breakout-v5",
+    "game": "breakout",
+    "mode": 0,
+    "reason": null,
+    "rom_sha256": "376323f051c3c373c887fd83abead39d87d844ff283d435f4addbfc1710c6fd5",
+    "schema_version": 1,
+    "score_ram_addresses": [
+      76,
+      77
+    ],
+    "score_ram_byte_order": "high_pair_then_low_pair",
+    "score_ram_encoding": "packed_bcd_four_digit",
+    "score_threshold": 864,
+    "supported": true
+  },
+  "episodes": [
+    {
+      "agent_steps": 1572,
+      "ale_input_action_counts": [
+        191,
+        325,
+        480,
+        576
+      ],
+      "arm": "baseline",
+      "canonical_clear": false,
+      "clear_agent_step": null,
+      "clear_emulator_frame": null,
+      "clear_score": null,
+      "clear_status": "NO_CLEAR",
+      "completion_detection_source": "ale_ram_bcd_score_and_raw_reward_agreement",
+      "detector_diagnostics": {
+        "ball_absent": 1572,
+        "ball_ambiguous": 0,
+        "ball_unique": 0,
+        "both_unique": 0,
+        "candidate_fallbacks": 0,
+        "candidate_overrides": 0,
+        "paddle_absent": 1572,
+        "paddle_ambiguous": 0,
+        "paddle_unique": 0
+      },
+      "episode_index": 1,
+      "initial_native_frame": 1,
+      "life_losses": 5,
+      "lives_remaining": 0,
+      "native_frames": 6287,
+      "raw_score": 74.0,
+      "requested_action_counts": [
+        191,
+        319,
+        483,
+        579
+      ],
+      "seed": 105,
+      "stop_reason": "terminated"
+    },
+    {
+      "agent_steps": 1572,
+      "ale_input_action_counts": [
+        191,
+        325,
+        480,
+        576
+      ],
+      "arm": "candidate",
+      "canonical_clear": false,
+      "clear_agent_step": null,
+      "clear_emulator_frame": null,
+      "clear_score": null,
+      "clear_status": "NO_CLEAR",
+      "completion_detection_source": "ale_ram_bcd_score_and_raw_reward_agreement",
+      "detector_diagnostics": {
+        "ball_absent": 1572,
+        "ball_ambiguous": 0,
+        "ball_unique": 0,
+        "both_unique": 0,
+        "candidate_fallbacks": 1572,
+        "candidate_overrides": 0,
+        "paddle_absent": 1572,
+        "paddle_ambiguous": 0,
+        "paddle_unique": 0
+      },
+      "episode_index": 2,
+      "initial_native_frame": 1,
+      "life_losses": 5,
+      "lives_remaining": 0,
+      "native_frames": 6287,
+      "raw_score": 74.0,
+      "requested_action_counts": [
+        191,
+        319,
+        483,
+        579
+      ],
+      "seed": 105,
+      "stop_reason": "terminated"
+    },
+    {
+      "agent_steps": 1219,
+      "ale_input_action_counts": [
+        152,
+        303,
+        337,
+        427
+      ],
+      "arm": "baseline",
+      "canonical_clear": false,
+      "clear_agent_step": null,
+      "clear_emulator_frame": null,
+      "clear_score": null,
+      "clear_status": "NO_CLEAR",
+      "completion_detection_source": "ale_ram_bcd_score_and_raw_reward_agreement",
+      "detector_diagnostics": {
+        "ball_absent": 1219,
+        "ball_ambiguous": 0,
+        "ball_unique": 0,
+        "both_unique": 0,
+        "candidate_fallbacks": 0,
+        "candidate_overrides": 0,
+        "paddle_absent": 1219,
+        "paddle_ambiguous": 0,
+        "paddle_unique": 0
+      },
+      "episode_index": 3,
+      "initial_native_frame": 21,
+      "life_losses": 5,
+      "lives_remaining": 0,
+      "native_frames": 4873,
+      "raw_score": 70.0,
+      "requested_action_counts": [
+        152,
+        296,
+        342,
+        429
+      ],
+      "seed": 206,
+      "stop_reason": "terminated"
+    },
+    {
+      "agent_steps": 1219,
+      "ale_input_action_counts": [
+        152,
+        303,
+        337,
+        427
+      ],
+      "arm": "candidate",
+      "canonical_clear": false,
+      "clear_agent_step": null,
+      "clear_emulator_frame": null,
+      "clear_score": null,
+      "clear_status": "NO_CLEAR",
+      "completion_detection_source": "ale_ram_bcd_score_and_raw_reward_agreement",
+      "detector_diagnostics": {
+        "ball_absent": 1219,
+        "ball_ambiguous": 0,
+        "ball_unique": 0,
+        "both_unique": 0,
+        "candidate_fallbacks": 1219,
+        "candidate_overrides": 0,
+        "paddle_absent": 1219,
+        "paddle_ambiguous": 0,
+        "paddle_unique": 0
+      },
+      "episode_index": 4,
+      "initial_native_frame": 21,
+      "life_losses": 5,
+      "lives_remaining": 0,
+      "native_frames": 4873,
+      "raw_score": 70.0,
+      "requested_action_counts": [
+        152,
+        296,
+        342,
+        429
+      ],
+      "seed": 206,
+      "stop_reason": "terminated"
+    },
+    {
+      "agent_steps": 886,
+      "ale_input_action_counts": [
+        124,
+        225,
+        246,
+        291
+      ],
+      "arm": "baseline",
+      "canonical_clear": false,
+      "clear_agent_step": null,
+      "clear_emulator_frame": null,
+      "clear_score": null,
+      "clear_status": "NO_CLEAR",
+      "completion_detection_source": "ale_ram_bcd_score_and_raw_reward_agreement",
+      "detector_diagnostics": {
+        "ball_absent": 886,
+        "ball_ambiguous": 0,
+        "ball_unique": 0,
+        "both_unique": 0,
+        "candidate_fallbacks": 0,
+        "candidate_overrides": 0,
+        "paddle_absent": 886,
+        "paddle_ambiguous": 0,
+        "paddle_unique": 0
+      },
+      "episode_index": 5,
+      "initial_native_frame": 5,
+      "life_losses": 5,
+      "lives_remaining": 0,
+      "native_frames": 3541,
+      "raw_score": 38.0,
+      "requested_action_counts": [
+        124,
+        217,
+        251,
+        294
+      ],
+      "seed": 307,
+      "stop_reason": "terminated"
+    },
+    {
+      "agent_steps": 886,
+      "ale_input_action_counts": [
+        124,
+        225,
+        246,
+        291
+      ],
+      "arm": "candidate",
+      "canonical_clear": false,
+      "clear_agent_step": null,
+      "clear_emulator_frame": null,
+      "clear_score": null,
+      "clear_status": "NO_CLEAR",
+      "completion_detection_source": "ale_ram_bcd_score_and_raw_reward_agreement",
+      "detector_diagnostics": {
+        "ball_absent": 886,
+        "ball_ambiguous": 0,
+        "ball_unique": 0,
+        "both_unique": 0,
+        "candidate_fallbacks": 886,
+        "candidate_overrides": 0,
+        "paddle_absent": 886,
+        "paddle_ambiguous": 0,
+        "paddle_unique": 0
+      },
+      "episode_index": 6,
+      "initial_native_frame": 5,
+      "life_losses": 5,
+      "lives_remaining": 0,
+      "native_frames": 3541,
+      "raw_score": 38.0,
+      "requested_action_counts": [
+        124,
+        217,
+        251,
+        294
+      ],
+      "seed": 307,
+      "stop_reason": "terminated"
+    }
+  ],
+  "evaluation_protocol": {
+    "action_rule": "RIGHT=2 if delta>=2; LEFT=3 if delta<=-2; else NOOP=0; fallback raw argmax",
+    "aggregate_native_frame_cap": 648000,
+    "baseline": "raw ONNX argmax regardless of detector output",
+    "bright_threshold": 200,
+    "candidate_inputs": "channel 3 pixels only; no RAM/score/lives/completion/Q influence on override",
+    "collection_wall_cap_seconds": 560.0,
+    "component_connectivity": 8,
+    "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+    "max_agent_steps_per_episode": 27000,
+    "max_native_frames_per_episode": 108000,
+    "ordered_schedule": [
+      {
+        "arm": "baseline",
+        "seed": 105
+      },
+      {
+        "arm": "candidate",
+        "seed": 105
+      },
+      {
+        "arm": "baseline",
+        "seed": 206
+      },
+      {
+        "arm": "candidate",
+        "seed": 206
+      },
+      {
+        "arm": "baseline",
+        "seed": 307
+      },
+      {
+        "arm": "candidate",
+        "seed": 307
+      }
+    ],
+    "roi": {
+      "ball": [
+        54,
+        73,
+        6,
+        78
+      ],
+      "paddle": [
+        73,
+        83,
+        6,
+        78
+      ]
+    },
+    "seeds": [
+      105,
+      206,
+      307
+    ]
+  },
+  "evaluation_status": "completed",
+  "exact_formal_command": [
+    "timeout",
+    "--signal=INT",
+    "--kill-after=5s",
+    "600s",
+    "env",
+    "PYTHONPATH=/tmp/issue41-onnxruntime",
+    "python",
+    "-m",
+    "scripts.evaluation.run_issue50_pixel_paddle_alignment",
+    "--output-dir",
+    "research/issue-50-pixel-paddle-alignment-artifacts"
+  ],
+  "has_verified_clear": false,
+  "issue": 50,
+  "model": {
+    "calibration_trajectory_sha256": "5d89f8bc30fb1eba2acb21dc8355160addf0c17938ab054f310703401d5043dc",
+    "calibration_use": "provenance/integrity only; no threshold or action influence",
+    "completion_audit_sha256": "43d431e77a4a3b60dd720933ee399767d456a6c633ee93aab7265d92e4f1b64b",
+    "contract_sha256": "7eca5ae5262a28aeabf3be658f8275a68f3d2ae40cc74379400be2890dc31a2a",
+    "inference_spec_sha256": "b396989041eff00396789c0f878fa783b071b0d3327aa1638c891a25d3f84507",
+    "metadata_inference_spec_sha256": "68637a63d3f0242f74089314049251521bec14a6fa3267b57fa46470acfff8ec",
+    "metadata_lineage_note": "Metadata's historical spec SHA matches the earlier spec at commit 025d4bb; commit d3d235a changed only its embedded Contract v2 digest. Input, preprocessing, output, and action semantics are unchanged.",
+    "metadata_sha256": "fbb9868fa0fb0ad7ce511e59b368efbef984279178c554dede0ae7e950731512",
+    "model_sha256": "cf90c74b1d09d5d7e2e0c71014f2daef2b5e1833425d300da06e34d1e4ef7f12"
+  },
+  "native_frames": 29402,
+  "paired_deltas_descriptive_only_non_adjudicating": [
+    {
+      "life_losses_candidate_minus_baseline": 0,
+      "native_frames_candidate_minus_baseline": 0,
+      "raw_score_candidate_minus_baseline": 0.0,
+      "seed": 105
+    },
+    {
+      "life_losses_candidate_minus_baseline": 0,
+      "native_frames_candidate_minus_baseline": 0,
+      "raw_score_candidate_minus_baseline": 0.0,
+      "seed": 206
+    },
+    {
+      "life_losses_candidate_minus_baseline": 0,
+      "native_frames_candidate_minus_baseline": 0,
+      "raw_score_candidate_minus_baseline": 0.0,
+      "seed": 307
+    }
+  ],
+  "preflight_native_frames": 0,
+  "round_status": "CONTINUE_RESEARCH",
+  "runtime": {
+    "MODEL_ROUTING_VERIFICATION": "UNAVAILABLE",
+    "onnx_input": {
+      "dtype": "float32",
+      "name": "observation",
+      "shape": [
+        1,
+        4,
+        84,
+        84
+      ]
+    },
+    "onnx_output": {
+      "dtype": "float32",
+      "name": "q_values",
+      "shape": [
+        1,
+        4
+      ]
+    },
+    "onnxruntime": "1.22.1",
+    "providers": [
+      "CPUExecutionProvider"
+    ],
+    "python": "3.12.14",
+    "requested_providers": [
+      "CPUExecutionProvider"
+    ]
+  },
+  "schema_version": 1,
+  "source_provenance": {
+    "completion_source_files": [
+      "breakout_env.py",
+      "breakout_rl/completion.py",
+      "breakout_rl/evaluation.py",
+      "breakout_rl/evaluation_artifacts.py",
+      "breakout_rl/evaluation_contract.py",
+      "configs/eval/breakout_completion_audit_v1.json"
+    ],
+    "completion_source_sha256": "9444a7955e65f4fe9e1568f5b321d8c9ffc0a105ae0d8549c5c76bc99c08f926",
+    "issue50_source_files": [
+      "breakout_rl/issue50_pixel_paddle_alignment.py",
+      "scripts/evaluation/run_issue50_pixel_paddle_alignment.py",
+      "tests/test_issue50_pixel_paddle_alignment.py"
+    ],
+    "issue50_source_sha256": "e32be297ba474635708fefd7da311e5db37b6076439e759be2701d4aaf2fee2f",
+    "source_commit": "8867a89812a3d2e67924fdaf7afbb4ff2c211213",
+    "source_working_tree_dirty": false
+  },
+  "stop_reason": "schedule_completed",
+  "wall_accounting": {
+    "collection_seconds": 11.615394551990903,
+    "finalization_reserve_seconds": 20.0,
+    "finalization_seconds": 0.06053826599963941,
+    "setup_native_frames": 0,
+    "setup_seconds": 0.1884748199954629,
+    "total_formal_seconds": 11.864409379995777,
+    "total_wall_cap_seconds": 600.0
+  }
+}
