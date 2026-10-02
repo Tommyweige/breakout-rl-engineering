@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/workspace/issue52-grayscale-range/scripts/evaluation/run_issue52_grayscale_range.py", line 5, in <module>
+    raise SystemExit(cli())
+                     ^^^^^
+  File "/workspace/issue52-grayscale-range/breakout_rl/issue52_grayscale_range.py", line 481, in cli
+    print(json.dumps(run(args.output_dir), indent=2, sort_keys=True))
+                     ^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/issue52-grayscale-range/breakout_rl/issue52_grayscale_range.py", line 286, in run
+    raise RuntimeError("formal run requires clean committed source")
+RuntimeError: formal run requires clean committed source

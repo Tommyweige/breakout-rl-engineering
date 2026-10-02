@@ -1,0 +1,57 @@
+{
+  "MODEL_ROUTING_VERIFICATION": "UNAVAILABLE",
+  "ale": {
+    "decisions": 0,
+    "environment_created": false,
+    "native_frames": 0,
+    "reset_calls": 0,
+    "step_calls": 0
+  },
+  "canonical_clear_detected": false,
+  "capture_wrapper_command": "TIMEFORMAT='outer_wall_seconds=%3R'; time timeout --signal=INT --kill-after=5s 90s env PYTHONPATH=/tmp/issue41-onnxruntime python -m scripts.evaluation.run_issue52_grayscale_range --output-dir research/issue-52-grayscale-range-artifacts > research/issue-52-grayscale-range-artifacts/raw_run_output.json 2> research/issue-52-grayscale-range-artifacts/run_stderr.log",
+  "classification": "INCONCLUSIVE",
+  "command": "timeout --signal=INT --kill-after=5s 90s env PYTHONPATH=/tmp/issue41-onnxruntime python -m scripts.evaluation.run_issue52_grayscale_range --output-dir research/issue-52-grayscale-range-artifacts",
+  "command_outer_wall_seconds": 0.255,
+  "diagnostic_metric": {
+    "N": 0,
+    "R": null,
+    "fraction": null,
+    "status": "unavailable; no policy observations were captured"
+  },
+  "diagnostic_result": "INCONCLUSIVE",
+  "exit_status": 1,
+  "failure": "formal run requires clean committed source",
+  "failure_stage": "clean-source guard, before frozen input loading, environment creation, reset, or step",
+  "frozen_inputs": {
+    "contract_sha256": "7eca5ae5262a28aeabf3be658f8275a68f3d2ae40cc74379400be2890dc31a2a",
+    "inference_spec_sha256": "b396989041eff00396789c0f878fa783b071b0d3327aa1638c891a25d3f84507",
+    "metadata_sha256": "fbb9868fa0fb0ad7ce511e59b368efbef984279178c554dede0ae7e950731512",
+    "model_sha256": "cf90c74b1d09d5d7e2e0c71014f2daef2b5e1833425d300da06e34d1e4ef7f12"
+  },
+  "has_verified_clear": false,
+  "hvc": "NO",
+  "issue": 52,
+  "pre_run_validation": {
+    "combined_pre_run_setup_test_seconds": 0.53,
+    "focused_test_count": 8,
+    "focused_test_wall_seconds_recorded": 0.161,
+    "formal_setup_seconds": null,
+    "note": "formal setup did not proceed past clean-source guard; combined setup/test check therefore was not reached",
+    "setup_plus_test_cap_seconds": 20.0,
+    "zero_frame_preflight_native_frames": 0,
+    "zero_frame_preflight_wall_seconds_recorded": 0.369
+  },
+  "raw_stdout_bytes": 0,
+  "raw_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "result_kind": "operational_setup_failure_no_formal_collection",
+  "round_status": "CONTINUE_RESEARCH",
+  "schema_version": 1,
+  "source": {
+    "commit": "03b40ad633beccfdf6d1d32d3d5eee289fa48ac8",
+    "completion_source_digest": "9444a7955e65f4fe9e1568f5b321d8c9ffc0a105ae0d8549c5c76bc99c08f926",
+    "dirty_at_launch": true,
+    "dirty_cause": "output directory was pre-created to capture stdout/stderr before invoking the runner",
+    "source_digest": "824353e64942fea53b9a6c6d9499b501bda5e1525ba319eab682c14173c95490"
+  },
+  "stderr_sha256": "4b0404f535b82fa8b8bc8372f842591e025a176b41125327690ec6054f3651f4"
+}
