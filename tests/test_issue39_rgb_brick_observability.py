@@ -126,7 +126,7 @@ class EvaluatorTests(unittest.TestCase):
                                   all_episodes_complete=False), "INCONCLUSIVE")
 
     def test_wall_budget_includes_pre_run_time_and_finalization_reserve(self):
-        self.assertEqual(bounded_formal_wall_budget(20.0), 578.0)
+        self.assertEqual(bounded_formal_wall_budget(20.0), 560.0)
         self.assertEqual(bounded_formal_wall_budget(599.0), 0.0)
         self.assertEqual(bounded_formal_wall_budget(50.0, requested_wall_seconds=100.0), 100.0)
 
@@ -142,8 +142,8 @@ class EvaluatorTests(unittest.TestCase):
                        "pre_run_test_native_frames_upper_bound": 42,
                        "remaining_test_native_frame_reserve": 308,
                        "combined_native_frame_ceiling": 15350, "pre_run_wall_seconds": 5.0,
-                       "elapsed_wall_seconds": 10.0, "formal_wall_budget_seconds": 593.0,
-                       "finalization_wall_reserve_seconds": 2.0, "completed_seeds": [],
+                       "elapsed_wall_seconds": 10.0, "formal_wall_budget_seconds": 560.0,
+                       "finalization_wall_reserve_seconds": 20.0, "completed_seeds": [],
                        "command": "frozen-command", "source": {"revision": "sha", "branch": "branch",
                            "config_sha256": "cfg", "contract_sha256": "contract",
                            "controller_config_sha256": "controller"},
