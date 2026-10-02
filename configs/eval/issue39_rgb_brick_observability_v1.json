@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "probe_id": "issue-39-rgb-brick-observability-v1",
+  "base_environment_contract": "breakout_contract_v3.json",
+  "base_controller_config": "breakout_vision_controller_v1.json",
+  "frozen_contract_sha256": "d97b7fcb5758cba495857b3972a119ed3eb7db74fb0145d151e9d82725c5a786",
+  "frozen_controller_config_sha256": "25ddff6756747a6539ddd6a1eb570e7ef4c274f3e700ae011e68c87cae37c724",
+  "frozen_rom_sha256": "376323f051c3c373c887fd83abead39d87d844ff283d435f4addbfc1710c6fd5",
+  "seeds": [707, 808, 909],
+  "episodes": 1,
+  "max_native_frames_per_episode": 5000,
+  "max_native_frames_total": 15000,
+  "predeclared_test_native_frames_reserved": 350,
+  "total_native_frames_ceiling": 15350,
+  "total_wall_seconds_limit": 600
+}
