@@ -737,10 +737,11 @@ def cli(argv: list[str] | None = None) -> int:
         report_file.write(f"\nRaw formal stdout: `formal.stdout` SHA-256 `{sha256(output_stdout)}`.\n")
         report_file.write(f"Raw formal stderr: `formal.stderr` SHA-256 `{sha256(output_stderr)}`.\n")
     wrapup_seconds = time.perf_counter() - wrapup_start
+    inner_finalization_seconds = float(result["wall_accounting"]["finalization_seconds"])
     result_data["wall_accounting"]["post_run_artifact_packaging_seconds"] = wrapup_seconds
     result_data["wall_accounting"]["total_including_validation_and_packaging_seconds"] = validation_seconds + time.perf_counter() - cli_start
-    result_data["wall_accounting"]["finalization_seconds"] += wrapup_seconds
-    if result_data["wall_accounting"]["finalization_seconds"] > FINALIZATION_RESERVE_SECONDS or result_data["wall_accounting"]["total_including_validation_and_packaging_seconds"] > TOTAL_WALL_LIMIT:
+    result_data["wall_accounting"]["finalization_seconds"] = inner_finalization_seconds
+    if inner_finalization_seconds + wrapup_seconds > FINALIZATION_RESERVE_SECONDS or result_data["wall_accounting"]["total_including_validation_and_packaging_seconds"] > TOTAL_WALL_LIMIT:
         raise RuntimeError("outer artifact packaging exceeded finalization or total wall cap")
     results_path.write_text(json.dumps(result_data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     with report_path.open("a", encoding="utf-8") as report_file:
@@ -794,7 +795,8 @@ def cli(argv: list[str] | None = None) -> int:
     Path("/tmp/issue58-formal-manifest.sha256").write_text(f"{manifest_sha}  {manifest_path}\n", encoding="utf-8")
     final_elapsed = time.perf_counter() - cli_start
     final_outer_wrapup = time.perf_counter() - wrapup_start
-    finalization_total = float(result["wall_accounting"]["finalization_seconds"]) + final_outer_wrapup
+    terminal_write_seconds = max(0.0, final_outer_wrapup - actual_wrapup)
+    finalization_total = actual_finalization + terminal_write_seconds
     if validation_seconds + final_elapsed > TOTAL_WALL_LIMIT or finalization_total > FINALIZATION_RESERVE_SECONDS:
         raise RuntimeError("terminal report/manifest writes exceeded frozen total or finalization cap")
     Path("/tmp/issue58-formal-wrapper-timing.json").write_text(json.dumps({
