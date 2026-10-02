@@ -649,10 +649,12 @@ def run(output_dir: Path, *, contract_path=DEFAULT_CONTRACT, spec_path=DEFAULT_S
     earlier_validation_attempts = validation_record["validation"].get("earlier_validation_attempts", [])
     if earlier_validation_attempts:
         attempts_wall = sum(float(item["wall_seconds"]) for item in earlier_validation_attempts)
+        prior_passes = validation_record["validation"].get("prior_passing_validation_runs_seconds", [])
+        prior_pass_seconds = sum(float(item) for item in prior_passes)
         validation_history = (
             f"Earlier validation work totaled {validation_record['validation']['earlier_validation_work_wall_seconds']:.6f}s, including the two listed failed assertions, whose measured durations sum to {attempts_wall:.6f}s: "
             f"`{json.dumps(earlier_validation_attempts, sort_keys=True)}`. These were focused-code checks only; none created, reset, or stepped ALE. "
-            f"A prior exact-head passing validation charged {validation_record['validation']['other_earlier_validation_work_wall_seconds']:.6f}s; this exact-head passing validation charged {validation_record['validation']['current_final_validation_wall_seconds']:.6f}s; "
+            f"Prior exact-head passing validations charged {prior_pass_seconds:.6f}s across {json.dumps(prior_passes)}; this exact-head passing validation charged {validation_record['validation']['current_final_validation_wall_seconds']:.6f}s; "
             f"cumulative validation cap charge is {validation_record['validation']['combined_wall_seconds']:.6f}s."
         )
     else:
