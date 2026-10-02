@@ -384,8 +384,8 @@ def run(contract_path: Path, spec_path: Path, model_path: Path,
         "", f"Model `{MODEL_SHA256}`; metadata `{METADATA_SHA256}`; current inference spec `{SPEC_CURRENT_SHA256}` (metadata-declared older spec `{SPEC_METADATA_SHA256}`); Contract v2 `{CONTRACT_SHA256}`; audit `{AUDIT_SHA256}`.",
         f"", f"ONNX Runtime `{policy.ort.__version__}`, providers `{policy.session.get_providers()}`. Source commit `{commit}`, dirty `{dirty}`. Original PyTorch `.pt` bytes were absent and lineage remains metadata-declared.",
         f"Requested execution context: `{REQUESTED_MODEL}` / `{REQUESTED_REASONING_EFFORT}`; `MODEL_ROUTING_VERIFICATION: {MODEL_ROUTING_VERIFICATION}` (no identity introspection is available).",
-        "", "## Paired descriptive diagnostics", "", "| Seed | Status | Raw frames | Q4 frames | Difference | Raw lives lost | Q4 lives lost | Raw score | Q4 score | Raw switch rate | Q4 switch rate | Raw median Q margin | Q4 median Q margin |",
-        "|---:|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|"]
+        "", "## Paired descriptive diagnostics", "", "| Seed | Status | Raw clear status | Q4 clear status | Raw frames | Q4 frames | Difference | Raw lives lost | Q4 lives lost | Raw score | Q4 score | Raw switch rate | Q4 switch rate | Raw median Q margin | Q4 median Q margin |",
+        "|---:|" + "|".join(["---"] * 14) + "|"]
     for pair in pairs:
         raw_clear = pair.get("raw_greedy", {}).get("clear_status", "—") if pair.get("raw_greedy") else "—"
         q4_clear = pair.get("rolling_q4", {}).get("clear_status", "—") if pair.get("rolling_q4") else "—"
