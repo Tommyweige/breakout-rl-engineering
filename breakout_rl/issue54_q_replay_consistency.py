@@ -68,7 +68,7 @@ PRE_RUN_VALIDATION = {
     "preflight_native_frames": 0,
 }
 PRE_RUN_VALIDATION_SECONDS = 1.0  # conservative internal reservation; supervisor uses final measured validation JSON
-FINALIZATION_MARGIN_SECONDS = 1.0
+FINALIZATION_MARGIN_SECONDS = 1.5
 KEY_FIELDS = ("seed", "arm", "episode_index", "agent_step", "emulator_frame")
 EXPECTED_FILES = {
     "web/public/models/final_model/model.onnx": MODEL_SHA256,
@@ -441,7 +441,10 @@ def cli(argv: list[str] | None = None) -> int:
 
 def attach_log_capture_hashes(output_dir: Path, stdout_path: Path, stderr_path: Path,
                               validation_record_path: Path | None = None,
-                              formal_command_wall_seconds: float | None = None) -> dict[str, Any]:
+                              formal_command_wall_seconds: float | None = None,
+                              failure_bundle_wall_seconds: float = 0.0,
+                              formal_cli_timeout_seconds: float | None = None,
+                              formal_cli_timed_out: bool = False) -> dict[str, Any]:
     """Attach hashes of the one formal command's externally captured streams."""
     attachment_started = time.perf_counter()
     stdout_artifact = output_dir / "formal.stdout"
@@ -466,9 +469,12 @@ def attach_log_capture_hashes(output_dir: Path, stdout_path: Path, stderr_path: 
         results["pre_run_validation_seconds"] = validation["combined_validation_wall_seconds"]
     if formal_command_wall_seconds is not None:
         results["formal_command_wall_seconds"] = formal_command_wall_seconds
+        results["failure_bundle_wall_seconds"] = failure_bundle_wall_seconds
+        results["formal_cli_timeout_seconds"] = formal_cli_timeout_seconds
+        results["formal_cli_timed_out"] = formal_cli_timed_out
         if validation is not None:
             results["combined_pre_run_and_formal_seconds"] = (
-                validation["combined_validation_wall_seconds"] + formal_command_wall_seconds
+                validation["combined_validation_wall_seconds"] + formal_command_wall_seconds + failure_bundle_wall_seconds
             )
     _atomic_json(results_path, results)
     report = report_path.read_text().rstrip()
@@ -483,7 +489,8 @@ def attach_log_capture_hashes(output_dir: Path, stdout_path: Path, stderr_path: 
             validation_lines.append("")
         validation_lines.append(f"Combined measured validation: {validation['combined_validation_wall_seconds']:.6f}s.")
         if formal_command_wall_seconds is not None:
-            validation_lines.append(f"Formal command plus capture attachment: {formal_command_wall_seconds:.6f}s; total: {validation['combined_validation_wall_seconds'] + formal_command_wall_seconds:.6f}s.")
+            validation_lines.append(f"Formal command wall: {formal_command_wall_seconds:.6f}s; failure-bundle finalization: {failure_bundle_wall_seconds:.6f}s.")
+            validation_lines.append("The outer 20-second supervisor timeout includes supervisor startup and final metadata writes; the reported measured-component total excludes supervisor startup and final metadata refresh.")
         report += "\n\n" + "\n".join(validation_lines)
     report = report.partition("\n## Formal command capture\n")[0]
     report += ("\n\n## Formal command capture\n\n"
@@ -502,9 +509,12 @@ def attach_log_capture_hashes(output_dir: Path, stdout_path: Path, stderr_path: 
         manifest["output_hashes"]["pre_run_validation.json"] = manifest["pre_run_validation_hash"]
     if formal_command_wall_seconds is not None:
         manifest["formal_command_wall_seconds"] = formal_command_wall_seconds
+        manifest["failure_bundle_wall_seconds"] = failure_bundle_wall_seconds
+        manifest["formal_cli_timeout_seconds"] = formal_cli_timeout_seconds
+        manifest["formal_cli_timed_out"] = formal_cli_timed_out
         if validation is not None:
             manifest["combined_pre_run_and_formal_seconds"] = (
-                validation["combined_validation_wall_seconds"] + formal_command_wall_seconds
+                validation["combined_validation_wall_seconds"] + formal_command_wall_seconds + failure_bundle_wall_seconds
             )
     manifest["manifest_self_hash_excluded"] = True
     _atomic_json(manifest_path, manifest)
@@ -513,16 +523,21 @@ def attach_log_capture_hashes(output_dir: Path, stdout_path: Path, stderr_path: 
     if validation is not None and formal_command_wall_seconds is not None:
         results["post_run_capture_attachment_wall_seconds"] = attachment_wall
         results["combined_pre_run_and_formal_seconds"] = (
-            validation["combined_validation_wall_seconds"] + formal_command_wall_seconds + attachment_wall
+            validation["combined_validation_wall_seconds"] + formal_command_wall_seconds + failure_bundle_wall_seconds + attachment_wall
+        )
+        results["measured_combined_elapsed_scope"] = (
+            "Pre-run validation + frozen CLI + failure-bundle finalization + measured capture/hash attachment; "
+            "excludes supervisor startup and final metadata refresh. The outer timeout enforces the inclusive 20-second cap."
         )
         _atomic_json(results_path, results)
         report = report_path.read_text().rstrip()
-        report += (f"\n\nPost-run capture/hash attachment: {attachment_wall:.6f}s. Combined measured validation, formal command, and attachment: "
-                   f"{results['combined_pre_run_and_formal_seconds']:.6f}s.\n")
+        report += (f"\n\nPost-run capture/hash attachment: {attachment_wall:.6f}s. Combined measured-component elapsed (excluding supervisor startup and final metadata refresh): "
+                   f"{results['combined_pre_run_and_formal_seconds']:.6f}s (including failure-bundle and capture/hash finalization).\n")
         report_path.write_text(report)
         manifest = json.loads(manifest_path.read_text())
         manifest["post_run_capture_attachment_wall_seconds"] = attachment_wall
         manifest["combined_pre_run_and_formal_seconds"] = results["combined_pre_run_and_formal_seconds"]
+        manifest["measured_combined_elapsed_scope"] = results["measured_combined_elapsed_scope"]
         for name in ("q_comparisons.json", "results.json", "report.md", "formal.stdout", "formal.stderr", "pre_run_validation.json"):
             if (output_dir / name).exists():
                 manifest["output_hashes"][name] = sha256_file(output_dir / name)

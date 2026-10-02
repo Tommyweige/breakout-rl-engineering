@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -15,6 +16,7 @@ from breakout_rl.issue54_q_replay_consistency import (
     aggregate_q_error, attach_log_capture_hashes, create_cpu_session, remaining_budget,
     validate_capture_offsets, verify_stack_row,
 )
+from scripts.analysis.run_issue54_once import run_captured_command
 
 
 def record(step: int = 1, digest: str = "abc") -> tuple[dict, dict]:
@@ -26,6 +28,19 @@ def record(step: int = 1, digest: str = "abc") -> tuple[dict, dict]:
 
 
 class Issue54PureTests(unittest.TestCase):
+    def test_formal_supervisor_timeout_kills_group_and_preserves_partial_logs(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            stdout, stderr = root / "stdout", root / "stderr"
+            command = [sys.executable, "-c",
+                       "import sys,time; print('started', flush=True); print('err', file=sys.stderr, flush=True); time.sleep(3)"]
+            return_code, timed_out, _ = run_captured_command(
+                command, root, stdout, stderr, timeout_seconds=0.1)
+            self.assertTrue(timed_out)
+            self.assertNotEqual(return_code, 0)
+            self.assertIn(b"started", stdout.read_bytes())
+            self.assertIn(b"err", stderr.read_bytes())
+
     def test_unique_exact_join_and_logged_q_integrity(self):
         pairs = [record(1), record(2)]
         joined = match_rows([x[0] for x in pairs] + [record(i)[0] for i in range(3, 301)],
