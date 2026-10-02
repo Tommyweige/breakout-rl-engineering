@@ -50,7 +50,7 @@ Focused pure tests: `PYTHONPATH=/tmp/issue41-onnxruntime python -m unittest test
 
 Exact run outputs are in [`issue-41-onnx-dqn-clear-artifacts`](issue-41-onnx-dqn-clear-artifacts/): full per-step `trajectory.jsonl`, `results.json`, and the generated `run_report.md`.
 
-- Results SHA-256: `5fe3b96631dc77963d02c962726f39b3efe01b52d2986cfc979e19588f6d6`.
+- Results SHA-256: `5fe3b96631dc77963d02c962726f39b3efe01b52d2986cfc979e19588f6d46d6`.
 - Trajectory SHA-256: `5d89f8bc30fb1eba2acb21dc8355160addf0c17938ab054f310703401d5043dc`.
 - Generated report SHA-256: `72e2af91831680a24f3db17a5b5df311dbaa4ab8b5bc1355028ae68581548f7c`.
 
