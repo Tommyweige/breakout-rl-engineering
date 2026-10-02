@@ -1,0 +1,377 @@
+{
+  "artifacts": {
+    "manifest": "manifest.json",
+    "trajectory": "trajectory.jsonl",
+    "trajectory_sha256": "f4a4d43c8091a2f07179b7491e0a881172c50176f3af69b9ffd2d17bb4e23ca8"
+  },
+  "candidate_hypothesis_status": "INCONCLUSIVE",
+  "classification": "INCONCLUSIVE",
+  "completion_support": {
+    "ale_py_version": "0.12.0",
+    "audit_config_path": "configs/eval/breakout_completion_audit_v1.json",
+    "completion_detection_source": "ale_ram_bcd_score_and_raw_reward_agreement",
+    "completion_rule": "destroy both brick walls; exact documented maximum score",
+    "detector_id": "ale-breakout-two-wall-score-864-v2",
+    "difficulty": 0,
+    "environment_id": "ALE/Breakout-v5",
+    "game": "breakout",
+    "mode": 0,
+    "reason": null,
+    "rom_sha256": "376323f051c3c373c887fd83abead39d87d844ff283d435f4addbfc1710c6fd5",
+    "schema_version": 1,
+    "score_ram_addresses": [
+      76,
+      77
+    ],
+    "score_ram_byte_order": "high_pair_then_low_pair",
+    "score_ram_encoding": "packed_bcd_four_digit",
+    "score_threshold": 864,
+    "supported": true
+  },
+  "episodes": [
+    {
+      "agent_steps": 1206,
+      "ale_input_action_counts": [
+        167,
+        363,
+        298,
+        378
+      ],
+      "arm": "baseline",
+      "canonical_clear": false,
+      "clear_agent_step": null,
+      "clear_emulator_frame": null,
+      "clear_score": null,
+      "clear_status": "NO_CLEAR",
+      "completion_detection_source": "ale_ram_bcd_score_and_raw_reward_agreement",
+      "completion_unavailable_reason": null,
+      "episode_index": 1,
+      "initial_native_frame": 9,
+      "life_losses": 5,
+      "lives_remaining": 0,
+      "lives_remaining_at_clear": null,
+      "native_frames": 4822,
+      "ram_score": 47,
+      "raw_score": 47.0,
+      "requested_action_counts": [
+        167,
+        355,
+        304,
+        380
+      ],
+      "seed": 104,
+      "stop_reason": "terminated"
+    },
+    {
+      "agent_steps": 1083,
+      "ale_input_action_counts": [
+        80,
+        312,
+        290,
+        401
+      ],
+      "arm": "candidate",
+      "canonical_clear": false,
+      "clear_agent_step": null,
+      "clear_emulator_frame": null,
+      "clear_score": null,
+      "clear_status": "NO_CLEAR",
+      "completion_detection_source": "ale_ram_bcd_score_and_raw_reward_agreement",
+      "completion_unavailable_reason": null,
+      "episode_index": 2,
+      "initial_native_frame": 9,
+      "life_losses": 5,
+      "lives_remaining": 0,
+      "lives_remaining_at_clear": null,
+      "native_frames": 4332,
+      "ram_score": 33,
+      "raw_score": 33.0,
+      "requested_action_counts": [
+        80,
+        307,
+        293,
+        403
+      ],
+      "seed": 104,
+      "stop_reason": "terminated"
+    },
+    {
+      "agent_steps": 1136,
+      "ale_input_action_counts": [
+        98,
+        218,
+        362,
+        458
+      ],
+      "arm": "baseline",
+      "canonical_clear": false,
+      "clear_agent_step": null,
+      "clear_emulator_frame": null,
+      "clear_score": null,
+      "clear_status": "NO_CLEAR",
+      "completion_detection_source": "ale_ram_bcd_score_and_raw_reward_agreement",
+      "completion_unavailable_reason": null,
+      "episode_index": 3,
+      "initial_native_frame": 5,
+      "life_losses": 5,
+      "lives_remaining": 0,
+      "lives_remaining_at_clear": null,
+      "native_frames": 4542,
+      "ram_score": 45,
+      "raw_score": 45.0,
+      "requested_action_counts": [
+        98,
+        208,
+        367,
+        463
+      ],
+      "seed": 205,
+      "stop_reason": "terminated"
+    },
+    {
+      "agent_steps": 734,
+      "ale_input_action_counts": [
+        66,
+        126,
+        242,
+        300
+      ],
+      "arm": "candidate",
+      "canonical_clear": false,
+      "clear_agent_step": null,
+      "clear_emulator_frame": null,
+      "clear_score": null,
+      "clear_status": "NO_CLEAR",
+      "completion_detection_source": "ale_ram_bcd_score_and_raw_reward_agreement",
+      "completion_unavailable_reason": null,
+      "episode_index": 4,
+      "initial_native_frame": 5,
+      "life_losses": 5,
+      "lives_remaining": 0,
+      "lives_remaining_at_clear": null,
+      "native_frames": 2935,
+      "ram_score": 21,
+      "raw_score": 21.0,
+      "requested_action_counts": [
+        66,
+        116,
+        247,
+        305
+      ],
+      "seed": 205,
+      "stop_reason": "terminated"
+    },
+    {
+      "agent_steps": 988,
+      "ale_input_action_counts": [
+        88,
+        281,
+        251,
+        368
+      ],
+      "arm": "baseline",
+      "canonical_clear": false,
+      "clear_agent_step": null,
+      "clear_emulator_frame": null,
+      "clear_score": null,
+      "clear_status": "NO_CLEAR",
+      "completion_detection_source": "ale_ram_bcd_score_and_raw_reward_agreement",
+      "completion_unavailable_reason": null,
+      "episode_index": 5,
+      "initial_native_frame": 12,
+      "life_losses": 5,
+      "lives_remaining": 0,
+      "lives_remaining_at_clear": null,
+      "native_frames": 3950,
+      "ram_score": 34,
+      "raw_score": 34.0,
+      "requested_action_counts": [
+        88,
+        272,
+        256,
+        372
+      ],
+      "seed": 306,
+      "stop_reason": "terminated"
+    },
+    {
+      "agent_steps": 1388,
+      "ale_input_action_counts": [
+        212,
+        347,
+        324,
+        505
+      ],
+      "arm": "candidate",
+      "canonical_clear": false,
+      "clear_agent_step": null,
+      "clear_emulator_frame": null,
+      "clear_score": null,
+      "clear_status": "NO_CLEAR",
+      "completion_detection_source": "ale_ram_bcd_score_and_raw_reward_agreement",
+      "completion_unavailable_reason": null,
+      "episode_index": 6,
+      "initial_native_frame": 12,
+      "life_losses": 5,
+      "lives_remaining": 0,
+      "lives_remaining_at_clear": null,
+      "native_frames": 5551,
+      "ram_score": 69,
+      "raw_score": 69.0,
+      "requested_action_counts": [
+        212,
+        340,
+        327,
+        509
+      ],
+      "seed": 306,
+      "stop_reason": "terminated"
+    }
+  ],
+  "evaluation_protocol": {
+    "action_meanings": [
+      "NOOP",
+      "FIRE",
+      "RIGHT",
+      "LEFT"
+    ],
+    "aggregate_native_frame_cap": 648000,
+    "arms": [
+      "baseline",
+      "candidate"
+    ],
+    "collection_wall_cap_seconds": 560.0,
+    "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+    "contract_sha256": "7eca5ae5262a28aeabf3be658f8275a68f3d2ae40cc74379400be2890dc31a2a",
+    "finalization_reserve_seconds": 20.0,
+    "max_agent_steps_per_episode": 27000,
+    "max_native_frames_per_episode": 108000,
+    "ordered_schedule": [
+      {
+        "arm": "baseline",
+        "seed": 104
+      },
+      {
+        "arm": "candidate",
+        "seed": 104
+      },
+      {
+        "arm": "baseline",
+        "seed": 205
+      },
+      {
+        "arm": "candidate",
+        "seed": 205
+      },
+      {
+        "arm": "baseline",
+        "seed": 306
+      },
+      {
+        "arm": "candidate",
+        "seed": 306
+      }
+    ],
+    "policy_inputs": "pixels only; RAM/score/lives/completion evaluator only",
+    "seeds": [
+      104,
+      205,
+      306
+    ],
+    "threshold_strict_less_than": 0.0027604103088378906,
+    "total_wall_cap_seconds": 600.0
+  },
+  "evaluation_status": "completed",
+  "has_verified_clear": false,
+  "issue": 48,
+  "model": {
+    "calibration": {
+      "q_rows": 3615,
+      "quantile_method": "linear",
+      "quantile_q": 0.25,
+      "sha256": "5d89f8bc30fb1eba2acb21dc8355160addf0c17938ab054f310703401d5043dc",
+      "threshold": 0.0027604103088378906
+    },
+    "calibration_q_rows": 3615,
+    "calibration_quantile": {
+      "method": "linear",
+      "q": 0.25
+    },
+    "calibration_trajectory_sha256": "5d89f8bc30fb1eba2acb21dc8355160addf0c17938ab054f310703401d5043dc",
+    "completion_audit_sha256": "43d431e77a4a3b60dd720933ee399767d456a6c633ee93aab7265d92e4f1b64b",
+    "contract_sha256": "7eca5ae5262a28aeabf3be658f8275a68f3d2ae40cc74379400be2890dc31a2a",
+    "inference_spec_lineage_note": "Metadata's older spec SHA is exact at commit 025d4bb; d3d235a changed only the embedded Contract v2 digest to the current Contract v2 hash. Input, preprocessing, output, and action sections are unchanged.",
+    "inference_spec_sha256": "b396989041eff00396789c0f878fa783b071b0d3327aa1638c891a25d3f84507",
+    "metadata_inference_spec_sha256": "68637a63d3f0242f74089314049251521bec14a6fa3267b57fa46470acfff8ec",
+    "metadata_sha256": "fbb9868fa0fb0ad7ce511e59b368efbef984279178c554dede0ae7e950731512",
+    "model_sha256": "cf90c74b1d09d5d7e2e0c71014f2daef2b5e1833425d300da06e34d1e4ef7f12",
+    "threshold": 0.0027604103088378906
+  },
+  "native_frames": 26132,
+  "preflight_native_frames": 0,
+  "round_status": "CONTINUE_RESEARCH",
+  "runtime": {
+    "MODEL_ROUTING_VERIFICATION": "UNAVAILABLE",
+    "model_input_preflight": "zero input; float32 [1,4] output; no ALE frames",
+    "onnx_input": {
+      "dtype": "float32",
+      "name": "observation",
+      "shape": [
+        1,
+        4,
+        84,
+        84
+      ]
+    },
+    "onnx_output": {
+      "dtype": "float32",
+      "name": "q_values",
+      "shape": [
+        1,
+        4
+      ]
+    },
+    "onnxruntime": "1.22.1",
+    "providers": [
+      "CPUExecutionProvider"
+    ],
+    "python": "3.12.14",
+    "requested_providers": [
+      "CPUExecutionProvider"
+    ]
+  },
+  "schema_version": 1,
+  "source_provenance": {
+    "completion_source_files": [
+      "breakout_env.py",
+      "breakout_rl/completion.py",
+      "breakout_rl/evaluation.py",
+      "breakout_rl/evaluation_artifacts.py",
+      "breakout_rl/evaluation_contract.py",
+      "configs/eval/breakout_completion_audit_v1.json"
+    ],
+    "completion_source_sha256": "9444a7955e65f4fe9e1568f5b321d8c9ffc0a105ae0d8549c5c76bc99c08f926",
+    "issue48_source_files": [
+      "breakout_rl/issue48_qmargin_runner_up.py",
+      "scripts/evaluation/run_issue48_qmargin_runner_up.py",
+      "tests/test_issue48_qmargin_runner_up.py"
+    ],
+    "issue48_source_sha256": "f12e63339435fd85fff75483aba000d8d01e4a2b8e92b47ee536634b3b9b3932",
+    "source_commit": "659ec73763693286ed58686c561ae7c74be15042",
+    "source_working_tree_dirty": false
+  },
+  "stop_reason": "schedule_completed",
+  "verified_clears": [],
+  "wall_accounting": {
+    "collection_seconds": 10.917732685993542,
+    "finalization_reserve_seconds": 20.0,
+    "finalization_seconds": 0.006042891996912658,
+    "formal_collection_limit_seconds": 560.0,
+    "measured_final_timing_manifest": "manifest.json",
+    "setup_native_frames": 0,
+    "setup_plus_focused_tests_limit_seconds": 20.0,
+    "setup_seconds": 0.20788128500862513,
+    "total_formal_seconds": 11.131659578008112,
+    "total_run_limit_seconds": 600.0
+  }
+}

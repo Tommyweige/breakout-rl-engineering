@@ -1,0 +1,26 @@
+{
+  "artifacts": {
+    "report_sha256": "c44f41561e57aac96ddbf5478f7ba82fc811d6f5a61ef5361a884e1ab5e6ea50",
+    "results_sha256": "293e35be1e104df7b974b014c668c6e6bd3a9e90c2b700ac929455619a511ea8",
+    "trajectory_sha256": "f4a4d43c8091a2f07179b7491e0a881172c50176f3af69b9ffd2d17bb4e23ca8"
+  },
+  "classification": "INCONCLUSIVE",
+  "issue": 48,
+  "issue48_source_sha256": "f12e63339435fd85fff75483aba000d8d01e4a2b8e92b47ee536634b3b9b3932",
+  "native_frames": 26132,
+  "round_status": "CONTINUE_RESEARCH",
+  "schema_version": 1,
+  "source_commit": "659ec73763693286ed58686c561ae7c74be15042",
+  "wall_accounting": {
+    "collection_cap_seconds": 560.0,
+    "collection_seconds": 10.917732685993542,
+    "finalization_cap_seconds": 20.0,
+    "finalization_seconds": 0.006569160002982244,
+    "focused_tests_command": "python -m unittest tests.test_issue48_qmargin_runner_up -v",
+    "focused_tests_passed": 9,
+    "focused_tests_suite_seconds": 0.001,
+    "setup_seconds": 0.20788128500862513,
+    "total_cap_seconds": 600.0,
+    "total_formal_seconds": 11.13218313100515
+  }
+}
