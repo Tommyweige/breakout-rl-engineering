@@ -47,12 +47,23 @@ COMPLETION_SOURCE_FILES = (
     "breakout_rl/evaluation_artifacts.py", "breakout_rl/evaluation_contract.py",
     "configs/eval/breakout_completion_audit_v1.json",
 )
+ISSUE48_SOURCE_FILES = (
+    "breakout_rl/issue48_qmargin_runner_up.py",
+    "scripts/evaluation/run_issue48_qmargin_runner_up.py",
+    "tests/test_issue48_qmargin_runner_up.py",
+)
+SPEC_LINEAGE_NOTE = (
+    "Metadata's older spec SHA is exact at commit 025d4bb; d3d235a changed only the embedded "
+    "Contract v2 digest to the current Contract v2 hash. Input, preprocessing, output, and "
+    "action sections are unchanged."
+)
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_MODEL = ROOT / "web/public/models/final_model/model.onnx"
 DEFAULT_METADATA = ROOT / "web/public/models/final_model/model.onnx.metadata.json"
 DEFAULT_SPEC = ROOT / "configs/inference/inference_spec.json"
 DEFAULT_CONTRACT = ROOT / "configs/eval/breakout_contract_v2.json"
 DEFAULT_AUDIT = ROOT / "configs/eval/breakout_completion_audit_v1.json"
+DEFAULT_CALIBRATION = ROOT / "research/issue-41-onnx-dqn-clear-artifacts/trajectory.jsonl"
 
 
 def sha256(path: Path) -> str:
@@ -62,6 +73,14 @@ def sha256(path: Path) -> str:
 def completion_source_digest(root: Path = ROOT) -> str:
     digest = hashlib.sha256()
     for relative in COMPLETION_SOURCE_FILES:
+        digest.update(relative.encode("utf-8")); digest.update(b"\0")
+        digest.update((root / relative).read_bytes()); digest.update(b"\0")
+    return digest.hexdigest()
+
+
+def issue48_source_digest(root: Path = ROOT) -> str:
+    digest = hashlib.sha256()
+    for relative in ISSUE48_SOURCE_FILES:
         digest.update(relative.encode("utf-8")); digest.update(b"\0")
         digest.update((root / relative).read_bytes()); digest.update(b"\0")
     return digest.hexdigest()
@@ -80,6 +99,28 @@ def rank_actions(q_values: np.ndarray) -> tuple[tuple[int, int, int, int], float
     order = tuple(sorted(range(4), key=lambda index: (-float(q[0, index]), index)))
     margin = float(q[0, order[0]]) - float(q[0, order[1]])
     return order, margin
+
+
+def verify_calibration_artifact(path: Path = DEFAULT_CALIBRATION) -> dict[str, Any]:
+    if sha256(path) != CALIBRATION_SHA256:
+        raise ValueError("Issue #41 calibration trajectory SHA-256 mismatch")
+    margins: list[float] = []
+    with path.open(encoding="utf-8") as stream:
+        for line_number, line in enumerate(stream, start=1):
+            try:
+                row = json.loads(line)
+                q = np.asarray([row["q_values"]], dtype=np.float32)
+                _order, margin = rank_actions(q)
+            except (ValueError, KeyError, TypeError, json.JSONDecodeError) as error:
+                raise ValueError(f"invalid calibration Q row at line {line_number}") from error
+            margins.append(margin)
+    if len(margins) != 3615:
+        raise ValueError(f"expected 3615 calibration Q rows, found {len(margins)}")
+    observed = float(np.quantile(np.asarray(margins, dtype=np.float64), 0.25, method="linear"))
+    if observed != THRESHOLD:
+        raise ValueError(f"calibration q=.25 mismatch: {observed!r}")
+    return {"sha256": CALIBRATION_SHA256, "q_rows": len(margins),
+            "quantile_method": "linear", "quantile_q": 0.25, "threshold": observed}
 
 
 def select_greedy_action(q_values: np.ndarray) -> int:
@@ -108,6 +149,20 @@ def aggregate_cap_reached(elapsed_seconds: float, native_frames: int) -> bool:
 
 def stop_after_episode(*, verified_clear: bool, elapsed_seconds: float, native_frames: int) -> bool:
     return verified_clear or aggregate_cap_reached(elapsed_seconds, native_frames)
+
+
+def classify_round(*, verified_clear_arm: str | None, complete_schedule: bool) -> dict[str, str]:
+    if verified_clear_arm == "candidate":
+        return {"classification": "PROMOTED", "round_status": "GOAL_REACHED",
+                "candidate_hypothesis_status": "PROMOTED"}
+    if verified_clear_arm == "baseline":
+        return {"classification": "INCONCLUSIVE", "round_status": "GOAL_REACHED",
+                "candidate_hypothesis_status": "NOT_ADJUDICATED"}
+    if complete_schedule:
+        return {"classification": "INCONCLUSIVE", "round_status": "CONTINUE_RESEARCH",
+                "candidate_hypothesis_status": "INCONCLUSIVE"}
+    return {"classification": "INCONCLUSIVE", "round_status": "INCOMPLETE",
+            "candidate_hypothesis_status": "INCONCLUSIVE"}
 
 
 def source_identity(root: Path = ROOT) -> tuple[str, bool]:
@@ -205,14 +260,13 @@ class CpuOnnxPolicy:
 def run(output_dir: Path, *, contract_path: Path = DEFAULT_CONTRACT, spec_path: Path = DEFAULT_SPEC,
         model_path: Path = DEFAULT_MODEL, metadata_path: Path = DEFAULT_METADATA) -> dict[str, Any]:
     run_start = time.perf_counter()
+    calibration = verify_calibration_artifact()
     spec, metadata, contract = load_frozen_inputs(contract_path, spec_path, model_path, metadata_path)
     commit, dirty = source_identity()
     if dirty:
         raise RuntimeError("formal evaluation requires a clean committed source tree")
     digest = completion_source_digest()
-    setup_start = time.perf_counter()
     policy = CpuOnnxPolicy(model_path.resolve(), spec)
-    setup_seconds = time.perf_counter() - setup_start
     output_dir.mkdir(parents=True, exist_ok=True)
     trajectory_path = output_dir / "trajectory.jsonl"
     env = make_breakout_env(**breakout_environment_kwargs(contract))
@@ -220,6 +274,10 @@ def run(output_dir: Path, *, contract_path: Path = DEFAULT_CONTRACT, spec_path: 
     if tuple(env.unwrapped.get_action_meanings()) != ACTION_MEANINGS or not support.supported:
         env.close()
         raise RuntimeError("Contract v2 action meanings or canonical clear support unavailable")
+    setup_seconds = time.perf_counter() - run_start
+    if setup_seconds > 20.0:
+        env.close()
+        raise RuntimeError(f"setup exceeded frozen 20-second limit: {setup_seconds:.3f}s")
 
     rows: list[dict[str, Any]] = []
     total_native = 0
@@ -328,23 +386,27 @@ def run(output_dir: Path, *, contract_path: Path = DEFAULT_CONTRACT, spec_path: 
     finally:
         env.close()
 
-    run_wall = time.perf_counter() - run_start
-    complete_schedule = len(rows) == len(SCHEDULE) and all(r["clear_status"] == "NO_CLEAR" for r in rows)
-    classification = "GOAL_REACHED" if verified_clear else "INCONCLUSIVE"
+    collection_wall = time.perf_counter() - collection_start
+    if collection_wall > COLLECTION_WALL_LIMIT:
+        raise RuntimeError("collection exceeded frozen 560-second evaluator cap")
+    finalization_start = time.perf_counter()
+    complete_schedule = len(rows) == len(SCHEDULE) and not verified_clear
+    verified_clear_arm = next((r["arm"] for r in rows if r.get("clear_status") == "VERIFIED_CLEAR"), None)
+    outcome = classify_round(verified_clear_arm=verified_clear_arm, complete_schedule=complete_schedule)
     status = "completed" if complete_schedule or verified_clear else "incomplete_run"
-    if not verified_clear and any(r["clear_status"] == "CANONICAL_CLEAR_UNVERIFIED" for r in rows):
-        classification = "INCONCLUSIVE"
     provenance_rows = [r["verified_clear_provenance"] for r in rows if r.get("clear_status") == "VERIFIED_CLEAR"]
     for item in provenance_rows:
         ok, missing = verify_provenance(item, commit=commit, digest=digest,
             seed=item["episode_seed"], episode_index=item["episode_index"])
         if not ok or missing: raise RuntimeError("verified clear failed final provenance recheck")
     result = {"schema_version": 1, "issue": 48, "evaluation_status": status,
-        "classification": classification, "has_verified_clear": verified_clear,
+        **outcome, "has_verified_clear": verified_clear,
         "model": {"model_sha256": MODEL_SHA256, "metadata_sha256": METADATA_SHA256,
             "inference_spec_sha256": SPEC_SHA256, "metadata_inference_spec_sha256": SPEC_METADATA_SHA256,
             "contract_sha256": CONTRACT_SHA256, "completion_audit_sha256": AUDIT_SHA256,
-            "calibration_trajectory_sha256": CALIBRATION_SHA256, "threshold": THRESHOLD,
+            "calibration": calibration, "calibration_trajectory_sha256": CALIBRATION_SHA256, "threshold": THRESHOLD,
+            "metadata_inference_spec_sha256": SPEC_METADATA_SHA256,
+            "inference_spec_lineage_note": SPEC_LINEAGE_NOTE,
             "calibration_q_rows": 3615, "calibration_quantile": {"method": "linear", "q": 0.25}},
         "runtime": {"python": platform.python_version(), "onnxruntime": policy.ort.__version__,
             "providers": list(policy.session.get_providers()), "requested_providers": ["CPUExecutionProvider"],
@@ -353,6 +415,8 @@ def run(output_dir: Path, *, contract_path: Path = DEFAULT_CONTRACT, spec_path: 
             "MODEL_ROUTING_VERIFICATION": "UNAVAILABLE",
             "model_input_preflight": "zero input; float32 [1,4] output; no ALE frames"},
         "source_provenance": {"source_commit": commit, "source_working_tree_dirty": dirty,
+            "issue48_source_sha256": issue48_source_digest(),
+            "issue48_source_files": list(ISSUE48_SOURCE_FILES),
             "completion_source_sha256": digest, "completion_source_files": list(COMPLETION_SOURCE_FILES)},
         "evaluation_protocol": {"contract_id": contract.contract_id, "contract_sha256": CONTRACT_SHA256,
             "seeds": list(SEEDS), "arms": list(ARMS), "ordered_schedule": [{"arm": a, "seed": s} for s,a in SCHEDULE],
@@ -362,13 +426,19 @@ def run(output_dir: Path, *, contract_path: Path = DEFAULT_CONTRACT, spec_path: 
             "threshold_strict_less_than": THRESHOLD, "action_meanings": list(ACTION_MEANINGS),
             "policy_inputs": "pixels only; RAM/score/lives/completion evaluator only"},
         "completion_support": support.to_dict(), "episodes": rows, "verified_clears": provenance_rows,
-        "native_frames": sum(r["native_frames"] for r in rows), "formal_wall_seconds": run_wall,
-        "setup_wall_seconds": setup_seconds, "preflight_native_frames": 0,
+        "native_frames": sum(r["native_frames"] for r in rows),
+        "wall_accounting": {"setup_seconds": setup_seconds, "setup_native_frames": 0,
+            "collection_seconds": collection_wall, "finalization_seconds": 0.0,
+            "total_formal_seconds": 0.0, "setup_plus_focused_tests_limit_seconds": 20.0,
+            "formal_collection_limit_seconds": COLLECTION_WALL_LIMIT,
+            "finalization_reserve_seconds": FINALIZATION_RESERVE_SECONDS,
+            "total_run_limit_seconds": TOTAL_WALL_LIMIT},
+        "preflight_native_frames": 0,
         "stop_reason": stop_reason,
         "artifacts": {"trajectory": trajectory_path.name, "trajectory_sha256": sha256(trajectory_path)}}
     result_path = output_dir / "results.json"
     result_path.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
-    report = ["# Issue #48: Q-Margin Runner-Up First-Clear Probe", "", f"**{classification}**; Has Verified Clear: **{'YES' if verified_clear else 'NO'}**.",
+    report = ["# Issue #48: Q-Margin Runner-Up First-Clear Probe", "", f"**{outcome['classification']}**; round status `{outcome['round_status']}`; Has Verified Clear: **{'YES' if verified_clear else 'NO'}**.",
         "", f"Status `{status}`; stop `{stop_reason}`; episodes `{len(rows)}`; native frames `{result['native_frames']}`; wall `{run_wall:.2f}s`.",
         "", "The policy received only Contract v2 stacked pixels. RAM, score, lives, and completion remained evaluator-only.",
         "", f"Frozen threshold `{THRESHOLD}` from calibration SHA `{CALIBRATION_SHA256}` (3,615 rows, linear q=.25).",
@@ -376,9 +446,30 @@ def run(output_dir: Path, *, contract_path: Path = DEFAULT_CONTRACT, spec_path: 
         "", f"ONNX Runtime `{policy.ort.__version__}`, providers `{policy.session.get_providers()}`; `MODEL_ROUTING_VERIFICATION: UNAVAILABLE`.",
         "", "| Schedule | Arm | Seed | Steps | Native frames | Raw score | Life losses | Clear status |", "|---:|---|---:|---:|---:|---:|---:|---|"]
     report += [f"| {r['episode_index']} | {r['arm']} | {r['seed']} | {r['agent_steps']} | {r['native_frames']} | {r['raw_score']} | {r['life_losses']} | {r['clear_status']} |" for r in rows]
-    report += ["", "Full Q/action/evaluator trajectories and provenance are in `trajectory.jsonl` and `results.json`.",
+    report += ["", f"Source commit `{commit}`; Issue #48 source digest `{result['source_provenance']['issue48_source_sha256']}`.",
+        f"Metadata-declared older inference spec SHA `{SPEC_METADATA_SHA256}`. {SPEC_LINEAGE_NOTE}",
+        f"Wall accounting: setup `{setup_seconds:.2f}s`, focused tests recorded separately; collection `{collection_wall:.2f}s`, finalization reserve `{FINALIZATION_RESERVE_SECONDS:.0f}s`, total cap `{TOTAL_WALL_LIMIT:.0f}s`.",
+        "Full Q/action/evaluator trajectories and provenance are in `trajectory.jsonl` and `results.json`.",
         "A verified clear stops the schedule immediately. No-clear runs are INCONCLUSIVE; diagnostics do not classify the hypothesis.", ""]
-    (output_dir / "report.md").write_text("\n".join(report), encoding="utf-8")
+    report_path = output_dir / "report.md"
+    report_path.write_text("\n".join(report), encoding="utf-8")
+    result["wall_accounting"]["finalization_seconds"] = time.perf_counter() - finalization_start
+    result["wall_accounting"]["total_formal_seconds"] = time.perf_counter() - run_start
+    if result["wall_accounting"]["finalization_seconds"] > FINALIZATION_RESERVE_SECONDS:
+        raise RuntimeError("finalization exceeded frozen 20-second reserve")
+    if result["wall_accounting"]["total_formal_seconds"] > TOTAL_WALL_LIMIT:
+        raise RuntimeError("formal run exceeded frozen 600-second total wall cap")
+    result_path.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    report[2] += (f" Setup `{setup_seconds:.2f}s`, collection `{collection_wall:.2f}s`, "
+                  f"finalization `{result['wall_accounting']['finalization_seconds']:.2f}s`; "
+                  f"total `{result['wall_accounting']['total_formal_seconds']:.2f}s`.")
+    report_path.write_text("\n".join(report), encoding="utf-8")
+    result["wall_accounting"]["finalization_seconds"] = time.perf_counter() - finalization_start
+    result["wall_accounting"]["total_formal_seconds"] = time.perf_counter() - run_start
+    if (result["wall_accounting"]["finalization_seconds"] > FINALIZATION_RESERVE_SECONDS
+            or result["wall_accounting"]["total_formal_seconds"] > TOTAL_WALL_LIMIT):
+        raise RuntimeError("formal wall limit exceeded during artifact finalization")
+    result_path.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return result
 
 

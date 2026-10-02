@@ -9,7 +9,7 @@ from breakout_rl.completion import BREAKOUT_COMPLETION_SOURCE
 from breakout_rl.issue48_qmargin_runner_up import (
     ACTION_MEANINGS, CALIBRATION_SHA256, COLLECTION_WALL_LIMIT, CONTRACT_SHA256,
     FRAME_LIMIT, MODEL_SHA256, SCHEDULE, SEEDS, STEP_LIMIT, THRESHOLD,
-    TOTAL_FRAME_LIMIT, aggregate_cap_reached, rank_actions, select_action,
+    TOTAL_FRAME_LIMIT, aggregate_cap_reached, classify_round, rank_actions, select_action,
     select_candidate_action, select_greedy_action, stop_after_episode,
     verify_provenance,
 )
@@ -46,6 +46,19 @@ class QMarginSelectorTests(unittest.TestCase):
 
 
 class FrozenScheduleAndProvenanceTests(unittest.TestCase):
+    def test_classification_is_separate_from_goal_reached_round_status(self):
+        self.assertEqual(classify_round(verified_clear_arm="candidate", complete_schedule=False),
+            {"classification": "PROMOTED", "round_status": "GOAL_REACHED",
+             "candidate_hypothesis_status": "PROMOTED"})
+        self.assertEqual(classify_round(verified_clear_arm="baseline", complete_schedule=False),
+            {"classification": "INCONCLUSIVE", "round_status": "GOAL_REACHED",
+             "candidate_hypothesis_status": "NOT_ADJUDICATED"})
+        self.assertEqual(classify_round(verified_clear_arm=None, complete_schedule=True),
+            {"classification": "INCONCLUSIVE", "round_status": "CONTINUE_RESEARCH",
+             "candidate_hypothesis_status": "INCONCLUSIVE"})
+        self.assertEqual(classify_round(verified_clear_arm=None, complete_schedule=False)["classification"],
+                         "INCONCLUSIVE")
+
     def test_schedule_order_and_budgets_are_frozen(self):
         self.assertEqual(SEEDS, (104, 205, 306))
         self.assertEqual(SCHEDULE, ((104, "baseline"), (104, "candidate"),
