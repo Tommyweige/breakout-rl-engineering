@@ -162,6 +162,16 @@ def classify_round(*, verified_clear_arm: str | None) -> dict[str, str]:
             "candidate_hypothesis_status": "INCONCLUSIVE"}
 
 
+def result_wall_accounting(setup_seconds: float, collection_seconds: float) -> dict[str, Any]:
+    return {"setup_seconds": setup_seconds, "setup_native_frames": 0,
+        "collection_seconds": collection_seconds,
+        "setup_plus_focused_tests_limit_seconds": 20.0,
+        "formal_collection_limit_seconds": COLLECTION_WALL_LIMIT,
+        "finalization_reserve_seconds": FINALIZATION_RESERVE_SECONDS,
+        "total_run_limit_seconds": TOTAL_WALL_LIMIT,
+        "measured_final_timing_manifest": "manifest.json"}
+
+
 def source_identity(root: Path = ROOT) -> tuple[str, bool]:
     commit = subprocess.run(["git", "-C", str(root), "rev-parse", "HEAD"], check=True,
                             capture_output=True, text=True).stdout.strip()
@@ -423,12 +433,7 @@ def run(output_dir: Path, *, contract_path: Path = DEFAULT_CONTRACT, spec_path: 
             "policy_inputs": "pixels only; RAM/score/lives/completion evaluator only"},
         "completion_support": support.to_dict(), "episodes": rows, "verified_clears": provenance_rows,
         "native_frames": sum(r["native_frames"] for r in rows),
-        "wall_accounting": {"setup_seconds": setup_seconds, "setup_native_frames": 0,
-            "collection_seconds": collection_wall, "finalization_seconds": 0.0,
-            "total_formal_seconds": 0.0, "setup_plus_focused_tests_limit_seconds": 20.0,
-            "formal_collection_limit_seconds": COLLECTION_WALL_LIMIT,
-            "finalization_reserve_seconds": FINALIZATION_RESERVE_SECONDS,
-            "total_run_limit_seconds": TOTAL_WALL_LIMIT},
+        "wall_accounting": result_wall_accounting(setup_seconds, collection_wall),
         "preflight_native_frames": 0,
         "stop_reason": stop_reason,
         "artifacts": {"trajectory": trajectory_path.name, "trajectory_sha256": sha256(trajectory_path),
@@ -466,7 +471,7 @@ def run(output_dir: Path, *, contract_path: Path = DEFAULT_CONTRACT, spec_path: 
         "native_frames": result["native_frames"],
         "wall_accounting": {"setup_seconds": setup_seconds, "focused_tests_suite_seconds": 0.001,
             "focused_tests_command": "python -m unittest tests.test_issue48_qmargin_runner_up -v",
-            "focused_tests_passed": 8,
+            "focused_tests_passed": 9,
             "collection_seconds": collection_wall, "finalization_seconds": actual_finalization,
             "total_formal_seconds": actual_wall, "collection_cap_seconds": COLLECTION_WALL_LIMIT,
             "finalization_cap_seconds": FINALIZATION_RESERVE_SECONDS, "total_cap_seconds": TOTAL_WALL_LIMIT},

@@ -10,7 +10,7 @@ from breakout_rl.issue48_qmargin_runner_up import (
     ACTION_MEANINGS, CALIBRATION_SHA256, COLLECTION_WALL_LIMIT, CONTRACT_SHA256,
     FRAME_LIMIT, MODEL_SHA256, SCHEDULE, SEEDS, STEP_LIMIT, THRESHOLD,
     TOTAL_FRAME_LIMIT, aggregate_cap_reached, classify_round, rank_actions, select_action,
-    select_candidate_action, select_greedy_action, stop_after_episode,
+    result_wall_accounting, select_candidate_action, select_greedy_action, stop_after_episode,
     verify_provenance,
 )
 
@@ -75,6 +75,14 @@ class FrozenScheduleAndProvenanceTests(unittest.TestCase):
         self.assertFalse(stop_after_episode(verified_clear=False, elapsed_seconds=1, native_frames=4))
         self.assertTrue(stop_after_episode(verified_clear=True, elapsed_seconds=1, native_frames=4))
         self.assertTrue(stop_after_episode(verified_clear=False, elapsed_seconds=1, native_frames=648_000))
+
+    def test_result_points_to_manifest_for_final_timing(self):
+        timing = result_wall_accounting(1.25, 30.5)
+        self.assertEqual(timing["setup_seconds"], 1.25)
+        self.assertEqual(timing["collection_seconds"], 30.5)
+        self.assertEqual(timing["measured_final_timing_manifest"], "manifest.json")
+        self.assertNotIn("finalization_seconds", timing)
+        self.assertNotIn("total_formal_seconds", timing)
 
     def test_provenance_gate_requires_complete_canonical_identity(self):
         fields = {field: "present" for field in VERIFIED_CLEAR_PROVENANCE_FIELDS}
