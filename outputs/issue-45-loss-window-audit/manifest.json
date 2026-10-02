@@ -1,0 +1,106 @@
+{
+  "artifacts_sha256": {
+    "loss_window_seed103_event1.png": "04fc4e1f46c7c4123216f7691b74cdfefada382fbde1123efd8ff8de551d5303",
+    "loss_window_seed103_event2.png": "1083a972a944a7f4b2bc4992dc1ef894eb8536288273a8b65a17207df9dc2035",
+    "loss_window_seed103_event3.png": "c285c42e60d409894cf3d9be09000e69292a798ee6b6599e6ba6587bdd6a5d6b",
+    "loss_window_seed103_event4.png": "13bc195992bb0cbf6bd58eb0a4704049182efab4cf0e846b293204477efda5df",
+    "loss_window_seed103_event5.png": "52c0ddbb2f6edcea4d00429981e0eaea7a9f534fcba7da5660f419dfd142907a",
+    "loss_window_seed204_event1.png": "ef0990511e55e363f6e1bdfe51226c9b787f73332c5f7ab6faacd5d140f190ca",
+    "loss_window_seed204_event2.png": "3d6b4dd4d3009cf449dd8f2fd3e2da26f36cdc884f92c91358c635ad64ea4d96",
+    "loss_window_seed204_event3.png": "bb58f63e38aeac851dfd2a0244f2464e5a155cc6acf0916848826b29d901de55",
+    "loss_window_seed204_event4.png": "a351bfeee1873567dc2a6066e3a2aee5bbf27e22886a566948c0838787b224fe",
+    "loss_window_seed204_event5.png": "f01891b41f5a7931b0c8507ed81a073a533f62ebfb29bffeefdb52d43d62c2df",
+    "loss_window_seed305_event1.png": "f844deb27ba40cbd0a8cfd5b59f21ec7ca2a84931c6ac2d86256693f80831de1",
+    "loss_window_seed305_event2.png": "b8639bf31be0256feb8db2b3e7d0ccd1f4bd7db6506b0c39984789d044a619d4",
+    "loss_window_seed305_event3.png": "2217355d68e85aad0c5ee9975e48cb1f133e88db15982fdd368c0fe98011211d",
+    "loss_window_seed305_event4.png": "698e18e07d18a6324636dfe237e660c2b60c9892aa9f4649cf21489ab0be5aa3",
+    "loss_window_seed305_event5.png": "9f843da52be2b31fa860b769281a122065e6d753de114f987e638891b3e5d703",
+    "loss_windows.npz": "81ccf5d7ba831d51580e74c4141eca7dcc9dc29412cf4f1b346bb20ff9160fb1",
+    "loss_windows_index.json": "fb884f73434fb74762ab6d35409027138bec70e72182a9dbe8596b4b7a0232b7",
+    "report.md": "b0db604c1e5c730c494aeb83454246a3fd738b1511dabfdf825165e3c7ce8cc4",
+    "results.json": "87951ffaa8c7584da03bb9705eacbb4a838c1ff28a19d15a9e5a2fa02008d925",
+    "trajectory.jsonl": "ccee68b19ae3209fb4ebccf39d0602f94ffff9b5ae5c91f2b09b18a9b4c3d1af"
+  },
+  "classification": "INCONCLUSIVE",
+  "collection_wall_seconds": 4.954702125003678,
+  "completion_audit_sha256": "43d431e77a4a3b60dd720933ee399767d456a6c633ee93aab7265d92e4f1b64b",
+  "completion_source_sha256": "9444a7955e65f4fe9e1568f5b321d8c9ffc0a105ae0d8549c5c76bc99c08f926",
+  "contact_sheet_refresh": "The report and all 15 contact sheets were refreshed offline from preserved results.json, loss_windows_index.json, and loss_windows.npz after collection; no ALE step, fixture, metric, or policy change.",
+  "contract_sha256": "7eca5ae5262a28aeabf3be658f8275a68f3d2ae40cc74379400be2890dc31a2a",
+  "episodes": [
+    {
+      "clear_status": "NO_CLEAR",
+      "episode_index": 1,
+      "native_frames": 4138,
+      "seed": 103,
+      "stop_reason": "terminated"
+    },
+    {
+      "clear_status": "NO_CLEAR",
+      "episode_index": 2,
+      "native_frames": 3561,
+      "seed": 204,
+      "stop_reason": "terminated"
+    },
+    {
+      "clear_status": "NO_CLEAR",
+      "episode_index": 3,
+      "native_frames": 4812,
+      "seed": 305,
+      "stop_reason": "terminated"
+    }
+  ],
+  "finalization_wall_seconds": 0.5741544780030381,
+  "formal_command": "timeout --signal=TERM --kill-after=5s 560s env PYTHONPATH=/tmp/issue41-onnxruntime python -m scripts.evaluation.run_issue45_loss_window_audit_eval --contract configs/eval/breakout_contract_v2.json --inference-spec configs/inference/inference_spec.json --model web/public/models/final_model/model.onnx --episode-seeds 103,204,305 --loss-window-decisions 8 --max-native-frames-per-episode 108000 --output-dir outputs/issue-45-loss-window-audit",
+  "frame_semantics": {
+    "decision_metadata_emulator_frame": "pre-action model-input frame",
+    "event_and_trajectory_emulator_frame": "post-step frame",
+    "terminal_game_over_steps": "wrapper may advance fewer than four native frames; observed deltas 2 and 1 on two terminal losses"
+  },
+  "inference_spec_sha256": "b396989041eff00396789c0f878fa783b071b0d3327aa1638c891a25d3f84507",
+  "issue": 45,
+  "metadata_inference_spec_sha256": "68637a63d3f0242f74089314049251521bec14a6fa3267b57fa46470acfff8ec",
+  "metadata_sha256": "fbb9868fa0fb0ad7ce511e59b368efbef984279178c554dede0ae7e950731512",
+  "model_sha256": "cf90c74b1d09d5d7e2e0c71014f2daef2b5e1833425d300da06e34d1e4ef7f12",
+  "native_frames": 12511,
+  "planner_validation_status": "NOT_REQUIRED",
+  "pre_run_validation": {
+    "combined_seconds": 0.478,
+    "pure_tests_compile_diff_seconds": 0.267,
+    "setup_cap_seconds": 20,
+    "setup_test_native_frames": 0,
+    "zero_frame_preflight_seconds": 0.211
+  },
+  "runtime": {
+    "model_input_preflight": "zero uint8 [4,84,84], cast float32 and divide by 255 once; no ALE frames",
+    "onnx_input": {
+      "dtype": "float32",
+      "name": "observation",
+      "shape": [
+        1,
+        4,
+        84,
+        84
+      ]
+    },
+    "onnx_output": {
+      "dtype": "float32",
+      "name": "q_values",
+      "shape": [
+        1,
+        4
+      ]
+    },
+    "onnxruntime": "1.22.1",
+    "providers": [
+      "CPUExecutionProvider"
+    ],
+    "python": "3.12.14",
+    "requested_providers": [
+      "CPUExecutionProvider"
+    ]
+  },
+  "scheduled_seeds_remaining": [],
+  "source_commit": "82b72e1a7e1af89a4b3223ee221ab10e9d9a4164",
+  "total_wall_seconds": 5.528857033001259
+}
