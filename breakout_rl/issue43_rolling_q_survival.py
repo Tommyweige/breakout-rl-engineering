@@ -37,6 +37,9 @@ TOTAL_WALL_LIMIT = 600.0
 COLLECTION_WALL_LIMIT = 530.0
 FINALIZATION_RESERVE_SECONDS = 30.0
 SMOOTHING_WINDOW = 4
+REQUESTED_MODEL = "gpt-6-luna"
+REQUESTED_REASONING_EFFORT = "high"
+MODEL_ROUTING_VERIFICATION = "UNAVAILABLE"
 COMPLETION_SOURCE_FILES = (
     "breakout_env.py", "breakout_rl/completion.py", "breakout_rl/evaluation.py",
     "breakout_rl/evaluation_artifacts.py", "breakout_rl/evaluation_contract.py",
@@ -331,6 +334,9 @@ def run(contract_path: Path, spec_path: Path, model_path: Path,
     result = {
         "schema_version": 1, "issue": 43, "evaluation_status": status,
         "classification": classification, "has_verified_clear": has_verified_clear,
+        "execution_context": {"requested_model": REQUESTED_MODEL,
+            "requested_reasoning_effort": REQUESTED_REASONING_EFFORT,
+            "MODEL_ROUTING_VERIFICATION": MODEL_ROUTING_VERIFICATION},
         "model": {"model_sha256": MODEL_SHA256, "metadata_sha256": METADATA_SHA256,
             "inference_spec_sha256": SPEC_CURRENT_SHA256, "metadata_inference_spec_sha256": SPEC_METADATA_SHA256,
             "contract_sha256": CONTRACT_SHA256, "completion_audit_sha256": AUDIT_SHA256,
@@ -375,6 +381,7 @@ def run(contract_path: Path, spec_path: Path, model_path: Path,
         "Survival, score, action-switch rate, and Q-vector differences are descriptive diagnostics only; they do not rank a champion or replace the clear gate.",
         "", f"Model `{MODEL_SHA256}`; metadata `{METADATA_SHA256}`; current inference spec `{SPEC_CURRENT_SHA256}` (metadata-declared older spec `{SPEC_METADATA_SHA256}`); Contract v2 `{CONTRACT_SHA256}`; audit `{AUDIT_SHA256}`.",
         f"", f"ONNX Runtime `{policy.ort.__version__}`, providers `{policy.session.get_providers()}`. Source commit `{commit}`, dirty `{dirty}`. Original PyTorch `.pt` bytes were absent and lineage remains metadata-declared.",
+        f"Requested execution context: `{REQUESTED_MODEL}` / `{REQUESTED_REASONING_EFFORT}`; `MODEL_ROUTING_VERIFICATION: {MODEL_ROUTING_VERIFICATION}` (no identity introspection is available).",
         "", "## Paired descriptive diagnostics", "", "| Seed | Status | Raw frames | Q4 frames | Difference | Raw lives lost | Q4 lives lost | Raw score | Q4 score | Raw switch rate | Q4 switch rate | Raw median Q margin | Q4 median Q margin |",
         "|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|"]
     for pair in pairs:
