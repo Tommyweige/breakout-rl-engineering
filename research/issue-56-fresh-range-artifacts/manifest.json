@@ -1,0 +1,11 @@
+{
+  "formal.stderr": "3042d2cd31292307b159eb83cfa49ef0b525584f115562f5f96ce8880ff653a3",
+  "formal.stdout": "dcffc0b84081d2ddfffda4c966f0e4bcb6d7283f48a53e5ee6c884ebbea74f2a",
+  "formal_wrapper.json": "54ece6a861d5dfd3fc164a36d23eb2f5521364c4d1967134530c115e0969ebb9",
+  "manifest_sha256_self_excluded": "self hash intentionally omitted",
+  "observation_index.jsonl": "14e350c0cb9b7f5ac16056d4c4cbf4503841b03d1edef785b72abbd6a8a93311",
+  "observation_stacks.uint8": "c36b42eb9836be40f2071d5010a4289561589f285f8d4d647f58fe64619536cd",
+  "report.md": "fbeb36f4acbd9c1b9ab96431fb135f62aeca10c82815b4ee63a3646298d19fd5",
+  "results.json": "cd751836a7d7a5ddd345a902afb2d9574bf9a0fb2d0470f031c6898e0276ec9e",
+  "trajectory.jsonl": "e8620a7190fc1c09937e09e62586d02e385fa8b34a57822310992a5883c58ef9"
+}

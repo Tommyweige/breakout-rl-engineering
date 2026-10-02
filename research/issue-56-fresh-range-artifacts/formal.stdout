@@ -1,0 +1,355 @@
+{
+  "MODEL_ROUTING_VERIFICATION": "UNAVAILABLE",
+  "aggregate_channel_3_summaries": {
+    "channel_3_ball_roi": {
+      "max": 110,
+      "min": 0,
+      "p50": 0.0,
+      "p90": 0.0,
+      "p95": 0.0,
+      "p99": 0.0,
+      "quantile_method": "linear"
+    },
+    "channel_3_full_plane": {
+      "max": 148,
+      "min": 0,
+      "p50": 0.0,
+      "p90": 142.0,
+      "p95": 142.0,
+      "p99": 148.0,
+      "quantile_method": "linear"
+    },
+    "channel_3_paddle_roi": {
+      "max": 110,
+      "min": 0,
+      "p50": 0.0,
+      "p90": 0.0,
+      "p95": 0.0,
+      "p99": 110.0,
+      "quantile_method": "linear"
+    }
+  },
+  "canonical_clear_detected": false,
+  "canonical_clear_state": false,
+  "classification": "INCONCLUSIVE",
+  "clear_provenance": null,
+  "decision_cap": 87,
+  "decision_ceiling_reached": true,
+  "decisions": 87,
+  "diagnostic_result": "PROMOTED",
+  "exact_run_command": "timeout --signal=INT --kill-after=5s 90s env PYTHONPATH=/tmp/issue41-onnxruntime python -m scripts.evaluation.run_issue56_fresh_range --output-dir research/issue-56-fresh-range-artifacts",
+  "frame_cap": 350,
+  "frozen_rois": {
+    "ball": [
+      54,
+      73,
+      6,
+      78
+    ],
+    "paddle": [
+      73,
+      83,
+      6,
+      78
+    ]
+  },
+  "has_verified_clear": false,
+  "hvc": "NO",
+  "index_sha256": "14e350c0cb9b7f5ac16056d4c4cbf4503841b03d1edef785b72abbd6a8a93311",
+  "input_hashes": {
+    "contract_sha256": "7eca5ae5262a28aeabf3be658f8275a68f3d2ae40cc74379400be2890dc31a2a",
+    "inference_spec_sha256": "b396989041eff00396789c0f878fa783b071b0d3327aa1638c891a25d3f84507",
+    "metadata_sha256": "fbb9868fa0fb0ad7ce511e59b368efbef984279178c554dede0ae7e950731512",
+    "model_sha256": "cf90c74b1d09d5d7e2e0c71014f2daef2b5e1833425d300da06e34d1e4ef7f12"
+  },
+  "issue": 56,
+  "native_frames": 348,
+  "pre_run_validation": {
+    "MODEL_ROUTING_VERIFICATION": "UNAVAILABLE",
+    "base_commit": "a00c2c9ad6f9da28eb61f01f3c26da759f6e5958",
+    "branch": "codex/issue-56-fresh-range-observe",
+    "branch_commit_sha": "bf839c7395d24b021b5cbbe1fb3382e9b57a9332",
+    "compile_command": "python -m py_compile breakout_rl/issue56_fresh_range.py scripts/evaluation/run_issue56_fresh_range.py tests/test_issue56_fresh_range.py",
+    "compile_result": "passed",
+    "compile_wall_seconds": 0.028647,
+    "cumulative_validation_wall_seconds": 1.740951,
+    "diff_check_command": "git diff --check a00c2c9ad6f9da28eb61f01f3c26da759f6e5958 HEAD",
+    "diff_check_result": "passed",
+    "diff_check_wall_seconds": 0.002615,
+    "focused_test_command": "env PYTHONPATH=/tmp/issue41-onnxruntime python -c 'import time,unittest; import os,sys; start=time.perf_counter(); suite=unittest.defaultTestLoader.discover(start_dir=\"tests\", pattern=\"test_issue56_fresh_range.py\"); path=os.path.abspath(\"tests/test_issue56_fresh_range.py\"); loaded=sys.modules.get(\"test_issue56_fresh_range\"); assert loaded is not None and os.path.abspath(loaded.__file__)==path; print(f\"focused_test_module_path={path}\"); result=unittest.TextTestRunner(verbosity=2).run(suite); print(f\"focused_test_elapsed_seconds={time.perf_counter()-start:.3f}\"); raise SystemExit(not result.wasSuccessful())'",
+    "focused_test_count": 12,
+    "focused_test_internal_seconds": 0.203,
+    "focused_test_module_path": "/tmp/issue56-wt/tests/test_issue56_fresh_range.py",
+    "focused_test_module_sha256": "64a007864a691afd45308832e5a13df603406862be60d94eb7147f2b42ce7f8a",
+    "focused_test_result": "passed",
+    "focused_test_runner_seconds": 0.103,
+    "focused_test_wall_seconds": 0.280053,
+    "formal_collection_started_before_checkpoint": false,
+    "frozen_input_hashes": {
+      "contract_sha256": "7eca5ae5262a28aeabf3be658f8275a68f3d2ae40cc74379400be2890dc31a2a",
+      "inference_spec_sha256": "b396989041eff00396789c0f878fa783b071b0d3327aa1638c891a25d3f84507",
+      "metadata_sha256": "fbb9868fa0fb0ad7ce511e59b368efbef984279178c554dede0ae7e950731512",
+      "model_sha256": "cf90c74b1d09d5d7e2e0c71014f2daef2b5e1833425d300da06e34d1e4ef7f12"
+    },
+    "initial_invalid_preflight_deviation": {
+      "ale_environment_created": true,
+      "ale_native_frames": 0,
+      "ale_reset_calls": 0,
+      "ale_step_calls": 0,
+      "compile_result": "passed",
+      "compliant": false,
+      "diff_check_result": "passed",
+      "focused_tests_passed": 11,
+      "preflight_wall_seconds": 0.336797,
+      "reason": "Initial preflight attempt constructed and closed an ALE environment, contrary to the frozen no-create rule; excluded as a successful preflight.",
+      "source_commit": "a00c2c9ad6f9da28eb61f01f3c26da759f6e5958",
+      "source_working_tree_dirty": true,
+      "stderr_path": "/tmp/issue56-pre-preflight.stderr",
+      "stderr_sha256": "921c01ca06bca9d4c189966c798c0563a4b1ce400c7ca087078e8f0a50a26bc6",
+      "stdout_path": "/tmp/issue56-pre-preflight.stdout",
+      "stdout_sha256": "28b94612dc71664f3dacb7d3d7af73ef3345edaa43fa4f360ddaabcaffc3650a",
+      "validation_bundle_wall_seconds": 0.604614
+    },
+    "output_path_absent": true,
+    "overall_pre_run_wall_seconds": 1.740951,
+    "parent_commit": "3255237381fffa8f0f9dd9a2aba4394c4dd40553",
+    "pre_run_validation_combined_wall_seconds": 0.564689,
+    "runtime": {
+      "numpy": "2.3.5",
+      "onnx_input": [
+        "N",
+        4,
+        84,
+        84
+      ],
+      "onnx_output": [
+        1,
+        4
+      ],
+      "onnxruntime": "1.22.1",
+      "providers": [
+        "CPUExecutionProvider"
+      ],
+      "python": "3.12.14"
+    },
+    "source_commit": "bf839c7395d24b021b5cbbe1fb3382e9b57a9332",
+    "source_digest": "9f575455dd1a3959e22f6ac3327b90d9445dd380d4f34db62158c41fe6e2433e",
+    "source_dirty": false,
+    "superseded_loader_ambiguity_attempt": {
+      "ale_environment_created": false,
+      "ale_native_frames": 0,
+      "ale_reset_calls": 0,
+      "ale_step_calls": 0,
+      "focused_test_count_reported": 12,
+      "focused_test_module_path_recorded": false,
+      "focused_test_result": "passed",
+      "logs": {
+        "compile_stderr": {
+          "path": "/tmp/issue56-final-compile.stderr",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "compile_stdout": {
+          "path": "/tmp/issue56-final-compile.stdout",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diff_check_stderr": {
+          "path": "/tmp/issue56-final-diff_check.stderr",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diff_check_stdout": {
+          "path": "/tmp/issue56-final-diff_check.stdout",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "focused_tests_stderr": {
+          "path": "/tmp/issue56-final-focused_tests.stderr",
+          "sha256": "6140f9fc2e8b1a6629ad0a4ac142426531fe93d83ab6fab243a272dac9fb2898"
+        },
+        "focused_tests_stdout": {
+          "path": "/tmp/issue56-final-focused_tests.stdout",
+          "sha256": "cdcd9f66922f99c4c62e47e59597ebb6fce364771369a8beb6f3aa87bc218683"
+        },
+        "zero_frame_preflight_stderr": {
+          "path": "/tmp/issue56-final-zero_frame_preflight.stderr",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "zero_frame_preflight_stdout": {
+          "path": "/tmp/issue56-final-zero_frame_preflight.stdout",
+          "sha256": "6ffc1bfa8d16ff226d80cf2cf9cd758fe99b7fb8cdb343ef29e2a6e7425efe92"
+        }
+      },
+      "reason": "loadTestsFromName used a potentially shadowed tests package; superseded by discovery with asserted __file__.",
+      "source_commit": "3255237381fffa8f0f9dd9a2aba4394c4dd40553",
+      "validation_bundle_wall_seconds": 0.571648,
+      "zero_frame_preflight_compliant": true
+    },
+    "validation_commands": {
+      "compile": {
+        "command": "python -m py_compile breakout_rl/issue56_fresh_range.py scripts/evaluation/run_issue56_fresh_range.py tests/test_issue56_fresh_range.py",
+        "exit_code": 0,
+        "stderr_path": "/tmp/issue56-verified-compile.stderr",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_path": "/tmp/issue56-verified-compile.stdout",
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "wall_seconds": 0.028647
+      },
+      "diff_check": {
+        "command": "git diff --check a00c2c9ad6f9da28eb61f01f3c26da759f6e5958 HEAD",
+        "exit_code": 0,
+        "stderr_path": "/tmp/issue56-verified-diff_check.stderr",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_path": "/tmp/issue56-verified-diff_check.stdout",
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "wall_seconds": 0.002615
+      },
+      "focused_tests": {
+        "command": "env PYTHONPATH=/tmp/issue41-onnxruntime python -c import time,unittest; import os,sys; start=time.perf_counter(); suite=unittest.defaultTestLoader.discover(start_dir=\"tests\", pattern=\"test_issue56_fresh_range.py\"); path=os.path.abspath(\"tests/test_issue56_fresh_range.py\"); loaded=sys.modules.get(\"test_issue56_fresh_range\"); assert loaded is not None and os.path.abspath(loaded.__file__)==path; print(f\"focused_test_module_path={path}\"); result=unittest.TextTestRunner(verbosity=2).run(suite); print(f\"focused_test_elapsed_seconds={time.perf_counter()-start:.3f}\"); raise SystemExit(not result.wasSuccessful())",
+        "exit_code": 0,
+        "focused_test_internal_seconds": 0.203,
+        "module_path": "/tmp/issue56-wt/tests/test_issue56_fresh_range.py",
+        "module_sha256": "64a007864a691afd45308832e5a13df603406862be60d94eb7147f2b42ce7f8a",
+        "runner_internal_seconds": 0.103,
+        "stderr_path": "/tmp/issue56-verified-focused_tests.stderr",
+        "stderr_sha256": "4aa96591a6778892a8b8b6153577840feb7c4cb9683d9d1a7190f852e62a9071",
+        "stdout_path": "/tmp/issue56-verified-focused_tests.stdout",
+        "stdout_sha256": "a70443580555a1923253dfe407db13ba7fd264870e4aaa2cea196cac89dd4ad6",
+        "test_count": 12,
+        "wall_seconds": 0.280053
+      },
+      "zero_frame_preflight": {
+        "command": "timeout --signal=INT --kill-after=2s 20s env PYTHONPATH=/tmp/issue41-onnxruntime python -m scripts.evaluation.run_issue56_fresh_range --output-dir research/issue-56-fresh-range-artifacts --preflight-only",
+        "exit_code": 0,
+        "parsed_result": {
+          "ale_environment_created": false,
+          "ale_native_frames": 0,
+          "ale_reset_calls": 0,
+          "ale_step_calls": 0,
+          "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+          "runtime": {
+            "numpy": "2.3.5",
+            "onnx_input": [
+              "N",
+              4,
+              84,
+              84
+            ],
+            "onnx_output": [
+              1,
+              4
+            ],
+            "onnxruntime": "1.22.1",
+            "providers": [
+              "CPUExecutionProvider"
+            ],
+            "python": "3.12.14"
+          },
+          "status": "passed"
+        },
+        "stderr_path": "/tmp/issue56-verified-zero_frame_preflight.stderr",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_path": "/tmp/issue56-verified-zero_frame_preflight.stdout",
+        "stdout_sha256": "6ffc1bfa8d16ff226d80cf2cf9cd758fe99b7fb8cdb343ef29e2a6e7425efe92",
+        "wall_seconds": 0.252455
+      }
+    },
+    "worktree_clean_after_validation": true,
+    "zero_frame_preflight_ale_environment_created": false,
+    "zero_frame_preflight_command": "timeout --signal=INT --kill-after=2s 20s env PYTHONPATH=/tmp/issue41-onnxruntime python -m scripts.evaluation.run_issue56_fresh_range --output-dir research/issue-56-fresh-range-artifacts --preflight-only",
+    "zero_frame_preflight_native_frames": 0,
+    "zero_frame_preflight_reset_calls": 0,
+    "zero_frame_preflight_result": "passed",
+    "zero_frame_preflight_runtime": {
+      "numpy": "2.3.5",
+      "onnx_input": [
+        "N",
+        4,
+        84,
+        84
+      ],
+      "onnx_output": [
+        1,
+        4
+      ],
+      "onnxruntime": "1.22.1",
+      "providers": [
+        "CPUExecutionProvider"
+      ],
+      "python": "3.12.14"
+    },
+    "zero_frame_preflight_step_calls": 0,
+    "zero_frame_preflight_wall_seconds": 0.252455
+  },
+  "reachability": {
+    "N": 87,
+    "R": 0,
+    "fraction": 0.0,
+    "interpretation": "not reached in sample"
+  },
+  "round_status": "CONTINUE_RESEARCH",
+  "runtime": {
+    "numpy": "2.3.5",
+    "onnxruntime": "1.22.1",
+    "providers": [
+      "CPUExecutionProvider"
+    ],
+    "python": "3.12.14"
+  },
+  "schema_version": 1,
+  "seed": 509,
+  "setup_test_budget_seconds": {
+    "cap": 20.0,
+    "formal_setup_preflight": 0.16435954299231526,
+    "pre_run_consumed": 1.740951,
+    "remaining": 18.094689457007686,
+    "total_consumed": 1.9053105429923152
+  },
+  "source": {
+    "branch": "codex/issue-56-fresh-range-observe",
+    "branch_commit_sha": "bf839c7395d24b021b5cbbe1fb3382e9b57a9332",
+    "commit": "bf839c7395d24b021b5cbbe1fb3382e9b57a9332",
+    "completion_source_digest": "9444a7955e65f4fe9e1568f5b321d8c9ffc0a105ae0d8549c5c76bc99c08f926",
+    "completion_source_files": [
+      "breakout_env.py",
+      "breakout_rl/completion.py",
+      "breakout_rl/evaluation.py",
+      "breakout_rl/evaluation_artifacts.py",
+      "breakout_rl/evaluation_contract.py",
+      "configs/eval/breakout_completion_audit_v1.json"
+    ],
+    "dirty": false,
+    "source_digest": "9f575455dd1a3959e22f6ac3327b90d9445dd380d4f34db62158c41fe6e2433e",
+    "source_files": [
+      "breakout_rl/issue56_fresh_range.py",
+      "scripts/evaluation/run_issue56_fresh_range.py",
+      "tests/test_issue56_fresh_range.py",
+      "breakout_env.py",
+      "breakout_rl/completion.py",
+      "breakout_rl/evaluation_contract.py",
+      "breakout_rl/evaluation_artifacts.py"
+    ]
+  },
+  "stop_reason": "native_frame_cap",
+  "stream_sha256": "c36b42eb9836be40f2071d5010a4289561589f285f8d4d647f58fe64619536cd",
+  "threshold": 200,
+  "timing_seconds": {
+    "collection": 0.24617539899190888,
+    "finalization_before_artifact_writes": 0.04298103699693456,
+    "measurement_scope": "source-recorded phase values stop before results/report/manifest serialization; exact full-command elapsed and finalization wall are captured in /tmp wrapper logs",
+    "setup_preflight": 0.16435954299231526,
+    "total_before_artifact_writes": 0.4535207049921155
+  },
+  "trajectory_sha256": "e8620a7190fc1c09937e09e62586d02e385fa8b34a57822310992a5883c58ef9",
+  "wall_cap_guard": {
+    "artifact_write_time_included_in_wrapper_elapsed": true,
+    "collection_cap_passed": true,
+    "collection_cap_seconds": 60.0,
+    "finalization_before_artifact_writes_seconds": 0.04298103699693456,
+    "finalization_reserve_seconds": 10.0,
+    "remaining_finalization_reserve_before_serialization_seconds": 9.957018963003065,
+    "sampled_before_artifact_writes": true,
+    "setup_test_cap_passed": true,
+    "setup_test_cap_seconds": 20.0,
+    "total_before_artifact_writes_passed": true,
+    "total_before_artifact_writes_seconds": 0.4535207049921155,
+    "total_cap_seconds": 90.0
+  }
+}

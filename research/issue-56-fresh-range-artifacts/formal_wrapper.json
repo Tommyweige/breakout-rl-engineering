@@ -1,0 +1,11 @@
+{
+  "branch": "codex/issue-56-fresh-range-observe",
+  "command": "timeout --signal=INT --kill-after=5s 90s env PYTHONPATH=/tmp/issue41-onnxruntime python -m scripts.evaluation.run_issue56_fresh_range --output-dir research/issue-56-fresh-range-artifacts",
+  "exit_code": 0,
+  "external_wall_seconds": 0.643623,
+  "source_commit": "bf839c7395d24b021b5cbbe1fb3382e9b57a9332",
+  "stderr_path": "/tmp/issue56-formal.stderr",
+  "stderr_sha256": "3042d2cd31292307b159eb83cfa49ef0b525584f115562f5f96ce8880ff653a3",
+  "stdout_path": "/tmp/issue56-formal.stdout",
+  "stdout_sha256": "dcffc0b84081d2ddfffda4c966f0e4bcb6d7283f48a53e5ee6c884ebbea74f2a"
+}
