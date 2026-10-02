@@ -301,13 +301,22 @@ def run_probe(config_path: str | Path = DEFAULT_CONFIG, output_dir: str | Path =
     episodes_with_labels = sum(bool(x["label_events"]) for x in per_episode)
     classification = classify(metrics, label_count, episodes_with_labels, label_consistent)
     elapsed = time.perf_counter() - started
+    command = ("python -m scripts.evaluation.run_issue39_rgb_brick_observability "
+               "--config configs/eval/issue39_rgb_brick_observability_v1.json "
+               "--output-dir outputs/issue-39-rgb-brick-observability")
     payload = {"schema_version": 1, "issue": 39, "probe_id": "issue-39-rgb-brick-observability-v1",
         "requested_model": "GPT-6 Luna / High", "model_routing_verification": "UNAVAILABLE",
+        "command": command,
         "seeds": list(cfg.seeds), "completed_seeds": [r["seed"] for r in runs], "runs": runs,
         "predictions": detector_outputs, "labels_offline_only": all_truth,
         "labels_consistent": label_consistent, "label_count": label_count,
         "episodes_with_labels": episodes_with_labels, "primary_metric": metrics,
         "classification": classification, "native_frames": total_frames,
+        "frame_caps": {"per_episode": cfg.max_frames_per_episode,
+                       "formal_total": cfg.max_frames_total,
+                       "test_reserve": PREDECLARED_TEST_NATIVE_FRAMES,
+                       "combined_total": TOTAL_NATIVE_FRAME_CEILING,
+                       "wall_seconds": cfg.total_wall_seconds},
         "predeclared_test_native_frames_reserved": PREDECLARED_TEST_NATIVE_FRAMES,
         "combined_native_frame_ceiling": TOTAL_NATIVE_FRAME_CEILING, "elapsed_wall_seconds": elapsed,
         "environment": {"id": ENVIRONMENT_ID, "contract_id": contract.contract_id,
@@ -325,8 +334,9 @@ def run_probe(config_path: str | Path = DEFAULT_CONFIG, output_dir: str | Path =
                         episode_seed=np.array([seed for run in runs for seed in [run["seed"]] * (run["capture_end_index"] - run["capture_start_index"])], dtype=np.int32),
                         native_frame=np.array([frame for run in runs for frame in range(run["capture_end_index"] - run["capture_start_index"])], dtype=np.int32))
     result_path = out / "results.json"
-    result_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     report_path = out / "report.md"
+    payload["elapsed_wall_seconds"] = time.perf_counter() - started
+    result_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     report_path.write_text(render_report(payload, npz_path.name), encoding="utf-8")
     return [npz_path, result_path, report_path], payload
 
@@ -340,6 +350,7 @@ def render_report(payload: Mapping[str, Any], crop_artifact: str) -> str:
         f"Label events: {payload['label_count']} across {payload['episodes_with_labels']} episodes; labels consistent: {payload['labels_consistent']}.",
         f"Frames: {payload['native_frames']} formal + {payload['predeclared_test_native_frames_reserved']} reserved = at most {payload['combined_native_frame_ceiling']} native frames.",
         f"Wall time: {payload['elapsed_wall_seconds']:.2f}s; formal seeds completed: {payload['completed_seeds']}.", "",
+        f"Command: `{payload['command']}`.",
         f"Source revision: `{source['revision']}`; branch: `{source['branch']}`.",
         f"Config SHA-256: `{source['config_sha256']}`; Contract v3 SHA-256: `{source['contract_sha256']}`; controller config SHA-256: `{source['controller_config_sha256']}`.",
         f"Lossless captured RGB crops: `{crop_artifact}` (NPZ compressed, uint8). Detector input is these crops only. Score and RAM are evaluator-only offline labels.", "",
