@@ -11,7 +11,7 @@ import numpy as np
 
 from breakout_rl.issue37_reachable_contact_probe import (
     EXPECTED_ORDER, _process_contact_event, analyze_probe_runs, clamp_target_center,
-    load_probe_config, select_outgoing_vx,
+    detect_post_bounce_collision, load_probe_config, select_outgoing_vx,
 )
 from breakout_rl.vision_controller import (
     BallEstimate, PaddleDetection, PlayfieldBounds, PredictiveBreakoutController,
@@ -164,6 +164,18 @@ class ProbeContactTests(unittest.TestCase):
         self.assertIsNone(select_outgoing_vx(obs[:3], 18))
         self.assertIsNone(select_outgoing_vx(obs, 18, collision=True))
         self.assertIsNone(select_outgoing_vx(obs, 10))
+
+    def test_collision_detection_checks_full_direct_post_bounce_track(self):
+        ascending = {"frame": 20, "x": 80.0, "vx": 1.0, "vy": -2.0, "direct": True}
+        descending_after_brick = {"frame": 22, "x": 82.0, "vx": 1.0, "vy": 2.0, "direct": True}
+        self.assertTrue(detect_post_bounce_collision(
+            ascending, descending_after_brick, left_bound=8.0, right_bound=151.0))
+        nondirect = dict(descending_after_brick, direct=False)
+        self.assertFalse(detect_post_bounce_collision(
+            ascending, nondirect, left_bound=8.0, right_bound=151.0))
+        wall = dict(ascending, x=11.0)
+        self.assertTrue(detect_post_bounce_collision(
+            None, wall, left_bound=8.0, right_bound=151.0))
 
 
 class ProbeAnalysisTests(unittest.TestCase):

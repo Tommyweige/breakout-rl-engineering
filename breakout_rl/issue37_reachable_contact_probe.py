@@ -147,6 +147,24 @@ def select_outgoing_vx(observations: Sequence[Mapping[str, Any]], bounce_frame: 
     return None
 
 
+def detect_post_bounce_collision(previous: Mapping[str, Any] | None, current: Mapping[str, Any],
+                                 *, left_bound: float, right_bound: float) -> bool:
+    """Detect wall proximity or observed velocity reversal on any direct post-bounce sample."""
+    if not current.get("direct") or current.get("vx") is None or current.get("vy") is None:
+        return False
+    vx, vy = float(current["vx"]), float(current["vy"])
+    if not math.isfinite(vx) or not math.isfinite(vy):
+        return False
+    x = current.get("x")
+    near_side_wall = x is not None and (float(x) <= left_bound + 5 or float(x) >= right_bound - 5)
+    reversal = False
+    if previous is not None and previous.get("direct") and previous.get("vx") is not None and previous.get("vy") is not None:
+        previous_vx, previous_vy = float(previous["vx"]), float(previous["vy"])
+        reversal = (math.isfinite(previous_vx) and math.isfinite(previous_vy)
+                    and (vx * previous_vx < 0 or vy * previous_vy < 0))
+    return bool(near_side_wall or reversal)
+
+
 def _fit_triplet(rows: Sequence[Mapping[str, Any]], config: ProbeConfig) -> dict[str, Any]:
     by_offset = {int(row["requested_offset_px"]): row for row in rows}
     valid = len(by_offset) == 3 and all(row.get("observed_impact_offset_px") is not None and row.get("outgoing_vx_px_per_frame") is not None for row in rows)
@@ -271,7 +289,8 @@ def evaluate_probe(config: ProbeConfig | None = None, *, env_factory=None, wall_
             candidate = None
             bounce = None
             post_velocities: list[float] = []
-            ascending_points: list[tuple[int, float, float, float]] = []
+            post_bounce_points: list[dict[str, Any]] = []
+            previous_post_bounce_point: dict[str, Any] | None = None
             wall_brick_collision = False
             reward_sum = 0.0
             rows: list[dict[str, Any]] = []
@@ -306,15 +325,14 @@ def evaluate_probe(config: ProbeConfig | None = None, *, env_factory=None, wall_
                     bounce = event
                 if bounce is not None:
                     since = observation_frame - bounce["frame"]
-                    if ball.directly_detected and ball.vx is not None and ball.vy is not None and ball.vy < 0 and 0 <= since <= cfg.post_bounce_native_frames:
-                        if paddle is not None and (ball.x <= bounds.left + 5 or ball.x >= bounds.right - 5):
-                            wall_brick_collision = True
-                        if ascending_points:
-                            prev = ascending_points[-1]
-                            if ball.vx * prev[2] < 0 or (ball.vy * prev[3] < 0):
-                                wall_brick_collision = True
-                        ascending_points.append((observation_frame, float(ball.x), float(ball.vx), float(ball.vy)))
-                        if len(post_velocities) < 3:
+                    if ball.directly_detected and ball.vx is not None and ball.vy is not None and 0 <= since <= cfg.post_bounce_native_frames:
+                        point = {"frame": observation_frame, "x": float(ball.x), "vx": float(ball.vx),
+                                 "vy": float(ball.vy), "direct": True}
+                        wall_brick_collision = wall_brick_collision or detect_post_bounce_collision(
+                            previous_post_bounce_point, point, left_bound=bounds.left, right_bound=bounds.right)
+                        post_bounce_points.append(point)
+                        previous_post_bounce_point = point
+                        if ball.vy < 0 and len(post_velocities) < 3:
                             post_velocities.append(float(ball.vx))
                     if since >= cfg.post_bounce_native_frames:
                         terminal_reason = "first_paddle_bounce_plus_8_frames"
@@ -355,8 +373,7 @@ def evaluate_probe(config: ProbeConfig | None = None, *, env_factory=None, wall_
             direct_total = sum(bool(x["ball_directly_detected"]) for x in rows)
             observed = bounce["observed_impact_offset_px"] if bounce else None
             valid_vx = select_outgoing_vx(
-                [{"frame": frame, "vx": vx, "vy": vy, "direct": True}
-                 for frame, _x, vx, vy in ascending_points],
+                post_bounce_points,
                 bounce["frame"] if bounce else 0, window_frames=cfg.post_bounce_native_frames,
                 collision=wall_brick_collision,
             )
@@ -438,8 +455,9 @@ def render_report(payload: Mapping[str, Any]) -> str:
               "## Failure Analysis", "", f"Valid manipulation/measurement-floor seed triplets: {result['measurement_floor_seed_count']}/3. Per-run exclusions are listed above.", "",
               "## Reproducibility", "", "Command: `python -m scripts.evaluation.run_issue37_paddle_contact_probe --config configs/eval/issue37_paddle_contact_probe_v1.json --output-dir outputs/issue-37-paddle-contact-probe`.",
               f"Source branch `{payload['provenance']['source_branch']}`, commit `{payload['provenance']['source_commit']}` (clean tree: {payload['provenance']['working_tree_clean']}); source SHA-256 `{payload['provenance']['source_sha256']}`. Exact completed order: `{payload['completed_order']}`. Probe native frames: {payload['probe_native_frames']}; predeclared ALE regression-test frame reserve: {payload['predeclared_test_native_frames_reserved']}; combined conservative native-frame total: {payload['aggregate_native_frames']}; probe wall time: {payload['aggregate_wall_seconds']:.3f}s.",
-              f"Combined wall accounting: at most 20.0s for validation/tests/compile, 1.0s environment setup reserve, up to 519.0s evaluator runtime, and 60.0s report/artifact reserve (600s hard ceiling). Measured validation/tests wall: {payload.get('test_results', {}).get('wall_seconds', 'n/a')}s; measured environment+probe wall: {payload['aggregate_wall_seconds']:.3f}s; total measured including tests and report writing: {payload.get('combined_wall_seconds', 'n/a')}s.",
-              f"Conservative frame accounting: {payload['probe_native_frames']} formal native frames + {payload['predeclared_test_native_frames_reserved']} predeclared regression-test frame reserve = {payload['aggregate_native_frames']} / 45,000; formal-run ceiling 44,650. Executor routing record: `{payload['model_routing_verification']}`.", "",
+              f"Combined wall accounting: at most 20.0s for validation/tests/compile, 1.0s environment setup reserve, up to 519.0s evaluator runtime, and 60.0s report/artifact reserve (600s hard ceiling). Validation/tests/compile used the 20.0s reserve; measured evaluator wall was {payload['aggregate_wall_seconds']:.3f}s; measured combined accounting including the 20.0s reserve and artifact/report generation was {payload.get('combined_test_probe_report_wall_seconds', 'n/a')}s.",
+              f"Conservative frame accounting: {payload['probe_native_frames']} formal native frames + {payload['predeclared_test_native_frames_reserved']} predeclared regression-test frame reserve = {payload['aggregate_native_frames']} / 45,000; formal-run ceiling 44,650. Executor routing record: `{payload['model_routing_verification']}`.",
+              "Post-run correctness review found that the original run source compared vertical-velocity signs only after filtering to ascending observations. A direct ascending-to-descending transition within the 8-frame window could therefore miss a brick collision. This does not alter the frozen INCONCLUSIVE result: no seed met the manipulation/measurement floor, and no arm is rerun. The final branch adds an all-direct-observation collision check and a synthetic regression test; the exact pre-run source and artifacts remain identified above.", "",
               "## Tests", "", "Focused command: `python -m unittest tests.test_issue37_reachable_contact_probe -v` — 15 passed on the final run (0.029s). The three target/baseline tests verify sign, clamping, unchanged zero-offset behavior at both side bounds, and baseline behavior before a descending intercept. Synthetic analysis verifies exactly 8 px qualifies at the OLS slope threshold and unordered/sub-8 px spans fail the floor. Regression command: `python -m unittest tests.test_vision_controller.PredictiveVisionPerceptionTests tests.test_vision_controller.PredictiveControlMathTests tests.test_vision_controller.VisionEvaluationSemanticsTests tests.test_evaluation_contract.Day15ContractTests.test_contract_v3_requires_explicit_precision_opt_in tests.test_completion.ALETransitionFrameCounterTests tests.test_completion.BreakoutCompletionDetectorTests tests.test_completion.CompletionSummaryTests tests.test_evaluation_completion_pipeline.EvaluationCompletionPipelineTests -v` — 33 passed; 2 selected modules had import errors. Exact runtime limitation: `ModuleNotFoundError: No module named 'torch'` importing `tests.test_evaluation_contract` through `breakout_rl/evaluation.py` and `tests.test_evaluation_completion_pipeline` through `breakout_rl/evaluation.py`. No dependencies were installed or runtime changed. Completion regression fixtures ran once; 350 native frames are reserved. Python compilation and `git diff --check` passed. Validation completed within the 20-second wall reserve.", "",
               "## Remaining Uncertainty", "", "Sticky action resolution is hidden; observations estimate ball motion after any sticky substitution. Three seeds and one bounce per run provide limited evidence. A collision before three ascending velocity estimates excludes that run.", "",
               "## Recommended Next Decision", "", f"Follow the frozen decision rule only: {result['classification']}. PROMOTED permits considering one later controlled outgoing-angle experiment; it does not establish clear improvement or satisfy Issue #14.", ""]
