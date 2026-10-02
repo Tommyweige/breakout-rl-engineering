@@ -135,6 +135,16 @@ def _top_two_margin(values: np.ndarray) -> float:
     return float(np.float32(ordered[-1] - ordered[-2]))
 
 
+def paired_clear_statuses(pair: dict[str, Any]) -> tuple[str, str]:
+    """Return raw and Q4 clear outcomes from completed or partial pair diagnostics."""
+    raw = pair.get("raw_greedy")
+    q4 = pair.get("rolling_q4")
+    return (
+        pair.get("raw_greedy_clear_status", raw.get("clear_status") if raw else "—"),
+        pair.get("rolling_q4_clear_status", q4.get("clear_status") if q4 else "—"),
+    )
+
+
 def run(contract_path: Path, spec_path: Path, model_path: Path,
         episode_seeds: tuple[int, ...], arm_order: tuple[str, ...],
         smoothing_window: int, max_frames_per_episode: int, output_dir: Path) -> dict[str, Any]:
@@ -318,11 +328,15 @@ def run(contract_path: Path, spec_path: Path, model_path: Path,
     for seed in SEEDS:
         raw, smooth = by_key.get((seed, "raw-greedy")), by_key.get((seed, "rolling-q4"))
         if raw is None or smooth is None:
-            pairs.append({"seed": seed, "status": "incomplete_pair", "raw_greedy": raw, "rolling_q4": smooth})
+            pairs.append({"seed": seed, "status": "incomplete_pair", "raw_greedy": raw, "rolling_q4": smooth,
+                "raw_greedy_clear_status": raw["clear_status"] if raw else "NOT_RUN",
+                "rolling_q4_clear_status": smooth["clear_status"] if smooth else "NOT_RUN"})
             continue
         censored = raw["canonical_clear"] is True or smooth["canonical_clear"] is True or raw["stop_reason"] != "terminated" or smooth["stop_reason"] != "terminated"
         diff = smooth["native_frames"] - raw["native_frames"]
         pairs.append({"seed": seed, "status": "duration_censored" if censored else "paired_complete",
+            "raw_greedy_clear_status": raw["clear_status"],
+            "rolling_q4_clear_status": smooth["clear_status"],
             "raw_greedy_native_frames": raw["native_frames"], "rolling_q4_native_frames": smooth["native_frames"],
             "native_frame_difference_rolling_minus_raw": diff,
             "native_frame_percent_difference": (100.0 * diff / raw["native_frames"]) if raw["native_frames"] else None,
@@ -387,8 +401,7 @@ def run(contract_path: Path, spec_path: Path, model_path: Path,
         "", "## Paired descriptive diagnostics", "", "| Seed | Status | Raw clear status | Q4 clear status | Raw frames | Q4 frames | Difference | Raw lives lost | Q4 lives lost | Raw score | Q4 score | Raw switch rate | Q4 switch rate | Raw median Q margin | Q4 median Q margin |",
         "|---:|" + "|".join(["---"] * 14) + "|"]
     for pair in pairs:
-        raw_clear = pair.get("raw_greedy", {}).get("clear_status", "—") if pair.get("raw_greedy") else "—"
-        q4_clear = pair.get("rolling_q4", {}).get("clear_status", "—") if pair.get("rolling_q4") else "—"
+        raw_clear, q4_clear = paired_clear_statuses(pair)
         report.append(f"| {pair['seed']} | {pair['status']} | {raw_clear} | {q4_clear} | {pair.get('raw_greedy_native_frames', '—')} | {pair.get('rolling_q4_native_frames', '—')} | {pair.get('native_frame_difference_rolling_minus_raw', '—')} | {pair.get('raw_greedy_life_losses', '—')} | {pair.get('rolling_q4_life_losses', '—')} | {pair.get('raw_greedy_raw_score', '—')} | {pair.get('rolling_q4_raw_score', '—')} | {pair.get('raw_greedy_action_switch_rate', '—')} | {pair.get('rolling_q4_action_switch_rate', '—')} | {pair.get('raw_greedy_median_q_margin', '—')} | {pair.get('rolling_q4_median_q_margin', '—')} |")
     verified_lines = [f"- Seed {row['seed']}, arm `{row['arm']}`, episode index {row['episode_index']}." for row in verified_clears] or ["- None."]
     unverified_rows = [row for row in episodes if row["clear_status"] == "CANONICAL_CLEAR_UNVERIFIED"]

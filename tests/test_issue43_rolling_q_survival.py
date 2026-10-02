@@ -12,6 +12,7 @@ from breakout_rl.issue43_rolling_q_survival import (
     SEEDS,
     SMOOTHING_WINDOW,
     clear_provenance_check,
+    paired_clear_statuses,
     smooth_q_history,
 )
 from breakout_rl.completion import BREAKOUT_COMPLETION_DETECTOR_ID, BREAKOUT_COMPLETION_SOURCE
@@ -40,6 +41,17 @@ class RollingQTests(unittest.TestCase):
         self.assertEqual(SEEDS, (102, 203, 304))
         self.assertEqual(ARM_ORDER, ("raw-greedy", "rolling-q4"))
         self.assertEqual(FRAME_LIMIT, 108_000)
+
+    def test_paired_report_preserves_both_arm_clear_statuses(self):
+        completed = {"raw_greedy_clear_status": "NO_CLEAR",
+                     "rolling_q4_clear_status": "CANONICAL_CLEAR_UNVERIFIED"}
+        self.assertEqual(paired_clear_statuses(completed),
+            ("NO_CLEAR", "CANONICAL_CLEAR_UNVERIFIED"))
+        incomplete = {"raw_greedy": {"clear_status": "VERIFIED_CLEAR"},
+                      "rolling_q4": None,
+                      "raw_greedy_clear_status": "VERIFIED_CLEAR",
+                      "rolling_q4_clear_status": "NOT_RUN"}
+        self.assertEqual(paired_clear_statuses(incomplete), ("VERIFIED_CLEAR", "NOT_RUN"))
 
     def test_rejects_invalid_q_contract(self):
         history: list[np.ndarray] = []
