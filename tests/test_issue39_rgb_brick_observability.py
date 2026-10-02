@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import hashlib
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -8,9 +10,13 @@ import numpy as np
 
 from breakout_rl.issue39_rgb_brick_observability import (
     BrickRemovalDetector,
+    aggregate_episode_metrics,
+    bounded_formal_wall_budget,
     classify,
     load_config,
     match_events,
+    render_report,
+    sha256,
 )
 
 
@@ -97,13 +103,55 @@ class EvaluatorTests(unittest.TestCase):
         outside = match_events([{"frame": 13}], [{"frame": 10}])
         self.assertEqual((outside["tp"], outside["fp"], outside["fn"]), (0, 1, 1))
 
+    def test_matching_finds_maximum_cardinality_on_adversarial_timing(self):
+        result = match_events([{"frame": 10}, {"frame": 12}],
+                              [{"frame": 11}, {"frame": 8}], tolerance=2)
+        self.assertEqual((result["tp"], result["fp"], result["fn"]), (2, 0, 0))
+
+    def test_aggregate_metrics_never_match_events_across_episode_seeds(self):
+        seed_707 = {"seed": 707, "metrics": match_events([{"frame": 10}], [])}
+        seed_808 = {"seed": 808, "metrics": match_events([], [{"frame": 10}])}
+        aggregate = aggregate_episode_metrics([seed_707, seed_808])
+        self.assertEqual((aggregate["tp"], aggregate["fp"], aggregate["fn"]), (0, 1, 1))
+
     def test_frozen_classification_boundaries_and_sample_floor(self):
-        self.assertEqual(classify({"f1": .90}, 12, 2, True), "PROMOTED")
-        self.assertEqual(classify({"f1": .50}, 12, 2, True), "REJECTED")
-        self.assertEqual(classify({"f1": .70}, 12, 2, True), "INCONCLUSIVE")
-        self.assertEqual(classify({"f1": 1.0}, 11, 2, True), "INCONCLUSIVE")
-        self.assertEqual(classify({"f1": 1.0}, 12, 1, True), "INCONCLUSIVE")
-        self.assertEqual(classify({"f1": 1.0}, 12, 2, False), "INCONCLUSIVE")
+        self.assertEqual(classify({"f1": .90}, 12, 2, True, completed_episodes=3), "PROMOTED")
+        self.assertEqual(classify({"f1": .50}, 12, 2, True, completed_episodes=3), "REJECTED")
+        self.assertEqual(classify({"f1": .70}, 12, 2, True, completed_episodes=3), "INCONCLUSIVE")
+        self.assertEqual(classify({"f1": 1.0}, 11, 2, True, completed_episodes=3), "INCONCLUSIVE")
+        self.assertEqual(classify({"f1": 1.0}, 12, 1, True, completed_episodes=3), "INCONCLUSIVE")
+        self.assertEqual(classify({"f1": 1.0}, 12, 2, False, completed_episodes=3), "INCONCLUSIVE")
+        self.assertEqual(classify({"f1": 1.0}, 12, 2, True, completed_episodes=2), "INCONCLUSIVE")
+        self.assertEqual(classify({"f1": 1.0}, 12, 2, True, completed_episodes=3,
+                                  all_episodes_complete=False), "INCONCLUSIVE")
+
+    def test_wall_budget_includes_pre_run_time_and_finalization_reserve(self):
+        self.assertEqual(bounded_formal_wall_budget(20.0), 578.0)
+        self.assertEqual(bounded_formal_wall_budget(599.0), 0.0)
+        self.assertEqual(bounded_formal_wall_budget(50.0, requested_wall_seconds=100.0), 100.0)
+
+    def test_crop_artifact_hash_is_saved_and_reported(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "crops.npz"
+            path.write_bytes(b"lossless-crops")
+            digest = sha256(path)
+            payload = {"primary_metric": {"f1": 0.0, "tp": 0, "fp": 0, "fn": 0},
+                       "classification": "INCONCLUSIVE", "label_count": 0,
+                       "episodes_with_labels": 0, "labels_consistent": False,
+                       "native_frames": 0, "predeclared_test_native_frames_reserved": 350,
+                       "pre_run_test_native_frames_upper_bound": 42,
+                       "remaining_test_native_frame_reserve": 308,
+                       "combined_native_frame_ceiling": 15350, "pre_run_wall_seconds": 5.0,
+                       "elapsed_wall_seconds": 10.0, "formal_wall_budget_seconds": 593.0,
+                       "finalization_wall_reserve_seconds": 2.0, "completed_seeds": [],
+                       "command": "frozen-command", "source": {"revision": "sha", "branch": "branch",
+                           "config_sha256": "cfg", "contract_sha256": "contract",
+                           "controller_config_sha256": "controller"},
+                       "artifacts": {"rgb_crops_sha256": digest}}
+            report = render_report(payload, path.name)
+            self.assertEqual(digest, hashlib.sha256(path.read_bytes()).hexdigest())
+            self.assertIn(digest, report)
+            self.assertIn("score/RAM only for the frozen clear-stop rule", report)
 
     def test_frozen_config_caps_and_seeds(self):
         cfg = load_config()

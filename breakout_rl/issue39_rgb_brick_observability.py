@@ -32,6 +32,7 @@ EXPECTED_SEEDS = (707, 808, 909)
 PREDECLARED_TEST_NATIVE_FRAMES = 350
 TOTAL_NATIVE_FRAME_CEILING = 15350
 TOTAL_WALL_SECONDS_LIMIT = 600
+FINALIZATION_WALL_RESERVE_SECONDS = 2.0
 GRID_COLUMNS = 18
 GRID_ROWS = 6
 
@@ -128,18 +129,21 @@ class BrickRemovalDetector:
 
 
 def match_events(predicted: Sequence[Mapping[str, Any]], labels: Sequence[Mapping[str, Any]], tolerance: int = 2) -> dict[str, Any]:
-    """Greedy chronological one-to-one event matching within the frozen window."""
+    """Maximum-cardinality matching for timestamp events with a symmetric window."""
     predictions = sorted((int(x["frame"]) for x in predicted))
     truth = sorted((int(x["frame"]) for x in labels))
-    used: set[int] = set()
     pairs = []
-    for frame in predictions:
-        candidates = [(abs(frame - target), idx, target) for idx, target in enumerate(truth)
-                      if idx not in used and abs(frame - target) <= tolerance]
-        if candidates:
-            _delta, idx, target = min(candidates)
-            used.add(idx)
+    prediction_index = label_index = 0
+    while prediction_index < len(predictions) and label_index < len(truth):
+        frame, target = predictions[prediction_index], truth[label_index]
+        if frame < target - tolerance:
+            prediction_index += 1
+        elif target < frame - tolerance:
+            label_index += 1
+        else:
             pairs.append({"predicted_frame": frame, "label_frame": target})
+            prediction_index += 1
+            label_index += 1
     tp = len(pairs)
     fp = len(predictions) - tp
     fn = len(truth) - tp
@@ -147,8 +151,23 @@ def match_events(predicted: Sequence[Mapping[str, Any]], labels: Sequence[Mappin
     return {"tp": tp, "fp": fp, "fn": fn, "f1": (2 * tp / denom if denom else 0.0), "matches": pairs}
 
 
-def classify(metrics: Mapping[str, Any], label_count: int, episodes_with_labels: int, labels_consistent: bool) -> str:
-    if not labels_consistent or label_count < 12 or episodes_with_labels < 2:
+def aggregate_episode_metrics(per_episode: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    """Sum already-isolated episode metrics so timestamps cannot cross-match seeds."""
+    tp = sum(int(item["metrics"]["tp"]) for item in per_episode)
+    fp = sum(int(item["metrics"]["fp"]) for item in per_episode)
+    fn = sum(int(item["metrics"]["fn"]) for item in per_episode)
+    denominator = 2 * tp + fp + fn
+    matches = [{"episode_seed": item["seed"], **pair}
+               for item in per_episode for pair in item["metrics"]["matches"]]
+    return {"tp": tp, "fp": fp, "fn": fn,
+            "f1": (2 * tp / denominator if denominator else 0.0), "matches": matches}
+
+
+def classify(metrics: Mapping[str, Any], label_count: int, episodes_with_labels: int,
+             labels_consistent: bool, completed_episodes: int, expected_episodes: int = 3,
+             all_episodes_complete: bool = True) -> str:
+    if (not labels_consistent or label_count < 12 or episodes_with_labels < 2
+            or completed_episodes != expected_episodes or not all_episodes_complete):
         return "INCONCLUSIVE"
     f1 = float(metrics["f1"])
     if f1 >= 0.90:
@@ -156,6 +175,13 @@ def classify(metrics: Mapping[str, Any], label_count: int, episodes_with_labels:
     if f1 <= 0.50:
         return "REJECTED"
     return "INCONCLUSIVE"
+
+
+def bounded_formal_wall_budget(pre_run_wall_seconds: float,
+                               requested_wall_seconds: float = TOTAL_WALL_SECONDS_LIMIT) -> float:
+    """Subtract measured pre-run time and reserve room for final artifact writes."""
+    return min(float(requested_wall_seconds), max(0.0, TOTAL_WALL_SECONDS_LIMIT
+               - float(pre_run_wall_seconds) - FINALIZATION_WALL_RESERVE_SECONDS))
 
 
 def _crop(obs: np.ndarray) -> np.ndarray:
@@ -183,12 +209,15 @@ def _environment_versions() -> dict[str, Any]:
 
 
 def run_probe(config_path: str | Path = DEFAULT_CONFIG, output_dir: str | Path = DEFAULT_OUTPUT_DIR,
-              *, env_factory=None, wall_budget_seconds: int = TOTAL_WALL_SECONDS_LIMIT) -> tuple[list[Path], dict[str, Any]]:
+              *, env_factory=None, wall_budget_seconds: float = TOTAL_WALL_SECONDS_LIMIT,
+              pre_run_wall_seconds: float = 0.0) -> tuple[list[Path], dict[str, Any]]:
+    started = time.perf_counter()
     cfg = load_config(config_path)
     root = cfg.config_path.parents[2]
     contract = load_evaluation_contract(cfg.contract_path)
-    started = time.perf_counter()
-    deadline = started + min(int(wall_budget_seconds), cfg.total_wall_seconds)
+    budget = min(float(wall_budget_seconds), bounded_formal_wall_budget(pre_run_wall_seconds,
+                                                                         wall_budget_seconds))
+    deadline = started + budget
     env = (env_factory or (lambda: make_vision_breakout_env(contract)))()
     support = inspect_breakout_completion_support(env)
     if not support.supported:
@@ -221,7 +250,8 @@ def run_probe(config_path: str | Path = DEFAULT_CONFIG, output_dir: str | Path =
             start = len(crops)
             crop = _crop(obs)
             crops.append(crop)
-            # No scoreboard/RAM value is read until offline evaluator processing below.
+            # The existing completion evaluator may read score/RAM for canonical clear stopping.
+            # Offline label construction remains deferred until every action has been selected.
             raw_return = 0.0
             rows: list[dict[str, Any]] = []
             initial_score = read_breakout_score(env)
@@ -249,7 +279,7 @@ def run_probe(config_path: str | Path = DEFAULT_CONFIG, output_dir: str | Path =
                                    emulator_frame=step, lives_remaining=lives)
                 rows.append({"episode_seed": seed, "frame": step, "requested_action": requested,
                              "ale_input_action": names[ale_action_idx], "raw_reward": float(reward),
-                             "score_reading_offline": score,
+                             "score_reading_for_completion_and_offline_label": score,
                              "lives_remaining_offline": lives, "canonical_clear_offline": completion.state.cleared})
                 if completion.state.cleared:
                     stop_reason = "canonical_clear"
@@ -259,7 +289,7 @@ def run_probe(config_path: str | Path = DEFAULT_CONFIG, output_dir: str | Path =
                     break
             runs.append({"seed": seed, "capture_start_index": start, "capture_end_index": len(crops),
                          "episode_frames": len(rows), "raw_score_offline": raw_return,
-                         "initial_score_reading_offline": initial_score,
+                         "initial_score_reading_for_completion_and_offline_label": initial_score,
                          "canonical_clear_offline": completion.state.cleared,
                          "stop_reason": stop_reason, "trace": rows})
     finally:
@@ -268,9 +298,9 @@ def run_probe(config_path: str | Path = DEFAULT_CONFIG, output_dir: str | Path =
             close()
     # Both the detector and reward/RAM label construction run after all online actions finish.
     for run in runs:
-        previous_score = run["initial_score_reading_offline"]
+        previous_score = run["initial_score_reading_for_completion_and_offline_label"]
         for row in run["trace"]:
-            score = row.pop("score_reading_offline")
+            score = row.pop("score_reading_for_completion_and_offline_label")
             score_delta = None if score is None or previous_score is None else score - previous_score
             agrees = score_delta is not None and np.isclose(float(row["raw_reward"]), score_delta, rtol=0, atol=1e-6)
             row["score_delta_offline"] = score_delta
@@ -294,16 +324,18 @@ def run_probe(config_path: str | Path = DEFAULT_CONFIG, output_dir: str | Path =
         truth = [x for x in labels if x["episode_seed"] == seed]
         per_episode.append({"seed": seed, "predicted_events": pred, "label_events": truth,
                             "metrics": match_events(pred, truth)})
-    all_pred = [event for result in per_episode for event in result["predicted_events"]]
     all_truth = [event for result in per_episode for event in result["label_events"]]
-    metrics = match_events(all_pred, all_truth)
+    metrics = aggregate_episode_metrics(per_episode)
     label_count = len(all_truth)
     episodes_with_labels = sum(bool(x["label_events"]) for x in per_episode)
-    classification = classify(metrics, label_count, episodes_with_labels, label_consistent)
-    elapsed = time.perf_counter() - started
+    classification = classify(metrics, label_count, episodes_with_labels, label_consistent,
+                               completed_episodes=len(runs), expected_episodes=len(cfg.seeds),
+                               all_episodes_complete=all(run["stop_reason"] != "wall_clock_cap" for run in runs))
     command = ("python -m scripts.evaluation.run_issue39_rgb_brick_observability "
                "--config configs/eval/issue39_rgb_brick_observability_v1.json "
-               "--output-dir outputs/issue-39-rgb-brick-observability")
+               "--output-dir outputs/issue-39-rgb-brick-observability "
+               f"--pre-run-wall-seconds {float(pre_run_wall_seconds):.2f} "
+               f"--wall-budget-seconds {budget:.2f}")
     payload = {"schema_version": 1, "issue": 39, "probe_id": "issue-39-rgb-brick-observability-v1",
         "requested_model": "GPT-6 Luna / High", "model_routing_verification": "UNAVAILABLE",
         "command": command,
@@ -318,7 +350,12 @@ def run_probe(config_path: str | Path = DEFAULT_CONFIG, output_dir: str | Path =
                        "combined_total": TOTAL_NATIVE_FRAME_CEILING,
                        "wall_seconds": cfg.total_wall_seconds},
         "predeclared_test_native_frames_reserved": PREDECLARED_TEST_NATIVE_FRAMES,
-        "combined_native_frame_ceiling": TOTAL_NATIVE_FRAME_CEILING, "elapsed_wall_seconds": elapsed,
+        "pre_run_test_native_frames_upper_bound": 42,
+        "remaining_test_native_frame_reserve": PREDECLARED_TEST_NATIVE_FRAMES - 42,
+        "combined_native_frame_ceiling": TOTAL_NATIVE_FRAME_CEILING, "elapsed_wall_seconds": 0.0,
+        "pre_run_wall_seconds": float(pre_run_wall_seconds),
+        "formal_wall_budget_seconds": budget,
+        "finalization_wall_reserve_seconds": FINALIZATION_WALL_RESERVE_SECONDS,
         "environment": {"id": ENVIRONMENT_ID, "contract_id": contract.contract_id,
                         "frame_skip": contract.frame_skip, "frame_stack": contract.frame_stack,
                         "sticky_action_probability": contract.sticky_action_probability,
@@ -333,9 +370,13 @@ def run_probe(config_path: str | Path = DEFAULT_CONFIG, output_dir: str | Path =
     np.savez_compressed(npz_path, crops=np.stack(crops) if crops else np.empty((0, 48, 144, 3), dtype=np.uint8),
                         episode_seed=np.array([seed for run in runs for seed in [run["seed"]] * (run["capture_end_index"] - run["capture_start_index"])], dtype=np.int32),
                         native_frame=np.array([frame for run in runs for frame in range(run["capture_end_index"] - run["capture_start_index"])], dtype=np.int32))
+    payload["artifacts"] = {"rgb_crops_file": npz_path.name, "rgb_crops_sha256": sha256(npz_path)}
     result_path = out / "results.json"
     report_path = out / "report.md"
     payload["elapsed_wall_seconds"] = time.perf_counter() - started
+    result_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    report_path.write_text(render_report(payload, npz_path.name), encoding="utf-8")
+    payload["elapsed_wall_seconds"] = time.perf_counter() - started + FINALIZATION_WALL_RESERVE_SECONDS
     result_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     report_path.write_text(render_report(payload, npz_path.name), encoding="utf-8")
     return [npz_path, result_path, report_path], payload
@@ -348,13 +389,13 @@ def render_report(payload: Mapping[str, Any], crop_artifact: str) -> str:
         f"Classification: **{payload['classification']}**", "",
         f"Event F1: {m['f1']:.4f} (TP {m['tp']}, FP {m['fp']}, FN {m['fn']})", "",
         f"Label events: {payload['label_count']} across {payload['episodes_with_labels']} episodes; labels consistent: {payload['labels_consistent']}.",
-        f"Frames: {payload['native_frames']} formal + {payload['predeclared_test_native_frames_reserved']} reserved = at most {payload['combined_native_frame_ceiling']} native frames.",
-        f"Wall time: {payload['elapsed_wall_seconds']:.2f}s; formal seeds completed: {payload['completed_seeds']}.", "",
+        f"Frames: {payload['native_frames']} formal + at most {payload['pre_run_test_native_frames_upper_bound']} prior smoke/test frames (<= {payload['remaining_test_native_frame_reserve']} reserved frames remain) = at most {payload['combined_native_frame_ceiling']} native frames.",
+        f"Wall time: {payload['pre_run_wall_seconds'] + payload['elapsed_wall_seconds']:.2f}s total ({payload['pre_run_wall_seconds']:.2f}s setup/validation/smoke + {payload['elapsed_wall_seconds']:.2f}s formal runner and finalization). Formal budget: {payload['formal_wall_budget_seconds']:.2f}s; finalization reserve: {payload['finalization_wall_reserve_seconds']:.2f}s; seeds completed: {payload['completed_seeds']}.", "",
         f"Command: `{payload['command']}`.",
         f"Source revision: `{source['revision']}`; branch: `{source['branch']}`.",
         f"Config SHA-256: `{source['config_sha256']}`; Contract v3 SHA-256: `{source['contract_sha256']}`; controller config SHA-256: `{source['controller_config_sha256']}`.",
-        f"Lossless captured RGB crops: `{crop_artifact}` (NPZ compressed, uint8). Detector input is these crops only. Score and RAM are evaluator-only offline labels.", "",
+        f"Lossless captured RGB crops: `{crop_artifact}` (NPZ compressed, uint8; SHA-256 `{payload['artifacts']['rgb_crops_sha256']}`). Detector input is these crops only. The existing canonical completion evaluator reads score/RAM only for the frozen clear-stop rule; evaluator label rows are joined after all action selection. Neither value enters the controller, detector, or action choice.", "",
         "No clear probability or controller-benefit claim is made.", ""])
 
 
-__all__ = ["ProbeConfig", "load_config", "cell_occupancy", "BrickRemovalDetector", "match_events", "classify", "run_probe", "render_report"]
+__all__ = ["ProbeConfig", "load_config", "cell_occupancy", "BrickRemovalDetector", "match_events", "aggregate_episode_metrics", "classify", "bounded_formal_wall_budget", "run_probe", "render_report"]
