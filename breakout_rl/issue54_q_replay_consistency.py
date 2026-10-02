@@ -16,7 +16,6 @@ ROOT = Path(__file__).resolve().parents[1]
 ISSUE50_DIR = ROOT / "research/issue-50-pixel-paddle-alignment-artifacts"
 OUTPUT_RELATIVE = "research/issue-54-q-replay-consistency-artifacts"
 FORMAL_COMMAND = "timeout --signal=INT --kill-after=2s 20s env PYTHONPATH=/tmp/issue41-onnxruntime python -m scripts.analysis.run_issue54_q_replay_consistency --output-dir research/issue-54-q-replay-consistency-artifacts"
-FORMAL_COMMAND = "timeout --signal=INT --kill-after=2s 20s env PYTHONPATH=/tmp/issue41-onnxruntime python -m scripts.analysis.run_issue54_q_replay_consistency --output-dir research/issue-54-q-replay-consistency-artifacts"
 BASE_COMMIT = "a8641d99d6a0eb5b7226dae2b82ed3479f35e55f"
 ISSUE50_SOURCE_DIGEST = "e32be297ba474635708fefd7da311e5db37b6076439e759be2701d4aaf2fee2f"
 INDEX_SHA256 = "757eab8a54327e0663e2d83e5156958b776c1c5e7a09521a3355a9af43746978"
@@ -45,6 +44,8 @@ STACK_FILENAMES = tuple(STACK_SHA256)
 REPLAY_SOURCE_FILES = (
     "breakout_rl/issue54_q_replay_consistency.py",
     "scripts/analysis/run_issue54_q_replay_consistency.py",
+    "scripts/analysis/attach_issue54_capture.py",
+    "scripts/analysis/run_issue54_once.py",
     "tests/test_issue54_q_replay_consistency.py",
     "breakout_rl/issue50_pixel_paddle_alignment.py",
 )
@@ -52,21 +53,22 @@ PRE_RUN_VALIDATION = {
     "focused_test_command": "env PYTHONPATH=/tmp/issue41-onnxruntime python -m unittest tests.test_issue54_q_replay_consistency -v",
     "focused_test_count": 9,
     "focused_test_status": "passed",
-    "focused_test_wall_seconds": 0.1437395370012382,
-    "compile_command": "python -m py_compile breakout_rl/issue54_q_replay_consistency.py scripts/analysis/run_issue54_q_replay_consistency.py tests/test_issue54_q_replay_consistency.py",
+    "focused_test_wall_seconds": 0.13999250099004712,
+    "compile_command": "python -m py_compile breakout_rl/issue54_q_replay_consistency.py scripts/analysis/run_issue54_q_replay_consistency.py scripts/analysis/attach_issue54_capture.py scripts/analysis/run_issue54_once.py tests/test_issue54_q_replay_consistency.py",
     "compile_status": "passed",
-    "compile_wall_seconds": 0.030122493000817485,
+    "compile_wall_seconds": 0.03140434200759046,
     "diff_check_command": "git show --check --oneline HEAD",
     "diff_check_status": "passed",
-    "diff_check_wall_seconds": 0.0025716079981066287,
+    "diff_check_wall_seconds": 0.002714288988499902,
     "preflight_command": "timeout --signal=INT --kill-after=2s 20s env PYTHONPATH=/tmp/issue41-onnxruntime python -m scripts.analysis.run_issue54_q_replay_consistency --output-dir /tmp/issue54-preflight --preflight-only",
     "preflight_status": "passed",
-    "preflight_wall_seconds": 0.27809578500455245,
+    "preflight_wall_seconds": 0.27102403600292746,
     "preflight_matched_rows": 300,
     "preflight_replay_started": False,
     "preflight_native_frames": 0,
 }
-PRE_RUN_VALIDATION_SECONDS = 0.45508335100021213
+PRE_RUN_VALIDATION_SECONDS = 1.0  # conservative internal reservation; supervisor uses final measured validation JSON
+FINALIZATION_MARGIN_SECONDS = 1.0
 KEY_FIELDS = ("seed", "arm", "episode_index", "agent_step", "emulator_frame")
 EXPECTED_FILES = {
     "web/public/models/final_model/model.onnx": MODEL_SHA256,
@@ -267,6 +269,9 @@ def run(output_dir: Path, *, preflight_only: bool = False) -> dict[str, Any]:
     started = time.perf_counter()
     replay_budget_seconds = remaining_budget(PRE_RUN_VALIDATION_SECONDS)
     deadline = started + replay_budget_seconds
+    work_deadline = deadline - FINALIZATION_MARGIN_SECONDS
+    if work_deadline <= started:
+        raise TimeoutError("pre-run validation left no time for replay and finalization")
     if not repo_clean():
         raise RuntimeError("clean-source check failed; output directory must not yet exist")
     integrity_passed = False
@@ -330,7 +335,7 @@ def run(output_dir: Path, *, preflight_only: bool = False) -> dict[str, Any]:
             rows.append({"key": {field: indexed[field] for field in KEY_FIELDS},
                      "stack_sha256": stack_sha, "logged_q": [float(x) for x in logged_q],
                      "replayed_q": [float(x) for x in replayed], "max_abs_error": err})
-            if time.perf_counter() > deadline:
+            if time.perf_counter() > work_deadline:
                 raise TimeoutError("combined validation, replay, and finalization time budget exhausted")
     except Exception as exc:
         integrity_passed = False
@@ -370,6 +375,7 @@ def run(output_dir: Path, *, preflight_only: bool = False) -> dict[str, Any]:
         "runtime": runtime, "python_version": platform.python_version(), "numpy_version": np.__version__,
         "formal_command": FORMAL_COMMAND,
         "input_hashes": input_hashes, "pre_run_validation_seconds": PRE_RUN_VALIDATION_SECONDS,
+        "finalization_margin_seconds": FINALIZATION_MARGIN_SECONDS,
         "pre_run_validation": PRE_RUN_VALIDATION,
         "wall_seconds_before_report_write": elapsed,
     }
@@ -394,7 +400,7 @@ def run(output_dir: Path, *, preflight_only: bool = False) -> dict[str, Any]:
         f"Compile: `{PRE_RUN_VALIDATION['compile_command']}` — passed in {PRE_RUN_VALIDATION['compile_wall_seconds']:.3f}s.\n\n"
         f"Diff check: `{PRE_RUN_VALIDATION['diff_check_command']}` — passed in {PRE_RUN_VALIDATION['diff_check_wall_seconds']:.3f}s.\n\n"
         f"Zero-inference preflight: `{PRE_RUN_VALIDATION['preflight_command']}` — passed; 300 rows; {PRE_RUN_VALIDATION['preflight_wall_seconds']:.3f}s.\n\n"
-        f"Combined pre-run validation: {PRE_RUN_VALIDATION_SECONDS:.3f}s; replay/finalization gets the remaining portion of the 20s cap. Formal command (run once): `{FORMAL_COMMAND}`.\n")
+        f"Combined pre-run validation: {PRE_RUN_VALIDATION_SECONDS:.3f}s. Reserve {FINALIZATION_MARGIN_SECONDS:.1f}s for stdout serialization and post-run log/hash attachment. Formal command (run once): `{FORMAL_COMMAND}`.\n")
     hashes = {path.name: sha256_file(path) for path in sorted(output_dir.iterdir()) if path.is_file()}
     source_commit = report["source_commit"]
     manifest = {"issue": 54, "source_commit": source_commit,
@@ -409,13 +415,14 @@ def run(output_dir: Path, *, preflight_only: bool = False) -> dict[str, Any]:
                 "input_hashes": input_hashes,
                 "pre_run_validation": PRE_RUN_VALIDATION,
                 "pre_run_validation_seconds": PRE_RUN_VALIDATION_SECONDS,
+                "finalization_margin_seconds": FINALIZATION_MARGIN_SECONDS,
                 "output_hashes": hashes, "formal_command": FORMAL_COMMAND,
                 "combined_wall_limit_seconds": 20.0}
     _atomic_json(output_dir / "manifest.json", manifest)
     # The running guard includes report/results/manifest preparation and refuses a late claim.
     total = time.perf_counter() - started
     combined = PRE_RUN_VALIDATION_SECONDS + total
-    if combined > 20.0 or time.perf_counter() > deadline:
+    if combined + FINALIZATION_MARGIN_SECONDS > 20.0 or time.perf_counter() > work_deadline:
         raise TimeoutError(f"combined validation, replay, and finalization exceeded 20 seconds: {combined:.3f}")
     return {**report, "status": "completed", "wall_seconds": total,
             "combined_pre_run_and_formal_seconds": combined,
@@ -432,8 +439,11 @@ def cli(argv: list[str] | None = None) -> int:
     return 0
 
 
-def attach_log_capture_hashes(output_dir: Path, stdout_path: Path, stderr_path: Path) -> dict[str, str]:
+def attach_log_capture_hashes(output_dir: Path, stdout_path: Path, stderr_path: Path,
+                              validation_record_path: Path | None = None,
+                              formal_command_wall_seconds: float | None = None) -> dict[str, Any]:
     """Attach hashes of the one formal command's externally captured streams."""
+    attachment_started = time.perf_counter()
     stdout_artifact = output_dir / "formal.stdout"
     stderr_artifact = output_dir / "formal.stderr"
     stdout_artifact.write_bytes(stdout_path.read_bytes())
@@ -447,8 +457,35 @@ def attach_log_capture_hashes(output_dir: Path, stdout_path: Path, stderr_path: 
                                                 ("results.json", "report.md", "manifest.json"))
     results = json.loads(results_path.read_text())
     results["formal_capture_hashes"] = captures
+    validation = None
+    if validation_record_path is not None:
+        validation_target = output_dir / "pre_run_validation.json"
+        validation_target.write_bytes(validation_record_path.read_bytes())
+        validation = json.loads(validation_target.read_text())
+        results["pre_run_validation"] = validation
+        results["pre_run_validation_seconds"] = validation["combined_validation_wall_seconds"]
+    if formal_command_wall_seconds is not None:
+        results["formal_command_wall_seconds"] = formal_command_wall_seconds
+        if validation is not None:
+            results["combined_pre_run_and_formal_seconds"] = (
+                validation["combined_validation_wall_seconds"] + formal_command_wall_seconds
+            )
     _atomic_json(results_path, results)
     report = report_path.read_text().rstrip()
+    if validation is not None:
+        report = report.partition("\n## Pre-run validation\n")[0]
+        validation_lines = ["## Pre-run validation", ""]
+        for name in ("focused_test", "compile", "diff_check", "preflight"):
+            entry = validation[name]
+            status = entry.get("status", entry.get("result", "passed"))
+            count = f" ({entry['count']} tests)" if name == "focused_test" else ""
+            validation_lines.append(f"{name.replace('_', ' ')}{count}: `{entry['command']}` — {status}, {entry['wall_seconds']:.6f}s.")
+            validation_lines.append("")
+        validation_lines.append(f"Combined measured validation: {validation['combined_validation_wall_seconds']:.6f}s.")
+        if formal_command_wall_seconds is not None:
+            validation_lines.append(f"Formal command plus capture attachment: {formal_command_wall_seconds:.6f}s; total: {validation['combined_validation_wall_seconds'] + formal_command_wall_seconds:.6f}s.")
+        report += "\n\n" + "\n".join(validation_lines)
+    report = report.partition("\n## Formal command capture\n")[0]
     report += ("\n\n## Formal command capture\n\n"
                f"Stdout: `{captures['stdout_path']}` (preserved as `{stdout_artifact.name}`) SHA-256 `{captures['stdout_sha256']}`.\n\n"
                f"Stderr: `{captures['stderr_path']}` (preserved as `{stderr_artifact.name}`) SHA-256 `{captures['stderr_sha256']}`.\n")
@@ -459,7 +496,36 @@ def attach_log_capture_hashes(output_dir: Path, stdout_path: Path, stderr_path: 
         name: sha256_file(output_dir / name)
         for name in ("q_comparisons.json", "results.json", "report.md", "formal.stdout", "formal.stderr")
     }
+    if validation is not None:
+        manifest["pre_run_validation"] = validation
+        manifest["pre_run_validation_hash"] = sha256_file(output_dir / "pre_run_validation.json")
+        manifest["output_hashes"]["pre_run_validation.json"] = manifest["pre_run_validation_hash"]
+    if formal_command_wall_seconds is not None:
+        manifest["formal_command_wall_seconds"] = formal_command_wall_seconds
+        if validation is not None:
+            manifest["combined_pre_run_and_formal_seconds"] = (
+                validation["combined_validation_wall_seconds"] + formal_command_wall_seconds
+            )
     manifest["manifest_self_hash_excluded"] = True
     _atomic_json(manifest_path, manifest)
+    attachment_wall = time.perf_counter() - attachment_started
+    captures["post_run_capture_attachment_wall_seconds"] = attachment_wall
+    if validation is not None and formal_command_wall_seconds is not None:
+        results["post_run_capture_attachment_wall_seconds"] = attachment_wall
+        results["combined_pre_run_and_formal_seconds"] = (
+            validation["combined_validation_wall_seconds"] + formal_command_wall_seconds + attachment_wall
+        )
+        _atomic_json(results_path, results)
+        report = report_path.read_text().rstrip()
+        report += (f"\n\nPost-run capture/hash attachment: {attachment_wall:.6f}s. Combined measured validation, formal command, and attachment: "
+                   f"{results['combined_pre_run_and_formal_seconds']:.6f}s.\n")
+        report_path.write_text(report)
+        manifest = json.loads(manifest_path.read_text())
+        manifest["post_run_capture_attachment_wall_seconds"] = attachment_wall
+        manifest["combined_pre_run_and_formal_seconds"] = results["combined_pre_run_and_formal_seconds"]
+        for name in ("q_comparisons.json", "results.json", "report.md", "formal.stdout", "formal.stderr", "pre_run_validation.json"):
+            if (output_dir / name).exists():
+                manifest["output_hashes"][name] = sha256_file(output_dir / name)
+        _atomic_json(manifest_path, manifest)
     captures["manifest_sha256"] = sha256_file(manifest_path)
     return captures
