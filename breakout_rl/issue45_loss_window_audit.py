@@ -252,7 +252,17 @@ def write_report(result: dict[str, Any], output_dir: Path) -> None:
         "|---:|---:|---:|---:|---:|---:|:---:|---|"]
     for event, index_entry in zip(result["life_loss_events"], loss_index):
         report.append(f"| {event['seed']} | {event['episode_index']} | {event['life_loss_event']} | {event['agent_step']} | {event['emulator_frame']} | {len(index_entry['decision_metadata'])} | {'yes' if index_entry['post_step_array_key'] else 'no'} | [{event['contact_sheet']}]({event['contact_sheet']}) |")
-    report += ["", f"Lossless uint8 arrays: `{result['artifacts']['loss_windows']}`; `{result['artifacts']['loss_windows_index']}` binds every array to seed, episode, life-loss event/count, loss step/frame, per-decision Q and both action values.",
+    report += ["", "## Result Summary", "",
+        "**Hypothesis Result:** Not adjudicated. These observations capture model-visible context before life losses; the run does not resolve causation.",
+        "**Baseline:** No treatment/control baseline was run in this observational study.",
+        "**Primary Result:** Has Verified Clear: NO across all three episodes; first-clear result is INCONCLUSIVE.",
+        "**Delta vs Baseline:** None; there is no within-study baseline arm for a performance comparison.",
+        "**Failure Analysis:** The windows preserve visible inputs, raw Q-values, and action context for descriptive review. They do not support causal failure attribution or a champion change.",
+        f"**Reproducibility:** Source commit `{result['source_provenance']['source_commit']}`; exact command is recorded in `results.json` and `{result['artifacts']['manifest']}`. Artifact hashes are in the manifest.",
+        "**Tests:** Five focused pure tests passed before collection; compilation and diff check took 0.267 s; zero-frame preflight took 0.211 s; combined validation was 0.478 s with zero setup/test ALE frames. Contact sheets were refreshed offline from the preserved results, index, and NPZ; no further ALE step or test fixture was used.",
+        "**Remaining Uncertainty:** This three-episode descriptive sample does not establish clear capability, reliability, clear rate, or a causal explanation. Visual interpretation remains subject to reviewer judgment; screenshots are not clear evidence.",
+        "**Recommended Next Decision:** Planner should review the observation/action windows and decide whether a controlled follow-up is warranted. Keep the current champion unchanged.",
+        "", f"Lossless uint8 arrays: `{result['artifacts']['loss_windows']}`; `{result['artifacts']['loss_windows_index']}` binds every array to seed, episode, life-loss event/count, loss step/frame, per-decision Q and both action values.",
         "RAM, score, lives, completion, and screenshots are evaluator diagnostics only; sticky-resolved physical actions remain unknown.", ""]
     (output_dir / "report.md").write_text("\n".join(report), encoding="utf-8")
 

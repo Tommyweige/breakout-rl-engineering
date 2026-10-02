@@ -43,5 +43,17 @@ Requested execution context: `gpt-6-luna` / `high`; `MODEL_ROUTING_VERIFICATION:
 | 305 | 3 | 4 | 1106 | 4428 | 8 | yes | [loss_window_seed305_event4.png](loss_window_seed305_event4.png) |
 | 305 | 3 | 5 | 1203 | 4816 | 8 | yes | [loss_window_seed305_event5.png](loss_window_seed305_event5.png) |
 
+## Result Summary
+
+**Hypothesis Result:** Not adjudicated. These observations capture model-visible context before life losses; the run does not resolve causation.
+**Baseline:** No treatment/control baseline was run in this observational study.
+**Primary Result:** Has Verified Clear: NO across all three episodes; first-clear result is INCONCLUSIVE.
+**Delta vs Baseline:** None; there is no within-study baseline arm for a performance comparison.
+**Failure Analysis:** The windows preserve visible inputs, raw Q-values, and action context for descriptive review. They do not support causal failure attribution or a champion change.
+**Reproducibility:** Source commit `82b72e1a7e1af89a4b3223ee221ab10e9d9a4164`; exact command is recorded in `results.json` and `manifest.json`. Artifact hashes are in the manifest.
+**Tests:** Five focused pure tests passed before collection; compilation and diff check took 0.267 s; zero-frame preflight took 0.211 s; combined validation was 0.478 s with zero setup/test ALE frames. Contact sheets were refreshed offline from the preserved results, index, and NPZ; no further ALE step or test fixture was used.
+**Remaining Uncertainty:** This three-episode descriptive sample does not establish clear capability, reliability, clear rate, or a causal explanation. Visual interpretation remains subject to reviewer judgment; screenshots are not clear evidence.
+**Recommended Next Decision:** Planner should review the observation/action windows and decide whether a controlled follow-up is warranted. Keep the current champion unchanged.
+
 Lossless uint8 arrays: `loss_windows.npz`; `loss_windows_index.json` binds every array to seed, episode, life-loss event/count, loss step/frame, per-decision Q and both action values.
 RAM, score, lives, completion, and screenshots are evaluator diagnostics only; sticky-resolved physical actions remain unknown.
