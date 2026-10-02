@@ -1,0 +1,53 @@
+{
+  "artifacts": {
+    "report_sha256": "1c9a57bf3ce850b836f5768276b64829f29faf6842089c37022f80318b2247d1",
+    "results_sha256": "6954370d9270b154de55c38c26d107b25347a82d3ecf86bc723cdf03b68cf582",
+    "stack_index_sha256": "757eab8a54327e0663e2d83e5156958b776c1c5e7a09521a3355a9af43746978",
+    "trajectory_sha256": "48c3ad056962862ba8a80219909caa6f4349a704642cef65b3210f62b47a2398"
+  },
+  "classification": "INCONCLUSIVE",
+  "exact_formal_command": [
+    "timeout",
+    "--signal=INT",
+    "--kill-after=5s",
+    "600s",
+    "env",
+    "PYTHONPATH=/tmp/issue41-onnxruntime",
+    "python",
+    "-m",
+    "scripts.evaluation.run_issue50_pixel_paddle_alignment",
+    "--output-dir",
+    "research/issue-50-pixel-paddle-alignment-artifacts"
+  ],
+  "issue": 50,
+  "issue50_source_sha256": "e32be297ba474635708fefd7da311e5db37b6076439e759be2701d4aaf2fee2f",
+  "round_status": "CONTINUE_RESEARCH",
+  "source_commit": "8867a89812a3d2e67924fdaf7afbb4ff2c211213",
+  "validation": {
+    "combined_compile_test_preflight_wall_seconds": 0.5841601840074873,
+    "compile_command": "env PYTHONPATH=/tmp/issue41-onnxruntime python -m compileall -q breakout_rl/issue50_pixel_paddle_alignment.py scripts/evaluation/run_issue50_pixel_paddle_alignment.py tests/test_issue50_pixel_paddle_alignment.py",
+    "compile_wall_seconds": 0.03895290900254622,
+    "focused_test_command": "env PYTHONPATH=/tmp/issue41-onnxruntime python -m unittest tests.test_issue50_pixel_paddle_alignment -v",
+    "focused_test_count": 9,
+    "focused_test_wall_seconds": 0.19923288500285707,
+    "preflight_command": "env PYTHONPATH=/tmp/issue41-onnxruntime python -m scripts.evaluation.run_issue50_pixel_paddle_alignment --output-dir /tmp/issue50-preflight --preflight-only",
+    "preflight_native_frames": 0,
+    "preflight_status": "preflight_passed",
+    "preflight_wall_seconds": 0.34597439000208396,
+    "pure_tests_passed": true
+  },
+  "wall_accounting": {
+    "collection_cap_seconds": 560.0,
+    "collection_seconds": 11.615394551990903,
+    "finalization_cap_seconds": 20.0,
+    "finalization_reserve_seconds": 20.0,
+    "finalization_seconds": 0.06053826599963941,
+    "measurement_scope": "runner internal elapsed is checked after report/results preparation; final manifest write is excluded from the recorded total, but its time is included in post-write 20s finalization and total 600s cap guards and the external timeout",
+    "setup_native_frames": 0,
+    "setup_plus_test_cap_seconds": 20.0,
+    "setup_seconds": 0.1884748199954629,
+    "total_formal_seconds": 11.864409379995777,
+    "total_seconds": 11.864409379995777,
+    "total_wall_cap_seconds": 600.0
+  }
+}
