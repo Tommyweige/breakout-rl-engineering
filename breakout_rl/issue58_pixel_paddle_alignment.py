@@ -634,7 +634,9 @@ def run(output_dir: Path, *, contract_path=DEFAULT_CONTRACT, spec_path=DEFAULT_S
         b, c = baseline[delta["seed"]], candidate[delta["seed"]]
         table.append(f"| {delta['seed']} | {b['native_frames']} | {c['native_frames']} | {delta['native_frames_candidate_minus_baseline']} | {b['raw_score']} | {c['raw_score']} | {delta['raw_score_candidate_minus_baseline']} |")
     zero_life_episodes = sum(r.get("lives_remaining") == 0 for r in rows)
-    if verified_arm is None:
+    if canonical_clear_detected and not verified_clear:
+        failure_fact = "A canonical clear signal occurred but provenance validation failed. Collection stopped immediately and HUMAN_REVIEW_REQUIRED; no verified clear is claimed."
+    elif verified_arm is None:
         failure_fact = (f"No provenance-complete canonical clear in {len(rows)} collected episode(s); "
                         f"{zero_life_episodes} episode(s) ended at zero lives. This is descriptive failure context only; "
                         "the classification remains HVC-only and INCONCLUSIVE without a verified clear.")
@@ -659,8 +661,8 @@ def run(output_dir: Path, *, contract_path=DEFAULT_CONTRACT, spec_path=DEFAULT_S
         "Contract v2 sticky-action probability is 0.25; sticky resolution can make the physical ALE action differ from the requested policy/ALE-input action, so controller effects retain this uncertainty.",
         "Frozen caps: validation plus formal setup 20s; collection 560s; finalization 20s; total wall 600s; each episode 108,000 native frames / 27,000 decisions; six-episode aggregate 648,000 native frames / 162,000 decisions. The external timeout includes final manifest writing.", "",
         "## Tests and Setup", "", "No detector smoke fixture was used; setup/preflight consumed zero ALE-native frames.", "",
-        "## Remaining Uncertainty", "", "This is current-frame horizontal alignment; it does not estimate ball velocity or a future intercept. No-clear remains INCONCLUSIVE under HVC-only evaluation.", "",
-        "## Recommended Next Decision", "", ("Verified clear reached the frozen goal; do not transition Phase 2 automatically." if verified_clear else "Continue research under HVC-only criteria; do not rank or promote from diagnostics."), ""]
+        "## Remaining Uncertainty", "", ("A canonical clear was detected without complete provenance; human review is required, and no HVC yes/no classification is claimed." if canonical_clear_detected and not verified_clear else "This is current-frame horizontal alignment; it does not estimate ball velocity or a future intercept. No-clear remains INCONCLUSIVE under HVC-only evaluation."), "",
+        "## Recommended Next Decision", "", ("Verified clear reached the frozen goal; do not transition Phase 2 automatically." if verified_clear else ("Review the unverified canonical clear signal; do not continue collection." if canonical_clear_detected else "Continue research under HVC-only criteria; do not rank or promote from diagnostics.")), ""]
     report_path.write_text("\n".join(report), encoding="utf-8")
     total = time.perf_counter() - run_start
     actual_finalization = time.perf_counter() - final_start
@@ -694,6 +696,7 @@ def run(output_dir: Path, *, contract_path=DEFAULT_CONTRACT, spec_path=DEFAULT_S
 
 
 def cli(argv: list[str] | None = None) -> int:
+    cli_start = time.perf_counter()
     parser = argparse.ArgumentParser()
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--preflight-only", action="store_true")
@@ -701,7 +704,6 @@ def cli(argv: list[str] | None = None) -> int:
     if args.preflight_only:
         print(json.dumps(preflight(), indent=2))
         return 0
-    cli_start = time.perf_counter()
     stdout_path, stderr_path = Path("/tmp/issue58-formal.stdout"), Path("/tmp/issue58-formal.stderr")
     if stdout_path.exists() or stderr_path.exists():
         raise RuntimeError("formal console capture path already exists; frozen run cannot be retried")
@@ -766,11 +768,40 @@ def cli(argv: list[str] | None = None) -> int:
     actual_finalization = float(result["wall_accounting"]["finalization_seconds"]) + actual_wrapup
     if validation_seconds + actual_elapsed > TOTAL_WALL_LIMIT or actual_finalization > FINALIZATION_RESERVE_SECONDS:
         raise RuntimeError("actual outer wrapper elapsed exceeded the frozen finalization or total wall cap")
-    Path("/tmp/issue58-formal-wrapper-timing.json").write_text(json.dumps({
-        "outer_command_elapsed_seconds": actual_elapsed,
+    timing_path = args.output_dir / "wrapper_timing.json"
+    timing = {"outer_command_elapsed_seconds": actual_elapsed,
         "validation_plus_outer_command_elapsed_seconds": validation_seconds + actual_elapsed,
         "outer_artifact_finalization_seconds": actual_finalization,
-        "manifest_sha256": manifest_sha,
-        "measurement_complete_through": "manifest hash sidecar write",
+        "measurement_complete_through": "manifest hash sidecar write before binding wrapper_timing.json",
+        "final_manifest_sha256_sidecar": "/tmp/issue58-formal-manifest.sha256"}
+    timing_path.write_text(json.dumps(timing, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    result_data["wall_accounting"]["outer_command_elapsed_seconds"] = actual_elapsed
+    result_data["wall_accounting"]["total_including_validation_and_packaging_seconds"] = validation_seconds + actual_elapsed
+    result_data["wall_accounting"]["finalization_seconds"] = actual_finalization
+    result_data["artifacts"]["wrapper_timing"] = {"file": timing_path.name, "sha256": sha256(timing_path)}
+    results_path.write_text(json.dumps(result_data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    with report_path.open("a", encoding="utf-8") as report_file:
+        report_file.write(f"\nWrapper timing artifact: `wrapper_timing.json` SHA-256 `{sha256(timing_path)}`; outer elapsed {actual_elapsed:.3f}s, combined validation/command {validation_seconds + actual_elapsed:.3f}s, finalization {actual_finalization:.3f}s.\n")
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["wrapper_timing"] = {"file": timing_path.name, "sha256": sha256(timing_path)}
+    manifest["wall_accounting"].update({"outer_command_elapsed_seconds": actual_elapsed,
+        "total_including_validation_and_packaging_seconds": validation_seconds + actual_elapsed,
+        "finalization_seconds": actual_finalization})
+    manifest["artifacts"].update({"results_sha256": sha256(results_path), "report_sha256": sha256(report_path),
+        "wrapper_timing_sha256": sha256(timing_path)})
+    manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    manifest_sha = sha256(manifest_path)
+    Path("/tmp/issue58-formal-manifest.sha256").write_text(f"{manifest_sha}  {manifest_path}\n", encoding="utf-8")
+    final_elapsed = time.perf_counter() - cli_start
+    final_outer_wrapup = time.perf_counter() - wrapup_start
+    finalization_total = float(result["wall_accounting"]["finalization_seconds"]) + final_outer_wrapup
+    if validation_seconds + final_elapsed > TOTAL_WALL_LIMIT or finalization_total > FINALIZATION_RESERVE_SECONDS:
+        raise RuntimeError("terminal report/manifest writes exceeded frozen total or finalization cap")
+    Path("/tmp/issue58-formal-wrapper-timing.json").write_text(json.dumps({
+        "outer_command_elapsed_seconds_through_terminal_writes": final_elapsed,
+        "validation_plus_outer_command_elapsed_seconds": validation_seconds + final_elapsed,
+        "outer_artifact_finalization_seconds_through_terminal_writes": finalization_total,
+        "artifact_wrapper_timing_sha256": sha256(timing_path),
+        "final_manifest_sha256": manifest_sha,
     }, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return 0
