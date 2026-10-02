@@ -35,6 +35,14 @@ ONNX Runtime `1.22.1`, providers `['CPUExecutionProvider']`; `MODEL_ROUTING_VERI
 Source commit `659ec73763693286ed58686c561ae7c74be15042`; Issue #48 source digest `f12e63339435fd85fff75483aba000d8d01e4a2b8e92b47ee536634b3b9b3932`.
 Metadata-declared older inference spec SHA `68637a63d3f0242f74089314049251521bec14a6fa3267b57fa46470acfff8ec`. Metadata's older spec SHA is exact at commit 025d4bb; d3d235a changed only the embedded Contract v2 digest to the current Contract v2 hash. Input, preprocessing, output, and action sections are unchanged.
 **Allowed experiment classification:** `PROMOTED`, `REJECTED`, or `INCONCLUSIVE`; this run is `INCONCLUSIVE`. **Round status:** `CONTINUE_RESEARCH`. These are distinct: `GOAL_REACHED` is the round state only when any arm produces a provenance-complete canonical HVC. Exact setup, collection, finalization, and total wall accounting is in `manifest.json` (caps: 560s, 20s, 600s). Focused test timing is listed there as a pre-run measurement.
+
+## Reproducibility
+
+- Command: `timeout --signal=INT --kill-after=5s 600s env PYTHONPATH=/tmp/issue41-onnxruntime python -m scripts.evaluation.run_issue48_qmargin_runner_up --output-dir outputs/issue48-qmargin-runner-up`
+- Seeds/order: baseline104, candidate104, baseline205, candidate205, baseline306, candidate306.
+- Run source commit: `659ec73763693286ed58686c561ae7c74be15042`; source digest: `f12e63339435fd85fff75483aba000d8d01e4a2b8e92b47ee536634b3b9b3932`.
+- Artifact manifest: `research/issue48-qmargin-runner-up-artifacts/manifest.json`.
+
 Full Q/action/evaluator trajectories and provenance are in `trajectory.jsonl` and `results.json`.
 A verified clear stops the schedule immediately. No-clear runs are INCONCLUSIVE; diagnostics do not classify the hypothesis.
 
