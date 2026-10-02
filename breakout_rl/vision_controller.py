@@ -589,6 +589,7 @@ class PredictiveBreakoutController:
         )
 
     def select_action(self, frame: Any) -> ControlDecision:
+        """Choose the historical baseline action from the current raw RGB frame."""
         started = time.perf_counter_ns()
         observation = self.observe(frame)
         intercept: float | None = None
@@ -616,7 +617,77 @@ class PredictiveBreakoutController:
             if prediction is not None:
                 intercept, time_to_intercept = prediction
                 self._trajectory_prediction_count += 1
+                # Keep the baseline's unmodified predicted-intercept error path.
                 error = intercept - paddle.center_x
+                action = choose_paddle_action(
+                    error=error,
+                    previous_direction=self._previous_direction,
+                    deadband=self.deadband,
+                    hysteresis=self.hysteresis,
+                )
+
+        latency_ms = (time.perf_counter_ns() - started) / 1_000_000.0
+        self._decision_latencies_ms.append(latency_ms)
+        self._action_counts[action] += 1
+        if action in (LEFT, RIGHT):
+            if self._last_movement_action is not None and action != self._last_movement_action:
+                self._left_right_reversal_count += 1
+            self._last_movement_action = action
+        self._previous_direction = action
+        return ControlDecision(
+            action=action,
+            observation=observation,
+            predicted_intercept_x=intercept,
+            time_to_intercept_frames=time_to_intercept,
+            paddle_error=error,
+            decision_latency_ms=latency_ms,
+        )
+
+    def select_action_with_target_offset(
+        self, frame: Any, *, target_offset_px: float
+    ) -> ControlDecision:
+        """Select an action toward ``intercept - target_offset_px``.
+
+        The default public method still uses a zero offset. This explicit method
+        exists for frozen diagnostics and still accepts only RGB pixels plus a
+        numeric controller parameter; it has no environment/evaluator access.
+        """
+        if not math.isfinite(target_offset_px):
+            raise ValueError("target_offset_px must be finite")
+        if float(target_offset_px) == 0.0:
+            return self.select_action(frame)
+        started = time.perf_counter_ns()
+        observation = self.observe(frame)
+        intercept: float | None = None
+        time_to_intercept: float | None = None
+        error: float | None = None
+        action = NOOP
+        ball = observation.ball
+        paddle = observation.paddle
+        if (
+            paddle is not None
+            and ball.x is not None
+            and ball.y is not None
+            and ball.vx is not None
+            and ball.vy is not None
+        ):
+            paddle_plane_y = paddle.top - 2.0
+            prediction = predict_paddle_intercept(
+                ball_x=ball.x,
+                ball_y=ball.y,
+                ball_vx=ball.vx,
+                ball_vy=ball.vy,
+                paddle_plane_y=paddle_plane_y,
+                bounds=observation.bounds,
+            )
+            if prediction is not None:
+                intercept, time_to_intercept = prediction
+                self._trajectory_prediction_count += 1
+                target_center = min(
+                    max(intercept - float(target_offset_px), observation.bounds.left + 7.5),
+                    observation.bounds.right - 7.5,
+                )
+                error = target_center - paddle.center_x
                 action = choose_paddle_action(
                     error=error,
                     previous_direction=self._previous_direction,
