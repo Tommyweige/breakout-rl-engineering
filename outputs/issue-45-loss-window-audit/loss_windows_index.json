@@ -1,0 +1,2372 @@
+[
+  {
+    "array_key": "window_0000",
+    "decision_metadata": [
+      {
+        "agent_step": 130,
+        "ale_input_action": 1,
+        "ale_input_action_meaning": "FIRE",
+        "emulator_frame": 538,
+        "episode_index": 1,
+        "observation_sha256": "889442bba081ccd6f7554ae7d08fb24fb17a42e88781cde0f6cc3858b4019c15",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.547384023666382,
+          2.6642227172851562,
+          2.591529369354248,
+          2.514704704284668
+        ],
+        "requested_action": 1,
+        "requested_action_meaning": "FIRE",
+        "seed": 103
+      },
+      {
+        "agent_step": 131,
+        "ale_input_action": 2,
+        "ale_input_action_meaning": "RIGHT",
+        "emulator_frame": 542,
+        "episode_index": 1,
+        "observation_sha256": "044d1a8f5a02e67a5d31648c2a810438776d0a3a79dc3e5d6c70908d7882e6bf",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.5448977947235107,
+          2.6322600841522217,
+          2.6571168899536133,
+          2.492513656616211
+        ],
+        "requested_action": 2,
+        "requested_action_meaning": "RIGHT",
+        "seed": 103
+      },
+      {
+        "agent_step": 132,
+        "ale_input_action": 2,
+        "ale_input_action_meaning": "RIGHT",
+        "emulator_frame": 546,
+        "episode_index": 1,
+        "observation_sha256": "6c07bbbfee3564cf82bbd732e228f16901bd3fb012a59be7b9b9ded4c46c88b1",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.520625114440918,
+          2.5681705474853516,
+          2.6226396560668945,
+          2.4186320304870605
+        ],
+        "requested_action": 2,
+        "requested_action_meaning": "RIGHT",
+        "seed": 103
+      },
+      {
+        "agent_step": 133,
+        "ale_input_action": 2,
+        "ale_input_action_meaning": "RIGHT",
+        "emulator_frame": 550,
+        "episode_index": 1,
+        "observation_sha256": "aa06137e41fd854b9e95e344c9706e45b2924637aca2b0c574a541d36e6a0cbf",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.5524041652679443,
+          2.577982187271118,
+          2.584233522415161,
+          2.485722064971924
+        ],
+        "requested_action": 2,
+        "requested_action_meaning": "RIGHT",
+        "seed": 103
+      },
+      {
+        "agent_step": 134,
+        "ale_input_action": 2,
+        "ale_input_action_meaning": "RIGHT",
+        "emulator_frame": 554,
+        "episode_index": 1,
+        "observation_sha256": "deef390c899d07aeecba7d67b696274ee141d9c566bd22fd0bcd282aa8069b13",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.537165641784668,
+          2.52398681640625,
+          2.634448528289795,
+          2.520573616027832
+        ],
+        "requested_action": 2,
+        "requested_action_meaning": "RIGHT",
+        "seed": 103
+      },
+      {
+        "agent_step": 135,
+        "ale_input_action": 1,
+        "ale_input_action_meaning": "FIRE",
+        "emulator_frame": 558,
+        "episode_index": 1,
+        "observation_sha256": "d84ce573c40ce00f072b6d8d4c5fbf8128ba5796b1ba942eabbb0d798f32efdd",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.4735734462738037,
+          2.5094082355499268,
+          2.5028443336486816,
+          2.506347894668579
+        ],
+        "requested_action": 1,
+        "requested_action_meaning": "FIRE",
+        "seed": 103
+      },
+      {
+        "agent_step": 136,
+        "ale_input_action": 3,
+        "ale_input_action_meaning": "LEFT",
+        "emulator_frame": 562,
+        "episode_index": 1,
+        "observation_sha256": "5c1fb740b02d0056582ea6d7baf99cb509db1698d34e527f94477ee5183e49d7",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.5245347023010254,
+          2.5423786640167236,
+          2.51151704788208,
+          2.5964105129241943
+        ],
+        "requested_action": 3,
+        "requested_action_meaning": "LEFT",
+        "seed": 103
+      },
+      {
+        "agent_step": 137,
+        "ale_input_action": 2,
+        "ale_input_action_meaning": "RIGHT",
+        "emulator_frame": 566,
+        "episode_index": 1,
+        "observation_sha256": "c863b23b3bf8361cc96e1d7eaa1acd8fa8e17694cc182ebd654cad08144e4694",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.6064794063568115,
+          2.6021761894226074,
+          2.633082389831543,
+          2.5685436725616455
+        ],
+        "requested_action": 2,
+        "requested_action_meaning": "RIGHT",
+        "seed": 103
+      }
+    ],
+    "episode_index": 1,
+    "life_loss_count": 1,
+    "life_loss_event": 1,
+    "loss_agent_step": 137,
+    "loss_emulator_frame": 570,
+    "post_step_array_key": "window_0000_post_step",
+    "post_step_observation_sha256": "e2bc9afbc848968bda6dc7b91ed567a79555de115b355414dc016eb062868908",
+    "post_step_observation_unavailable_reason": null,
+    "seed": 103
+  },
+  {
+    "array_key": "window_0001",
+    "decision_metadata": [
+      {
+        "agent_step": 482,
+        "ale_input_action": 2,
+        "ale_input_action_meaning": "RIGHT",
+        "emulator_frame": 1946,
+        "episode_index": 1,
+        "observation_sha256": "584d1d0decd13f1740e96837654e8c87dce8e386eee0e596e9fd73cf93a02757",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.389472484588623,
+          2.3087549209594727,
+          2.4007668495178223,
+          2.400299549102783
+        ],
+        "requested_action": 2,
+        "requested_action_meaning": "RIGHT",
+        "seed": 103
+      },
+      {
+        "agent_step": 483,
+        "ale_input_action": 2,
+        "ale_input_action_meaning": "RIGHT",
+        "emulator_frame": 1950,
+        "episode_index": 1,
+        "observation_sha256": "98f0e2a1476840a297d015ae8bcf2167ee0cee7411d493ff27c495401e63a3fb",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.3981552124023438,
+          2.380039930343628,
+          2.4445230960845947,
+          2.3512847423553467
+        ],
+        "requested_action": 2,
+        "requested_action_meaning": "RIGHT",
+        "seed": 103
+      },
+      {
+        "agent_step": 484,
+        "ale_input_action": 0,
+        "ale_input_action_meaning": "NOOP",
+        "emulator_frame": 1954,
+        "episode_index": 1,
+        "observation_sha256": "2313c8f6aeba0c6de60f7b4ac4cfaaddba40e7c906afb7c88fc335be0403a0b3",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.4302024841308594,
+          2.410964012145996,
+          2.3806023597717285,
+          2.368589401245117
+        ],
+        "requested_action": 0,
+        "requested_action_meaning": "NOOP",
+        "seed": 103
+      },
+      {
+        "agent_step": 485,
+        "ale_input_action": 2,
+        "ale_input_action_meaning": "RIGHT",
+        "emulator_frame": 1958,
+        "episode_index": 1,
+        "observation_sha256": "8b3cf76194ecee76ebfdcbdd75669294fba8ebec8ce77f142cbf1110f48123c1",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.4547109603881836,
+          2.429863929748535,
+          2.463709831237793,
+          2.4081718921661377
+        ],
+        "requested_action": 2,
+        "requested_action_meaning": "RIGHT",
+        "seed": 103
+      },
+      {
+        "agent_step": 486,
+        "ale_input_action": 1,
+        "ale_input_action_meaning": "FIRE",
+        "emulator_frame": 1962,
+        "episode_index": 1,
+        "observation_sha256": "dfafec0aa2b28f6146eed411aae771dfd5ac4faf6246312baa13da780f864acc",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.4009053707122803,
+          2.406505584716797,
+          2.398529529571533,
+          2.3599119186401367
+        ],
+        "requested_action": 1,
+        "requested_action_meaning": "FIRE",
+        "seed": 103
+      },
+      {
+        "agent_step": 487,
+        "ale_input_action": 1,
+        "ale_input_action_meaning": "FIRE",
+        "emulator_frame": 1966,
+        "episode_index": 1,
+        "observation_sha256": "66d7d842da4208b5f4a30cfdf764143a77979a21c2ae6c025a72bd825535eea2",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.3604490756988525,
+          2.4031014442443848,
+          2.3564093112945557,
+          2.3031060695648193
+        ],
+        "requested_action": 1,
+        "requested_action_meaning": "FIRE",
+        "seed": 103
+      },
+      {
+        "agent_step": 488,
+        "ale_input_action": 1,
+        "ale_input_action_meaning": "FIRE",
+        "emulator_frame": 1970,
+        "episode_index": 1,
+        "observation_sha256": "e073f7a3c264e570eb966e26a8944809bc2ec369f0cee2dbd13faaf639d285bb",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.368903636932373,
+          2.385235548019409,
+          2.3647282123565674,
+          2.3065247535705566
+        ],
+        "requested_action": 1,
+        "requested_action_meaning": "FIRE",
+        "seed": 103
+      },
+      {
+        "agent_step": 489,
+        "ale_input_action": 1,
+        "ale_input_action_meaning": "FIRE",
+        "emulator_frame": 1974,
+        "episode_index": 1,
+        "observation_sha256": "385b0ce08ccb0d5e534f92cd089877ca584da7012993297677c4c7881e08ab35",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.4012649059295654,
+          2.405759811401367,
+          2.39620041847229,
+          2.3355512619018555
+        ],
+        "requested_action": 1,
+        "requested_action_meaning": "FIRE",
+        "seed": 103
+      }
+    ],
+    "episode_index": 1,
+    "life_loss_count": 1,
+    "life_loss_event": 2,
+    "loss_agent_step": 489,
+    "loss_emulator_frame": 1978,
+    "post_step_array_key": "window_0001_post_step",
+    "post_step_observation_sha256": "2d106bbf97ed0b2a27ca5a16cf574249c4df48a61cf3d065d2a4efb9ebd5f5d4",
+    "post_step_observation_unavailable_reason": null,
+    "seed": 103
+  },
+  {
+    "array_key": "window_0002",
+    "decision_metadata": [
+      {
+        "agent_step": 697,
+        "ale_input_action": 3,
+        "ale_input_action_meaning": "LEFT",
+        "emulator_frame": 2806,
+        "episode_index": 1,
+        "observation_sha256": "4d7a633e2447fa16ad2bdf2212b5df14f6cb9727c0d0b8eabe6497c4bce128cc",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.068511724472046,
+          2.062082290649414,
+          2.041238784790039,
+          2.0765697956085205
+        ],
+        "requested_action": 3,
+        "requested_action_meaning": "LEFT",
+        "seed": 103
+      },
+      {
+        "agent_step": 698,
+        "ale_input_action": 1,
+        "ale_input_action_meaning": "FIRE",
+        "emulator_frame": 2810,
+        "episode_index": 1,
+        "observation_sha256": "abc235a6343b197ee9a74bfe18e22e595a596cc9acdfabbcc4a9e4806d422b90",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.082991123199463,
+          2.0926570892333984,
+          2.0905661582946777,
+          2.089667797088623
+        ],
+        "requested_action": 1,
+        "requested_action_meaning": "FIRE",
+        "seed": 103
+      },
+      {
+        "agent_step": 699,
+        "ale_input_action": 1,
+        "ale_input_action_meaning": "FIRE",
+        "emulator_frame": 2814,
+        "episode_index": 1,
+        "observation_sha256": "1a073b7afbf3508696bb99bb845670eeaf5b03110d26977c2084f510ecf5128b",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.200106382369995,
+          2.2202792167663574,
+          2.2030189037323,
+          2.2055227756500244
+        ],
+        "requested_action": 1,
+        "requested_action_meaning": "FIRE",
+        "seed": 103
+      },
+      {
+        "agent_step": 700,
+        "ale_input_action": 0,
+        "ale_input_action_meaning": "NOOP",
+        "emulator_frame": 2818,
+        "episode_index": 1,
+        "observation_sha256": "97743a2ee7a46c5b71e8edaf5baf395aa3aca88044ca732be225a23a1983d7a0",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.346956491470337,
+          2.2486159801483154,
+          2.1666996479034424,
+          2.0366404056549072
+        ],
+        "requested_action": 0,
+        "requested_action_meaning": "NOOP",
+        "seed": 103
+      },
+      {
+        "agent_step": 701,
+        "ale_input_action": 1,
+        "ale_input_action_meaning": "FIRE",
+        "emulator_frame": 2822,
+        "episode_index": 1,
+        "observation_sha256": "48260996f33cc36766648ad190643c2faef41cc68e6af4f3afba71471bba3e9a",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.366299867630005,
+          2.379163980484009,
+          2.117701530456543,
+          2.1458420753479004
+        ],
+        "requested_action": 1,
+        "requested_action_meaning": "FIRE",
+        "seed": 103
+      },
+      {
+        "agent_step": 702,
+        "ale_input_action": 1,
+        "ale_input_action_meaning": "FIRE",
+        "emulator_frame": 2826,
+        "episode_index": 1,
+        "observation_sha256": "e706e875b15634630e185beecaaabd0d1bdfdebb40a3701bbcceaf648d733b5e",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.0780563354492188,
+          2.1801652908325195,
+          1.891449213027954,
+          2.0317912101745605
+        ],
+        "requested_action": 1,
+        "requested_action_meaning": "FIRE",
+        "seed": 103
+      },
+      {
+        "agent_step": 703,
+        "ale_input_action": 0,
+        "ale_input_action_meaning": "NOOP",
+        "emulator_frame": 2830,
+        "episode_index": 1,
+        "observation_sha256": "42e261f71d43218e8d0b9cf783c4c9fa9a0f0356528f9708e9a2c9e5d8e19ee4",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          1.9652180671691895,
+          1.9292473793029785,
+          1.9215116500854492,
+          1.896041750907898
+        ],
+        "requested_action": 0,
+        "requested_action_meaning": "NOOP",
+        "seed": 103
+      },
+      {
+        "agent_step": 704,
+        "ale_input_action": 0,
+        "ale_input_action_meaning": "NOOP",
+        "emulator_frame": 2834,
+        "episode_index": 1,
+        "observation_sha256": "e42cf699912977f520bcf82355896d648afbf4e7741cd213243592313e192e02",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.0610525608062744,
+          2.0189425945281982,
+          2.0288000106811523,
+          1.922195553779602
+        ],
+        "requested_action": 0,
+        "requested_action_meaning": "NOOP",
+        "seed": 103
+      }
+    ],
+    "episode_index": 1,
+    "life_loss_count": 1,
+    "life_loss_event": 3,
+    "loss_agent_step": 704,
+    "loss_emulator_frame": 2838,
+    "post_step_array_key": "window_0002_post_step",
+    "post_step_observation_sha256": "3f6403a95785cc49846118ac1110d7e8d69ca3d9176e759db14c54982b6734dc",
+    "post_step_observation_unavailable_reason": null,
+    "seed": 103
+  },
+  {
+    "array_key": "window_0003",
+    "decision_metadata": [
+      {
+        "agent_step": 852,
+        "ale_input_action": 0,
+        "ale_input_action_meaning": "NOOP",
+        "emulator_frame": 3426,
+        "episode_index": 1,
+        "observation_sha256": "6d3a000e4d8e8b4d18d10dc60d120f0e196e3175f93b188e89e9389237db1ad9",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          1.4449141025543213,
+          1.4102277755737305,
+          1.3708124160766602,
+          1.3750627040863037
+        ],
+        "requested_action": 0,
+        "requested_action_meaning": "NOOP",
+        "seed": 103
+      },
+      {
+        "agent_step": 853,
+        "ale_input_action": 3,
+        "ale_input_action_meaning": "LEFT",
+        "emulator_frame": 3430,
+        "episode_index": 1,
+        "observation_sha256": "d30b17bc064ed157929d3ba3bf23de620c6b494e7f25a363731094292ec32b35",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          1.3405324220657349,
+          1.3093310594558716,
+          1.34163236618042,
+          1.3540418148040771
+        ],
+        "requested_action": 3,
+        "requested_action_meaning": "LEFT",
+        "seed": 103
+      },
+      {
+        "agent_step": 854,
+        "ale_input_action": 2,
+        "ale_input_action_meaning": "RIGHT",
+        "emulator_frame": 3434,
+        "episode_index": 1,
+        "observation_sha256": "d7543152611051482ee98561b8fa72fa9e79a4a6b62a6da02ae76b5d63695cdf",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          1.3344782590866089,
+          1.2897764444351196,
+          1.389638066291809,
+          1.2998332977294922
+        ],
+        "requested_action": 2,
+        "requested_action_meaning": "RIGHT",
+        "seed": 103
+      },
+      {
+        "agent_step": 855,
+        "ale_input_action": 2,
+        "ale_input_action_meaning": "RIGHT",
+        "emulator_frame": 3438,
+        "episode_index": 1,
+        "observation_sha256": "6944baad6c9bc71f06e97cfbe850bcecd8bba8a3d16be87c9130c8139113a283",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          1.2602025270462036,
+          1.350515604019165,
+          1.4685380458831787,
+          1.2364739179611206
+        ],
+        "requested_action": 2,
+        "requested_action_meaning": "RIGHT",
+        "seed": 103
+      },
+      {
+        "agent_step": 856,
+        "ale_input_action": 1,
+        "ale_input_action_meaning": "FIRE",
+        "emulator_frame": 3442,
+        "episode_index": 1,
+        "observation_sha256": "bb6f8d07b1736656d6937817448195aa4b4326c264872ede774d73c7200c88a9",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          1.4656519889831543,
+          1.5477056503295898,
+          1.5054399967193604,
+          1.4336187839508057
+        ],
+        "requested_action": 1,
+        "requested_action_meaning": "FIRE",
+        "seed": 103
+      },
+      {
+        "agent_step": 857,
+        "ale_input_action": 1,
+        "ale_input_action_meaning": "FIRE",
+        "emulator_frame": 3446,
+        "episode_index": 1,
+        "observation_sha256": "afe992f73de95470fb50a636adb8af66f2ccb0cb8b9a03314c3e3a3ea9404bf5",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          1.638319969177246,
+          1.6922191381454468,
+          1.615370273590088,
+          1.4490890502929688
+        ],
+        "requested_action": 1,
+        "requested_action_meaning": "FIRE",
+        "seed": 103
+      },
+      {
+        "agent_step": 858,
+        "ale_input_action": 1,
+        "ale_input_action_meaning": "FIRE",
+        "emulator_frame": 3450,
+        "episode_index": 1,
+        "observation_sha256": "a4d7f88a30fb7d4da81edf338ac6b72597c7256516956a1a4486034db3e6c759",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          0.9659008979797363,
+          1.0074882507324219,
+          1.0002576112747192,
+          0.9722772240638733
+        ],
+        "requested_action": 1,
+        "requested_action_meaning": "FIRE",
+        "seed": 103
+      },
+      {
+        "agent_step": 859,
+        "ale_input_action": 3,
+        "ale_input_action_meaning": "LEFT",
+        "emulator_frame": 3454,
+        "episode_index": 1,
+        "observation_sha256": "f5398eb0f98da51fac4ede8eecab8089558ac64e38edfed3c6fd9919711b718a",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          0.9406746029853821,
+          1.0039074420928955,
+          0.9595228433609009,
+          1.0508065223693848
+        ],
+        "requested_action": 3,
+        "requested_action_meaning": "LEFT",
+        "seed": 103
+      }
+    ],
+    "episode_index": 1,
+    "life_loss_count": 1,
+    "life_loss_event": 4,
+    "loss_agent_step": 859,
+    "loss_emulator_frame": 3458,
+    "post_step_array_key": "window_0003_post_step",
+    "post_step_observation_sha256": "4ede797d1bc00d7d62dd6e15192d81911dac34503afbcf049752ea786e8c733f",
+    "post_step_observation_unavailable_reason": null,
+    "seed": 103
+  },
+  {
+    "array_key": "window_0004",
+    "decision_metadata": [
+      {
+        "agent_step": 1028,
+        "ale_input_action": 3,
+        "ale_input_action_meaning": "LEFT",
+        "emulator_frame": 4130,
+        "episode_index": 1,
+        "observation_sha256": "9ef72d1bac322ecca5c360d9f6bfc0b231ae397877f599cd07f5bde4513ddfb1",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          0.8124303817749023,
+          0.7925781607627869,
+          0.6278150081634521,
+          0.8903326988220215
+        ],
+        "requested_action": 3,
+        "requested_action_meaning": "LEFT",
+        "seed": 103
+      },
+      {
+        "agent_step": 1029,
+        "ale_input_action": 1,
+        "ale_input_action_meaning": "FIRE",
+        "emulator_frame": 4134,
+        "episode_index": 1,
+        "observation_sha256": "e9ea35263602cf9a69459fda7c0c8fb1db9fcaf15094acdf90f567c097bd7297",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          1.2230961322784424,
+          1.2741172313690186,
+          1.0411477088928223,
+          1.2736716270446777
+        ],
+        "requested_action": 1,
+        "requested_action_meaning": "FIRE",
+        "seed": 103
+      },
+      {
+        "agent_step": 1030,
+        "ale_input_action": 3,
+        "ale_input_action_meaning": "LEFT",
+        "emulator_frame": 4138,
+        "episode_index": 1,
+        "observation_sha256": "05ea90b0d6b52525741fe4ceda181fee9524790846bb96aafc255fdc75b278ba",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          1.0062034130096436,
+          1.0193380117416382,
+          0.8677576184272766,
+          1.0978646278381348
+        ],
+        "requested_action": 3,
+        "requested_action_meaning": "LEFT",
+        "seed": 103
+      },
+      {
+        "agent_step": 1031,
+        "ale_input_action": 3,
+        "ale_input_action_meaning": "LEFT",
+        "emulator_frame": 4142,
+        "episode_index": 1,
+        "observation_sha256": "543386ae453cabea0e34b41e24793a80409efd6277148e0aa30b3ba101002a0e",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          0.5255079865455627,
+          0.4726095497608185,
+          0.5247300863265991,
+          0.5553432106971741
+        ],
+        "requested_action": 3,
+        "requested_action_meaning": "LEFT",
+        "seed": 103
+      },
+      {
+        "agent_step": 1032,
+        "ale_input_action": 3,
+        "ale_input_action_meaning": "LEFT",
+        "emulator_frame": 4146,
+        "episode_index": 1,
+        "observation_sha256": "54bc6dcce2b0751cb849c750105c1b8ef1abe5b021f514a55bfbc6e9bcc5ba74",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          0.14655227959156036,
+          0.13789726793766022,
+          0.14846910536289215,
+          0.28256240487098694
+        ],
+        "requested_action": 3,
+        "requested_action_meaning": "LEFT",
+        "seed": 103
+      },
+      {
+        "agent_step": 1033,
+        "ale_input_action": 3,
+        "ale_input_action_meaning": "LEFT",
+        "emulator_frame": 4150,
+        "episode_index": 1,
+        "observation_sha256": "7ed1c49928a17532ff64c48bb687c946db996c6fa52df9c4c3be90c562db3797",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          -0.11517057567834854,
+          -0.10712438821792603,
+          -0.08838692307472229,
+          0.027764391154050827
+        ],
+        "requested_action": 3,
+        "requested_action_meaning": "LEFT",
+        "seed": 103
+      },
+      {
+        "agent_step": 1034,
+        "ale_input_action": 2,
+        "ale_input_action_meaning": "RIGHT",
+        "emulator_frame": 4154,
+        "episode_index": 1,
+        "observation_sha256": "8dd99aab9a8eccdaf0d1c7e37f82a4c311ef3c21bcfa4b03e56642d19d0846f1",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          -0.24897947907447815,
+          -0.261288046836853,
+          -0.18861472606658936,
+          -0.20023474097251892
+        ],
+        "requested_action": 2,
+        "requested_action_meaning": "RIGHT",
+        "seed": 103
+      },
+      {
+        "agent_step": 1035,
+        "ale_input_action": 2,
+        "ale_input_action_meaning": "RIGHT",
+        "emulator_frame": 4158,
+        "episode_index": 1,
+        "observation_sha256": "69706c96892630cc67b7be6078135488f6e6fa6616e46c7c9af65cf9a7c6b05a",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          -0.303800106048584,
+          -0.34374773502349854,
+          -0.24673238396644592,
+          -0.2941906452178955
+        ],
+        "requested_action": 2,
+        "requested_action_meaning": "RIGHT",
+        "seed": 103
+      }
+    ],
+    "episode_index": 1,
+    "life_loss_count": 1,
+    "life_loss_event": 5,
+    "loss_agent_step": 1035,
+    "loss_emulator_frame": 4160,
+    "post_step_array_key": "window_0004_post_step",
+    "post_step_observation_sha256": "e1f1a283a8168adcb1a10bcaa24c2bbda4f8536309d4356bd0edac0ed73d9587",
+    "post_step_observation_unavailable_reason": null,
+    "seed": 103
+  },
+  {
+    "array_key": "window_0005",
+    "decision_metadata": [
+      {
+        "agent_step": 164,
+        "ale_input_action": 3,
+        "ale_input_action_meaning": "LEFT",
+        "emulator_frame": 681,
+        "episode_index": 2,
+        "observation_sha256": "fa0ba3e7d62bc8bc5b57601fefeb9db7b0e20d1d367bd1e07a96bd47c8471ee9",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          3.1031174659729004,
+          3.0112271308898926,
+          3.13451886177063,
+          3.16218638420105
+        ],
+        "requested_action": 3,
+        "requested_action_meaning": "LEFT",
+        "seed": 204
+      },
+      {
+        "agent_step": 165,
+        "ale_input_action": 2,
+        "ale_input_action_meaning": "RIGHT",
+        "emulator_frame": 685,
+        "episode_index": 2,
+        "observation_sha256": "dd98c0218065d3b7311b57845a516d29866d94bff4758661ee06b11cdfcb13ca",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          3.091265916824341,
+          3.003993272781372,
+          3.230008125305176,
+          3.088327169418335
+        ],
+        "requested_action": 2,
+        "requested_action_meaning": "RIGHT",
+        "seed": 204
+      },
+      {
+        "agent_step": 166,
+        "ale_input_action": 2,
+        "ale_input_action_meaning": "RIGHT",
+        "emulator_frame": 689,
+        "episode_index": 2,
+        "observation_sha256": "73a4a4df2ad2f8defa7d2a4865499864a33bab0f5fff368dfb9aa302d29b1bbd",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.7869372367858887,
+          2.665123701095581,
+          3.0517735481262207,
+          2.8194851875305176
+        ],
+        "requested_action": 2,
+        "requested_action_meaning": "RIGHT",
+        "seed": 204
+      },
+      {
+        "agent_step": 167,
+        "ale_input_action": 0,
+        "ale_input_action_meaning": "NOOP",
+        "emulator_frame": 693,
+        "episode_index": 2,
+        "observation_sha256": "da0d29c1f29693609306559ef9413cddd4554a3c549fa21eb5b53cafce4f284b",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          3.169919490814209,
+          3.017568826675415,
+          2.922807216644287,
+          2.8507535457611084
+        ],
+        "requested_action": 0,
+        "requested_action_meaning": "NOOP",
+        "seed": 204
+      },
+      {
+        "agent_step": 168,
+        "ale_input_action": 2,
+        "ale_input_action_meaning": "RIGHT",
+        "emulator_frame": 697,
+        "episode_index": 2,
+        "observation_sha256": "b1bc7b0069c95bacd62129330b51effd4dd0d1013b65c751e4162fcd4e35036d",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.758674144744873,
+          2.6982524394989014,
+          2.811544179916382,
+          2.7664318084716797
+        ],
+        "requested_action": 2,
+        "requested_action_meaning": "RIGHT",
+        "seed": 204
+      },
+      {
+        "agent_step": 169,
+        "ale_input_action": 2,
+        "ale_input_action_meaning": "RIGHT",
+        "emulator_frame": 701,
+        "episode_index": 2,
+        "observation_sha256": "671c880eac7f0b8896864d8945ed358c543c4ee3e6e444dccb4c0b8258244624",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.745600700378418,
+          2.7551679611206055,
+          2.829340696334839,
+          2.6771905422210693
+        ],
+        "requested_action": 2,
+        "requested_action_meaning": "RIGHT",
+        "seed": 204
+      },
+      {
+        "agent_step": 170,
+        "ale_input_action": 2,
+        "ale_input_action_meaning": "RIGHT",
+        "emulator_frame": 705,
+        "episode_index": 2,
+        "observation_sha256": "55bcbcacda800ff245fa9fea562797578bba279ec7d49b2be46948c2161e48b9",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.725620985031128,
+          2.7024729251861572,
+          2.7343857288360596,
+          2.560231924057007
+        ],
+        "requested_action": 2,
+        "requested_action_meaning": "RIGHT",
+        "seed": 204
+      },
+      {
+        "agent_step": 171,
+        "ale_input_action": 2,
+        "ale_input_action_meaning": "RIGHT",
+        "emulator_frame": 709,
+        "episode_index": 2,
+        "observation_sha256": "da2e82cb9bcd62372487d997bb979f9a6f221699b32c7f2331b01fec14d9ba0f",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.6848039627075195,
+          2.5960276126861572,
+          2.791290283203125,
+          2.728287935256958
+        ],
+        "requested_action": 2,
+        "requested_action_meaning": "RIGHT",
+        "seed": 204
+      }
+    ],
+    "episode_index": 2,
+    "life_loss_count": 1,
+    "life_loss_event": 1,
+    "loss_agent_step": 171,
+    "loss_emulator_frame": 713,
+    "post_step_array_key": "window_0005_post_step",
+    "post_step_observation_sha256": "61ffc9cbeafe4ab24da353ead2015d2383f91e732c7477e1806271489d252fe3",
+    "post_step_observation_unavailable_reason": null,
+    "seed": 204
+  },
+  {
+    "array_key": "window_0006",
+    "decision_metadata": [
+      {
+        "agent_step": 372,
+        "ale_input_action": 2,
+        "ale_input_action_meaning": "RIGHT",
+        "emulator_frame": 1513,
+        "episode_index": 2,
+        "observation_sha256": "afb57bff4104a5283d88375d028d57df2b943ba831d467228690a5e9b96e33d9",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.797410011291504,
+          2.7879903316497803,
+          2.8239338397979736,
+          2.822216749191284
+        ],
+        "requested_action": 2,
+        "requested_action_meaning": "RIGHT",
+        "seed": 204
+      },
+      {
+        "agent_step": 373,
+        "ale_input_action": 3,
+        "ale_input_action_meaning": "LEFT",
+        "emulator_frame": 1517,
+        "episode_index": 2,
+        "observation_sha256": "c563303cc0b0c91ae65c7581f5dcc84f4ba05a3f6bb41ce7b702b692b830a211",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.805915355682373,
+          2.8046836853027344,
+          2.7684848308563232,
+          2.896902084350586
+        ],
+        "requested_action": 3,
+        "requested_action_meaning": "LEFT",
+        "seed": 204
+      },
+      {
+        "agent_step": 374,
+        "ale_input_action": 3,
+        "ale_input_action_meaning": "LEFT",
+        "emulator_frame": 1521,
+        "episode_index": 2,
+        "observation_sha256": "fce6c1278976ddf1a55424ccc17b3aa0910a948b80ff823f662760d4669cb89b",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.9387433528900146,
+          2.9311141967773438,
+          2.95304012298584,
+          2.994171142578125
+        ],
+        "requested_action": 3,
+        "requested_action_meaning": "LEFT",
+        "seed": 204
+      },
+      {
+        "agent_step": 375,
+        "ale_input_action": 2,
+        "ale_input_action_meaning": "RIGHT",
+        "emulator_frame": 1525,
+        "episode_index": 2,
+        "observation_sha256": "a4c1b8c15d5423e545f60e371ab9be189c5ab7ce401e41af30b3f62bfa587879",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          3.0003254413604736,
+          2.99416184425354,
+          3.0331625938415527,
+          3.0288779735565186
+        ],
+        "requested_action": 2,
+        "requested_action_meaning": "RIGHT",
+        "seed": 204
+      },
+      {
+        "agent_step": 376,
+        "ale_input_action": 3,
+        "ale_input_action_meaning": "LEFT",
+        "emulator_frame": 1529,
+        "episode_index": 2,
+        "observation_sha256": "b0bf8fd71d50fdce6ed16d782060c8226e4202bddaa0fc5bb0ce4bd0045deb46",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.840205192565918,
+          2.8699960708618164,
+          2.837470293045044,
+          2.94842267036438
+        ],
+        "requested_action": 3,
+        "requested_action_meaning": "LEFT",
+        "seed": 204
+      },
+      {
+        "agent_step": 377,
+        "ale_input_action": 2,
+        "ale_input_action_meaning": "RIGHT",
+        "emulator_frame": 1533,
+        "episode_index": 2,
+        "observation_sha256": "5128ec5f0874e53da64e2958fc9418127377b7e067871d620c4bcf8b7805e972",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.714390993118286,
+          2.7788074016571045,
+          2.782548189163208,
+          2.776542901992798
+        ],
+        "requested_action": 2,
+        "requested_action_meaning": "RIGHT",
+        "seed": 204
+      },
+      {
+        "agent_step": 378,
+        "ale_input_action": 1,
+        "ale_input_action_meaning": "FIRE",
+        "emulator_frame": 1537,
+        "episode_index": 2,
+        "observation_sha256": "272e82836221b50789562da8cd9285c2fd180318202d5c92b1975e1113690967",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.5796589851379395,
+          2.663740634918213,
+          2.634324550628662,
+          2.6391115188598633
+        ],
+        "requested_action": 1,
+        "requested_action_meaning": "FIRE",
+        "seed": 204
+      },
+      {
+        "agent_step": 379,
+        "ale_input_action": 1,
+        "ale_input_action_meaning": "FIRE",
+        "emulator_frame": 1541,
+        "episode_index": 2,
+        "observation_sha256": "5293c71521692dc05f4d7c71915ee68d3003a613e591454ebe9b1da35b0dd8d3",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.557002544403076,
+          2.660585880279541,
+          2.5843708515167236,
+          2.6486194133758545
+        ],
+        "requested_action": 1,
+        "requested_action_meaning": "FIRE",
+        "seed": 204
+      }
+    ],
+    "episode_index": 2,
+    "life_loss_count": 1,
+    "life_loss_event": 2,
+    "loss_agent_step": 379,
+    "loss_emulator_frame": 1545,
+    "post_step_array_key": "window_0006_post_step",
+    "post_step_observation_sha256": "f2b5618c1f4e48b2ae50cf7e6800f7d5ec1699efe7ad868cfc8d2901021f0b05",
+    "post_step_observation_unavailable_reason": null,
+    "seed": 204
+  },
+  {
+    "array_key": "window_0007",
+    "decision_metadata": [
+      {
+        "agent_step": 582,
+        "ale_input_action": 3,
+        "ale_input_action_meaning": "LEFT",
+        "emulator_frame": 2353,
+        "episode_index": 2,
+        "observation_sha256": "60e41892e3c9240bdf8e413d6a3ffad5f553bd58ca7a597897e14f818d9b763a",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.48004412651062,
+          2.5202763080596924,
+          2.54400634765625,
+          2.610056161880493
+        ],
+        "requested_action": 3,
+        "requested_action_meaning": "LEFT",
+        "seed": 204
+      },
+      {
+        "agent_step": 583,
+        "ale_input_action": 1,
+        "ale_input_action_meaning": "FIRE",
+        "emulator_frame": 2357,
+        "episode_index": 2,
+        "observation_sha256": "fbed1b821aca176a2f7839792a601e6a69edbaf76f48cbe0f976fb596d1f55db",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.593113422393799,
+          2.624769926071167,
+          2.5792922973632812,
+          2.584743022918701
+        ],
+        "requested_action": 1,
+        "requested_action_meaning": "FIRE",
+        "seed": 204
+      },
+      {
+        "agent_step": 584,
+        "ale_input_action": 2,
+        "ale_input_action_meaning": "RIGHT",
+        "emulator_frame": 2361,
+        "episode_index": 2,
+        "observation_sha256": "842207f1f9273dd83889152aaccf451d26e54b9f138a2fa4ac656a418a8be751",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.7510671615600586,
+          2.735725164413452,
+          2.758263349533081,
+          2.542468786239624
+        ],
+        "requested_action": 2,
+        "requested_action_meaning": "RIGHT",
+        "seed": 204
+      },
+      {
+        "agent_step": 585,
+        "ale_input_action": 0,
+        "ale_input_action_meaning": "NOOP",
+        "emulator_frame": 2365,
+        "episode_index": 2,
+        "observation_sha256": "00f98d6e3cec99eae22c0ae67f6e56bf1d62366f478cc32ec2c2fc8cbb957637",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.667833089828491,
+          2.583156108856201,
+          2.5203051567077637,
+          2.5795605182647705
+        ],
+        "requested_action": 0,
+        "requested_action_meaning": "NOOP",
+        "seed": 204
+      },
+      {
+        "agent_step": 586,
+        "ale_input_action": 3,
+        "ale_input_action_meaning": "LEFT",
+        "emulator_frame": 2369,
+        "episode_index": 2,
+        "observation_sha256": "da9ea6d4e303e324d2589b2eabad54a0f416502b2d8a62bd3b9d177bb669ff06",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.424124240875244,
+          2.454587459564209,
+          2.3775477409362793,
+          2.4854907989501953
+        ],
+        "requested_action": 3,
+        "requested_action_meaning": "LEFT",
+        "seed": 204
+      },
+      {
+        "agent_step": 587,
+        "ale_input_action": 3,
+        "ale_input_action_meaning": "LEFT",
+        "emulator_frame": 2373,
+        "episode_index": 2,
+        "observation_sha256": "31d538a701b1ccf42f9551c43d67008ec2b4bbd023ba21af62a3ece61fae5efa",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.543342113494873,
+          2.5444300174713135,
+          2.4968111515045166,
+          2.5550718307495117
+        ],
+        "requested_action": 3,
+        "requested_action_meaning": "LEFT",
+        "seed": 204
+      },
+      {
+        "agent_step": 588,
+        "ale_input_action": 1,
+        "ale_input_action_meaning": "FIRE",
+        "emulator_frame": 2377,
+        "episode_index": 2,
+        "observation_sha256": "11c92684d906f95cce4f918665ab8c1f26c83a388db3047e09fe48bc5b59295b",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.456475257873535,
+          2.4804954528808594,
+          2.332176923751831,
+          2.478919267654419
+        ],
+        "requested_action": 1,
+        "requested_action_meaning": "FIRE",
+        "seed": 204
+      },
+      {
+        "agent_step": 589,
+        "ale_input_action": 3,
+        "ale_input_action_meaning": "LEFT",
+        "emulator_frame": 2381,
+        "episode_index": 2,
+        "observation_sha256": "e82628d5d594ea8c116071689064440b953ed5dd6d86332cf9dfca6cd7278f2f",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.4507102966308594,
+          2.506633758544922,
+          2.287717342376709,
+          2.5561130046844482
+        ],
+        "requested_action": 3,
+        "requested_action_meaning": "LEFT",
+        "seed": 204
+      }
+    ],
+    "episode_index": 2,
+    "life_loss_count": 1,
+    "life_loss_event": 3,
+    "loss_agent_step": 589,
+    "loss_emulator_frame": 2385,
+    "post_step_array_key": "window_0007_post_step",
+    "post_step_observation_sha256": "5db560a486805724307ce952ecf64933bcee66e2d5d1036af02361ac98227432",
+    "post_step_observation_unavailable_reason": null,
+    "seed": 204
+  },
+  {
+    "array_key": "window_0008",
+    "decision_metadata": [
+      {
+        "agent_step": 767,
+        "ale_input_action": 2,
+        "ale_input_action_meaning": "RIGHT",
+        "emulator_frame": 3093,
+        "episode_index": 2,
+        "observation_sha256": "6d343dfc7cc8f4aa155d9be232b3a8fc458363cbda82e531954b222716de9dbe",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.1258327960968018,
+          2.1126720905303955,
+          2.1327226161956787,
+          2.1263792514801025
+        ],
+        "requested_action": 2,
+        "requested_action_meaning": "RIGHT",
+        "seed": 204
+      },
+      {
+        "agent_step": 768,
+        "ale_input_action": 3,
+        "ale_input_action_meaning": "LEFT",
+        "emulator_frame": 3097,
+        "episode_index": 2,
+        "observation_sha256": "4a549f56c12ab4661515822b0213921d5737829d1a1c6c7ba2729acb89abd3f1",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.004715919494629,
+          1.999374508857727,
+          1.986986756324768,
+          2.0152807235717773
+        ],
+        "requested_action": 3,
+        "requested_action_meaning": "LEFT",
+        "seed": 204
+      },
+      {
+        "agent_step": 769,
+        "ale_input_action": 3,
+        "ale_input_action_meaning": "LEFT",
+        "emulator_frame": 3101,
+        "episode_index": 2,
+        "observation_sha256": "aef0f5976a2c1e3472d607f0827e00165cf23cb3c2979e39e5f7f22595f0483e",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.061354398727417,
+          2.0544979572296143,
+          2.046984910964966,
+          2.097562551498413
+        ],
+        "requested_action": 3,
+        "requested_action_meaning": "LEFT",
+        "seed": 204
+      },
+      {
+        "agent_step": 770,
+        "ale_input_action": 3,
+        "ale_input_action_meaning": "LEFT",
+        "emulator_frame": 3105,
+        "episode_index": 2,
+        "observation_sha256": "d024415a330247a9f65df6a5297d5d6ee9550eb236efe2593db66fc83f717c9a",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          1.807811975479126,
+          1.839187502861023,
+          1.8516896963119507,
+          1.8879508972167969
+        ],
+        "requested_action": 3,
+        "requested_action_meaning": "LEFT",
+        "seed": 204
+      },
+      {
+        "agent_step": 771,
+        "ale_input_action": 2,
+        "ale_input_action_meaning": "RIGHT",
+        "emulator_frame": 3109,
+        "episode_index": 2,
+        "observation_sha256": "9426c6941627d6d04d541ed75e97e10769e7ed108db3cc840b891734e0ca46fb",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          1.8209069967269897,
+          1.8556575775146484,
+          1.9570554494857788,
+          1.9435676336288452
+        ],
+        "requested_action": 2,
+        "requested_action_meaning": "RIGHT",
+        "seed": 204
+      },
+      {
+        "agent_step": 772,
+        "ale_input_action": 1,
+        "ale_input_action_meaning": "FIRE",
+        "emulator_frame": 3113,
+        "episode_index": 2,
+        "observation_sha256": "766a197276952fdf5138ddb3c064a63f0755cb043f144c92a994071f926bed83",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          1.9141658544540405,
+          2.010418176651001,
+          1.9137213230133057,
+          1.9516135454177856
+        ],
+        "requested_action": 1,
+        "requested_action_meaning": "FIRE",
+        "seed": 204
+      },
+      {
+        "agent_step": 773,
+        "ale_input_action": 3,
+        "ale_input_action_meaning": "LEFT",
+        "emulator_frame": 3117,
+        "episode_index": 2,
+        "observation_sha256": "9285169251e800b096f88fa6bc1a1d0be197240525daa52190897218a1c17a59",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          1.9549747705459595,
+          2.0027458667755127,
+          1.963613748550415,
+          2.0526070594787598
+        ],
+        "requested_action": 3,
+        "requested_action_meaning": "LEFT",
+        "seed": 204
+      },
+      {
+        "agent_step": 774,
+        "ale_input_action": 1,
+        "ale_input_action_meaning": "FIRE",
+        "emulator_frame": 3121,
+        "episode_index": 2,
+        "observation_sha256": "e0c1dea272ca763b0c29cbd5f12633ea4c8bd344019ea45524c0c5728a685712",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          1.8916269540786743,
+          1.978008508682251,
+          1.8823760747909546,
+          1.9331073760986328
+        ],
+        "requested_action": 1,
+        "requested_action_meaning": "FIRE",
+        "seed": 204
+      }
+    ],
+    "episode_index": 2,
+    "life_loss_count": 1,
+    "life_loss_event": 4,
+    "loss_agent_step": 774,
+    "loss_emulator_frame": 3125,
+    "post_step_array_key": "window_0008_post_step",
+    "post_step_observation_sha256": "047f61047cb0a16085399c8fee8de944b8bbd00efbc554d1190ae427f8f6c486",
+    "post_step_observation_unavailable_reason": null,
+    "seed": 204
+  },
+  {
+    "array_key": "window_0009",
+    "decision_metadata": [
+      {
+        "agent_step": 884,
+        "ale_input_action": 0,
+        "ale_input_action_meaning": "NOOP",
+        "emulator_frame": 3561,
+        "episode_index": 2,
+        "observation_sha256": "1fe07beee144337f159a992762f902eaabc956efa264980a378b0b2675deefc5",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          1.8387179374694824,
+          1.810196876525879,
+          1.5901868343353271,
+          1.716407060623169
+        ],
+        "requested_action": 0,
+        "requested_action_meaning": "NOOP",
+        "seed": 204
+      },
+      {
+        "agent_step": 885,
+        "ale_input_action": 0,
+        "ale_input_action_meaning": "NOOP",
+        "emulator_frame": 3565,
+        "episode_index": 2,
+        "observation_sha256": "11e2029b82d9deed9716b42eafc5c648b3ef443aaae81c0bfc188818194e2851",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          1.7032994031906128,
+          1.6828416585922241,
+          1.5611834526062012,
+          1.6571935415267944
+        ],
+        "requested_action": 0,
+        "requested_action_meaning": "NOOP",
+        "seed": 204
+      },
+      {
+        "agent_step": 886,
+        "ale_input_action": 1,
+        "ale_input_action_meaning": "FIRE",
+        "emulator_frame": 3569,
+        "episode_index": 2,
+        "observation_sha256": "5d8f7c92861c2fbb170ed307920bf6203c96ebd0d211ae961cb70e4b2134c2b0",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          1.9347816705703735,
+          1.9420166015625,
+          1.8867607116699219,
+          1.9255108833312988
+        ],
+        "requested_action": 1,
+        "requested_action_meaning": "FIRE",
+        "seed": 204
+      },
+      {
+        "agent_step": 887,
+        "ale_input_action": 0,
+        "ale_input_action_meaning": "NOOP",
+        "emulator_frame": 3573,
+        "episode_index": 2,
+        "observation_sha256": "a18becd13f91122c093ab7846376cefc1d55ffc404946ea10977ac24e8a69f05",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          0.8237898945808411,
+          0.8073011636734009,
+          0.7894403338432312,
+          0.7510671019554138
+        ],
+        "requested_action": 0,
+        "requested_action_meaning": "NOOP",
+        "seed": 204
+      },
+      {
+        "agent_step": 888,
+        "ale_input_action": 0,
+        "ale_input_action_meaning": "NOOP",
+        "emulator_frame": 3577,
+        "episode_index": 2,
+        "observation_sha256": "bc993efed0d68ad22e7c87644e652bd14e059d2aa89184ca981b50ce13ea4580",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          0.7264061570167542,
+          0.6908741593360901,
+          0.6884985566139221,
+          0.6824526190757751
+        ],
+        "requested_action": 0,
+        "requested_action_meaning": "NOOP",
+        "seed": 204
+      },
+      {
+        "agent_step": 889,
+        "ale_input_action": 0,
+        "ale_input_action_meaning": "NOOP",
+        "emulator_frame": 3581,
+        "episode_index": 2,
+        "observation_sha256": "0f8474b88d4adec1e766e3fb8b57ac468522d268df8d34e8a2db0b209f7377c2",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          0.7028726935386658,
+          0.693707287311554,
+          0.6563103795051575,
+          0.6750455498695374
+        ],
+        "requested_action": 0,
+        "requested_action_meaning": "NOOP",
+        "seed": 204
+      },
+      {
+        "agent_step": 890,
+        "ale_input_action": 1,
+        "ale_input_action_meaning": "FIRE",
+        "emulator_frame": 3585,
+        "episode_index": 2,
+        "observation_sha256": "27bd0e96d82b5a8c0a28b19e84e562d527551b6c1ef9607794b40eff52dc856d",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          0.704243004322052,
+          0.7064034342765808,
+          0.6522518992424011,
+          0.6786569952964783
+        ],
+        "requested_action": 1,
+        "requested_action_meaning": "FIRE",
+        "seed": 204
+      },
+      {
+        "agent_step": 891,
+        "ale_input_action": 1,
+        "ale_input_action_meaning": "FIRE",
+        "emulator_frame": 3589,
+        "episode_index": 2,
+        "observation_sha256": "081a2294ea4d025ac6fdb022ca1ec6f8434fa6779d29b3484319ff4da5cd35a6",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          0.7042862176895142,
+          0.7065308094024658,
+          0.6498570442199707,
+          0.6810963153839111
+        ],
+        "requested_action": 1,
+        "requested_action_meaning": "FIRE",
+        "seed": 204
+      }
+    ],
+    "episode_index": 2,
+    "life_loss_count": 1,
+    "life_loss_event": 5,
+    "loss_agent_step": 891,
+    "loss_emulator_frame": 3590,
+    "post_step_array_key": "window_0009_post_step",
+    "post_step_observation_sha256": "081a2294ea4d025ac6fdb022ca1ec6f8434fa6779d29b3484319ff4da5cd35a6",
+    "post_step_observation_unavailable_reason": null,
+    "seed": 204
+  },
+  {
+    "array_key": "window_0010",
+    "decision_metadata": [
+      {
+        "agent_step": 303,
+        "ale_input_action": 1,
+        "ale_input_action_meaning": "FIRE",
+        "emulator_frame": 1212,
+        "episode_index": 3,
+        "observation_sha256": "2177010180b2169d63e3eecab18dbc46f1d66ae4a467542b92142933ae416e97",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.402446985244751,
+          2.5459446907043457,
+          2.3805980682373047,
+          2.4374170303344727
+        ],
+        "requested_action": 1,
+        "requested_action_meaning": "FIRE",
+        "seed": 305
+      },
+      {
+        "agent_step": 304,
+        "ale_input_action": 1,
+        "ale_input_action_meaning": "FIRE",
+        "emulator_frame": 1216,
+        "episode_index": 3,
+        "observation_sha256": "59619294c94649b2dcd69372b31e088c317ea651aca2a2e1b387b95124bacce5",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.5060629844665527,
+          2.583658456802368,
+          2.481283664703369,
+          2.5077741146087646
+        ],
+        "requested_action": 1,
+        "requested_action_meaning": "FIRE",
+        "seed": 305
+      },
+      {
+        "agent_step": 305,
+        "ale_input_action": 1,
+        "ale_input_action_meaning": "FIRE",
+        "emulator_frame": 1220,
+        "episode_index": 3,
+        "observation_sha256": "fa18745237b89c896ee8818cc68ae5ac8e4c3671c7270252457909acfd64c505",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.3698277473449707,
+          2.5105667114257812,
+          2.375993251800537,
+          2.3622078895568848
+        ],
+        "requested_action": 1,
+        "requested_action_meaning": "FIRE",
+        "seed": 305
+      },
+      {
+        "agent_step": 306,
+        "ale_input_action": 1,
+        "ale_input_action_meaning": "FIRE",
+        "emulator_frame": 1224,
+        "episode_index": 3,
+        "observation_sha256": "7af284c01f3d6e790802f4ba82f2d7c12bf2baf6e7c28bf2141027992ba65d23",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.2949514389038086,
+          2.474032163619995,
+          2.3431968688964844,
+          2.269716501235962
+        ],
+        "requested_action": 1,
+        "requested_action_meaning": "FIRE",
+        "seed": 305
+      },
+      {
+        "agent_step": 307,
+        "ale_input_action": 1,
+        "ale_input_action_meaning": "FIRE",
+        "emulator_frame": 1228,
+        "episode_index": 3,
+        "observation_sha256": "cc6a80b2ea2e41eeb9c658f60231602906a689aa32e2c4e7d62d22f38b80f686",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.286433219909668,
+          2.467316150665283,
+          2.3370704650878906,
+          2.2570810317993164
+        ],
+        "requested_action": 1,
+        "requested_action_meaning": "FIRE",
+        "seed": 305
+      },
+      {
+        "agent_step": 308,
+        "ale_input_action": 1,
+        "ale_input_action_meaning": "FIRE",
+        "emulator_frame": 1232,
+        "episode_index": 3,
+        "observation_sha256": "ba0f5eda3fb30b69dc07b6b3249a9b5df0b33548e647347169c1d453b81d72ea",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.2863566875457764,
+          2.4676671028137207,
+          2.337353229522705,
+          2.257230758666992
+        ],
+        "requested_action": 1,
+        "requested_action_meaning": "FIRE",
+        "seed": 305
+      },
+      {
+        "agent_step": 309,
+        "ale_input_action": 1,
+        "ale_input_action_meaning": "FIRE",
+        "emulator_frame": 1236,
+        "episode_index": 3,
+        "observation_sha256": "13394a0514d491aa3e9b916336203197c50c20ea36d2b3f5419daca9b9612379",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.2864277362823486,
+          2.4679534435272217,
+          2.337186813354492,
+          2.257077693939209
+        ],
+        "requested_action": 1,
+        "requested_action_meaning": "FIRE",
+        "seed": 305
+      },
+      {
+        "agent_step": 310,
+        "ale_input_action": 1,
+        "ale_input_action_meaning": "FIRE",
+        "emulator_frame": 1240,
+        "episode_index": 3,
+        "observation_sha256": "13394a0514d491aa3e9b916336203197c50c20ea36d2b3f5419daca9b9612379",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.2864277362823486,
+          2.4679534435272217,
+          2.337186813354492,
+          2.257077693939209
+        ],
+        "requested_action": 1,
+        "requested_action_meaning": "FIRE",
+        "seed": 305
+      }
+    ],
+    "episode_index": 3,
+    "life_loss_count": 1,
+    "life_loss_event": 1,
+    "loss_agent_step": 310,
+    "loss_emulator_frame": 1244,
+    "post_step_array_key": "window_0010_post_step",
+    "post_step_observation_sha256": "6faf15d6b2cb5cde817c94284a01b9138861b6e0d31e04551d5b0f4f8c36ce83",
+    "post_step_observation_unavailable_reason": null,
+    "seed": 305
+  },
+  {
+    "array_key": "window_0011",
+    "decision_metadata": [
+      {
+        "agent_step": 473,
+        "ale_input_action": 3,
+        "ale_input_action_meaning": "LEFT",
+        "emulator_frame": 1892,
+        "episode_index": 3,
+        "observation_sha256": "8638001d7833c8c8bccd0e532cee8991a71e77f6b83078b46d1a376e278a7f22",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.782588243484497,
+          2.747652769088745,
+          2.7466986179351807,
+          2.8152105808258057
+        ],
+        "requested_action": 3,
+        "requested_action_meaning": "LEFT",
+        "seed": 305
+      },
+      {
+        "agent_step": 474,
+        "ale_input_action": 0,
+        "ale_input_action_meaning": "NOOP",
+        "emulator_frame": 1896,
+        "episode_index": 3,
+        "observation_sha256": "1a7e83e6acc55ad0a91d7f733801e3e49ffa00ece15e86013b2a51ee77d056f4",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.8513896465301514,
+          2.7654478549957275,
+          2.6032984256744385,
+          2.7295963764190674
+        ],
+        "requested_action": 0,
+        "requested_action_meaning": "NOOP",
+        "seed": 305
+      },
+      {
+        "agent_step": 475,
+        "ale_input_action": 0,
+        "ale_input_action_meaning": "NOOP",
+        "emulator_frame": 1900,
+        "episode_index": 3,
+        "observation_sha256": "835c0e838a9f3a48c099659709bfa0628e756985b7354124de0c2ba59870ccac",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.8836145401000977,
+          2.819143295288086,
+          2.6053450107574463,
+          2.6375033855438232
+        ],
+        "requested_action": 0,
+        "requested_action_meaning": "NOOP",
+        "seed": 305
+      },
+      {
+        "agent_step": 476,
+        "ale_input_action": 0,
+        "ale_input_action_meaning": "NOOP",
+        "emulator_frame": 1904,
+        "episode_index": 3,
+        "observation_sha256": "6d2640a763d598f7db1e4a46cf1bfd5b692e38691d79ab5c563a90ccf0b42fea",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.8851184844970703,
+          2.8783652782440186,
+          2.55802583694458,
+          2.756603717803955
+        ],
+        "requested_action": 0,
+        "requested_action_meaning": "NOOP",
+        "seed": 305
+      },
+      {
+        "agent_step": 477,
+        "ale_input_action": 3,
+        "ale_input_action_meaning": "LEFT",
+        "emulator_frame": 1908,
+        "episode_index": 3,
+        "observation_sha256": "8d968ee7559bb0a461bf608f5f41f0e28f635bf14db063e1c0a60ae242f89544",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.8353188037872314,
+          2.87985897064209,
+          2.8204500675201416,
+          2.9446170330047607
+        ],
+        "requested_action": 3,
+        "requested_action_meaning": "LEFT",
+        "seed": 305
+      },
+      {
+        "agent_step": 478,
+        "ale_input_action": 3,
+        "ale_input_action_meaning": "LEFT",
+        "emulator_frame": 1912,
+        "episode_index": 3,
+        "observation_sha256": "7f2f751ff0352dffd412472fac70250af1bcce46cd15c094fc2e8be9912471db",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.6105005741119385,
+          2.6517205238342285,
+          2.6546764373779297,
+          2.753459930419922
+        ],
+        "requested_action": 3,
+        "requested_action_meaning": "LEFT",
+        "seed": 305
+      },
+      {
+        "agent_step": 479,
+        "ale_input_action": 3,
+        "ale_input_action_meaning": "LEFT",
+        "emulator_frame": 1916,
+        "episode_index": 3,
+        "observation_sha256": "a22ae34c4d4b94779ea3609b5d632726c86214abd03f0faab2fbcd8f365f467c",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.654268741607666,
+          2.681182384490967,
+          2.6909162998199463,
+          2.7735238075256348
+        ],
+        "requested_action": 3,
+        "requested_action_meaning": "LEFT",
+        "seed": 305
+      },
+      {
+        "agent_step": 480,
+        "ale_input_action": 2,
+        "ale_input_action_meaning": "RIGHT",
+        "emulator_frame": 1920,
+        "episode_index": 3,
+        "observation_sha256": "2bdf850fc9fdc0056932bcd1c8ae63875ae7a56d7afb359320f321299e727b89",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.600104808807373,
+          2.6364901065826416,
+          2.6929588317871094,
+          2.6585500240325928
+        ],
+        "requested_action": 2,
+        "requested_action_meaning": "RIGHT",
+        "seed": 305
+      }
+    ],
+    "episode_index": 3,
+    "life_loss_count": 1,
+    "life_loss_event": 2,
+    "loss_agent_step": 480,
+    "loss_emulator_frame": 1924,
+    "post_step_array_key": "window_0011_post_step",
+    "post_step_observation_sha256": "576757aeb8f6f6bc5b800543c8ab0cd12aa334734c5a5572acf665d8a2b912e7",
+    "post_step_observation_unavailable_reason": null,
+    "seed": 305
+  },
+  {
+    "array_key": "window_0012",
+    "decision_metadata": [
+      {
+        "agent_step": 788,
+        "ale_input_action": 1,
+        "ale_input_action_meaning": "FIRE",
+        "emulator_frame": 3152,
+        "episode_index": 3,
+        "observation_sha256": "9e64be6b9b13309812f00db9a71dd627abd7af01d6fa4909bb4daf8b96f960ca",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.01009202003479,
+          2.1113719940185547,
+          2.0463790893554688,
+          2.090463399887085
+        ],
+        "requested_action": 1,
+        "requested_action_meaning": "FIRE",
+        "seed": 305
+      },
+      {
+        "agent_step": 789,
+        "ale_input_action": 1,
+        "ale_input_action_meaning": "FIRE",
+        "emulator_frame": 3156,
+        "episode_index": 3,
+        "observation_sha256": "51d63163e5b3cfbdf8747def8388f92b72f4832f1f36d8cada91a582ca30dac4",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          1.995437741279602,
+          2.196655035018921,
+          2.0258114337921143,
+          2.045456647872925
+        ],
+        "requested_action": 1,
+        "requested_action_meaning": "FIRE",
+        "seed": 305
+      },
+      {
+        "agent_step": 790,
+        "ale_input_action": 1,
+        "ale_input_action_meaning": "FIRE",
+        "emulator_frame": 3160,
+        "episode_index": 3,
+        "observation_sha256": "ba83a1dfd901ba6118784bf297b93ff729295ecdae52c75eed558778484860d2",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.0290958881378174,
+          2.2711565494537354,
+          2.0764920711517334,
+          1.988893747329712
+        ],
+        "requested_action": 1,
+        "requested_action_meaning": "FIRE",
+        "seed": 305
+      },
+      {
+        "agent_step": 791,
+        "ale_input_action": 1,
+        "ale_input_action_meaning": "FIRE",
+        "emulator_frame": 3164,
+        "episode_index": 3,
+        "observation_sha256": "3168d044a32c04e22565bbfbc1e26bfece32e946804109c8d5e7b681ff3a437b",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.0604658126831055,
+          2.2670347690582275,
+          2.0577359199523926,
+          2.074836254119873
+        ],
+        "requested_action": 1,
+        "requested_action_meaning": "FIRE",
+        "seed": 305
+      },
+      {
+        "agent_step": 792,
+        "ale_input_action": 1,
+        "ale_input_action_meaning": "FIRE",
+        "emulator_frame": 3168,
+        "episode_index": 3,
+        "observation_sha256": "ede97a81a24e99f3b738345742f0201657d96df0755e55613cd6591a23ac5d06",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.0696403980255127,
+          2.2681827545166016,
+          2.0669124126434326,
+          2.021609306335449
+        ],
+        "requested_action": 1,
+        "requested_action_meaning": "FIRE",
+        "seed": 305
+      },
+      {
+        "agent_step": 793,
+        "ale_input_action": 1,
+        "ale_input_action_meaning": "FIRE",
+        "emulator_frame": 3172,
+        "episode_index": 3,
+        "observation_sha256": "503b73151a3c4cbf8f8cb98192ee0c50971f33d235367b1c5496a5a31b2a2ef3",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.086109161376953,
+          2.2845873832702637,
+          2.068497896194458,
+          2.0366907119750977
+        ],
+        "requested_action": 1,
+        "requested_action_meaning": "FIRE",
+        "seed": 305
+      },
+      {
+        "agent_step": 794,
+        "ale_input_action": 1,
+        "ale_input_action_meaning": "FIRE",
+        "emulator_frame": 3176,
+        "episode_index": 3,
+        "observation_sha256": "24d64055852488a090455d3d0e2fd81d62c56bd5cd6fb9879292cfeafe2ec53c",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.087982654571533,
+          2.2858541011810303,
+          2.0684683322906494,
+          2.039275884628296
+        ],
+        "requested_action": 1,
+        "requested_action_meaning": "FIRE",
+        "seed": 305
+      },
+      {
+        "agent_step": 795,
+        "ale_input_action": 1,
+        "ale_input_action_meaning": "FIRE",
+        "emulator_frame": 3180,
+        "episode_index": 3,
+        "observation_sha256": "24d64055852488a090455d3d0e2fd81d62c56bd5cd6fb9879292cfeafe2ec53c",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.087982654571533,
+          2.2858541011810303,
+          2.0684683322906494,
+          2.039275884628296
+        ],
+        "requested_action": 1,
+        "requested_action_meaning": "FIRE",
+        "seed": 305
+      }
+    ],
+    "episode_index": 3,
+    "life_loss_count": 1,
+    "life_loss_event": 3,
+    "loss_agent_step": 795,
+    "loss_emulator_frame": 3184,
+    "post_step_array_key": "window_0012_post_step",
+    "post_step_observation_sha256": "ccf21c61847773567423ff1d50caa1c1bab2a0e455166babaa758b0272ac43c1",
+    "post_step_observation_unavailable_reason": null,
+    "seed": 305
+  },
+  {
+    "array_key": "window_0013",
+    "decision_metadata": [
+      {
+        "agent_step": 1099,
+        "ale_input_action": 3,
+        "ale_input_action_meaning": "LEFT",
+        "emulator_frame": 4396,
+        "episode_index": 3,
+        "observation_sha256": "dcdf20b6c0ba398b93e749a62b74ffb37c219aea193fc0c7b22a1a022860324c",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.325436592102051,
+          2.4763224124908447,
+          2.425257921218872,
+          2.5571532249450684
+        ],
+        "requested_action": 3,
+        "requested_action_meaning": "LEFT",
+        "seed": 305
+      },
+      {
+        "agent_step": 1100,
+        "ale_input_action": 1,
+        "ale_input_action_meaning": "FIRE",
+        "emulator_frame": 4400,
+        "episode_index": 3,
+        "observation_sha256": "8346f255bce006b8bef0d884b5c21d5cd913515b39df779277eb5330d8765b42",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.0303642749786377,
+          2.283970594406128,
+          2.1178529262542725,
+          2.089257001876831
+        ],
+        "requested_action": 1,
+        "requested_action_meaning": "FIRE",
+        "seed": 305
+      },
+      {
+        "agent_step": 1101,
+        "ale_input_action": 1,
+        "ale_input_action_meaning": "FIRE",
+        "emulator_frame": 4404,
+        "episode_index": 3,
+        "observation_sha256": "f0848cdacf8b436119675c780ea15d5415e7571a37e2e1e1753dced2122ee6ee",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          2.4813554286956787,
+          2.6511483192443848,
+          2.6200571060180664,
+          2.3253397941589355
+        ],
+        "requested_action": 1,
+        "requested_action_meaning": "FIRE",
+        "seed": 305
+      },
+      {
+        "agent_step": 1102,
+        "ale_input_action": 1,
+        "ale_input_action_meaning": "FIRE",
+        "emulator_frame": 4408,
+        "episode_index": 3,
+        "observation_sha256": "33a7cbf32bc8582a460ad8df3526679b2991c0508370b39d75535d84189d0dce",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          1.9623527526855469,
+          2.2357726097106934,
+          2.150733232498169,
+          1.8706570863723755
+        ],
+        "requested_action": 1,
+        "requested_action_meaning": "FIRE",
+        "seed": 305
+      },
+      {
+        "agent_step": 1103,
+        "ale_input_action": 1,
+        "ale_input_action_meaning": "FIRE",
+        "emulator_frame": 4412,
+        "episode_index": 3,
+        "observation_sha256": "7ea46be6c43a88d142b77a7b5d759706349c8595eadadb43765d53ef48846e56",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          1.9655005931854248,
+          2.260204553604126,
+          2.16125750541687,
+          1.874903917312622
+        ],
+        "requested_action": 1,
+        "requested_action_meaning": "FIRE",
+        "seed": 305
+      },
+      {
+        "agent_step": 1104,
+        "ale_input_action": 1,
+        "ale_input_action_meaning": "FIRE",
+        "emulator_frame": 4416,
+        "episode_index": 3,
+        "observation_sha256": "f9f0be8aec8b56cedad88f4a956b97a00e72804d333e14dec977fc5feec74aa4",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          1.9849853515625,
+          2.263270616531372,
+          2.171781539916992,
+          1.8950612545013428
+        ],
+        "requested_action": 1,
+        "requested_action_meaning": "FIRE",
+        "seed": 305
+      },
+      {
+        "agent_step": 1105,
+        "ale_input_action": 1,
+        "ale_input_action_meaning": "FIRE",
+        "emulator_frame": 4420,
+        "episode_index": 3,
+        "observation_sha256": "7ea6390491c5524664412504bf28ec50d4431fa43f4afbcfbbf7d23444f9c937",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          1.9840550422668457,
+          2.2565112113952637,
+          2.1655571460723877,
+          1.880979061126709
+        ],
+        "requested_action": 1,
+        "requested_action_meaning": "FIRE",
+        "seed": 305
+      },
+      {
+        "agent_step": 1106,
+        "ale_input_action": 1,
+        "ale_input_action_meaning": "FIRE",
+        "emulator_frame": 4424,
+        "episode_index": 3,
+        "observation_sha256": "7ea6390491c5524664412504bf28ec50d4431fa43f4afbcfbbf7d23444f9c937",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          1.9840550422668457,
+          2.2565112113952637,
+          2.1655571460723877,
+          1.880979061126709
+        ],
+        "requested_action": 1,
+        "requested_action_meaning": "FIRE",
+        "seed": 305
+      }
+    ],
+    "episode_index": 3,
+    "life_loss_count": 1,
+    "life_loss_event": 4,
+    "loss_agent_step": 1106,
+    "loss_emulator_frame": 4428,
+    "post_step_array_key": "window_0013_post_step",
+    "post_step_observation_sha256": "7ea6390491c5524664412504bf28ec50d4431fa43f4afbcfbbf7d23444f9c937",
+    "post_step_observation_unavailable_reason": null,
+    "seed": 305
+  },
+  {
+    "array_key": "window_0014",
+    "decision_metadata": [
+      {
+        "agent_step": 1196,
+        "ale_input_action": 0,
+        "ale_input_action_meaning": "NOOP",
+        "emulator_frame": 4784,
+        "episode_index": 3,
+        "observation_sha256": "ec412fdcc7838c7447a45ddb0e04aba6bd478164948bf2bbb667270940956430",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          1.0675657987594604,
+          1.0047564506530762,
+          1.0140036344528198,
+          1.0484181642532349
+        ],
+        "requested_action": 0,
+        "requested_action_meaning": "NOOP",
+        "seed": 305
+      },
+      {
+        "agent_step": 1197,
+        "ale_input_action": 1,
+        "ale_input_action_meaning": "FIRE",
+        "emulator_frame": 4788,
+        "episode_index": 3,
+        "observation_sha256": "e1ae400f60d4da16063574d1315b0c882eb7ec78ed7db047cb3926f867164cd6",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          0.7461650967597961,
+          0.7595511674880981,
+          0.7515502572059631,
+          0.7299966216087341
+        ],
+        "requested_action": 1,
+        "requested_action_meaning": "FIRE",
+        "seed": 305
+      },
+      {
+        "agent_step": 1198,
+        "ale_input_action": 2,
+        "ale_input_action_meaning": "RIGHT",
+        "emulator_frame": 4792,
+        "episode_index": 3,
+        "observation_sha256": "d2136597fb77323e7cc73b0b6b07f5bcd10fe8109c898e6b86c91591ee1be798",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          0.993213951587677,
+          1.0403367280960083,
+          1.0871080160140991,
+          0.9154483079910278
+        ],
+        "requested_action": 2,
+        "requested_action_meaning": "RIGHT",
+        "seed": 305
+      },
+      {
+        "agent_step": 1199,
+        "ale_input_action": 1,
+        "ale_input_action_meaning": "FIRE",
+        "emulator_frame": 4796,
+        "episode_index": 3,
+        "observation_sha256": "88b4fdcd76665afe94d59781d2b1aab2276471205c7b4206e480712960254e62",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          1.0072264671325684,
+          1.1282962560653687,
+          1.0683029890060425,
+          0.6848862767219543
+        ],
+        "requested_action": 1,
+        "requested_action_meaning": "FIRE",
+        "seed": 305
+      },
+      {
+        "agent_step": 1200,
+        "ale_input_action": 2,
+        "ale_input_action_meaning": "RIGHT",
+        "emulator_frame": 4800,
+        "episode_index": 3,
+        "observation_sha256": "fd2a4c6e949fb9c9595029fd46e9a064c91e3b5bd09733b4d038446bc6c6fe5f",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          0.9357807636260986,
+          1.0591273307800293,
+          1.2470438480377197,
+          0.8473407626152039
+        ],
+        "requested_action": 2,
+        "requested_action_meaning": "RIGHT",
+        "seed": 305
+      },
+      {
+        "agent_step": 1201,
+        "ale_input_action": 2,
+        "ale_input_action_meaning": "RIGHT",
+        "emulator_frame": 4804,
+        "episode_index": 3,
+        "observation_sha256": "a7c024d7aea539212523762f85a2c29d1bcbd8e2e5eb06c438d828a53591bee1",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          0.5605396628379822,
+          0.6106622815132141,
+          0.8504401445388794,
+          0.5234043002128601
+        ],
+        "requested_action": 2,
+        "requested_action_meaning": "RIGHT",
+        "seed": 305
+      },
+      {
+        "agent_step": 1202,
+        "ale_input_action": 2,
+        "ale_input_action_meaning": "RIGHT",
+        "emulator_frame": 4808,
+        "episode_index": 3,
+        "observation_sha256": "ed8c8081be97f6b71c2f4e74163eeca25833b2495522024af2aa856e91271d03",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          0.7514718174934387,
+          0.8218315839767456,
+          0.8706941604614258,
+          0.8105533123016357
+        ],
+        "requested_action": 2,
+        "requested_action_meaning": "RIGHT",
+        "seed": 305
+      },
+      {
+        "agent_step": 1203,
+        "ale_input_action": 2,
+        "ale_input_action_meaning": "RIGHT",
+        "emulator_frame": 4812,
+        "episode_index": 3,
+        "observation_sha256": "a1c2e9adbb51ff054d0944fd500f997e2664d23dbb5ecde72a5de42d45d2e2e1",
+        "raw_q_dtype": "float32",
+        "raw_q_values": [
+          0.6074825525283813,
+          0.67453932762146,
+          0.7206737399101257,
+          0.673812985420227
+        ],
+        "requested_action": 2,
+        "requested_action_meaning": "RIGHT",
+        "seed": 305
+      }
+    ],
+    "episode_index": 3,
+    "life_loss_count": 1,
+    "life_loss_event": 5,
+    "loss_agent_step": 1203,
+    "loss_emulator_frame": 4816,
+    "post_step_array_key": "window_0014_post_step",
+    "post_step_observation_sha256": "a209282a1b08faae53384fcc6d6302e541e79c101758a105d0362f8e36d16b8d",
+    "post_step_observation_unavailable_reason": null,
+    "seed": 305
+  }
+]

@@ -1,0 +1,93 @@
+{
+  "artifacts_sha256": {
+    "loss_window_seed103_event1.png": "fc76b69525e8bd02651c368f09166d9f849b3ee0e5af71a112167b20f3b37d8e",
+    "loss_window_seed103_event2.png": "8481b22650ec253c2fc36030a3356a320319738ead122ba3f1a0f4a9528874d7",
+    "loss_window_seed103_event3.png": "4411e5c832a3bfbc53bf8ae7eaa0d48bb778b845a775be5ef181196bee89db9d",
+    "loss_window_seed103_event4.png": "a38d1894b9849edeb8d08e08ceee2e8f542a972355bd228d1f2e67e9d3499058",
+    "loss_window_seed103_event5.png": "ff59b98d79101f062f12cdb6833c5433e52f1c684741e2b17e79e7d2fd23d17e",
+    "loss_window_seed204_event1.png": "ee2892cadeb7d763c7e8ebc2d261efcb8da8f560bd71fb279d32dd239ceb2556",
+    "loss_window_seed204_event2.png": "a7fae206cc9f1a3b2908c496b34315ad05012c4a0c05cd6d31373b6aef80ab26",
+    "loss_window_seed204_event3.png": "8f10f555fa066138b83ce7b9748b1148c708ee16b281038407d40df3868dae67",
+    "loss_window_seed204_event4.png": "4e85618581d07d5e8e4299860cf900681760413930914706c76a4d0e6d57f481",
+    "loss_window_seed204_event5.png": "408e702226cce0b2bf23f542e4a0539b4c1a48938fda0c49431eb55195dffe51",
+    "loss_window_seed305_event1.png": "20c5c47b1f17f70ef0d57345ed7d682b86171eb1fe1e169ec70c4a07af4a63af",
+    "loss_window_seed305_event2.png": "522316597195ec5c3fcf77c11225f9f84fe3837f3c03d9b49cac1ba05bc2b1b3",
+    "loss_window_seed305_event3.png": "4cd9c755cc19f104f0a161d6ee35f530bb297faee7a4905310bfb51622b80cd1",
+    "loss_window_seed305_event4.png": "674156c7ce86a82cabba33355b14456b55810d72a207c1956d03c54f6fb0a141",
+    "loss_window_seed305_event5.png": "959a5f67faabafeb14d9b4ec8f93422d011b8d62a3a3ea92de52f844f343ab09",
+    "loss_windows.npz": "81ccf5d7ba831d51580e74c4141eca7dcc9dc29412cf4f1b346bb20ff9160fb1",
+    "loss_windows_index.json": "fb884f73434fb74762ab6d35409027138bec70e72182a9dbe8596b4b7a0232b7",
+    "report.md": "e74a8552032986e1944df2c7742cfd21e3aac3900747c2629e5cc749fc864a4c",
+    "results.json": "87951ffaa8c7584da03bb9705eacbb4a838c1ff28a19d15a9e5a2fa02008d925",
+    "trajectory.jsonl": "ccee68b19ae3209fb4ebccf39d0602f94ffff9b5ae5c91f2b09b18a9b4c3d1af"
+  },
+  "classification": "INCONCLUSIVE",
+  "collection_wall_seconds": 4.954702125003678,
+  "completion_audit_sha256": "43d431e77a4a3b60dd720933ee399767d456a6c633ee93aab7265d92e4f1b64b",
+  "completion_source_sha256": "9444a7955e65f4fe9e1568f5b321d8c9ffc0a105ae0d8549c5c76bc99c08f926",
+  "contract_sha256": "7eca5ae5262a28aeabf3be658f8275a68f3d2ae40cc74379400be2890dc31a2a",
+  "episodes": [
+    {
+      "clear_status": "NO_CLEAR",
+      "episode_index": 1,
+      "native_frames": 4138,
+      "seed": 103,
+      "stop_reason": "terminated"
+    },
+    {
+      "clear_status": "NO_CLEAR",
+      "episode_index": 2,
+      "native_frames": 3561,
+      "seed": 204,
+      "stop_reason": "terminated"
+    },
+    {
+      "clear_status": "NO_CLEAR",
+      "episode_index": 3,
+      "native_frames": 4812,
+      "seed": 305,
+      "stop_reason": "terminated"
+    }
+  ],
+  "finalization_wall_seconds": 0.5741544780030381,
+  "formal_command": "timeout --signal=TERM --kill-after=5s 560s env PYTHONPATH=/tmp/issue41-onnxruntime python -m scripts.evaluation.run_issue45_loss_window_audit_eval --contract configs/eval/breakout_contract_v2.json --inference-spec configs/inference/inference_spec.json --model web/public/models/final_model/model.onnx --episode-seeds 103,204,305 --loss-window-decisions 8 --max-native-frames-per-episode 108000 --output-dir outputs/issue-45-loss-window-audit",
+  "inference_spec_sha256": "b396989041eff00396789c0f878fa783b071b0d3327aa1638c891a25d3f84507",
+  "issue": 45,
+  "metadata_inference_spec_sha256": "68637a63d3f0242f74089314049251521bec14a6fa3267b57fa46470acfff8ec",
+  "metadata_sha256": "fbb9868fa0fb0ad7ce511e59b368efbef984279178c554dede0ae7e950731512",
+  "model_sha256": "cf90c74b1d09d5d7e2e0c71014f2daef2b5e1833425d300da06e34d1e4ef7f12",
+  "native_frames": 12511,
+  "planner_validation_status": "NOT_REQUIRED",
+  "runtime": {
+    "model_input_preflight": "zero uint8 [4,84,84], cast float32 and divide by 255 once; no ALE frames",
+    "onnx_input": {
+      "dtype": "float32",
+      "name": "observation",
+      "shape": [
+        1,
+        4,
+        84,
+        84
+      ]
+    },
+    "onnx_output": {
+      "dtype": "float32",
+      "name": "q_values",
+      "shape": [
+        1,
+        4
+      ]
+    },
+    "onnxruntime": "1.22.1",
+    "providers": [
+      "CPUExecutionProvider"
+    ],
+    "python": "3.12.14",
+    "requested_providers": [
+      "CPUExecutionProvider"
+    ]
+  },
+  "scheduled_seeds_remaining": [],
+  "source_commit": "82b72e1a7e1af89a4b3223ee221ab10e9d9a4164",
+  "total_wall_seconds": 5.528857033001259
+}

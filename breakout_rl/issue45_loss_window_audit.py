@@ -188,6 +188,44 @@ def _pack_windows(events: list[dict[str, Any]], output_dir: Path) -> tuple[Path,
     return path, sha256(path)
 
 
+def write_report(result: dict[str, Any], output_dir: Path) -> None:
+    """Render the descriptive post-run report from saved result and window indexes."""
+    loss_index = json.loads((output_dir / result["artifacts"]["loss_windows_index"]).read_text(encoding="utf-8"))
+    episodes = result["episodes"]
+    verified = result["has_verified_clear"]
+    remaining = result["scheduled_seeds_remaining"]
+    if verified:
+        schedule_line = (f"Schedule stopped after the first provenance-verified candidate at seed {episodes[-1]['seed']}; "
+                         f"remaining seeds `{remaining}` were not run.")
+    elif result["evaluation_status"] == "completed":
+        schedule_line = "All predeclared seeds completed; none were skipped."
+    else:
+        schedule_line = f"Seeds not run because collection was incomplete: `{remaining}`."
+    report = ["# Issue #45: Contract v2 Life-Loss Observation Windows", "",
+        f"**{result['classification']}** — Has Verified Clear: **{'YES' if verified else 'NO'}**.", "",
+        f"Status: `{result['evaluation_status']}`; episodes: `{len(episodes)}/3`; life-loss windows: `{result['captured_window_count']}`; native frames: `{result['native_frames']}`; wall seconds: `{result['wall_seconds']:.2f}`.",
+        f"Formal run source commit: `{result['source_provenance']['source_commit']}`. This report was refreshed offline from the preserved results and window index after collection; no further ALE run occurred.",
+        schedule_line,
+        f"Secondary coverage: `{result['captured_life_loss_count']}` evaluator-detected life losses; `{result['captured_window_count']}` loss windows captured.",
+        "If no clear has complete provenance, the primary result is INCONCLUSIVE. This runner records a provenance-complete candidate as pending Planner validation; only independent Planner review may set GOAL_REACHED.",
+        "Life-loss windows contain exact uint8 model-input stacks and per-step raw Q/action metadata. Contact sheets are diagnostic only and never clear evidence.",
+        f"Model `{MODEL_SHA256}`; metadata `{METADATA_SHA256}`; current inference spec `{SPEC_CURRENT_SHA256}` (metadata-declared older spec `{SPEC_METADATA_SHA256}`); Contract v2 `{CONTRACT_SHA256}`; audit `{AUDIT_SHA256}`.",
+        f"ONNX Runtime `{result['runtime']['onnxruntime']}`, providers `{result['runtime']['providers']}`. Source commit `{result['source_provenance']['source_commit']}`, dirty `{result['source_provenance']['source_working_tree_dirty']}`. Original PyTorch `.pt` bytes were absent and lineage remains metadata-declared.",
+        f"Requested execution context: `{REQUESTED_MODEL}` / `{REQUESTED_REASONING_EFFORT}`; `MODEL_ROUTING_VERIFICATION: {MODEL_ROUTING_VERIFICATION}`.",
+        "", "## Episode outcomes", "", "| Seed | Raw score | Lives remaining | Native frames | Stop | Clear status |",
+        "|---:|---:|---:|---:|---|---|"]
+    for episode in episodes:
+        report.append(f"| {episode['seed']} | {episode['raw_score']} | {episode['lives_remaining']} | {episode['native_frames']} | {episode['stop_reason']} | {episode['clear_status']} |")
+    report += ["", "## Life-loss windows", "",
+        "| Seed | Episode | Event | Loss step | Frame | Decisions captured | Post-step observation | Contact sheet |",
+        "|---:|---:|---:|---:|---:|---:|:---:|---|"]
+    for event, index_entry in zip(result["life_loss_events"], loss_index):
+        report.append(f"| {event['seed']} | {event['episode_index']} | {event['life_loss_event']} | {event['agent_step']} | {event['emulator_frame']} | {len(index_entry['decision_metadata'])} | {'yes' if index_entry['post_step_array_key'] else 'no'} | [{event['contact_sheet']}]({event['contact_sheet']}) |")
+    report += ["", f"Lossless uint8 arrays: `{result['artifacts']['loss_windows']}`; `{result['artifacts']['loss_windows_index']}` binds every array to seed, episode, life-loss event/count, loss step/frame, per-decision Q and both action values.",
+        "RAM, score, lives, completion, and screenshots are evaluator diagnostics only; sticky-resolved physical actions remain unknown.", ""]
+    (output_dir / "report.md").write_text("\n".join(report), encoding="utf-8")
+
+
 def run(contract_path: Path, spec_path: Path, model_path: Path, episode_seeds: tuple[int, ...],
         loss_window_decisions: int, max_frames_per_episode: int, output_dir: Path) -> dict[str, Any]:
     started = time.perf_counter()
@@ -405,21 +443,7 @@ def run(contract_path: Path, spec_path: Path, model_path: Path, episode_seeds: t
     result_path = output_dir / "results.json"
     result["finalization_wall_seconds"] = time.perf_counter() - collection_end
     result["wall_seconds"] = time.perf_counter() - started
-    report = ["# Issue #45: Contract v2 Life-Loss Observation Windows", "",
-        f"**{classification}** — Has Verified Clear: **{'YES' if verified else 'NO'}**.", "",
-        f"Status: `{status}`; episodes: `{len(episodes)}/3`; life-loss windows: `{len(loss_events)}`; native frames: `{total_native}`; wall seconds: `{result['wall_seconds']:.2f}`.",
-        (f"Schedule stopped after the first provenance-verified candidate at seed {episodes[-1]['seed']}; remaining seeds `{result['scheduled_seeds_remaining']}` were not run."
-         if verified else f"Seeds not run because collection did not complete: `{result['scheduled_seeds_remaining']}`."),
-        "If no clear has complete provenance, the primary result is INCONCLUSIVE. This runner records a provenance-complete candidate as pending Planner validation; only independent Planner review may set GOAL_REACHED.",
-        "Life-loss windows contain exact uint8 model-input stacks and per-step raw Q/action metadata. Contact sheets are derived offline; they are diagnostic and never clear evidence.",
-        f"Model `{MODEL_SHA256}`; metadata `{METADATA_SHA256}`; current inference spec `{SPEC_CURRENT_SHA256}` (metadata-declared older spec `{SPEC_METADATA_SHA256}`); Contract v2 `{CONTRACT_SHA256}`; audit `{AUDIT_SHA256}`.",
-        f"ONNX Runtime `{policy.ort.__version__}`, providers `{policy.session.get_providers()}`. Source commit `{commit}`, dirty `{dirty}`. Original PyTorch `.pt` bytes were absent and lineage remains metadata-declared.",
-        f"Requested execution context: `{REQUESTED_MODEL}` / `{REQUESTED_REASONING_EFFORT}`; `MODEL_ROUTING_VERIFICATION: {MODEL_ROUTING_VERIFICATION}`.",
-        "", "## Life-loss windows", "", "| Seed | Episode | Event | Loss step | Frame | Decisions captured | Post-step observation |", "|---:|---:|---:|---:|---:|---:|:---:|"]
-    for event in loss_events:
-        report.append(f"| {event['seed']} | {event['episode_index']} | {event['life_loss_event']} | {event['agent_step']} | {event['emulator_frame']} | {len(event['decisions'])} | {'yes' if event['post_step_observation'] is not None else 'no'} |")
-    report += ["", f"Lossless arrays: `{window_path.name}`; index binds each stack to seed, episode, event, step/frame, Q-values, requested action, and wrapper ALE-input action.", "RAM, score, lives, completion, and screenshots are evaluator diagnostics only; sticky-resolved physical actions remain unknown.", ""]
-    (output_dir / "report.md").write_text("\n".join(report), encoding="utf-8")
+    write_report(result, output_dir)
     result["finalization_wall_seconds"] = time.perf_counter() - collection_end
     result["wall_seconds"] = time.perf_counter() - started
     result["artifacts"]["loss_windows_index_sha256"] = sha256(output_dir / "loss_windows_index.json")
