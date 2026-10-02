@@ -589,6 +589,20 @@ class PredictiveBreakoutController:
         )
 
     def select_action(self, frame: Any) -> ControlDecision:
+        """Select the unchanged baseline action from the current raw RGB frame."""
+        return self.select_action_with_target_offset(frame, target_offset_px=0.0)
+
+    def select_action_with_target_offset(
+        self, frame: Any, *, target_offset_px: float
+    ) -> ControlDecision:
+        """Select an action toward ``intercept - target_offset_px``.
+
+        The default public method still uses a zero offset. This explicit method
+        exists for frozen diagnostics and still accepts only RGB pixels plus a
+        numeric controller parameter; it has no environment/evaluator access.
+        """
+        if not math.isfinite(target_offset_px):
+            raise ValueError("target_offset_px must be finite")
         started = time.perf_counter_ns()
         observation = self.observe(frame)
         intercept: float | None = None
@@ -616,7 +630,11 @@ class PredictiveBreakoutController:
             if prediction is not None:
                 intercept, time_to_intercept = prediction
                 self._trajectory_prediction_count += 1
-                error = intercept - paddle.center_x
+                target_center = min(
+                    max(intercept - float(target_offset_px), observation.bounds.left + 7.5),
+                    observation.bounds.right - 7.5,
+                )
+                error = target_center - paddle.center_x
                 action = choose_paddle_action(
                     error=error,
                     previous_direction=self._previous_direction,
