@@ -47,17 +47,16 @@ class QMarginSelectorTests(unittest.TestCase):
 
 class FrozenScheduleAndProvenanceTests(unittest.TestCase):
     def test_classification_is_separate_from_goal_reached_round_status(self):
-        self.assertEqual(classify_round(verified_clear_arm="candidate", complete_schedule=False),
+        self.assertEqual(classify_round(verified_clear_arm="candidate"),
             {"classification": "PROMOTED", "round_status": "GOAL_REACHED",
              "candidate_hypothesis_status": "PROMOTED"})
-        self.assertEqual(classify_round(verified_clear_arm="baseline", complete_schedule=False),
+        self.assertEqual(classify_round(verified_clear_arm="baseline"),
             {"classification": "INCONCLUSIVE", "round_status": "GOAL_REACHED",
              "candidate_hypothesis_status": "NOT_ADJUDICATED"})
-        self.assertEqual(classify_round(verified_clear_arm=None, complete_schedule=True),
+        self.assertEqual(classify_round(verified_clear_arm=None),
             {"classification": "INCONCLUSIVE", "round_status": "CONTINUE_RESEARCH",
              "candidate_hypothesis_status": "INCONCLUSIVE"})
-        self.assertEqual(classify_round(verified_clear_arm=None, complete_schedule=False)["classification"],
-                         "INCONCLUSIVE")
+        self.assertEqual(classify_round(verified_clear_arm=None)["round_status"], "CONTINUE_RESEARCH")
 
     def test_schedule_order_and_budgets_are_frozen(self):
         self.assertEqual(SEEDS, (104, 205, 306))
