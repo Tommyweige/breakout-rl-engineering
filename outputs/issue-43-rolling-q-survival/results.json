@@ -1,0 +1,425 @@
+{
+  "artifacts": {
+    "trajectory": "trajectory.jsonl",
+    "trajectory_sha256": "29f052e311de8a0a37a8d9f7647198a10798ba8d03cb4a542ce14356316eb4b9"
+  },
+  "canonical_clear_unverified": [],
+  "classification": "INCONCLUSIVE",
+  "completion_support": {
+    "ale_py_version": "0.12.0",
+    "audit_config_path": "configs/eval/breakout_completion_audit_v1.json",
+    "completion_detection_source": "ale_ram_bcd_score_and_raw_reward_agreement",
+    "completion_rule": "destroy both brick walls; exact documented maximum score",
+    "detector_id": "ale-breakout-two-wall-score-864-v2",
+    "difficulty": 0,
+    "environment_id": "ALE/Breakout-v5",
+    "game": "breakout",
+    "mode": 0,
+    "reason": null,
+    "rom_sha256": "376323f051c3c373c887fd83abead39d87d844ff283d435f4addbfc1710c6fd5",
+    "schema_version": 1,
+    "score_ram_addresses": [
+      76,
+      77
+    ],
+    "score_ram_byte_order": "high_pair_then_low_pair",
+    "score_ram_encoding": "packed_bcd_four_digit",
+    "score_threshold": 864,
+    "supported": true
+  },
+  "episodes": [
+    {
+      "agent_steps": 1119,
+      "ale_input_action_counts": [
+        152,
+        223,
+        334,
+        410
+      ],
+      "arm": "raw-greedy",
+      "canonical_clear": false,
+      "clear_agent_step": null,
+      "clear_emulator_frame": null,
+      "clear_score": null,
+      "clear_status": "NO_CLEAR",
+      "completion_detection_source": "ale_ram_bcd_score_and_raw_reward_agreement",
+      "completion_unavailable_reason": null,
+      "episode_index": 1,
+      "episode_seed": 102,
+      "evaluation_seed": 102,
+      "initial_native_frame": 6,
+      "life_losses": 5,
+      "lives_remaining": 0,
+      "lives_remaining_at_clear": null,
+      "median_raw_top_two_q_margin": 0.006571769714355469,
+      "median_smoothed_top_two_q_margin": null,
+      "native_frames": 4476,
+      "ram_score": 45,
+      "raw_score": 45.0,
+      "requested_action_counts": [
+        152,
+        213,
+        338,
+        416
+      ],
+      "requested_action_switch_rate": 0.46332737030411447,
+      "seed": 102,
+      "stop_reason": "terminated"
+    },
+    {
+      "agent_steps": 344,
+      "ale_input_action_counts": [
+        4,
+        45,
+        125,
+        170
+      ],
+      "arm": "rolling-q4",
+      "canonical_clear": false,
+      "clear_agent_step": null,
+      "clear_emulator_frame": null,
+      "clear_score": null,
+      "clear_status": "NO_CLEAR",
+      "completion_detection_source": "ale_ram_bcd_score_and_raw_reward_agreement",
+      "completion_unavailable_reason": null,
+      "episode_index": 2,
+      "episode_seed": 102,
+      "evaluation_seed": 102,
+      "initial_native_frame": 6,
+      "life_losses": 5,
+      "lives_remaining": 0,
+      "lives_remaining_at_clear": null,
+      "median_raw_top_two_q_margin": 0.0064432621002197266,
+      "median_smoothed_top_two_q_margin": 0.006378293037414551,
+      "native_frames": 1373,
+      "ram_score": 5,
+      "raw_score": 5.0,
+      "requested_action_counts": [
+        4,
+        41,
+        127,
+        172
+      ],
+      "requested_action_switch_rate": 0.22157434402332363,
+      "seed": 102,
+      "stop_reason": "terminated"
+    },
+    {
+      "agent_steps": 773,
+      "ale_input_action_counts": [
+        114,
+        236,
+        175,
+        248
+      ],
+      "arm": "raw-greedy",
+      "canonical_clear": false,
+      "clear_agent_step": null,
+      "clear_emulator_frame": null,
+      "clear_score": null,
+      "clear_status": "NO_CLEAR",
+      "completion_detection_source": "ale_ram_bcd_score_and_raw_reward_agreement",
+      "completion_unavailable_reason": null,
+      "episode_index": 3,
+      "episode_seed": 203,
+      "evaluation_seed": 203,
+      "initial_native_frame": 13,
+      "life_losses": 5,
+      "lives_remaining": 0,
+      "lives_remaining_at_clear": null,
+      "median_raw_top_two_q_margin": 0.005383491516113281,
+      "median_smoothed_top_two_q_margin": null,
+      "native_frames": 3089,
+      "ram_score": 26,
+      "raw_score": 26.0,
+      "requested_action_counts": [
+        117,
+        229,
+        177,
+        250
+      ],
+      "requested_action_switch_rate": 0.4585492227979275,
+      "seed": 203,
+      "stop_reason": "terminated"
+    },
+    {
+      "agent_steps": 547,
+      "ale_input_action_counts": [
+        51,
+        92,
+        184,
+        220
+      ],
+      "arm": "rolling-q4",
+      "canonical_clear": false,
+      "clear_agent_step": null,
+      "clear_emulator_frame": null,
+      "clear_score": null,
+      "clear_status": "NO_CLEAR",
+      "completion_detection_source": "ale_ram_bcd_score_and_raw_reward_agreement",
+      "completion_unavailable_reason": null,
+      "episode_index": 4,
+      "episode_seed": 203,
+      "evaluation_seed": 203,
+      "initial_native_frame": 13,
+      "life_losses": 5,
+      "lives_remaining": 0,
+      "lives_remaining_at_clear": null,
+      "median_raw_top_two_q_margin": 0.004690885543823242,
+      "median_smoothed_top_two_q_margin": 0.005033969879150391,
+      "native_frames": 2187,
+      "ram_score": 11,
+      "raw_score": 11.0,
+      "requested_action_counts": [
+        51,
+        85,
+        187,
+        224
+      ],
+      "requested_action_switch_rate": 0.2619047619047619,
+      "seed": 203,
+      "stop_reason": "terminated"
+    },
+    {
+      "agent_steps": 1398,
+      "ale_input_action_counts": [
+        184,
+        347,
+        357,
+        510
+      ],
+      "arm": "raw-greedy",
+      "canonical_clear": false,
+      "clear_agent_step": null,
+      "clear_emulator_frame": null,
+      "clear_score": null,
+      "clear_status": "NO_CLEAR",
+      "completion_detection_source": "ale_ram_bcd_score_and_raw_reward_agreement",
+      "completion_unavailable_reason": null,
+      "episode_index": 5,
+      "episode_seed": 304,
+      "evaluation_seed": 304,
+      "initial_native_frame": 15,
+      "life_losses": 5,
+      "lives_remaining": 0,
+      "lives_remaining_at_clear": null,
+      "median_raw_top_two_q_margin": 0.006498098373413086,
+      "median_smoothed_top_two_q_margin": null,
+      "native_frames": 5590,
+      "ram_score": 60,
+      "raw_score": 60.0,
+      "requested_action_counts": [
+        186,
+        338,
+        360,
+        514
+      ],
+      "requested_action_switch_rate": 0.4523979957050823,
+      "seed": 304,
+      "stop_reason": "terminated"
+    },
+    {
+      "agent_steps": 686,
+      "ale_input_action_counts": [
+        156,
+        133,
+        173,
+        224
+      ],
+      "arm": "rolling-q4",
+      "canonical_clear": false,
+      "clear_agent_step": null,
+      "clear_emulator_frame": null,
+      "clear_score": null,
+      "clear_status": "NO_CLEAR",
+      "completion_detection_source": "ale_ram_bcd_score_and_raw_reward_agreement",
+      "completion_unavailable_reason": null,
+      "episode_index": 6,
+      "episode_seed": 304,
+      "evaluation_seed": 304,
+      "initial_native_frame": 15,
+      "life_losses": 5,
+      "lives_remaining": 0,
+      "lives_remaining_at_clear": null,
+      "median_raw_top_two_q_margin": 0.005663156509399414,
+      "median_smoothed_top_two_q_margin": 0.0055582523345947266,
+      "native_frames": 2744,
+      "ram_score": 18,
+      "raw_score": 18.0,
+      "requested_action_counts": [
+        156,
+        130,
+        176,
+        224
+      ],
+      "requested_action_switch_rate": 0.2569343065693431,
+      "seed": 304,
+      "stop_reason": "terminated"
+    }
+  ],
+  "evaluation_protocol": {
+    "aggregate_native_frame_cap": 648000,
+    "arm_order": [
+      "raw-greedy",
+      "rolling-q4"
+    ],
+    "collection_wall_cap_seconds": 530.0,
+    "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+    "contract_sha256": "7eca5ae5262a28aeabf3be658f8275a68f3d2ae40cc74379400be2890dc31a2a",
+    "environment_action_meanings": [
+      "NOOP",
+      "FIRE",
+      "RIGHT",
+      "LEFT"
+    ],
+    "episode_seeds": [
+      102,
+      203,
+      304
+    ],
+    "episodes_per_seed": 1,
+    "finalization_reserve_seconds": 30.0,
+    "max_agent_steps_per_episode": 27000,
+    "max_native_frames_per_episode": 108000,
+    "observation_contract": "AtariPreprocessing grayscale uint8 84x84; frame_skip=4; stack uint8 [4,84,84]; adapter /255 once",
+    "policy_inputs": "pixels only; RAM/score/lives/completion evaluator only",
+    "rolling_mean_definition": "float32 mean of current raw Q-vector and up to three preceding raw Q-vectors; history resets at each episode",
+    "smoothing_window": 4,
+    "wall_clock_cap_seconds": 600.0
+  },
+  "evaluation_status": "completed",
+  "execution_context": {
+    "MODEL_ROUTING_VERIFICATION": "UNAVAILABLE",
+    "requested_model": "gpt-6-luna",
+    "requested_reasoning_effort": "high"
+  },
+  "has_verified_clear": false,
+  "issue": 43,
+  "model": {
+    "completion_audit_sha256": "43d431e77a4a3b60dd720933ee399767d456a6c633ee93aab7265d92e4f1b64b",
+    "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+    "contract_sha256": "7eca5ae5262a28aeabf3be658f8275a68f3d2ae40cc74379400be2890dc31a2a",
+    "contract_validation_status": "canonical_contract_v2",
+    "detector_id": "ale-breakout-two-wall-score-864-v2",
+    "inference_spec_sha256": "b396989041eff00396789c0f878fa783b071b0d3327aa1638c891a25d3f84507",
+    "metadata_inference_spec_sha256": "68637a63d3f0242f74089314049251521bec14a6fa3267b57fa46470acfff8ec",
+    "metadata_lineage": {
+      "original_pt_independently_rehashed": false,
+      "source_checkpoint_sha256": "ab07c0a48202428ddbb377c81f4091b3c434ce95e19d19fb1ec335df79841c48",
+      "source_model_sha256": "6002029dcdbcbb7c93fca0c589880611aed2e2e7924db0f6b0c1f5160824389a",
+      "training_seed": 2022,
+      "training_transitions": 2500000
+    },
+    "metadata_sha256": "fbb9868fa0fb0ad7ce511e59b368efbef984279178c554dede0ae7e950731512",
+    "model_sha256": "cf90c74b1d09d5d7e2e0c71014f2daef2b5e1833425d300da06e34d1e4ef7f12"
+  },
+  "native_frames": 19459,
+  "paired_diagnostics": [
+    {
+      "censoring_explanation": null,
+      "native_frame_difference_rolling_minus_raw": -3103,
+      "native_frame_percent_difference": -69.32529043789097,
+      "raw_greedy_action_switch_rate": 0.46332737030411447,
+      "raw_greedy_clear_status": "NO_CLEAR",
+      "raw_greedy_life_losses": 5,
+      "raw_greedy_median_q_margin": 0.006571769714355469,
+      "raw_greedy_native_frames": 4476,
+      "raw_greedy_raw_score": 45.0,
+      "rolling_q4_action_switch_rate": 0.22157434402332363,
+      "rolling_q4_clear_status": "NO_CLEAR",
+      "rolling_q4_life_losses": 5,
+      "rolling_q4_median_q_margin": 0.006378293037414551,
+      "rolling_q4_native_frames": 1373,
+      "rolling_q4_raw_score": 5.0,
+      "seed": 102,
+      "status": "paired_complete"
+    },
+    {
+      "censoring_explanation": null,
+      "native_frame_difference_rolling_minus_raw": -902,
+      "native_frame_percent_difference": -29.200388475234703,
+      "raw_greedy_action_switch_rate": 0.4585492227979275,
+      "raw_greedy_clear_status": "NO_CLEAR",
+      "raw_greedy_life_losses": 5,
+      "raw_greedy_median_q_margin": 0.005383491516113281,
+      "raw_greedy_native_frames": 3089,
+      "raw_greedy_raw_score": 26.0,
+      "rolling_q4_action_switch_rate": 0.2619047619047619,
+      "rolling_q4_clear_status": "NO_CLEAR",
+      "rolling_q4_life_losses": 5,
+      "rolling_q4_median_q_margin": 0.005033969879150391,
+      "rolling_q4_native_frames": 2187,
+      "rolling_q4_raw_score": 11.0,
+      "seed": 203,
+      "status": "paired_complete"
+    },
+    {
+      "censoring_explanation": null,
+      "native_frame_difference_rolling_minus_raw": -2846,
+      "native_frame_percent_difference": -50.91234347048301,
+      "raw_greedy_action_switch_rate": 0.4523979957050823,
+      "raw_greedy_clear_status": "NO_CLEAR",
+      "raw_greedy_life_losses": 5,
+      "raw_greedy_median_q_margin": 0.006498098373413086,
+      "raw_greedy_native_frames": 5590,
+      "raw_greedy_raw_score": 60.0,
+      "rolling_q4_action_switch_rate": 0.2569343065693431,
+      "rolling_q4_clear_status": "NO_CLEAR",
+      "rolling_q4_life_losses": 5,
+      "rolling_q4_median_q_margin": 0.0055582523345947266,
+      "rolling_q4_native_frames": 2744,
+      "rolling_q4_raw_score": 18.0,
+      "seed": 304,
+      "status": "paired_complete"
+    }
+  ],
+  "runtime": {
+    "model_input_preflight": "zero uint8 [4,84,84], cast float32 and divide by 255 once; no ALE frames",
+    "onnx_input": {
+      "dtype": "float32",
+      "name": "observation",
+      "shape": [
+        1,
+        4,
+        84,
+        84
+      ]
+    },
+    "onnx_output": {
+      "dtype": "float32",
+      "name": "q_values",
+      "shape": [
+        1,
+        4
+      ]
+    },
+    "onnxruntime": "1.22.1",
+    "providers": [
+      "CPUExecutionProvider"
+    ],
+    "python": "3.12.14",
+    "requested_providers": [
+      "CPUExecutionProvider"
+    ]
+  },
+  "schema_version": 1,
+  "source_provenance": {
+    "completion_audit_sha256": "43d431e77a4a3b60dd720933ee399767d456a6c633ee93aab7265d92e4f1b64b",
+    "completion_source_files": [
+      "breakout_env.py",
+      "breakout_rl/completion.py",
+      "breakout_rl/evaluation.py",
+      "breakout_rl/evaluation_artifacts.py",
+      "breakout_rl/evaluation_contract.py",
+      "breakout_rl/issue41_onnx_dqn_clear.py",
+      "breakout_rl/issue43_rolling_q_survival.py",
+      "scripts/evaluation/run_issue43_rolling_q_survival_eval.py",
+      "configs/eval/breakout_completion_audit_v1.json"
+    ],
+    "completion_source_sha256": "c3e7aa81739833eb6b2070516b842c1772449b64dc513164388b06022f677126",
+    "source_commit": "cacbae2c596f5888fb1950db5f9dd24a68cf739a",
+    "source_working_tree_dirty": false
+  },
+  "verified_clears": [],
+  "wall_seconds": 8.443422078998992
+}
