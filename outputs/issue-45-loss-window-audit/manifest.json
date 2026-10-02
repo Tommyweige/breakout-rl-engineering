@@ -17,7 +17,7 @@
     "loss_window_seed305_event5.png": "9f843da52be2b31fa860b769281a122065e6d753de114f987e638891b3e5d703",
     "loss_windows.npz": "81ccf5d7ba831d51580e74c4141eca7dcc9dc29412cf4f1b346bb20ff9160fb1",
     "loss_windows_index.json": "fb884f73434fb74762ab6d35409027138bec70e72182a9dbe8596b4b7a0232b7",
-    "report.md": "ae7323dd5f5acefc8ebc30945440e1513ec8c5b97fa074177dac413bca943629",
+    "report.md": "4a9a577a0cead63e78d76b79550a89a9bafbe0a5c27b4bc890f056cfaf5cd10d",
     "results.json": "87951ffaa8c7584da03bb9705eacbb4a838c1ff28a19d15a9e5a2fa02008d925",
     "trajectory.jsonl": "ccee68b19ae3209fb4ebccf39d0602f94ffff9b5ae5c91f2b09b18a9b4c3d1af"
   },
@@ -25,7 +25,7 @@
   "collection_wall_seconds": 4.954702125003678,
   "completion_audit_sha256": "43d431e77a4a3b60dd720933ee399767d456a6c633ee93aab7265d92e4f1b64b",
   "completion_source_sha256": "9444a7955e65f4fe9e1568f5b321d8c9ffc0a105ae0d8549c5c76bc99c08f926",
-  "contact_sheet_refresh": "Presentation-only re-render from preserved loss_windows.npz and loss_windows_index.json after the one formal run; metadata and metrics unchanged; no ALE steps, fixtures, or policy changes.",
+  "contact_sheet_refresh": "The report and all 15 contact sheets were refreshed offline from preserved results.json, loss_windows_index.json, and loss_windows.npz after collection; no ALE step, fixture, metric, or policy change.",
   "contract_sha256": "7eca5ae5262a28aeabf3be658f8275a68f3d2ae40cc74379400be2890dc31a2a",
   "episodes": [
     {

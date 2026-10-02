@@ -232,7 +232,7 @@ def write_report(result: dict[str, Any], output_dir: Path) -> None:
     report = ["# Issue #45: Contract v2 Life-Loss Observation Windows", "",
         f"**{result['classification']}** — Has Verified Clear: **{'YES' if verified else 'NO'}**.", "",
         f"Status: `{result['evaluation_status']}`; episodes: `{len(episodes)}/3`; life-loss windows: `{result['captured_window_count']}`; native frames: `{result['native_frames']}`; wall seconds: `{result['wall_seconds']:.2f}`.",
-        f"Formal run source commit: `{result['source_provenance']['source_commit']}`. This report was refreshed offline from the preserved results and window index after collection; no further ALE run occurred.",
+        f"Formal run source commit: `{result['source_provenance']['source_commit']}`. This report and all 15 contact sheets were refreshed offline from preserved `results.json`, `loss_windows_index.json`, and `loss_windows.npz` after collection; no ALE step, fixture, metric, or policy change occurred.",
         "Pre-run accounting: focused pure tests, compilation, and diff check took 0.267 s; zero-frame runtime preflight took 0.211 s; combined validation took 0.478 s of the 20 s setup cap, with zero setup/test native frames.",
         "Frame semantics: each index `decision_metadata.emulator_frame` is the pre-action model-input frame; the event loss frame and trajectory frame are post-step. ALE can advance fewer than four native frames on terminal game-over steps; two observed terminal losses advanced 2 and 1 frames.",
         "Contact-sheet Q labels are rounded to four decimal places for readability; full float32 values remain in the index and trajectory.",
