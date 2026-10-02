@@ -701,7 +701,7 @@ def run(output_dir: Path, *, contract_path=DEFAULT_CONTRACT, spec_path=DEFAULT_S
             "process_launch_reserve_seconds": PROCESS_LAUNCH_RESERVE_SECONDS,
             "collection_cap_seconds": COLLECTION_WALL_LIMIT,
             "setup_plus_test_cap_seconds": 20.0, "finalization_cap_seconds": FINALIZATION_RESERVE_SECONDS,
-            "measurement_scope": "runner elapsed and finalization are measured through the completed runner manifest write; CLI elapsed includes runner work, console summary, artifact packaging, and terminal report/results/manifest/sidecar writes"},
+            "measurement_scope": "runner elapsed and finalization are measured through the completed runner manifest write; disjoint CLI finalization starts at runner return and includes console summary, capture-stream restoration, artifact packaging, and terminal report/results/manifest/sidecar writes"},
         "artifacts": {"results_sha256": sha256(results_path), "report_sha256": sha256(report_path),
             "trajectory_sha256": sha256(trajectory_path), "stack_index_sha256": sha256(stack_index_path)}},
         indent=2, sort_keys=True) + "\n")
@@ -749,12 +749,12 @@ def cli(argv: list[str] | None = None, *, process_start: float | None = None) ->
         sys.stdout, sys.stderr = Tee(console_out, captured_out), Tee(console_err, captured_err)
         try:
             result = run(args.output_dir)
+            wrapup_start = time.perf_counter()
             print(json.dumps({"classification": result["classification"],
                 "episodes": len(result["episodes"]), "native_frames": result["native_frames"],
                 "stop_reason": result["stop_reason"]}, indent=2))
         finally:
             sys.stdout, sys.stderr = console_out, console_err
-    wrapup_start = time.perf_counter()
     output_stdout, output_stderr = args.output_dir / "formal.stdout", args.output_dir / "formal.stderr"
     shutil.copyfile(stdout_path, output_stdout); shutil.copyfile(stderr_path, output_stderr)
     results_path = args.output_dir / "results.json"
