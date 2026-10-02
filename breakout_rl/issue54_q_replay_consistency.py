@@ -69,6 +69,7 @@ PRE_RUN_VALIDATION = {
 }
 PRE_RUN_VALIDATION_SECONDS = 1.0  # conservative internal reservation; supervisor uses final measured validation JSON
 FINALIZATION_MARGIN_SECONDS = 1.5
+SUPERVISOR_STARTUP_ALLOWANCE_SECONDS = 0.25
 KEY_FIELDS = ("seed", "arm", "episode_index", "agent_step", "emulator_frame")
 EXPECTED_FILES = {
     "web/public/models/final_model/model.onnx": MODEL_SHA256,
@@ -444,7 +445,8 @@ def attach_log_capture_hashes(output_dir: Path, stdout_path: Path, stderr_path: 
                               formal_command_wall_seconds: float | None = None,
                               failure_bundle_wall_seconds: float = 0.0,
                               formal_cli_timeout_seconds: float | None = None,
-                              formal_cli_timed_out: bool = False) -> dict[str, Any]:
+                              formal_cli_timed_out: bool = False,
+                              supervisor_startup_allowance_seconds: float = SUPERVISOR_STARTUP_ALLOWANCE_SECONDS) -> dict[str, Any]:
     """Attach hashes of the one formal command's externally captured streams."""
     attachment_started = time.perf_counter()
     stdout_artifact = output_dir / "formal.stdout"
@@ -472,6 +474,7 @@ def attach_log_capture_hashes(output_dir: Path, stdout_path: Path, stderr_path: 
         results["failure_bundle_wall_seconds"] = failure_bundle_wall_seconds
         results["formal_cli_timeout_seconds"] = formal_cli_timeout_seconds
         results["formal_cli_timed_out"] = formal_cli_timed_out
+        results["supervisor_startup_allowance_seconds"] = supervisor_startup_allowance_seconds
         if validation is not None:
             results["combined_pre_run_and_formal_seconds"] = (
                 validation["combined_validation_wall_seconds"] + formal_command_wall_seconds + failure_bundle_wall_seconds
@@ -490,7 +493,7 @@ def attach_log_capture_hashes(output_dir: Path, stdout_path: Path, stderr_path: 
         validation_lines.append(f"Combined measured validation: {validation['combined_validation_wall_seconds']:.6f}s.")
         if formal_command_wall_seconds is not None:
             validation_lines.append(f"Formal command wall: {formal_command_wall_seconds:.6f}s; failure-bundle finalization: {failure_bundle_wall_seconds:.6f}s.")
-            validation_lines.append("The outer 20-second supervisor timeout includes supervisor startup and final metadata writes; the reported measured-component total excludes supervisor startup and final metadata refresh.")
+            validation_lines.append(f"The outer timeout is capped at remaining budget minus a {supervisor_startup_allowance_seconds:.2f}s startup allowance; it includes guarded-run startup and final metadata writes. The reported measured-component total excludes pre-launch supervisor startup and final metadata refresh.")
         report += "\n\n" + "\n".join(validation_lines)
     report = report.partition("\n## Formal command capture\n")[0]
     report += ("\n\n## Formal command capture\n\n"
@@ -512,6 +515,7 @@ def attach_log_capture_hashes(output_dir: Path, stdout_path: Path, stderr_path: 
         manifest["failure_bundle_wall_seconds"] = failure_bundle_wall_seconds
         manifest["formal_cli_timeout_seconds"] = formal_cli_timeout_seconds
         manifest["formal_cli_timed_out"] = formal_cli_timed_out
+        manifest["supervisor_startup_allowance_seconds"] = supervisor_startup_allowance_seconds
         if validation is not None:
             manifest["combined_pre_run_and_formal_seconds"] = (
                 validation["combined_validation_wall_seconds"] + formal_command_wall_seconds + failure_bundle_wall_seconds
@@ -527,7 +531,7 @@ def attach_log_capture_hashes(output_dir: Path, stdout_path: Path, stderr_path: 
         )
         results["measured_combined_elapsed_scope"] = (
             "Pre-run validation + frozen CLI + failure-bundle finalization + measured capture/hash attachment; "
-            "excludes supervisor startup and final metadata refresh. The outer timeout enforces the inclusive 20-second cap."
+            "excludes pre-launch supervisor startup and final metadata refresh. The outer timeout is reduced by a 0.25s startup allowance and enforces the inclusive 20-second cap."
         )
         _atomic_json(results_path, results)
         report = report_path.read_text().rstrip()

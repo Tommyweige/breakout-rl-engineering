@@ -16,7 +16,8 @@ from breakout_rl.issue54_q_replay_consistency import (
     aggregate_q_error, attach_log_capture_hashes, create_cpu_session, remaining_budget,
     validate_capture_offsets, verify_stack_row,
 )
-from scripts.analysis.run_issue54_once import run_captured_command
+from scripts.analysis.run_issue54_once import _preserve_inconclusive, run_captured_command
+import scripts.analysis.run_issue54_once as supervisor
 
 
 def record(step: int = 1, digest: str = "abc") -> tuple[dict, dict]:
@@ -28,6 +29,28 @@ def record(step: int = 1, digest: str = "abc") -> tuple[dict, dict]:
 
 
 class Issue54PureTests(unittest.TestCase):
+    def test_supervisor_fallback_is_fully_inconclusive_and_reproducible(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output_dir = Path(directory) / "artifacts"
+            validation = {"combined_validation_wall_seconds": 0.5,
+                          "focused_test": {"count": 10, "status": "passed"}}
+            with patch.object(supervisor, "OUTPUT_DIR", output_dir):
+                _preserve_inconclusive(124, validation)
+            result = json.loads((output_dir / "results.json").read_text())
+            manifest = json.loads((output_dir / "manifest.json").read_text())
+            report = (output_dir / "report.md").read_text()
+            self.assertEqual(result["diagnostic"], "INCONCLUSIVE")
+            self.assertIsNone(result["max_abs_error"])
+            self.assertEqual(result["runtime"]["status"], "unavailable")
+            self.assertEqual(manifest["runtime"]["status"], "unavailable")
+            self.assertEqual(result["pre_run_validation"], validation)
+            self.assertEqual(len(result["expected_input_hashes"]), 15)
+            self.assertEqual(manifest["pre_run_validation"], validation)
+            self.assertIn("max_i max_a", report)
+            self.assertIn("observed ORT version/provider", report)
+            self.assertIn("MODEL_ROUTING_VERIFICATION: UNAVAILABLE", report)
+            self.assertIn("Phase 1: **INCONCLUSIVE**", report)
+
     def test_formal_supervisor_timeout_kills_group_and_preserves_partial_logs(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
