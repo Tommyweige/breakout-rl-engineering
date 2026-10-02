@@ -57,8 +57,13 @@ EXACT_COMMAND = (
 )
 TEST_COMMAND = (
     "env PYTHONPATH=/tmp/issue41-onnxruntime python -c 'import time,unittest; "
-    "start=time.perf_counter(); result=unittest.TextTestRunner(verbosity=2).run("
-    "unittest.defaultTestLoader.loadTestsFromName(\"tests.test_issue56_fresh_range\")); "
+    "import os,sys; start=time.perf_counter(); suite=unittest.defaultTestLoader.discover("
+    "start_dir=\"tests\", pattern=\"test_issue56_fresh_range.py\"); "
+    "path=os.path.abspath(\"tests/test_issue56_fresh_range.py\"); "
+    "loaded=sys.modules.get(\"test_issue56_fresh_range\"); "
+    "assert loaded is not None and os.path.abspath(loaded.__file__)==path; "
+    "print(f\"focused_test_module_path={path}\"); "
+    "result=unittest.TextTestRunner(verbosity=2).run(suite); "
     "print(f\"focused_test_elapsed_seconds={time.perf_counter()-start:.3f}\"); "
     "raise SystemExit(not result.wasSuccessful())'"
 )
@@ -295,6 +300,8 @@ def load_pre_run_validation(source_commit: str, branch: str, digest: str) -> dic
             or record.get("zero_frame_preflight_native_frames") != 0
             or record.get("zero_frame_preflight_reset_calls") != 0
             or record.get("zero_frame_preflight_step_calls") != 0
+            or record.get("focused_test_module_path") != str(ROOT / "tests/test_issue56_fresh_range.py")
+            or record.get("focused_test_module_sha256") != sha256_file(ROOT / "tests/test_issue56_fresh_range.py")
             or record.get("overall_pre_run_wall_seconds", 999.0) > 20.0
             or record.get("formal_collection_started_before_checkpoint") is not False):
         raise RuntimeError("pre-run validation record failed a frozen gate")
