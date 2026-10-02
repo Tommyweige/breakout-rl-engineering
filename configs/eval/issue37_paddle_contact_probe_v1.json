@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "probe_id": "issue-37-reachable-contact-probe-v1",
+  "base_environment_contract": "breakout_contract_v3.json",
+  "base_controller_config": "breakout_vision_controller_v1.json",
+  "frozen_contract_sha256": "d97b7fcb5758cba495857b3972a119ed3eb7db74fb0145d151e9d82725c5a786",
+  "frozen_controller_config_sha256": "25ddff6756747a6539ddd6a1eb570e7ef4c274f3e700ae011e68c87cae37c724",
+  "seeds": [404, 505, 606],
+  "offsets_px": [-6, 0, 6],
+  "episode_order": "seed_major_then_offset",
+  "max_native_frames_per_episode": 5000,
+  "max_native_frames_total": 45000,
+  "post_bounce_native_frames": 8,
+  "precontact_horizon_frames": [0, 3],
+  "bounce_contact_band_px_from_paddle_top": 5,
+  "ball_radius_px": 2.0,
+  "minimum_triplet_offset_span_px": 8,
+  "minimum_ols_slope_px_per_frame_per_px": 0.02,
+  "minimum_positive_seed_count": 2,
+  "contract_id": "breakout-evaluation-v3-frame-skip-1",
+  "controller_options": {
+    "deadband": 3.0,
+    "hysteresis": 1.0,
+    "max_missing_frames": 4,
+    "max_ball_speed_pixels_per_frame": 8.0
+  }
+}
