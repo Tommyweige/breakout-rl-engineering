@@ -69,7 +69,7 @@ PREFLIGHT_COMMAND = (
 )
 PRE_RUN_VALIDATION = {
     "focused_test_command": TEST_COMMAND,
-    "focused_test_count": 11,
+    "focused_test_count": 12,
     "compile_command": "python -m py_compile breakout_rl/issue56_fresh_range.py scripts/evaluation/run_issue56_fresh_range.py tests/test_issue56_fresh_range.py",
     "diff_check_command": "git diff --check a00c2c9ad6f9da28eb61f01f3c26da759f6e5958 HEAD",
     "zero_frame_preflight_command": PREFLIGHT_COMMAND,
@@ -196,8 +196,6 @@ def classify_diagnostic(*, n: int, reach_count: int, stop_reason: str,
                         capture_valid: bool, canonical_clear_detected: bool = False) -> str:
     """Adjudicate only a provenance-valid, complete non-clear protocol sample."""
     complete_stops = {"terminated", "truncated", "native_frame_cap"}
-    if stop_reason == "decision_cap" and n == DECISION_CAP:
-        complete_stops.add("decision_cap")
     if (canonical_clear_detected or not capture_valid or n <= 0 or n > DECISION_CAP
             or reach_count < 0 or reach_count > n or stop_reason not in complete_stops):
         return "INCONCLUSIVE"
@@ -403,7 +401,8 @@ def run(output_dir: Path) -> dict[str, Any]:
                     stop_reason = "terminated" if terminated else "truncated"
                     break
             else:
-                stop_reason = "decision_cap"
+                stop_reason = ("native_frame_cap" if native_frames + 4 > FRAME_CAP
+                    else "decision_cap")
         final_lives = lives
         if state is not None and state.cleared is True:
             clear_provenance = {"checkpoint_id": MODEL_SHA256, "training_seed": metadata["source_model"]["training_seed"],
@@ -441,6 +440,7 @@ def run(output_dir: Path) -> dict[str, Any]:
         canonical_clear_detected=bool(state is not None and state.cleared is True))
     result = {"schema_version": 1, "issue": 56, "seed": SEED, "decisions": n,
         "native_frames": native_frames, "frame_cap": FRAME_CAP, "decision_cap": DECISION_CAP,
+        "decision_ceiling_reached": n == DECISION_CAP,
         "stop_reason": stop_reason, "threshold": THRESHOLD,
         "frozen_rois": {"ball": list(BALL_ROI), "paddle": list(PADDLE_ROI)},
         "reachability": {"R": reach_count, "N": n, "fraction": reach_count / n if n else None,

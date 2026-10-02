@@ -60,10 +60,20 @@ class GrayscaleRangePureTests(unittest.TestCase):
         self.assertFalse(verify_stack_index(rows, stack))
 
     def test_zero_frame_preflight_contract_is_explicit(self):
-        # Runtime preflight constructs the canonical env and inspects its support only;
-        # it never resets or steps ALE. This pure assertion guards the declared contract.
+        # The CPU/ONNX preflight must not construct an ALE environment.
         from breakout_rl.issue56_fresh_range import SEED, FRAME_CAP, DECISION_CAP
         self.assertEqual((SEED, FRAME_CAP, DECISION_CAP), (509, 350, 87))
+
+    def test_zero_frame_preflight_never_constructs_ale(self):
+        from unittest.mock import patch
+        from breakout_rl import issue56_fresh_range
+        with patch.object(issue56_fresh_range, "make_breakout_env",
+                          side_effect=AssertionError("ALE env creation forbidden")) as make_env:
+            result = issue56_fresh_range.preflight()
+        make_env.assert_not_called()
+        self.assertFalse(result["ale_environment_created"])
+        self.assertEqual((result["ale_native_frames"], result["ale_reset_calls"],
+            result["ale_step_calls"]), (0, 0, 0))
 
     def test_diagnostic_classification_requires_complete_valid_sample(self):
         self.assertEqual(classify_diagnostic(n=0, reach_count=0,
@@ -73,9 +83,11 @@ class GrayscaleRangePureTests(unittest.TestCase):
         self.assertEqual(classify_diagnostic(n=12, reach_count=0,
             stop_reason="terminated", capture_valid=False), "INCONCLUSIVE")
         self.assertEqual(classify_diagnostic(n=87, reach_count=0,
-            stop_reason="decision_cap", capture_valid=True), "PROMOTED")
+            stop_reason="native_frame_cap", capture_valid=True), "PROMOTED")
         self.assertEqual(classify_diagnostic(n=87, reach_count=1,
-            stop_reason="decision_cap", capture_valid=True), "REJECTED")
+            stop_reason="native_frame_cap", capture_valid=True), "REJECTED")
+        self.assertEqual(classify_diagnostic(n=87, reach_count=0,
+            stop_reason="decision_cap", capture_valid=True), "INCONCLUSIVE")
 
     def test_any_canonical_clear_triggers_immediate_stop(self):
         self.assertFalse(should_stop_after_clear(False))
