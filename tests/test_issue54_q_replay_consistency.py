@@ -4,13 +4,14 @@ import hashlib
 import tempfile
 import unittest
 from pathlib import Path
+from pathlib import Path
 from unittest.mock import patch
 
 import numpy as np
 
 from breakout_rl.issue54_q_replay_consistency import (
     STACK_SHA256, classify_diagnostic, match_rows, max_q_error, prepare_model_input,
-    remaining_budget, validate_capture_offsets, verify_stack_row,
+    aggregate_q_error, create_cpu_session, remaining_budget, validate_capture_offsets, verify_stack_row,
 )
 
 
@@ -77,8 +78,21 @@ class Issue54PureTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             prepare_model_input(prepared)
 
+    def test_cpu_runtime_uses_issue50_default_session_options(self):
+        class FakeOrt:
+            calls = []
+            @classmethod
+            def InferenceSession(cls, *args, **kwargs):
+                cls.calls.append((args, kwargs))
+                return object()
+        create_cpu_session(FakeOrt, Path("model.onnx"))
+        self.assertEqual(FakeOrt.calls, [(('model.onnx',), {"providers": ["CPUExecutionProvider"]})])
+
     def test_q_error_is_one_max_absolute_vector_metric(self):
         self.assertEqual(max_q_error([0, 1, 2, 3], [0.25, 0.5, 2, 3]), 0.5)
+        self.assertEqual(aggregate_q_error([0.1] * 299 + [0.5]), 0.5)
+        with self.assertRaises(ValueError):
+            aggregate_q_error([0.1] * 299)
         with self.assertRaises(ValueError):
             max_q_error([1, 2, 3], [1, 2, 3])
 

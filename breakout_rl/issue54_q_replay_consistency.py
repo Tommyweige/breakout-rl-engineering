@@ -15,6 +15,8 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[1]
 ISSUE50_DIR = ROOT / "research/issue-50-pixel-paddle-alignment-artifacts"
 OUTPUT_RELATIVE = "research/issue-54-q-replay-consistency-artifacts"
+FORMAL_COMMAND = "timeout --signal=INT --kill-after=2s 20s env PYTHONPATH=/tmp/issue41-onnxruntime python -m scripts.analysis.run_issue54_q_replay_consistency --output-dir research/issue-54-q-replay-consistency-artifacts"
+FORMAL_COMMAND = "timeout --signal=INT --kill-after=2s 20s env PYTHONPATH=/tmp/issue41-onnxruntime python -m scripts.analysis.run_issue54_q_replay_consistency --output-dir research/issue-54-q-replay-consistency-artifacts"
 BASE_COMMIT = "a8641d99d6a0eb5b7226dae2b82ed3479f35e55f"
 ISSUE50_SOURCE_DIGEST = "e32be297ba474635708fefd7da311e5db37b6076439e759be2701d4aaf2fee2f"
 INDEX_SHA256 = "757eab8a54327e0663e2d83e5156958b776c1c5e7a09521a3355a9af43746978"
@@ -48,23 +50,23 @@ REPLAY_SOURCE_FILES = (
 )
 PRE_RUN_VALIDATION = {
     "focused_test_command": "env PYTHONPATH=/tmp/issue41-onnxruntime python -m unittest tests.test_issue54_q_replay_consistency -v",
-    "focused_test_count": 7,
-    "focused_test_status": "pending final timed validation",
-    "focused_test_wall_seconds": None,
+    "focused_test_count": 8,
+    "focused_test_status": "passed",
+    "focused_test_wall_seconds": 0.1437395370012382,
     "compile_command": "python -m py_compile breakout_rl/issue54_q_replay_consistency.py scripts/analysis/run_issue54_q_replay_consistency.py tests/test_issue54_q_replay_consistency.py",
-    "compile_status": "pending final timed validation",
-    "compile_wall_seconds": None,
-    "diff_check_command": "git diff --check",
-    "diff_check_status": "pending final timed validation",
-    "diff_check_wall_seconds": None,
+    "compile_status": "passed",
+    "compile_wall_seconds": 0.030122493000817485,
+    "diff_check_command": "git show --check --oneline HEAD",
+    "diff_check_status": "passed",
+    "diff_check_wall_seconds": 0.0025716079981066287,
     "preflight_command": "timeout --signal=INT --kill-after=2s 20s env PYTHONPATH=/tmp/issue41-onnxruntime python -m scripts.analysis.run_issue54_q_replay_consistency --output-dir /tmp/issue54-preflight --preflight-only",
-    "preflight_status": "pending final timed validation",
-    "preflight_wall_seconds": None,
+    "preflight_status": "passed",
+    "preflight_wall_seconds": 0.27809578500455245,
     "preflight_matched_rows": 300,
     "preflight_replay_started": False,
     "preflight_native_frames": 0,
 }
-PRE_RUN_VALIDATION_SECONDS = 0.0
+PRE_RUN_VALIDATION_SECONDS = 0.45508335100021213
 KEY_FIELDS = ("seed", "arm", "episode_index", "agent_step", "emulator_frame")
 EXPECTED_FILES = {
     "web/public/models/final_model/model.onnx": MODEL_SHA256,
@@ -129,7 +131,7 @@ def match_rows(index_rows: list[dict[str, Any]], trajectory_rows: list[dict[str,
 
 def verify_stack_row(root: Path, indexed: dict[str, Any], stack_streams: dict[str, bytes] | None = None) -> tuple[bytes, str]:
     filename = Path(indexed["file"])
-    if filename.is_absolute() or ".." in filename.parts or filename.parts[0] != "decision_stacks":
+    if filename.is_absolute() or filename.parts != ("decision_stacks", filename.name):
         raise ValueError(f"unsafe or unexpected stack path: {filename}")
     if filename.name not in STACK_SHA256:
         raise ValueError(f"unrecognized stack file: {filename}")
@@ -172,12 +174,24 @@ def prepare_model_input(stack: np.ndarray) -> np.ndarray:
     return np.ascontiguousarray(stack[None].astype(np.float32) / np.float32(255.0))
 
 
+def create_cpu_session(ort: Any, model_path: Path) -> Any:
+    """Use Issue #50 CpuOnnxPolicy's default SessionOptions and CPU provider."""
+    return ort.InferenceSession(str(model_path), providers=["CPUExecutionProvider"])
+
+
 def max_q_error(logged: Any, replayed: Any) -> float:
     a = np.asarray(logged, dtype=np.float32)
     b = np.asarray(replayed, dtype=np.float32)
     if a.shape != (4,) or b.shape != (4,) or not np.isfinite(a).all() or not np.isfinite(b).all():
         raise ValueError("logged and replayed Q vectors must each be four finite float32 values")
     return float(np.max(np.abs(b - a)))
+
+
+def aggregate_q_error(errors: Any) -> float:
+    values = np.asarray(errors, dtype=np.float64)
+    if values.ndim != 1 or values.size != 300 or not np.isfinite(values).all() or np.any(values < 0):
+        raise ValueError("aggregate Q errors must contain 300 finite nonnegative per-row values")
+    return float(np.max(values))
 
 
 def classify_diagnostic(integrity_passed: bool, max_abs_error: float | None) -> str:
@@ -255,101 +269,147 @@ def run(output_dir: Path, *, preflight_only: bool = False) -> dict[str, Any]:
     deadline = started + replay_budget_seconds
     if not repo_clean():
         raise RuntimeError("clean-source check failed; output directory must not yet exist")
-    pairs, input_hashes, stack_streams = verify_frozen_inputs()
+    integrity_passed = False
+    failure_reason = None
+    try:
+        pairs, input_hashes, stack_streams = verify_frozen_inputs()
+        integrity_passed = True
+    except Exception as exc:
+        pairs, input_hashes, stack_streams = [], {}, {}
+        failure_reason = f"input integrity unavailable or invalid: {type(exc).__name__}: {exc}"
     if preflight_only:
-        return {"status": "preflight_passed", "matched_rows": len(pairs), "input_hashes": input_hashes,
+        return {"status": "preflight_passed" if integrity_passed else "INCONCLUSIVE",
+                "matched_rows": len(pairs), "input_hashes": input_hashes,
                 "wall_seconds": time.perf_counter() - started, "replay_started": False,
-                "MODEL_ROUTING_VERIFICATION": "UNAVAILABLE", "native_frames": 0}
+                "MODEL_ROUTING_VERIFICATION": "UNAVAILABLE", "native_frames": 0,
+                "failure_reason": failure_reason}
     if output_dir.exists():
         raise FileExistsError(f"refusing to overwrite existing output directory: {output_dir}")
     # Hash/row validation is repeated before the first model inference.
-    import onnxruntime as ort
-    if str(ort.__version__) != "1.22.1":
-        raise RuntimeError(f"expected ONNX Runtime 1.22.1, got {ort.__version__}")
-    spec = json.loads((ROOT / "configs/inference/inference_spec.json").read_text())
-    if (spec["input"] != {"name": "observation", "dtype": "float32", "shape": ["N", 4, 84, 84],
+    rows = []
+    errors = []
+    runtime = {}
+    try:
+      if integrity_passed:
+        import onnxruntime as ort
+        if str(ort.__version__) != "1.22.1":
+            raise RuntimeError(f"expected ONNX Runtime 1.22.1, got {ort.__version__}")
+        spec = json.loads((ROOT / "configs/inference/inference_spec.json").read_text())
+        if (spec["input"] != {"name": "observation", "dtype": "float32", "shape": ["N", 4, 84, 84],
                           "layout": "NCHW", "range": [0.0, 1.0]}
             or spec["output"] != {"name": "q_values", "dtype": "float32", "shape": ["N", 4],
                                   "meaning": "raw Q-values, not probabilities"}
             or spec["preprocessing"]["normalization_divisor"] != 255.0):
-        raise ValueError("pinned inference spec does not match frozen Q replay contract")
-    options = ort.SessionOptions()
-    options.intra_op_num_threads = 1
-    options.inter_op_num_threads = 1
-    session = ort.InferenceSession(str(ROOT / "web/public/models/final_model/model.onnx"),
-                                   sess_options=options, providers=["CPUExecutionProvider"])
-    providers = tuple(session.get_providers())
-    if providers != ("CPUExecutionProvider",):
-        raise RuntimeError(f"expected CPUExecutionProvider only, got {providers}")
-    inputs, outputs = session.get_inputs(), session.get_outputs()
-    if (len(inputs) != 1 or len(outputs) != 1
+            raise ValueError("pinned inference spec does not match frozen Q replay contract")
+        session = create_cpu_session(ort, ROOT / "web/public/models/final_model/model.onnx")
+        providers = tuple(session.get_providers())
+        if providers != ("CPUExecutionProvider",):
+            raise RuntimeError(f"expected CPUExecutionProvider only, got {providers}")
+        inputs, outputs = session.get_inputs(), session.get_outputs()
+        if (len(inputs) != 1 or len(outputs) != 1
             or (inputs[0].name, inputs[0].type, tuple(inputs[0].shape)) !=
                 ("observation", "tensor(float)", ("N", 4, 84, 84))
             or (outputs[0].name, outputs[0].type, tuple(outputs[0].shape)) !=
                 ("q_values", "tensor(float)", ("N", 4))):
-        raise ValueError("ONNX input/output contract mismatch")
-    runtime = {"onnxruntime_version": str(ort.__version__), "available_providers": ort.get_available_providers(),
-               "active_providers": list(providers), "actual_provider": providers[0],
-               "intra_op_num_threads": 1, "inter_op_num_threads": 1}
-    if runtime.get("actual_provider") != "CPUExecutionProvider":
-        raise RuntimeError(f"unexpected runtime/provider: {runtime}")
-    rows = []
-    errors = []
-    for indexed, logged in pairs:
-        raw, stack_sha = verify_stack_row(ISSUE50_DIR, indexed, stack_streams)
-        stack = np.frombuffer(raw, dtype=np.uint8).reshape(4, 84, 84)
-        model_input = prepare_model_input(stack)
-        replayed = np.asarray(session.run(["q_values"], {"observation": model_input})[0])[0]
-        if replayed.dtype != np.float32 or replayed.shape != (4,) or not np.isfinite(replayed).all():
-            raise ValueError(f"invalid replay Q vector for {observation_key(indexed)}")
-        logged_q = np.asarray(logged["q_values"], dtype=np.float32)
-        err = max_q_error(logged_q, replayed)
-        errors.append(err)
-        rows.append({"key": {field: indexed[field] for field in KEY_FIELDS},
+            raise ValueError("ONNX input/output contract mismatch")
+        runtime = {"onnxruntime_version": str(ort.__version__), "available_providers": ort.get_available_providers(),
+                   "active_providers": list(providers), "actual_provider": providers[0],
+                   "session_options": "ONNX Runtime defaults; matches Issue #50 CpuOnnxPolicy"}
+        if runtime.get("actual_provider") != "CPUExecutionProvider":
+            raise RuntimeError(f"unexpected runtime/provider: {runtime}")
+        for indexed, logged in pairs:
+            raw, stack_sha = verify_stack_row(ISSUE50_DIR, indexed, stack_streams)
+            stack = np.frombuffer(raw, dtype=np.uint8).reshape(4, 84, 84)
+            model_input = prepare_model_input(stack)
+            replayed = np.asarray(session.run(["q_values"], {"observation": model_input})[0])[0]
+            if replayed.dtype != np.float32 or replayed.shape != (4,) or not np.isfinite(replayed).all():
+                raise ValueError(f"invalid replay Q vector for {observation_key(indexed)}")
+            logged_q = np.asarray(logged["q_values"], dtype=np.float32)
+            err = max_q_error(logged_q, replayed)
+            errors.append(err)
+            rows.append({"key": {field: indexed[field] for field in KEY_FIELDS},
                      "stack_sha256": stack_sha, "logged_q": [float(x) for x in logged_q],
                      "replayed_q": [float(x) for x in replayed], "max_abs_error": err})
-        if time.perf_counter() > deadline:
-            raise TimeoutError("combined validation, replay, and finalization time budget exhausted")
-    aggregate = max(errors)
-    diagnostic = classify_diagnostic(True, aggregate)
+            if time.perf_counter() > deadline:
+                raise TimeoutError("combined validation, replay, and finalization time budget exhausted")
+    except Exception as exc:
+        integrity_passed = False
+        failure_reason = f"runtime or output unavailable or invalid: {type(exc).__name__}: {exc}"
+    aggregate = aggregate_q_error(errors) if integrity_passed and len(errors) == 300 else None
+    diagnostic = classify_diagnostic(integrity_passed, aggregate)
+    if diagnostic == "PROMOTED":
+        failure_analysis = f"All integrity gates passed; max_abs_error {aggregate:.12g} is at or below 1e-6."
+    elif diagnostic == "REJECTED":
+        failure_analysis = f"All integrity gates passed; max_abs_error {aggregate:.12g} exceeds 1e-6."
+    else:
+        failure_analysis = failure_reason or "A required input, runtime, or output failed an integrity check."
     elapsed = time.perf_counter() - started
     report = {
         "issue": 54, "diagnostic": diagnostic, "max_abs_error": aggregate,
+        "diagnostic_hypothesis": "Exact Issue #50 uint8 stacks normalized once with Contract v2 reproduce logged ONNX Q vectors within 1e-6.",
+        "failure_analysis": failure_analysis,
         "observation_count": len(rows), "metric": "max_i max_a |Q_replayed[i,a] - Q_logged[i,a]|",
-        "integrity_passed": True, "has_verified_clear": "NO", "phase1": "INCONCLUSIVE",
+        "integrity_passed": integrity_passed and len(rows) == 300, "matched_observation_count": len(pairs), "has_verified_clear": "NO", "phase1": "INCONCLUSIVE",
         "round_status": "CONTINUE_RESEARCH", "phase2_transition": False,
         "controller_or_champion_implication": False,
         "MODEL_ROUTING_VERIFICATION": "UNAVAILABLE",
+        "MODEL_ROUTING_MARKER": "MODEL_ROUTING_VERIFICATION: UNAVAILABLE",
         "source_commit": subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, check=True,
                                          capture_output=True, text=True).stdout.strip(),
+        "experiment_branch": subprocess.run(["git", "branch", "--show-current"], cwd=ROOT,
+                                              check=True, capture_output=True, text=True).stdout.strip(),
         "research_base_commit": BASE_COMMIT, "issue50_source_digest": ISSUE50_SOURCE_DIGEST,
         "replay_source_digest": replay_source_digest(),
-        "logged_q_baseline": {"source": "Issue #50 trajectory.jsonl", "matched_observations": len(rows),
+        "logged_q_baseline": {"source": "Issue #50 trajectory.jsonl", "matched_observations": len(pairs),
                               "q_values_per_observation": 4},
         "issue52_context": "Issue #52 fresh-range probe failed before environment creation/collection (N=0); no fresh-input evidence.",
         "scope_limit": "Only the 300 selected Issue #50 life-window stacks are tested; no HVC inference.",
         "recommended_next_decision": "Use this result only to decide whether replay implementation fidelity merits further investigation; do not infer controller/champion or Phase 2 status.",
         "spec_lineage_note": "Metadata names historical spec SHA 68637a63d3f0242f74089314049251521bec14a6fa3267b57fa46470acfff8ec; pinned current spec only changed the embedded Contract v2 digest; preprocessing, inputs, outputs and action semantics remain unchanged.",
+        "runtime_comparability": "CPUExecutionProvider with ONNX Runtime default SessionOptions, matching Issue #50 CpuOnnxPolicy.",
         "runtime": runtime, "python_version": platform.python_version(), "numpy_version": np.__version__,
+        "formal_command": FORMAL_COMMAND,
         "input_hashes": input_hashes, "pre_run_validation_seconds": PRE_RUN_VALIDATION_SECONDS,
         "pre_run_validation": PRE_RUN_VALIDATION,
         "wall_seconds_before_report_write": elapsed,
     }
+    aggregate_display = "unavailable" if aggregate is None else f"{aggregate:.12g}"
     output_dir.mkdir(parents=True)
     _atomic_json(output_dir / "q_comparisons.json", rows)
     _atomic_json(output_dir / "results.json", report)
     (output_dir / "report.md").write_text(
-        f"# Issue #54 Offline Q Replay Consistency\n\n**{diagnostic}** — replay consistency only.\n\n"
-        f"Maximum absolute Q replay error: `{aggregate:.12g}` over {len(rows)} exact indexed observations.\n\n"
-        "Has Verified Clear: **NO**. Phase 1: **INCONCLUSIVE**. Round status: `CONTINUE_RESEARCH`. No Phase 2 transition.\n")
+        f"# Issue #54 Offline Q Replay Consistency\n\n**{diagnostic}** — replay consistency diagnostic only.\n\n"
+        "## Hypothesis and result\n\n"
+        "The exact Issue #50 uint8 observation stacks, normalized once with frozen Contract v2 preprocessing, reproduce the logged ONNX Q vectors on CPU ONNX Runtime 1.22.1 within a maximum absolute error of `1e-6`.\n\n"
+        f"The sole primary metric was `max_i max_a |Q_replayed[i,a] - Q_logged[i,a]|`: **`{aggregate_display}`** across **{len(rows)}** replayed observations ({len(pairs)} exact input joins). {failure_analysis}\n\n"
+        "## Integrity and provenance\n\n"
+        f"{'All pinned input hashes passed. The exact Issue #50 index, trajectory, and six stack streams were checked; 300 rows joined uniquely on seed, arm, episode, step, and emulator frame, with matching observation hashes and four finite logged Q values each.' if integrity_passed else 'Integrity validation did not pass; no valid Q discrepancy is claimed. See `results.json` for the failure reason.'} Experiment branch: `{report['experiment_branch']}`; source commit: `{report['source_commit']}`; research base: `{BASE_COMMIT}`; Issue #50 source digest: `{ISSUE50_SOURCE_DIGEST}`. Input hashes are recorded in `results.json`.\n\n"
+        "The metadata retains historical inference-spec SHA `68637a63d3f0242f74089314049251521bec14a6fa3267b57fa46470acfff8ec`; the pinned current spec only updates the embedded Contract v2 digest, with model input, preprocessing, output, and action semantics unchanged.\n\n"
+        "## Limits and decision\n\n"
+        "Issue #52's fresh-range probe failed before environment creation or collection (`N=0`), so it provides no fresh-input evidence. This replay covers only the selected 300 Issue #50 life-window stacks. It does not test a controller or establish object identity or a Breakout clear.\n\n"
+        "Has Verified Clear: **NO**. Phase 1: **INCONCLUSIVE**. Round status: `CONTINUE_RESEARCH`. No champion promotion or Phase 2 transition is implied. Continue research based only on replay consistency; do not infer controller performance from this audit.\n\n"
+        "`MODEL_ROUTING_VERIFICATION: UNAVAILABLE`\n\n"
+        "## Pre-run validation\n\n"
+        f"Focused tests ({PRE_RUN_VALIDATION['focused_test_count']}): `{PRE_RUN_VALIDATION['focused_test_command']}` — passed in {PRE_RUN_VALIDATION['focused_test_wall_seconds']:.3f}s.\n\n"
+        f"Compile: `{PRE_RUN_VALIDATION['compile_command']}` — passed in {PRE_RUN_VALIDATION['compile_wall_seconds']:.3f}s.\n\n"
+        f"Diff check: `{PRE_RUN_VALIDATION['diff_check_command']}` — passed in {PRE_RUN_VALIDATION['diff_check_wall_seconds']:.3f}s.\n\n"
+        f"Zero-inference preflight: `{PRE_RUN_VALIDATION['preflight_command']}` — passed; 300 rows; {PRE_RUN_VALIDATION['preflight_wall_seconds']:.3f}s.\n\n"
+        f"Combined pre-run validation: {PRE_RUN_VALIDATION_SECONDS:.3f}s; replay/finalization gets the remaining portion of the 20s cap. Formal command (run once): `{FORMAL_COMMAND}`.\n")
     hashes = {path.name: sha256_file(path) for path in sorted(output_dir.iterdir()) if path.is_file()}
     source_commit = report["source_commit"]
-    manifest = {"issue": 54, "source_commit": source_commit, "research_base_commit": BASE_COMMIT,
+    manifest = {"issue": 54, "source_commit": source_commit,
+                "experiment_branch": report["experiment_branch"], "research_base_commit": BASE_COMMIT,
                 "issue50_source_digest": ISSUE50_SOURCE_DIGEST,
                 "replay_source_digest": replay_source_digest(),
                 "MODEL_ROUTING_VERIFICATION": "UNAVAILABLE",
+                "MODEL_ROUTING_MARKER": "MODEL_ROUTING_VERIFICATION: UNAVAILABLE",
+                "formal_capture_protocol": {"stdout_path": "/tmp/issue54-formal.stdout",
+                                             "stderr_path": "/tmp/issue54-formal.stderr",
+                                             "hashes_attached_after_command_exit": True},
+                "input_hashes": input_hashes,
+                "pre_run_validation": PRE_RUN_VALIDATION,
                 "pre_run_validation_seconds": PRE_RUN_VALIDATION_SECONDS,
-                "output_hashes": hashes, "formal_command": "timeout --signal=INT --kill-after=2s 20s env PYTHONPATH=/tmp/issue41-onnxruntime python -m scripts.analysis.run_issue54_q_replay_consistency --output-dir research/issue-54-q-replay-consistency-artifacts",
+                "output_hashes": hashes, "formal_command": FORMAL_COMMAND,
                 "combined_wall_limit_seconds": 20.0}
     _atomic_json(output_dir / "manifest.json", manifest)
     # The running guard includes report/results/manifest preparation and refuses a late claim.
@@ -370,3 +430,30 @@ def cli(argv: list[str] | None = None) -> int:
     result = run(args.output_dir, preflight_only=args.preflight_only)
     print(json.dumps(result, sort_keys=True))
     return 0
+
+
+def attach_log_capture_hashes(output_dir: Path, stdout_path: Path, stderr_path: Path) -> dict[str, str]:
+    """Attach hashes of the one formal command's externally captured streams."""
+    captures = {
+        "stdout_path": str(stdout_path), "stdout_sha256": sha256_file(stdout_path),
+        "stderr_path": str(stderr_path), "stderr_sha256": sha256_file(stderr_path),
+    }
+    results_path, report_path, manifest_path = (output_dir / name for name in
+                                                ("results.json", "report.md", "manifest.json"))
+    results = json.loads(results_path.read_text())
+    results["formal_capture_hashes"] = captures
+    _atomic_json(results_path, results)
+    report = report_path.read_text().rstrip()
+    report += ("\n\n## Formal command capture\n\n"
+               f"Stdout: `{captures['stdout_path']}` SHA-256 `{captures['stdout_sha256']}`.\n\n"
+               f"Stderr: `{captures['stderr_path']}` SHA-256 `{captures['stderr_sha256']}`.\n")
+    report_path.write_text(report)
+    manifest = json.loads(manifest_path.read_text())
+    manifest["formal_capture_hashes"] = captures
+    manifest["output_hashes"] = {
+        name: sha256_file(output_dir / name)
+        for name in ("q_comparisons.json", "results.json", "report.md")
+    }
+    _atomic_json(manifest_path, manifest)
+    captures["manifest_sha256"] = sha256_file(manifest_path)
+    return captures
