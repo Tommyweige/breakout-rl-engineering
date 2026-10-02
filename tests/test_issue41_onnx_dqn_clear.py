@@ -9,6 +9,7 @@ from breakout_rl.issue41_onnx_dqn_clear import (
     ACTION_MEANINGS,
     FRAME_LIMIT,
     MODEL_SHA256,
+    BREAKOUT_COMPLETION_SOURCE,
     SEEDS,
     complete_clear_provenance,
     load_frozen_inputs,
@@ -52,13 +53,39 @@ class FrozenInputTests(unittest.TestCase):
             "training_transition_count": 2_500_000, "contract_id": "day15-breakout-evaluation-v2-fire-reset",
             "contract_sha256": "7eca5ae5262a28aeabf3be658f8275a68f3d2ae40cc74379400be2890dc31a2a",
             "source_working_tree_dirty": False, "completion_detector_id": "ale-breakout-two-wall-score-864-v2",
-            "contract_validation_status": "canonical_contract_v2", "clear_score": 864.0, "raw_score": 864.0})
-        self.assertEqual(complete_clear_provenance(complete), (True, []))
+            "contract_validation_status": "canonical_contract_v2", "clear_score": 864.0, "raw_score": 864.0,
+            "source_commit": "a" * 40, "completion_source_sha256": "b" * 64,
+            "completion_detection_source": BREAKOUT_COMPLETION_SOURCE,
+            "evaluation_seed": 101, "episode_seed": 101, "episode_index": 1})
+        expected = dict(source_commit="a" * 40, completion_digest="b" * 64,
+            episode_seed=101, episode_index=1)
+        self.assertEqual(complete_clear_provenance(complete, **expected), (True, []))
         incomplete = dict(complete)
         incomplete["clear_emulator_frame"] = None
-        verified, missing = complete_clear_provenance(incomplete)
+        verified, missing = complete_clear_provenance(incomplete, **expected)
         self.assertFalse(verified)
         self.assertIn("clear_emulator_frame", missing)
+
+    def test_verified_clear_gate_binds_source_digest_seed_and_detection_source(self):
+        provenance = {field: "x" for field in VERIFIED_CLEAR_PROVENANCE_FIELDS}
+        provenance.update({"checkpoint_id": MODEL_SHA256, "training_seed": 2022,
+            "training_transition_count": 2_500_000, "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+            "contract_sha256": "7eca5ae5262a28aeabf3be658f8275a68f3d2ae40cc74379400be2890dc31a2a",
+            "source_commit": "a" * 40, "source_working_tree_dirty": False,
+            "completion_source_sha256": "b" * 64, "raw_score": 864.0, "clear_score": 864.0,
+            "clear_agent_step": 2, "clear_emulator_frame": 8, "lives_remaining_at_clear": 3,
+            "completion_detection_source": BREAKOUT_COMPLETION_SOURCE,
+            "completion_detector_id": "ale-breakout-two-wall-score-864-v2",
+            "contract_validation_status": "canonical_contract_v2", "evaluation_seed": 101,
+            "episode_seed": 101, "episode_index": 1})
+        expected = dict(source_commit="a" * 40, completion_digest="b" * 64,
+            episode_seed=101, episode_index=1)
+        for key, value in (("source_commit", "c" * 40), ("completion_source_sha256", "d" * 64),
+                           ("evaluation_seed", 202), ("episode_index", 2),
+                           ("completion_detection_source", "video_guess")):
+            altered = dict(provenance)
+            altered[key] = value
+            self.assertFalse(complete_clear_provenance(altered, **expected)[0], key)
 
 
 if __name__ == "__main__":

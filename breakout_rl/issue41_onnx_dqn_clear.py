@@ -17,6 +17,7 @@ from breakout_env import make_breakout_env
 from breakout_rl.completion import (
     BreakoutCompletionDetector,
     BREAKOUT_COMPLETION_DETECTOR_ID,
+    BREAKOUT_COMPLETION_SOURCE,
     inspect_breakout_completion_support,
     read_ale_episode_frame,
     read_ale_lives,
@@ -77,7 +78,9 @@ def select_greedy_action(q_values: np.ndarray) -> int:
     return int(np.argmax(q[0]))
 
 
-def complete_clear_provenance(provenance: dict[str, Any]) -> tuple[bool, list[str]]:
+def complete_clear_provenance(provenance: dict[str, Any], *, source_commit: str,
+                              completion_digest: str, episode_seed: int,
+                              episode_index: int) -> tuple[bool, list[str]]:
     missing = [field for field in VERIFIED_CLEAR_PROVENANCE_FIELDS if provenance.get(field) is None]
     expected = {
         "checkpoint_id": MODEL_SHA256, "training_seed": 2022,
@@ -85,9 +88,18 @@ def complete_clear_provenance(provenance: dict[str, Any]) -> tuple[bool, list[st
         "contract_sha256": CONTRACT_SHA256, "source_working_tree_dirty": False,
         "completion_detector_id": BREAKOUT_COMPLETION_DETECTOR_ID,
         "contract_validation_status": "canonical_contract_v2",
+        "source_commit": source_commit,
+        "completion_source_sha256": completion_digest,
+        "completion_detection_source": BREAKOUT_COMPLETION_SOURCE,
+        "evaluation_seed": episode_seed,
+        "episode_seed": episode_seed,
+        "episode_index": episode_index,
         "clear_score": 864.0, "raw_score": 864.0,
     }
     invalid = [field for field, value in expected.items() if provenance.get(field) != value]
+    expected_index = SEEDS.index(episode_seed) + 1 if episode_seed in SEEDS else None
+    if episode_index != expected_index:
+        invalid.append("episode_index")
     missing.extend(field for field in invalid if field not in missing)
     return not missing, missing
 
@@ -294,7 +306,9 @@ def run(contract_path: Path, spec_path: Path, model_path: Path, episode_seeds: t
                         "completion_detection_source": clear_state.completion_detection_source,
                         "completion_detector_id": BREAKOUT_COMPLETION_DETECTOR_ID,
                         "contract_validation_status": "canonical_contract_v2"}
-                    complete, missing_fields = complete_clear_provenance(provenance)
+                    complete, missing_fields = complete_clear_provenance(
+                        provenance, source_commit=commit, completion_digest=completion_digest,
+                        episode_seed=seed, episode_index=episode_index)
                     episode["verified_clear_provenance"] = provenance
                     episode["missing_provenance_fields"] = missing_fields
                     episode["clear_status"] = "VERIFIED_CLEAR" if complete else "CANONICAL_CLEAR_UNVERIFIED"
@@ -329,7 +343,9 @@ def run(contract_path: Path, spec_path: Path, model_path: Path, episode_seeds: t
                        if row["canonical_clear"] is True
                        and row["clear_status"] == "VERIFIED_CLEAR"]
     for provenance in verified_clears:
-        complete, missing_fields = complete_clear_provenance(provenance)
+        complete, missing_fields = complete_clear_provenance(
+            provenance, source_commit=commit, completion_digest=completion_digest,
+            episode_seed=provenance["episode_seed"], episode_index=provenance["episode_index"])
         if not complete or missing_fields:
             raise RuntimeError("verified_clears contains incomplete provenance")
     result = {"schema_version": 1, "issue": 41, "evaluation_status": status,
