@@ -55,6 +55,8 @@ SCHEDULE = tuple((seed, arm) for seed in SEEDS for arm in ARMS)
 FRAME_LIMIT, STEP_LIMIT, TOTAL_FRAME_LIMIT = 108_000, 27_000, 648_000
 TOTAL_STEP_LIMIT = 162_000
 COLLECTION_WALL_LIMIT, FINALIZATION_RESERVE_SECONDS, TOTAL_WALL_LIMIT = 560.0, 20.0, 600.0
+# Covers process launch and Python startup before the executable module can timestamp itself.
+PROCESS_LAUNCH_RESERVE_SECONDS = 5.0
 ACTION_MEANINGS = ("NOOP", "FIRE", "RIGHT", "LEFT")
 BALL_ROI = (54, 73, 6, 78)
 PADDLE_ROI = (73, 83, 6, 78)
@@ -413,8 +415,8 @@ def run(output_dir: Path, *, contract_path=DEFAULT_CONTRACT, spec_path=DEFAULT_S
     if tuple(env.unwrapped.get_action_meanings()) != ACTION_MEANINGS or not support.supported:
         env.close(); raise RuntimeError("Contract v2 action meanings/canonical clear support unavailable")
     setup_seconds = time.perf_counter() - run_start
-    if validation_seconds + setup_seconds > 20:
-        env.close(); raise RuntimeError(f"combined tests/preflight/setup cap exceeded: {validation_seconds + setup_seconds:.3f}s")
+    if validation_seconds + PROCESS_LAUNCH_RESERVE_SECONDS + setup_seconds > 20:
+        env.close(); raise RuntimeError(f"combined tests/preflight/process-launch/setup cap exceeded: {validation_seconds + PROCESS_LAUNCH_RESERVE_SECONDS + setup_seconds:.3f}s")
     rows, total_native, stop_reason, verified_clear = [], 0, "schedule_completed", False
     canonical_clear_detected = False
     collection_start = time.perf_counter()
@@ -671,7 +673,7 @@ def run(output_dir: Path, *, contract_path=DEFAULT_CONTRACT, spec_path=DEFAULT_S
         SPEC_LINEAGE_NOTE, "", f"Focused test command `{validation_record['validation']['test_command']}` passed {validation_record['validation']['test_count']} tests in {validation_record['validation']['test_wall_seconds']:.3f}s. Compile took {validation_record['validation']['compile_wall_seconds']:.3f}s; zero-frame CPU preflight took {validation_record['validation']['preflight_wall_seconds']:.3f}s with `ale_environment_created=false`.",
         validation_history, "",
         "Contract v2 sticky-action probability is 0.25; sticky resolution can make the physical ALE action differ from the requested policy/ALE-input action, so controller effects retain this uncertainty.",
-        "Frozen caps: validation plus formal setup 20s; collection 560s; finalization 20s; total wall 600s; each episode 108,000 native frames / 27,000 decisions; six-episode aggregate 648,000 native frames / 162,000 decisions. The external timeout includes final manifest writing.", "",
+        "Frozen caps: validation plus process-launch reserve and formal setup 20s; collection 560s; finalization 20s; total wall 600s; each episode 108,000 native frames / 27,000 decisions; six-episode aggregate 648,000 native frames / 162,000 decisions. The external timeout includes final manifest writing.", "",
         "## Tests and Setup", "", "No detector smoke fixture was used; setup/preflight consumed zero ALE-native frames.", "",
         "## Remaining Uncertainty", "", ("A canonical clear was detected without complete provenance; human review is required, and no HVC yes/no classification is claimed." if canonical_clear_detected and not verified_clear else "This is current-frame horizontal alignment; it does not estimate ball velocity or a future intercept. No-clear remains INCONCLUSIVE under HVC-only evaluation."), "",
         "## Recommended Next Decision", "", ("Verified clear reached the frozen goal; do not transition Phase 2 automatically." if verified_clear else ("Review the unverified canonical clear signal; do not continue collection." if canonical_clear_detected else "Continue research under HVC-only criteria; do not rank or promote from diagnostics.")), ""]
@@ -680,10 +682,11 @@ def run(output_dir: Path, *, contract_path=DEFAULT_CONTRACT, spec_path=DEFAULT_S
     actual_finalization = time.perf_counter() - final_start
     results["wall_accounting"]["finalization_seconds"] = actual_finalization
     results["wall_accounting"]["total_formal_seconds"] = total
-    if actual_finalization > FINALIZATION_RESERVE_SECONDS or validation_seconds + total > TOTAL_WALL_LIMIT:
+    if (actual_finalization > FINALIZATION_RESERVE_SECONDS
+        or validation_seconds + PROCESS_LAUNCH_RESERVE_SECONDS + total > TOTAL_WALL_LIMIT):
         raise RuntimeError("finalization or total wall cap exceeded")
-    results["wall_accounting"]["total_including_validation_seconds"] = validation_seconds + total
-    results["wall_accounting"]["combined_validation_setup_seconds"] = validation_seconds + setup_seconds
+    results["wall_accounting"]["total_including_validation_seconds"] = validation_seconds + PROCESS_LAUNCH_RESERVE_SECONDS + total
+    results["wall_accounting"]["combined_validation_setup_seconds"] = validation_seconds + PROCESS_LAUNCH_RESERVE_SECONDS + setup_seconds
     results_path.write_text(json.dumps(results, indent=2, sort_keys=True) + "\n")
     (output_dir / "manifest.json").write_text(json.dumps({"issue": 58, "source_commit": commit, "source_branch": branch,
         "issue58_source_sha256": experiment_digest, "classification": outcome["classification"],
@@ -692,23 +695,37 @@ def run(output_dir: Path, *, contract_path=DEFAULT_CONTRACT, spec_path=DEFAULT_S
         "calibration_selection": calibration,
         "validation": validation_record["validation"],
         "wall_accounting": {**results["wall_accounting"],
-            "formal_seconds": total, "total_seconds": validation_seconds + total,
+            "formal_seconds": total, "total_seconds": validation_seconds + PROCESS_LAUNCH_RESERVE_SECONDS + total,
+            "process_launch_reserve_seconds": PROCESS_LAUNCH_RESERVE_SECONDS,
             "collection_cap_seconds": COLLECTION_WALL_LIMIT,
             "setup_plus_test_cap_seconds": 20.0, "finalization_cap_seconds": FINALIZATION_RESERVE_SECONDS,
-            "measurement_scope": "runner internal elapsed is checked after report/results preparation; final manifest write is excluded from the recorded total, but its time is included in post-write 20s finalization and total 600s cap guards and the external timeout"},
+            "measurement_scope": "runner elapsed and finalization are measured through the completed runner manifest write; CLI elapsed includes runner work, console summary, artifact packaging, and terminal report/results/manifest/sidecar writes"},
         "artifacts": {"results_sha256": sha256(results_path), "report_sha256": sha256(report_path),
             "trajectory_sha256": sha256(trajectory_path), "stack_index_sha256": sha256(stack_index_path)}},
         indent=2, sort_keys=True) + "\n")
     # Include final manifest serialization in the internal finalization/total guards.
     post_manifest_wall = time.perf_counter() - run_start
     post_manifest_finalization = time.perf_counter() - final_start
-    if post_manifest_finalization > FINALIZATION_RESERVE_SECONDS or validation_seconds + post_manifest_wall > TOTAL_WALL_LIMIT:
+    if (post_manifest_finalization > FINALIZATION_RESERVE_SECONDS
+        or validation_seconds + PROCESS_LAUNCH_RESERVE_SECONDS + post_manifest_wall > TOTAL_WALL_LIMIT):
         raise RuntimeError("final manifest write exceeded frozen finalization or total wall cap")
+    results["wall_accounting"].update({
+        "runner_elapsed_through_manifest_seconds": post_manifest_wall,
+        "runner_finalization_through_manifest_seconds": post_manifest_finalization,
+        "process_launch_reserve_seconds": PROCESS_LAUNCH_RESERVE_SECONDS,
+        "formal_seconds": post_manifest_wall,
+        "total_seconds": validation_seconds + PROCESS_LAUNCH_RESERVE_SECONDS + post_manifest_wall,
+        "finalization_seconds": post_manifest_finalization,
+        "total_formal_seconds": post_manifest_wall,
+        "total_including_validation_seconds": validation_seconds + PROCESS_LAUNCH_RESERVE_SECONDS + post_manifest_wall,
+        "combined_validation_setup_seconds": validation_seconds + PROCESS_LAUNCH_RESERVE_SECONDS + setup_seconds,
+        "measurement_complete_through": "runner manifest write",
+    })
     return results
 
 
-def cli(argv: list[str] | None = None) -> int:
-    cli_start = time.perf_counter()
+def cli(argv: list[str] | None = None, *, process_start: float | None = None) -> int:
+    cli_start = process_start if process_start is not None else time.perf_counter()
     parser = argparse.ArgumentParser()
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--preflight-only", action="store_true")
@@ -740,18 +757,25 @@ def cli(argv: list[str] | None = None) -> int:
     shutil.copyfile(stdout_path, output_stdout); shutil.copyfile(stderr_path, output_stderr)
     results_path = args.output_dir / "results.json"
     result_data = json.loads(results_path.read_text(encoding="utf-8"))
+    runner_wall = result["wall_accounting"]
+    for key in ("runner_elapsed_through_manifest_seconds", "runner_finalization_through_manifest_seconds",
+                "process_launch_reserve_seconds", "finalization_seconds", "formal_seconds", "total_seconds",
+                "total_formal_seconds", "total_including_validation_seconds", "combined_validation_setup_seconds",
+                "measurement_complete_through"):
+        result_data["wall_accounting"][key] = runner_wall[key]
     result_data["artifacts"]["formal_stdout"] = {"file": output_stdout.name, "sha256": sha256(output_stdout), "bytes": output_stdout.stat().st_size}
     result_data["artifacts"]["formal_stderr"] = {"file": output_stderr.name, "sha256": sha256(output_stderr), "bytes": output_stderr.stat().st_size}
     result_data["artifacts"]["manifest_sha256_sidecar"] = "/tmp/issue58-formal-manifest.sha256"
     validation_seconds = float(result["pre_run_validation"]["validation"]["combined_wall_seconds"])
+    launch_charge = PROCESS_LAUNCH_RESERVE_SECONDS
     report_path = args.output_dir / "report.md"
     with report_path.open("a", encoding="utf-8") as report_file:
         report_file.write(f"\nRaw formal stdout: `formal.stdout` SHA-256 `{sha256(output_stdout)}`.\n")
         report_file.write(f"Raw formal stderr: `formal.stderr` SHA-256 `{sha256(output_stderr)}`.\n")
     wrapup_seconds = time.perf_counter() - wrapup_start
-    inner_finalization_seconds = float(result["wall_accounting"]["finalization_seconds"])
+    inner_finalization_seconds = float(runner_wall["runner_finalization_through_manifest_seconds"])
     result_data["wall_accounting"]["post_run_artifact_packaging_seconds"] = wrapup_seconds
-    result_data["wall_accounting"]["total_including_validation_and_packaging_seconds"] = validation_seconds + time.perf_counter() - cli_start
+    result_data["wall_accounting"]["total_including_validation_and_packaging_seconds"] = validation_seconds + launch_charge + time.perf_counter() - cli_start
     result_data["wall_accounting"]["finalization_seconds"] = inner_finalization_seconds
     if inner_finalization_seconds + wrapup_seconds > FINALIZATION_RESERVE_SECONDS or result_data["wall_accounting"]["total_including_validation_and_packaging_seconds"] > TOTAL_WALL_LIMIT:
         raise RuntimeError("outer artifact packaging exceeded finalization or total wall cap")
@@ -760,6 +784,10 @@ def cli(argv: list[str] | None = None) -> int:
         report_file.write(f"Pre-run validation plus formal command and artifact packaging elapsed: {result_data['wall_accounting']['total_including_validation_and_packaging_seconds']:.3f}s.\n")
     manifest_path = args.output_dir / "manifest.json"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["wall_accounting"].update({key: runner_wall[key] for key in (
+        "runner_elapsed_through_manifest_seconds", "runner_finalization_through_manifest_seconds",
+        "process_launch_reserve_seconds", "formal_seconds", "total_seconds", "total_formal_seconds", "total_including_validation_seconds",
+        "combined_validation_setup_seconds", "measurement_complete_through")})
     manifest["raw_console_outputs"] = {
         "stdout_path": str(stdout_path), "stdout_sha256": sha256(stdout_path),
         "stderr_path": str(stderr_path), "stderr_sha256": sha256(stderr_path),
@@ -778,27 +806,29 @@ def cli(argv: list[str] | None = None) -> int:
     Path("/tmp/issue58-formal-manifest.sha256").write_text(f"{manifest_sha}  {manifest_path}\n", encoding="utf-8")
     actual_elapsed = time.perf_counter() - cli_start
     actual_wrapup = time.perf_counter() - wrapup_start
-    actual_finalization = float(result["wall_accounting"]["finalization_seconds"]) + actual_wrapup
-    if validation_seconds + actual_elapsed > TOTAL_WALL_LIMIT or actual_finalization > FINALIZATION_RESERVE_SECONDS:
+    actual_finalization = float(runner_wall["runner_finalization_through_manifest_seconds"]) + actual_wrapup
+    if validation_seconds + launch_charge + actual_elapsed > TOTAL_WALL_LIMIT or actual_finalization > FINALIZATION_RESERVE_SECONDS:
         raise RuntimeError("actual outer wrapper elapsed exceeded the frozen finalization or total wall cap")
     timing_path = args.output_dir / "wrapper_timing.json"
     timing = {"outer_command_elapsed_seconds": actual_elapsed,
-        "validation_plus_outer_command_elapsed_seconds": validation_seconds + actual_elapsed,
+        "validation_plus_outer_command_elapsed_seconds": validation_seconds + launch_charge + actual_elapsed,
+        "process_launch_reserve_seconds": launch_charge,
         "outer_artifact_finalization_seconds": actual_finalization,
         "measurement_complete_through": "manifest hash sidecar write before binding wrapper_timing.json",
         "final_manifest_sha256_sidecar": "/tmp/issue58-formal-manifest.sha256"}
     timing_path.write_text(json.dumps(timing, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     result_data["wall_accounting"]["outer_command_elapsed_seconds"] = actual_elapsed
-    result_data["wall_accounting"]["total_including_validation_and_packaging_seconds"] = validation_seconds + actual_elapsed
+    result_data["wall_accounting"]["post_run_artifact_packaging_seconds"] = actual_wrapup
+    result_data["wall_accounting"]["total_including_validation_and_packaging_seconds"] = validation_seconds + launch_charge + actual_elapsed
     result_data["wall_accounting"]["finalization_seconds"] = actual_finalization
     result_data["artifacts"]["wrapper_timing"] = {"file": timing_path.name, "sha256": sha256(timing_path)}
     results_path.write_text(json.dumps(result_data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     with report_path.open("a", encoding="utf-8") as report_file:
-        report_file.write(f"\nWrapper timing artifact: `wrapper_timing.json` SHA-256 `{sha256(timing_path)}`; outer elapsed {actual_elapsed:.3f}s, combined validation/command {validation_seconds + actual_elapsed:.3f}s, finalization {actual_finalization:.3f}s.\n")
+        report_file.write(f"\nRunner elapsed through manifest {runner_wall['runner_elapsed_through_manifest_seconds']:.3f}s; runner finalization through manifest {runner_wall['runner_finalization_through_manifest_seconds']:.3f}s. Wrapper timing artifact: `wrapper_timing.json` SHA-256 `{sha256(timing_path)}`; outer elapsed {actual_elapsed:.3f}s, launch reserve {launch_charge:.3f}s, combined validation/command {validation_seconds + launch_charge + actual_elapsed:.3f}s, finalization {actual_finalization:.3f}s.\n")
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     manifest["wrapper_timing"] = {"file": timing_path.name, "sha256": sha256(timing_path)}
     manifest["wall_accounting"].update({"outer_command_elapsed_seconds": actual_elapsed,
-        "total_including_validation_and_packaging_seconds": validation_seconds + actual_elapsed,
+        "total_including_validation_and_packaging_seconds": validation_seconds + launch_charge + actual_elapsed,
         "finalization_seconds": actual_finalization})
     manifest["artifacts"].update({"results_sha256": sha256(results_path), "report_sha256": sha256(report_path),
         "wrapper_timing_sha256": sha256(timing_path)})
@@ -809,11 +839,11 @@ def cli(argv: list[str] | None = None) -> int:
     final_outer_wrapup = time.perf_counter() - wrapup_start
     terminal_write_seconds = max(0.0, final_outer_wrapup - actual_wrapup)
     finalization_total = actual_finalization + terminal_write_seconds
-    if validation_seconds + final_elapsed > TOTAL_WALL_LIMIT or finalization_total > FINALIZATION_RESERVE_SECONDS:
+    if validation_seconds + launch_charge + final_elapsed > TOTAL_WALL_LIMIT or finalization_total > FINALIZATION_RESERVE_SECONDS:
         raise RuntimeError("terminal report/manifest writes exceeded frozen total or finalization cap")
     Path("/tmp/issue58-formal-wrapper-timing.json").write_text(json.dumps({
         "outer_command_elapsed_seconds_through_terminal_writes": final_elapsed,
-        "validation_plus_outer_command_elapsed_seconds": validation_seconds + final_elapsed,
+        "validation_plus_outer_command_elapsed_seconds": validation_seconds + launch_charge + final_elapsed,
         "outer_artifact_finalization_seconds_through_terminal_writes": finalization_total,
         "artifact_wrapper_timing_sha256": sha256(timing_path),
         "final_manifest_sha256": manifest_sha,
