@@ -644,6 +644,14 @@ def run(output_dir: Path, *, contract_path=DEFAULT_CONTRACT, spec_path=DEFAULT_S
         failure_fact = "A provenance-complete candidate clear reached the frozen goal; the baseline/candidate diagnostics do not alter that HVC result."
     else:
         failure_fact = "A provenance-complete baseline clear reached the goal; the candidate hypothesis remains NOT_ADJUDICATED."
+    earlier_validation_attempts = validation_record["validation"].get("earlier_validation_attempts", [])
+    if earlier_validation_attempts:
+        validation_history = (
+            f"Earlier validation attempts (combined wall {validation_record['validation']['earlier_validation_work_wall_seconds']:.6f}s): "
+            f"`{json.dumps(earlier_validation_attempts, sort_keys=True)}`. These were focused-code checks only; none created, reset, or stepped ALE."
+        )
+    else:
+        validation_history = "No earlier validation failures were recorded."
     report = ["# Issue #58: Calibrated Grayscale Paddle Alignment First-Clear Probe", "",
         "## Hypothesis Result", "",
         f"**{outcome['classification']}**; HVC `{outcome['hvc_status']}`; round status `{outcome['round_status']}`; candidate hypothesis `{outcome['candidate_hypothesis_status'] }`.", "",
@@ -657,7 +665,8 @@ def run(output_dir: Path, *, contract_path=DEFAULT_CONTRACT, spec_path=DEFAULT_S
         f"Issue #50 calibration stack hashes `{json.dumps(calibration['stack_sha256s'], sort_keys=True)}`.",
         f"Runtime Python `{platform.python_version()}`, gymnasium `{importlib.metadata.version('gymnasium')}`, ALE `{importlib.metadata.version('ale-py')}`, ONNX Runtime `{policy.ort.__version__}`, provider `CPUExecutionProvider`; `MODEL_ROUTING_VERIFICATION: UNAVAILABLE`.",
         f"Frozen calibration scan from 300 indexed rows / 150 unique observations: selected T=80; activation counts {calibration['activation_counts_by_threshold']}; this is a detector diagnostic, not object truth.",
-        SPEC_LINEAGE_NOTE, "", f"Focused test command `{validation_record['validation']['test_command']}` passed {validation_record['validation']['test_count']} tests in {validation_record['validation']['test_wall_seconds']:.3f}s. Compile took {validation_record['validation']['compile_wall_seconds']:.3f}s; zero-frame CPU preflight took {validation_record['validation']['preflight_wall_seconds']:.3f}s with `ale_environment_created=false`.", "",
+        SPEC_LINEAGE_NOTE, "", f"Focused test command `{validation_record['validation']['test_command']}` passed {validation_record['validation']['test_count']} tests in {validation_record['validation']['test_wall_seconds']:.3f}s. Compile took {validation_record['validation']['compile_wall_seconds']:.3f}s; zero-frame CPU preflight took {validation_record['validation']['preflight_wall_seconds']:.3f}s with `ale_environment_created=false`.",
+        validation_history, "",
         "Contract v2 sticky-action probability is 0.25; sticky resolution can make the physical ALE action differ from the requested policy/ALE-input action, so controller effects retain this uncertainty.",
         "Frozen caps: validation plus formal setup 20s; collection 560s; finalization 20s; total wall 600s; each episode 108,000 native frames / 27,000 decisions; six-episode aggregate 648,000 native frames / 162,000 decisions. The external timeout includes final manifest writing.", "",
         "## Tests and Setup", "", "No detector smoke fixture was used; setup/preflight consumed zero ALE-native frames.", "",
