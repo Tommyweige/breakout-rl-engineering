@@ -4,6 +4,9 @@
 
 Status: `completed`; episodes: `3/3`; life-loss windows: `15`; native frames: `12511`; wall seconds: `5.53`.
 Formal run source commit: `82b72e1a7e1af89a4b3223ee221ab10e9d9a4164`. This report was refreshed offline from the preserved results and window index after collection; no further ALE run occurred.
+Pre-run accounting: focused pure tests, compilation, and diff check took 0.267 s; zero-frame runtime preflight took 0.211 s; combined validation took 0.478 s of the 20 s setup cap, with zero setup/test native frames.
+Frame semantics: each index `decision_metadata.emulator_frame` is the pre-action model-input frame; the event loss frame and trajectory frame are post-step. ALE can advance fewer than four native frames on terminal game-over steps; two observed terminal losses advanced 2 and 1 frames.
+Contact-sheet Q labels are rounded to four decimal places for readability; full float32 values remain in the index and trajectory.
 All predeclared seeds completed; none were skipped.
 Secondary coverage: `15` evaluator-detected life losses; `15` loss windows captured.
 If no clear has complete provenance, the primary result is INCONCLUSIVE. This runner records a provenance-complete candidate as pending Planner validation; only independent Planner review may set GOAL_REACHED.

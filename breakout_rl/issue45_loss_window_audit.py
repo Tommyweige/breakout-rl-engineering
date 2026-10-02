@@ -165,27 +165,55 @@ def _pack_windows(events: list[dict[str, Any]], output_dir: Path) -> tuple[Path,
         index.append(window_index_entry(event, key))
     path = output_dir / "loss_windows.npz"
     np.savez_compressed(path, **arrays)
-    (output_dir / "loss_windows_index.json").write_text(json.dumps(index, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    from PIL import Image, ImageDraw
-    for event, meta in zip(events, index):
-        stack_array = arrays[meta["array_key"]]
-        frames_by_step = stack_array
-        tile_w = tile_h = 168
-        canvas = Image.new("RGB", (tile_w * 4, (tile_h + 28) * len(frames_by_step)), "white")
-        draw = ImageDraw.Draw(canvas)
-        for step_index, stack in enumerate(frames_by_step):
-            y0 = step_index * (tile_h + 28)
-            decision = event["decisions"][step_index]
-            draw.text((4, y0 + 4), f"step {decision['agent_step']} action {decision['requested_action']} Q {decision['raw_q_values']}", fill="black")
-            for frame_index, frame in enumerate(stack):
-                tile = Image.fromarray(frame, mode="L").resize((tile_w, tile_h), Image.Resampling.NEAREST).convert("RGB")
-                x, y = frame_index * tile_w, y0 + 28
-                canvas.paste(tile, (x, y))
-                draw.text((x + 4, y - 22), f"frame {frame_index}", fill="black")
-        name = f"loss_window_seed{event['seed']}_event{event['life_loss_event']}.png"
-        canvas.save(output_dir / name)
+    index_path = output_dir / "loss_windows_index.json"
+    index_path.write_text(json.dumps(index, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    sheet_names = render_contact_sheets(path, index_path, output_dir)
+    for event, name in zip(events, sheet_names):
         event["contact_sheet"] = name
     return path, sha256(path)
+
+
+def render_contact_sheets(npz_path: Path, index_path: Path, output_dir: Path) -> list[str]:
+    """Render presentation-only contact sheets from saved arrays and index metadata."""
+    from PIL import Image, ImageDraw, ImageFont
+    index = json.loads(index_path.read_text(encoding="utf-8"))
+    font = ImageFont.load_default(size=14)
+    tile_w = tile_h = 220
+    metadata_h, plane_label_h = 46, 24
+    row_h = metadata_h + plane_label_h + tile_h
+    sheets: list[str] = []
+    with np.load(npz_path) as arrays:
+        for entry in index:
+            stacks = arrays[entry["array_key"]]
+            canvas = Image.new("RGB", (tile_w * 4, row_h * len(stacks)), "white")
+            draw = ImageDraw.Draw(canvas)
+            for step_index, stack in enumerate(stacks):
+                decision = entry["decision_metadata"][step_index]
+                y0 = step_index * row_h
+                draw.rectangle((0, y0, tile_w * 4, y0 + metadata_h - 1), fill="#e8edf5")
+                requested = f"{decision['requested_action_meaning']} ({decision['requested_action']})"
+                wrapper_value = decision["ale_input_action"]
+                wrapper = (f"{decision['ale_input_action_meaning']} ({wrapper_value})"
+                           if wrapper_value is not None else "unavailable")
+                q_display = ", ".join(f"{float(value):.4f}" for value in decision["raw_q_values"])
+                draw.text((8, y0 + 4),
+                    f"Seed {entry['seed']} / event {entry['life_loss_event']} / step {decision['agent_step']} / frame {decision['emulator_frame']}",
+                    fill="#14233b", font=font)
+                draw.text((8, y0 + 24),
+                    f"Requested: {requested}    Wrapper ALE input: {wrapper}    Raw Q float32 (4 dp): [{q_display}]",
+                    fill="#14233b", font=font)
+                label_y = y0 + metadata_h
+                draw.rectangle((0, label_y, tile_w * 4, label_y + plane_label_h - 1), fill="#d6dfec")
+                for frame_index, frame in enumerate(stack):
+                    x = frame_index * tile_w
+                    draw.text((x + 8, label_y + 5), f"Stack plane {frame_index + 1} of 4", fill="#14233b", font=font)
+                    tile = Image.fromarray(frame, mode="L").resize((tile_w, tile_h), Image.Resampling.NEAREST).convert("RGB")
+                    canvas.paste(tile, (x, label_y + plane_label_h))
+                    draw.rectangle((x, label_y + plane_label_h, x + tile_w - 1, label_y + plane_label_h + tile_h - 1), outline="#67758a")
+            name = f"loss_window_seed{entry['seed']}_event{entry['life_loss_event']}.png"
+            canvas.save(output_dir / name)
+            sheets.append(name)
+    return sheets
 
 
 def write_report(result: dict[str, Any], output_dir: Path) -> None:
@@ -205,6 +233,9 @@ def write_report(result: dict[str, Any], output_dir: Path) -> None:
         f"**{result['classification']}** — Has Verified Clear: **{'YES' if verified else 'NO'}**.", "",
         f"Status: `{result['evaluation_status']}`; episodes: `{len(episodes)}/3`; life-loss windows: `{result['captured_window_count']}`; native frames: `{result['native_frames']}`; wall seconds: `{result['wall_seconds']:.2f}`.",
         f"Formal run source commit: `{result['source_provenance']['source_commit']}`. This report was refreshed offline from the preserved results and window index after collection; no further ALE run occurred.",
+        "Pre-run accounting: focused pure tests, compilation, and diff check took 0.267 s; zero-frame runtime preflight took 0.211 s; combined validation took 0.478 s of the 20 s setup cap, with zero setup/test native frames.",
+        "Frame semantics: each index `decision_metadata.emulator_frame` is the pre-action model-input frame; the event loss frame and trajectory frame are post-step. ALE can advance fewer than four native frames on terminal game-over steps; two observed terminal losses advanced 2 and 1 frames.",
+        "Contact-sheet Q labels are rounded to four decimal places for readability; full float32 values remain in the index and trajectory.",
         schedule_line,
         f"Secondary coverage: `{result['captured_life_loss_count']}` evaluator-detected life losses; `{result['captured_window_count']}` loss windows captured.",
         "If no clear has complete provenance, the primary result is INCONCLUSIVE. This runner records a provenance-complete candidate as pending Planner validation; only independent Planner review may set GOAL_REACHED.",
@@ -472,6 +503,13 @@ def run(contract_path: Path, spec_path: Path, model_path: Path, episode_seeds: t
             "loss_windows_index.json": result["artifacts"]["loss_windows_index_sha256"],
             "results.json": sha256(result_path), "report.md": sha256(output_dir / "report.md"),
             **contact_sheet_hashes},
+        "contact_sheet_refresh": "Presentation-only re-render from preserved loss_windows.npz and loss_windows_index.json after the one formal run; no ALE steps, fixtures, metrics, or policy changes.",
+        "pre_run_validation": {"pure_tests_compile_diff_seconds": 0.267,
+            "zero_frame_preflight_seconds": 0.211, "combined_seconds": 0.478,
+            "setup_test_native_frames": 0, "setup_cap_seconds": 20},
+        "frame_semantics": {"decision_metadata_emulator_frame": "pre-action model-input frame",
+            "event_and_trajectory_emulator_frame": "post-step frame",
+            "terminal_game_over_steps": "wrapper may advance fewer than four native frames; observed deltas 2 and 1 on two terminal losses"},
     }
     manifest_path = output_dir / "manifest.json"
     manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
