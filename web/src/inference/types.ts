@@ -49,8 +49,8 @@ export interface PolicyResult {
   qValues: readonly number[];
   actionIndex: number;
   action: ActionMeaning;
-  requestedBackend: InferenceBackend;
-  actualBackend: InferenceBackend;
+  requestedBackend: InferenceBackend | 'vision';
+  actualBackend: InferenceBackend | 'vision';
   /** Optional gameplay-only metadata; formal evaluation remains greedy and unchanged. */
   difficulty?: string;
   mistakeRate?: number;

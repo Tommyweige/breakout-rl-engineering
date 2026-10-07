@@ -1,4 +1,5 @@
 import type { ALEInterface, ALEModule } from '@farama/ale-wasm';
+import visionContract from '../../../configs/eval/breakout_contract_v3.json';
 
 import { ACTION_MEANINGS, type ActionMeaning } from '../inference/types';
 import type { HumanPaddleCommand } from '../input/paddleCommand';
@@ -71,6 +72,7 @@ export interface EnvironmentSnapshot {
 export interface BrowserBreakoutEnvironmentOptions {
   contract: BreakoutContractV2;
   seed: number;
+  rawFrameRepeat?: 1 | 4;
 }
 
 export interface HumanBreakoutEnvironmentOptions {
@@ -131,7 +133,7 @@ export interface PreprocessingTrace {
   nativeAleSeed: number;
   noopMax: number;
   noopCount: number;
-  noopSource: 'native_manifest' | 'seeded_fallback' | 'test_override';
+  noopSource: 'native_manifest' | 'seeded_fallback' | 'test_override' | 'raw_rgb';
   resetNoopGrayscaleFrames: number[][];
   resetGrayscaleFrame: number[];
   resetProcessedFrame: number[];
@@ -151,6 +153,7 @@ let nextAleInstanceId = 1;
 
 export class BrowserBreakoutEnvironment {
   readonly instanceId = nextAleInstanceId++;
+  private rawFrameRepeat = 4;
   private readonly frameStack: FrameStack;
   private seed: number;
   private lastRawRgb: Uint8Array;
@@ -212,7 +215,7 @@ export class BrowserBreakoutEnvironment {
       options.seed,
       nativeSeedConfigs,
     );
-    environment.reset(options.seed);
+    environment.reset(options.seed, options.rawFrameRepeat);
     return environment;
   }
 
@@ -253,36 +256,44 @@ export class BrowserBreakoutEnvironment {
   }
 
   get runtimeDiagnostics(): Record<string, unknown> {
+    const controlContract = this.rawFrameRepeat === 1 ? visionContract : this.contract;
     return {
       instanceId: this.instanceId,
       requestedEnvironment: this.contract.environment_id,
       aleVersion: this.aleVersion,
       rawAleFrameSkip: this.ale.getInt('frame_skip'),
-      outerActionRepeat: this.contract.frame_skip,
-      expectedEmulatorFramesPerDecision: this.ale.getInt('frame_skip') * this.contract.frame_skip,
+      controlContractId: controlContract.contract_id,
+      usesModelPreprocessing: this.rawFrameRepeat !== 1,
+      outerActionRepeat: this.rawFrameRepeat,
+      expectedEmulatorFramesPerDecision: this.ale.getInt('frame_skip') * this.rawFrameRepeat,
       stickyActionProbability: this.ale.getFloat('repeat_action_probability'),
-      noopMax: NATIVE_ATARI_PREPROCESSING.noopMax,
+      noopMax: this.rawFrameRepeat === 1 ? 0 : NATIVE_ATARI_PREPROCESSING.noopMax,
       resetNoopCount: this.lastResetNoopCount,
       resetNoopSource: this.lastResetNoopSource,
       nativeNpSeed: this.nativeSeedConfigs.get(this.seed)?.npSeed ?? this.seed,
-      nativeAleSeed: this.nativeSeedConfigs.get(this.seed)?.aleSeed ?? this.seed,
-      nativeAleSeedSource: this.nativeSeedConfigs.has(this.seed) ? 'native_manifest' : 'seeded_fallback',
+      nativeAleSeed: this.rawFrameRepeat === 1 ? this.seed : this.nativeSeedConfigs.get(this.seed)?.aleSeed ?? this.seed,
+      nativeAleSeedSource: this.rawFrameRepeat === 1 ? 'raw_rgb' : this.nativeSeedConfigs.has(this.seed) ? 'native_manifest' : 'seeded_fallback',
       grayscaleBeforeMaxPool: true,
       resizeInterpolation: NATIVE_ATARI_PREPROCESSING.resizeInterpolation,
-      fireReset: this.contract.fire_reset,
-      terminalOnLifeLoss: this.contract.terminal_on_life_loss,
-      timeLimitSource: this.contract.time_limit_semantics.source,
-      maxRawFramesPerEpisode: this.contract.time_limit_semantics.max_num_frames_per_episode,
-      agentStepLimit: this.contract.time_limit_semantics.agent_step_limit,
+      fireReset: controlContract.fire_reset,
+      terminalOnLifeLoss: controlContract.terminal_on_life_loss,
+      timeLimitSource: controlContract.time_limit_semantics.source,
+      maxRawFramesPerEpisode: controlContract.time_limit_semantics.max_num_frames_per_episode,
+      agentStepLimit: controlContract.time_limit_semantics.agent_step_limit,
     };
   }
 
-  reset(seed?: number): EnvironmentSnapshot {
+  reset(seed?: number, rawFrameRepeat = this.rawFrameRepeat): EnvironmentSnapshot {
     this.assertActive();
+    if (rawFrameRepeat !== 1 && rawFrameRepeat !== 4) throw new Error('Agent control repeat must be 1 (vision) or 4 (DQN)');
     const targetSeed = seed ?? this.seed;
     if (!Number.isInteger(targetSeed)) throw new Error(`environment seed must be an integer, got ${targetSeed}`);
+    this.rawFrameRepeat = rawFrameRepeat;
+    const controlContract = this.rawFrameRepeat === 1 ? visionContract : this.contract;
+    this.ale.setFloat('repeat_action_probability', controlContract.sticky_action_probability);
+    this.ale.setInt('max_num_frames_per_episode', controlContract.time_limit_semantics.max_num_frames_per_episode);
     this.seed = targetSeed;
-    const nativeSeedConfig = this.nativeSeedConfigs.get(targetSeed);
+    const nativeSeedConfig = this.rawFrameRepeat === 1 ? undefined : this.nativeSeedConfigs.get(targetSeed);
     if (seed !== undefined) {
       // Gymnasium AtariEnv.reset(seed=...) calls seed_game(), load_game(),
       // then reset_game(). Reloading the ROM here mirrors that seed-bearing
@@ -293,9 +304,9 @@ export class BrowserBreakoutEnvironment {
     this.ale.resetGame();
     this.traceResetNoopGrayscaleFrames = [];
     this.traceSteps = [];
-    const noopCount = nativeSeedConfig?.noopCount ?? fallbackNoopCount(targetSeed);
+    const noopCount = this.rawFrameRepeat === 1 ? 0 : nativeSeedConfig?.noopCount ?? fallbackNoopCount(targetSeed);
     this.lastResetNoopCount = noopCount;
-    this.lastResetNoopSource = nativeSeedConfig === undefined
+    this.lastResetNoopSource = this.rawFrameRepeat === 1 ? 'raw_rgb' : nativeSeedConfig === undefined
       ? (this.nativeSeedConfigs.size === 0 ? 'test_override' : 'seeded_fallback')
       : 'native_manifest';
     let completedNoops = 0;
@@ -609,6 +620,7 @@ export class BrowserBreakoutEnvironment {
     }
 
     const startedAt = now();
+    const controlContract = this.rawFrameRepeat === 1 ? visionContract : this.contract;
     const requested = mapModelActionToAle(modelActionIndex);
     if (this.interactiveFramesInDecision === 0) {
       this.interactiveDecisionRepeat = rawFrameRepeat;
@@ -626,6 +638,7 @@ export class BrowserBreakoutEnvironment {
     const autoFireReason = autoFire ? this.pendingFireReason : null;
     const executed = autoFire ? mapModelActionToAle(1) : latchedAction;
     const beforeFrameNumber = this.ale.getFrameNumber();
+    const beforeRawRgb = this.lastRawRgb;
     const aleStartedAt = now();
     const reward = this.ale.act(executed.aleAction);
     const rawFrame = copyBytes(this.ale.getScreenRGB());
@@ -667,8 +680,8 @@ export class BrowserBreakoutEnvironment {
       observation = this.frameStack.push(processedFrame);
       preprocessingMs = now() - preprocessingStartedAt;
       observationChangedFraction = changedFraction(
-        this.interactiveBeforeObservation ?? this.lastObservation,
-        observation,
+        this.rawFrameRepeat === 1 ? beforeRawRgb : this.interactiveBeforeObservation ?? this.lastObservation,
+        this.rawFrameRepeat === 1 ? rawFrame : observation,
       );
       this.lastRawRgb = new Uint8Array(renderFrame);
       this.lastProcessedFrame = new Uint8Array(processedFrame);
@@ -677,12 +690,12 @@ export class BrowserBreakoutEnvironment {
       if (autoFire) {
         this.fireAttempts += 1;
         if (this.interactiveDecisionReward !== 0) fireConfirmation = 'reward';
-        if (observationChangedFraction >= this.contract.fire_reset_confirmation.min_observation_change_fraction) {
+        if (observationChangedFraction >= controlContract.fire_reset_confirmation.min_observation_change_fraction) {
           this.fireActivityStreak += 1;
         } else {
           this.fireActivityStreak = 0;
         }
-        if (!fireConfirmation && this.fireActivityStreak >= this.contract.fire_reset_confirmation.confirmation_steps) {
+        if (!fireConfirmation && this.fireActivityStreak >= controlContract.fire_reset_confirmation.confirmation_steps) {
           fireConfirmation = 'observation_activity_streak';
         }
         if (fireConfirmation || this.terminated || this.truncated) {
@@ -690,7 +703,7 @@ export class BrowserBreakoutEnvironment {
           this.pendingFireReason = null;
           this.fireAttempts = 0;
           this.fireActivityStreak = 0;
-        } else if (this.fireAttempts >= this.contract.fire_reset_confirmation.max_fire_attempts) {
+        } else if (this.fireAttempts >= controlContract.fire_reset_confirmation.max_fire_attempts) {
           throw new Error(`FIRE serve was not confirmed after ${this.fireAttempts} attempts for ${autoFireReason}`);
         }
       } else {

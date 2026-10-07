@@ -120,7 +120,7 @@ function renderAgentPanel(): string {
       </div>
       <div class="agent-copy">
         <span class="agent-signal" aria-hidden="true"></span>
-        <p><strong data-role="ai-difficulty-label">HARD</strong><br>AI is playing automatically.</p>
+        <p><strong data-role="ai-difficulty-label">HARD</strong><br><span data-role="ai-controller-description">AI is playing automatically.</span></p>
       </div>
     </article>
   `;
