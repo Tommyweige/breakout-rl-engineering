@@ -12,6 +12,8 @@ export type MouseMotionState = 'LEFT' | 'RIGHT' | 'STOPPED';
  */
 export class MouseController {
   private canvas: HTMLCanvasElement | null = null;
+  private surfaces: HTMLElement[] = [];
+  private activePointer: number | null = null;
   private enabled = false;
   private target: number | null = null;
   private targetChangedAtMs: number | null = null;
@@ -21,31 +23,60 @@ export class MouseController {
 
   private readonly onPointerMove = (event: PointerEvent): void => {
     if (!this.enabled || !this.canvas) return;
-    const bounds = this.canvas.getBoundingClientRect();
+    if (this.activePointer !== null && event.pointerId !== this.activePointer) return;
+    const bounds = ((event.currentTarget as HTMLElement | null) ?? this.canvas).getBoundingClientRect();
     if (bounds.width <= 0) return;
     const nextTarget = clamp((event.clientX - bounds.left) / bounds.width, 0, 1);
     if (this.target === null || Math.abs(nextTarget - this.target) > Number.EPSILON) this.targetChangedAtMs = now();
     this.target = nextTarget;
   };
 
+  private readonly onPointerDown = (event: PointerEvent): void => {
+    if (!this.enabled || this.activePointer !== null) return;
+    this.activePointer = event.pointerId;
+    (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+    this.onPointerMove(event);
+  };
+
+  private readonly onPointerEnd = (event: PointerEvent): void => {
+    if (event.pointerId !== this.activePointer) return;
+    this.clear();
+  };
+
   private readonly onPointerLeave = (): void => {
+    if (this.activePointer !== null) return;
     this.target = null;
     this.targetChangedAtMs = null;
     this.state = 'STOPPED';
   };
 
-  attach(canvas: HTMLCanvasElement): void {
+  attach(canvas: HTMLCanvasElement, touchPad?: HTMLElement): void {
     if (this.canvas === canvas) return;
     this.detach();
     this.canvas = canvas;
-    canvas.addEventListener('pointermove', this.onPointerMove);
-    canvas.addEventListener('pointerleave', this.onPointerLeave);
+    this.surfaces = touchPad ? [canvas, touchPad] : [canvas];
+    for (const surface of this.surfaces) {
+      surface.addEventListener('pointerdown', this.onPointerDown);
+      surface.addEventListener('pointermove', this.onPointerMove);
+      surface.addEventListener('pointerleave', this.onPointerLeave);
+      surface.addEventListener('pointerup', this.onPointerEnd);
+      surface.addEventListener('pointercancel', this.onPointerEnd);
+      surface.addEventListener('lostpointercapture', this.onPointerEnd);
+    }
   }
 
   detach(): void {
     if (!this.canvas) return;
-    this.canvas.removeEventListener('pointermove', this.onPointerMove);
-    this.canvas.removeEventListener('pointerleave', this.onPointerLeave);
+    this.clear();
+    for (const surface of this.surfaces) {
+      surface.removeEventListener('pointerdown', this.onPointerDown);
+      surface.removeEventListener('pointermove', this.onPointerMove);
+      surface.removeEventListener('pointerleave', this.onPointerLeave);
+      surface.removeEventListener('pointerup', this.onPointerEnd);
+      surface.removeEventListener('pointercancel', this.onPointerEnd);
+      surface.removeEventListener('lostpointercapture', this.onPointerEnd);
+    }
+    this.surfaces = [];
     this.canvas = null;
     this.clear();
   }
@@ -56,6 +87,13 @@ export class MouseController {
   }
 
   clear(): void {
+    const pointer = this.activePointer;
+    this.activePointer = null;
+    if (pointer !== null) {
+      for (const surface of this.surfaces) {
+        if (surface.hasPointerCapture(pointer)) surface.releasePointerCapture(pointer);
+      }
+    }
     this.target = null;
     this.targetChangedAtMs = null;
     this.state = 'STOPPED';

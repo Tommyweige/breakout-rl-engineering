@@ -110,6 +110,11 @@ export class App {
   private gameplayBackend: InferenceBackend | null = null;
   private gameplayInferenceWorker: AgentInferenceWorker | null = null;
   private inputMode: HumanInputMode = 'keyboard';
+  private readonly touchInput = window.matchMedia?.('(pointer: coarse)').matches ?? false;
+  private readonly mobileLayout = window.matchMedia?.('(max-width: 700px), (max-width: 1024px) and (max-height: 600px) and (orientation: landscape)');
+  private readonly onLayoutChange = (): void => {
+    if (this.mobileLayout?.matches) this.setInputMode('mouse');
+  };
   private mounted = false;
   private busy = false;
   private inputTimer: number | null = null;
@@ -142,7 +147,17 @@ export class App {
     this.keyboard.attach();
     this.mouse.attach(this.required<HTMLCanvasElement>('[data-role="human-canvas"]'));
     window.addEventListener('blur', this.onWindowBlur);
-    this.setInputMode('keyboard');
+    this.setInputMode('mouse');
+    this.mobileLayout?.addEventListener?.('change', this.onLayoutChange);
+    this.root.querySelectorAll<HTMLButtonElement>('.mobile-views button').forEach((button) => {
+      button.addEventListener('click', () => {
+        this.clearHumanInput();
+        this.required<HTMLElement>('.panel-grid').dataset.view = button.dataset.view;
+        this.root.querySelectorAll<HTMLButtonElement>('.mobile-views button').forEach((view) => {
+          view.setAttribute('aria-pressed', String(view === button));
+        });
+      });
+    });
     this.inputTimer = window.setInterval(() => this.renderHumanInput(), 80);
     this.unsubscribeScheduler = this.scheduler.subscribe((status) => {
       if (this.mounted && this.debug) this.setText('[data-role="scheduler-status"]', status);
@@ -195,6 +210,7 @@ export class App {
     if (!this.mounted) return;
     this.gameLoop?.destroy();
     window.removeEventListener('blur', this.onWindowBlur);
+    this.mobileLayout?.removeEventListener?.('change', this.onLayoutChange);
     this.humanEnvironment?.dispose();
     this.agentEnvironment?.dispose();
     this.keyboard.detach();
@@ -771,11 +787,12 @@ export class App {
 
   private renderHumanInput(): void {
     const mouseCommand = this.mouse.peekCommand();
-    const inputs = this.inputMode === 'keyboard'
-      ? [...this.keyboard.snapshot()]
+    const keys = [...this.keyboard.snapshot()];
+    const inputs = this.inputMode === 'keyboard' || keys.length
+      ? keys
       : mouseCommand.direction === 'NOOP' ? [] : [mouseCommand.direction];
     this.setText('[data-role="human-input"]', inputs.length ? inputs.join(' + ') : 'none');
-    if (this.inputMode === 'mouse') this.setText('[data-role="input-hint"]', mouseStatusMessage());
+    if (this.inputMode === 'mouse') this.setText('[data-role="input-hint"]', this.touchInput ? 'Drag on the game to move paddle' : mouseStatusMessage());
     this.renderMouseTargetMarker();
     if (this.debug) {
       this.setText('[data-role="cursor-target-x"]', formatNormalized(this.mouse.targetX));
@@ -791,12 +808,14 @@ export class App {
     if (value !== 'keyboard' && value !== 'mouse') return;
     this.inputMode = value;
     const keyboardEnabled = value === 'keyboard';
-    this.keyboard.setEnabled(keyboardEnabled);
+    this.keyboard.setEnabled(true);
+    this.keyboard.clear();
     this.mouse.setEnabled(!keyboardEnabled);
     this.lastHumanAction = 'NOOP';
-    const label = value === 'keyboard' ? 'Keyboard' : 'Mouse';
+    const label = keyboardEnabled ? 'Keyboard' : this.touchInput ? 'Touch' : 'Mouse';
+    this.select('input-mode').value = value;
     this.setText('[data-role="human-input-mode"]', label);
-    this.setText('[data-role="input-hint"]', keyboardEnabled ? '← / → move · Space serves' : mouseStatusMessage());
+    this.setText('[data-role="input-hint"]', keyboardEnabled ? '← / → move · Space serves' : this.touchInput ? 'Drag on the game to move paddle' : mouseStatusMessage());
     this.required<HTMLCanvasElement>('[data-role="human-canvas"]').dataset.inputMode = value;
     this.renderHumanInput();
   }
@@ -825,13 +844,14 @@ export class App {
   };
 
   private currentHumanCommand(): HumanLoopCommand {
-    if (this.inputMode === 'mouse') {
+    const action = this.keyboard.currentAction();
+    if (this.inputMode === 'mouse' && action === 'NOOP') {
       const command = this.mouse.currentCommand();
       this.lastHumanAction = command.direction;
       if (this.debug) this.updateMouseDiagnostics(command);
       return { kind: 'paddle', command };
     }
-    const action = this.keyboard.currentAction();
+    if (action !== 'NOOP') this.mouse.clear();
     this.lastHumanAction = action;
     if (this.debug) {
       this.setText('[data-role="executed-human-action"]', action);
@@ -1029,7 +1049,8 @@ export class App {
   }
 
   private setText<T extends HTMLElement = HTMLElement>(selector: string, text: string): void {
-    this.required<T>(selector).textContent = text;
+    this.required<T>(selector);
+    this.root.querySelectorAll<T>(selector).forEach((element) => { element.textContent = text; });
   }
 
   private required<T extends HTMLElement = HTMLElement>(selector: string): T {
@@ -1087,7 +1108,7 @@ function displayCardState(finished: boolean, status: string): string {
 }
 
 function mouseStatusMessage(): string {
-  return 'Move mouse to control paddle';
+  return 'Move mouse or use ← / → to move paddle';
 }
 
 function formatNormalized(value: number | null): string {
