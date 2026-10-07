@@ -9,7 +9,7 @@ export interface LoopEnvironment {
   readonly observation: Uint8Array;
   readonly isFinished: boolean;
   readonly currentSeed: number;
-  reset(seed?: number): unknown;
+  reset(seed?: number, rawFrameRepeat?: number): unknown;
   step(actionIndex: number): EnvironmentStep;
   stepAsync?(actionIndex: number, rawFrameRepeat?: number): Promise<EnvironmentStep>;
   stepInteractiveFrame?(actionIndex: number, rawFrameRepeat: number): EnvironmentStep;
@@ -184,6 +184,21 @@ export class DualGameLoop {
     this.options.agent.reset(this.options.agent.currentSeed);
     this.resetMetrics();
     this.status = 'idle';
+    this.options.onFrame?.();
+    this.emitDiagnostics();
+  }
+
+  /** Switch control cadence only after pending work finishes; keep the Human game. */
+  async resetAgent(runtime: AgentRuntimeSemantics): Promise<void> {
+    this.pause();
+    if (this.pendingAgentDecision) await this.pendingAgentDecision;
+    if (this.pendingStep) await this.pendingStep;
+    this.options.agent.reset(this.options.agent.currentSeed, runtime.outerActionRepeat);
+    this.options.agentRuntime = runtime;
+    this.agentDecisionCount = 0;
+    this.agentRawFrameDelta = 0;
+    this.agentDecisionIntervals.length = 0;
+    this.lastAgentDecisionAt = null;
     this.options.onFrame?.();
     this.emitDiagnostics();
   }
