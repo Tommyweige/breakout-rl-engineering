@@ -132,6 +132,29 @@ function wait(ms: number): Promise<void> {
 }
 
 describe('dual game loop', () => {
+  it('waits for an in-flight decision before switching cadence and preserves the Human game', async () => {
+    const human = new FakeHumanEnvironment();
+    const agent = new FakeAgentEnvironment();
+    let resolveInference!: (policy: PolicyResult) => void;
+    const infer = vi.fn(() => new Promise<PolicyResult>(resolve => { resolveInference = resolve; }));
+    const resetAgent = vi.spyOn(agent, 'reset');
+    const resetHuman = vi.spyOn(human, 'reset');
+    const loop = new DualGameLoop({
+      human, agent, agentRuntime: { outerActionRepeat: 4, stickyActionProbability: 0.25 },
+      humanCommand: () => ({ kind: 'discrete', actionIndex: 0 }), infer,
+    });
+    const pending = loop.stepOnce();
+    const switching = loop.resetAgent({ outerActionRepeat: 1, stickyActionProbability: 0.25 });
+    expect(resetAgent).not.toHaveBeenCalled();
+    resolveInference(policyResult(2));
+    await pending;
+    await switching;
+    expect(resetAgent).toHaveBeenCalledWith(1, 1);
+    expect(resetHuman).not.toHaveBeenCalled();
+    expect(human.actions).toEqual([0]);
+    expect(loop.runtimeDiagnostics).toMatchObject({ agentOuterActionRepeat: 1, agentDecisionCount: 0, agentRawFrameDelta: 0 });
+    loop.destroy();
+  });
   it('steps independent sides through the deterministic test seam', async () => {
     const human = new FakeHumanEnvironment();
     const agent = new FakeAgentEnvironment();

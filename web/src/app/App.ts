@@ -12,6 +12,7 @@ import {
 import { InferenceScheduler } from '../inference/InferenceScheduler';
 import { AgentInferenceWorker } from '../inference/AgentInferenceWorker';
 import { OrtWebPolicy } from '../inference/OrtWebPolicy';
+import { PredictiveVisionController } from '../inference/PredictiveVisionController';
 import { detectBrowser } from '../inference/browserInfo';
 import { detectWebGpuSupport } from '../inference/webgpuSupport';
 import { KeyboardController } from '../input/KeyboardController';
@@ -105,6 +106,7 @@ export class App {
   private readonly keyboard = new KeyboardController();
   private readonly mouse = new MouseController();
   private readonly difficultyPolicy = new DifficultyPolicy();
+  private readonly visionController = new PredictiveVisionController();
   private status: RuntimeStatus = 'idle';
   private selectedBackend: InferenceBackend = 'wasm';
   private gameplayBackend: InferenceBackend | null = null;
@@ -178,7 +180,7 @@ export class App {
       this.setInputMode((event.target as HTMLSelectElement).value);
     });
     this.select('difficulty').addEventListener('change', (event) => {
-      this.setDifficulty((event.target as HTMLSelectElement).value);
+      void this.setDifficulty((event.target as HTMLSelectElement).value);
     });
     if (this.debug) {
       window.__day29Evaluate = (seeds) => this.runEvaluation(seeds);
@@ -433,19 +435,22 @@ export class App {
   private async startGameplay(): Promise<void> {
     if (this.gameplayInitPromise) return this.gameplayInitPromise;
     if (this.busy) return;
+    this.select('difficulty').disabled = true;
     this.gameplayInitPromise = this.initializeGameplay();
     try {
       await this.gameplayInitPromise;
     } finally {
       this.gameplayInitPromise = null;
+      this.select('difficulty').disabled = false;
     }
   }
 
   private async initializeGameplay(): Promise<void> {
     try {
       const contract = await this.getContract();
-      await this.prepareGameplayPolicy();
-      const actualBackend = this.policy.actualBackend;
+      const vision = this.difficultyPolicy.currentDifficulty === 'unbeatable';
+      if (!vision) await this.prepareGameplayPolicy();
+      const actualBackend = vision ? 'vision' : this.policy.actualBackend;
       if (!actualBackend) throw new Error('The browser policy did not expose an active backend.');
       if (this.gameLoop) {
         this.scheduler.start();
@@ -459,7 +464,7 @@ export class App {
         const seed = contract.concrete_episode_seeds[0] ?? 101;
         [this.humanEnvironment, this.agentEnvironment] = await Promise.all([
           HumanBreakoutEnvironment.create({ contract, seed }),
-          BrowserBreakoutEnvironment.create({ contract, seed }),
+          BrowserBreakoutEnvironment.create({ contract, seed, rawFrameRepeat: vision ? 1 : 4 }),
         ]);
       }
       const environmentDiagnostics = {
@@ -468,8 +473,8 @@ export class App {
         agentRuntime: this.agentEnvironment.runtimeDiagnostics,
         interactiveAgentRuntime: {
           rawFramesPerInference: 1,
-          policyActionRepeat: this.agentEnvironment.contract.frame_skip,
-          policyObservationRepeat: this.agentEnvironment.contract.frame_skip,
+          policyActionRepeat: this.agentActionRepeat,
+          policyObservationRepeat: this.agentActionRepeat,
           schedule: 'requestAnimationFrame',
         },
         humanInstanceId: this.humanEnvironment.instanceId,
@@ -477,17 +482,17 @@ export class App {
         crossOriginIsolated: window.crossOriginIsolated,
         dualInstanceCount: new Set([this.humanEnvironment.instanceId, this.agentEnvironment.instanceId]).size,
         preferredBackend: 'wasm',
-        actualGameplayBackend: this.gameplayBackend,
+        actualGameplayBackend: actualBackend,
         gracefulFallback: this.gameplayBackend === 'webgpu',
       };
       if (this.debug) {
         const browser = await detectBrowser();
-        this.renderPolicyRuntime(actualBackend, this.policy.ortWebVersion, browser.name, browser.version, browser.platform);
-        this.setText('[data-role="environment-parity"]', `${contract.parity.status.toUpperCase()} / Contract v2`);
-        this.setText('[data-role="backend-evidence"]', this.policy.backendEvidence === 'webgpu_session_exposes_env_webgpu_device' ? 'runtime GPU device observed' : 'explicit WASM session');
-        this.setText('[data-role="model-loaded"]', 'loaded / Day 21 canonical');
+        if (actualBackend !== 'vision') this.renderPolicyRuntime(actualBackend, this.policy.ortWebVersion, browser.name, browser.version, browser.platform);
+        this.setText('[data-role="environment-parity"]', `${contract.parity.status.toUpperCase()} / ${vision ? 'raw RGB / frame skip 1' : 'Contract v2'}`);
+        this.setText('[data-role="backend-evidence"]', vision ? 'raw RGB pixel tracking' : this.policy.backendEvidence === 'webgpu_session_exposes_env_webgpu_device' ? 'runtime GPU device observed' : 'explicit WASM session');
+        this.setText('[data-role="model-loaded"]', vision ? 'Predictive Vision Controller v1' : 'loaded / Day 21 canonical');
         this.setText('[data-role="gameplay-backend"]', actualBackend.toUpperCase());
-        this.setText('[data-role="model-sha"]', this.validationResult?.modelSha256 ?? 'manifest hash recorded by evaluation');
+        this.setText('[data-role="model-sha"]', vision ? 'No neural model' : this.validationResult?.modelSha256 ?? 'manifest hash recorded by evaluation');
         window.__day29EnvironmentDiagnostics = environmentDiagnostics;
         window.__day30EnvironmentDiagnostics = environmentDiagnostics;
       }
@@ -501,11 +506,14 @@ export class App {
         agentRuntime: {
           // Inference follows display cadence; the environment latches each
           // action and updates the model observation at the trained frame skip.
-          outerActionRepeat: this.agentEnvironment.contract.frame_skip,
+          outerActionRepeat: this.agentActionRepeat,
           stickyActionProbability: this.agentEnvironment.contract.sticky_action_probability,
         },
         humanCommand: () => this.currentHumanCommand(),
         infer: async (observation) => {
+          if (this.difficultyPolicy.currentDifficulty === 'unbeatable') {
+            return this.visionController.select(this.agentEnvironment!.rawRgb);
+          }
           const policy = this.gameplayInferenceWorker
             ? await this.gameplayInferenceWorker.infer(observation)
             : await this.scheduler.run(observation);
@@ -546,6 +554,7 @@ export class App {
     if (!this.gameLoop) return;
     try {
       await this.gameLoop.reset();
+      this.visionController.reset();
       this.latestHumanStep = null;
       this.latestAgentStep = null;
       this.agentAutoFireCount = 0;
@@ -598,6 +607,20 @@ export class App {
     this.setText('[data-role="agent-state"]', environment.terminated || environment.truncated ? 'Game over' : 'Playing');
     this.setText('[data-role="agent-stage-state"]', environment.terminated || environment.truncated ? 'GAME OVER' : 'PLAYING');
     if (this.debug) {
+      const vision = step.policy.actualBackend === 'vision';
+      this.setText('[data-role="model-loaded"]', vision ? 'Predictive Vision Controller v1' : 'loaded / Day 21 canonical');
+      this.setText('[data-role="gameplay-backend"]', vision ? 'PIXEL VISION / JS' : step.policy.actualBackend.toUpperCase());
+      this.setText('[data-role="model-sha"]', vision ? 'No neural model' : this.validationResult?.modelSha256 ?? 'manifest hash recorded by evaluation');
+      this.setText('[data-role="environment-parity"]', `PARTIAL / ${vision ? 'raw RGB / frame skip 1' : 'Contract v2'}`);
+      this.setText('[data-role="backend-evidence"]', vision ? 'raw RGB pixel tracking' : this.policy.backendEvidence === 'webgpu_session_exposes_env_webgpu_device' ? 'runtime GPU device observed' : 'explicit WASM session');
+      const diagnostics = window.__day30EnvironmentDiagnostics;
+      if (diagnostics) {
+        Object.assign(diagnostics, this.agentEnvironment!.runtimeDiagnostics, {
+          agentRuntime: this.agentEnvironment!.runtimeDiagnostics,
+          actualGameplayBackend: step.policy.actualBackend,
+          interactiveAgentRuntime: { rawFramesPerInference: 1, policyActionRepeat: this.agentActionRepeat, policyObservationRepeat: this.agentActionRepeat, schedule: 'requestAnimationFrame' },
+        });
+      }
       this.setText('[data-role="current-action"]', environment.autoFire ? `FIRE / auto-${environment.autoFireReason}` : environment.executedAction);
       this.setText('[data-role="debug-difficulty"]', AI_DIFFICULTY_LABELS[this.difficultyPolicy.currentDifficulty]);
       this.setText('[data-role="difficulty-rate"]', `${((step.policy.mistakeRate ?? 0) * 100).toFixed(0)}%`);
@@ -607,7 +630,9 @@ export class App {
       this.setText('[data-role="inference-latency"]', `${step.inferenceMs.toFixed(3)} ms`);
       this.setText('[data-role="agent-frame"]', `${environment.frameNumber} / ${environment.agentStep}`);
       this.setText('[data-role="auto-fire"]', `${this.agentAutoFireCount}`);
-      this.required('[data-role="gameplay-q-values"]').innerHTML = renderPolicyQValuesMarkup(step.policy.qValues, step.policy.actionIndex);
+      this.required('[data-role="gameplay-q-values"]').innerHTML = vision
+        ? '<p>Pixel tracking → reflected paddle intercept. No Q-values.</p>'
+        : renderPolicyQValuesMarkup(step.policy.qValues, step.policy.actionIndex);
       this.renderPreprocessing(environment.observation, environment.processedFrame);
       this.setText('[data-role="agent-step-latency"]', `${step.environmentStepMs.toFixed(2)} ms`);
       this.setText('[data-role="agent-cycle-latency"]', `${step.totalDecisionMs.toFixed(2)} ms`);
@@ -801,8 +826,37 @@ export class App {
     this.renderHumanInput();
   }
 
-  private setDifficulty(value: string): void {
+  private get agentActionRepeat(): number {
+    return this.difficultyPolicy.currentDifficulty === 'unbeatable' ? 1 : 4;
+  }
+
+  private async setDifficulty(value: string): Promise<void> {
     if (!isAiDifficulty(value)) return;
+    const switchController = (value === 'unbeatable') !== (this.difficultyPolicy.currentDifficulty === 'unbeatable');
+    const wasRunning = this.gameLoop?.currentStatus === 'running';
+    if (switchController && this.gameLoop) {
+      this.setBusy(true);
+      this.select('difficulty').disabled = true;
+      for (const action of ['start', 'pause', 'reset']) this.button(action).disabled = true;
+      try {
+        this.gameLoop.pause();
+        if (value !== 'unbeatable') await this.prepareGameplayPolicy();
+        await this.gameLoop.resetAgent({ outerActionRepeat: value === 'unbeatable' ? 1 : 4, stickyActionProbability: 0.25 });
+        this.latestAgentStep = null;
+        this.agentAutoFireCount = 0;
+        this.setText('[data-role="agent-score"]', '0');
+        this.setText('[data-role="agent-lives"]', `${this.agentEnvironment!.currentLives}`);
+      } catch (error) {
+        this.select('difficulty').value = this.difficultyPolicy.currentDifficulty;
+        this.reportRuntimeError(error);
+        return;
+      } finally {
+        this.select('difficulty').disabled = false;
+        for (const action of ['start', 'pause', 'reset']) this.button(action).disabled = false;
+        this.setBusy(false);
+      }
+    }
+    if (switchController) this.visionController.reset();
     this.difficultyPolicy.setDifficulty(value as AiDifficulty);
     const label = AI_DIFFICULTY_LABELS[value as AiDifficulty];
     this.setText('[data-role="ai-difficulty-label"]', label);
@@ -810,7 +864,9 @@ export class App {
       this.setText('[data-role="debug-difficulty"]', label);
       this.setText('[data-role="difficulty-rate"]', `${(this.difficultyPolicy.currentMistakeRate * 100).toFixed(0)}%`);
     }
-    this.setUserMessage(`Difficulty: ${label}`);
+    this.setText('[data-role="ai-controller-description"]', value === 'unbeatable' ? 'Pixel vision predicts the ball’s landing point.' : 'AI is playing automatically.');
+    if (switchController && wasRunning) { this.scheduler.start(); this.gameLoop?.start(); }
+    this.setUserMessage(`Difficulty: ${label}${switchController && this.gameLoop ? ' · AI game restarted.' : ''}`);
   }
 
   private clearHumanInput(): void {

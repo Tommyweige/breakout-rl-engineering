@@ -96,6 +96,23 @@ class FakeAle {
 }
 
 describe('ALE Browser environment contract', () => {
+  it('uses raw RGB FIRE confirmation and one newly selected action per frame for vision', () => {
+    const ale = new FakeAle();
+    const environment = createBrowserBreakoutEnvironmentForTest(ale as unknown as AleLike, contract, 101);
+    environment.reset(101, 1);
+    expect(environment.runtimeDiagnostics).toMatchObject({
+      controlContractId: 'breakout-evaluation-v3-frame-skip-1', resetNoopCount: 0,
+      usesModelPreprocessing: false, outerActionRepeat: 1, stickyActionProbability: 0.25,
+    });
+    const steps = [2, 3, 2, 3].map(action => environment.stepInteractiveFrame(action, 1));
+    expect(steps.map(step => step.actualEmulatorFrames)).toEqual([1, 1, 1, 1]);
+    expect(ale.actions).toEqual([1, 1, 3, 4]);
+    ale.livesCount = 4;
+    environment.stepInteractiveFrame(0, 1);
+    expect(environment.stepInteractiveFrame(2, 1)).toMatchObject({ autoFire: true, autoFireReason: 'after_life_loss' });
+    environment.reset(101, 4);
+    expect(environment.runtimeDiagnostics).toMatchObject({ controlContractId: contract.contract_id, outerActionRepeat: 4 });
+  });
   it('owns four raw frames per decision and auto-FIREs only the serve phase', () => {
     const ale = new FakeAle();
     const environment = createBrowserBreakoutEnvironmentForTest(ale as unknown as AleLike, contract, 101);
