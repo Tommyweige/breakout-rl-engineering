@@ -99,6 +99,8 @@ export class PredictiveVisionController {
   private frame = -1;
   private previousFrame: Uint8Array | null = null;
   private ball: Ball | null = null;
+  private velocityAnchor: Ball | null = null;
+  private previousPaddleX: number | null = null;
   private trackLive = false;
   private previousDirection: ActionMeaning = 'NOOP';
   diagnostics: { ball: { x: number; y: number; vx: number | null; vy: number | null } | null; paddleX: number | null; interceptX: number | null } = {
@@ -109,6 +111,8 @@ export class PredictiveVisionController {
     this.frame = -1;
     this.previousFrame = null;
     this.ball = null;
+    this.velocityAnchor = null;
+    this.previousPaddleX = null;
     this.trackLive = false;
     this.previousDirection = 'NOOP';
     this.diagnostics = { ball: null, paddleX: null, interceptX: null };
@@ -135,6 +139,9 @@ export class PredictiveVisionController {
       if (paddle.left === bounds.left) paddleX = bounds.left + 7.5;
       else if (paddle.left + paddle.width - 1 === bounds.right) paddleX = bounds.right - 7.5;
     }
+    const paddleDelta = paddleX !== null && this.previousPaddleX !== null ? paddleX - this.previousPaddleX : 0;
+    const paddleVx = Math.abs(paddleDelta) <= 8 ? paddleDelta : 0;
+    this.previousPaddleX = paddleX;
     let candidates = blobs.filter(isBall);
     if (this.previousFrame) for (const blob of components(movingMask, bounds).filter(isBall)) {
       if (!candidates.some(b => Math.hypot(b.x - blob.x, b.y - blob.y) < 2)) candidates.push({ ...blob, confidence: blob.confidence * 0.82 });
@@ -160,9 +167,22 @@ export class PredictiveVisionController {
       if (last && this.trackLive) {
         const dx = (selected.x - last.x) / Math.max(gap, 1), dy = (selected.y - last.y) / Math.max(gap, 1);
         if (Math.abs(dx) <= maxSpeed && Math.abs(dy) <= maxSpeed) {
-          vx = Math.abs(dx) > 0.05 || last.vx === null ? dx : last.vx;
-          vy = Math.abs(dy) > 0.05 || last.vy === null ? dy : last.vy;
+          const anchor = this.velocityAnchor;
+          const turned = dx * (last.vx ?? 0) < 0 || dy * (last.vy ?? 0) < 0;
+          // Two native-frame intervals remove alternating pixel rounding; a bounce starts a new segment.
+          if (anchor && gap === 1 && last.seen - anchor.seen === 1 && !turned) {
+            vx = (selected.x - anchor.x) / 2;
+            vy = (selected.y - anchor.y) / 2;
+          } else {
+            vx = dx;
+            vy = dy;
+          }
+          this.velocityAnchor = last;
+        } else {
+          this.velocityAnchor = null;
         }
+      } else {
+        this.velocityAnchor = null;
       }
       this.ball = { x: selected.x, y: selected.y, vx, vy, seen: this.frame, confidence: selected.confidence };
       this.trackLive = true;
@@ -172,6 +192,7 @@ export class PredictiveVisionController {
         y: last.y + (last.vy ?? 0) * gap, confidence: last.confidence * 0.65 ** gap };
     } else if (last && gap > maxMissing) {
       this.trackLive = false;
+      this.velocityAnchor = null;
       last.vx = null; last.vy = null;
     }
     this.previousFrame = new Uint8Array(rgb);
@@ -180,7 +201,11 @@ export class PredictiveVisionController {
       const frames = (paddle.top - 2 - observedBall.y) / observedBall.vy;
       if (observedBall.vy > 0.15 && frames > 0) {
         interceptX = reflectX(observedBall.x + observedBall.vx * frames, bounds.left + 2, bounds.right - 2);
-        action = choosePaddleAction(interceptX - paddleX, this.previousDirection);
+        const error = interceptX - paddleX;
+        action = choosePaddleAction(error, this.previousDirection);
+        // Release early while approaching; opposite steering would create another limit cycle.
+        const catchMargin = Math.max(0, paddle.width / 2 - 2);
+        if (Math.abs(error) <= catchMargin || (error * paddleVx > 0 && Math.abs(error) <= 2 * Math.abs(paddleVx) + config.controller.deadband_pixels)) action = 'NOOP';
       }
     }
     this.previousDirection = action;

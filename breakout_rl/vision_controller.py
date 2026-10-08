@@ -395,6 +395,9 @@ class PredictiveBreakoutController:
         self._last_seen_frame: int | None = None
         self._last_ball_x: float | None = None
         self._last_ball_y: float | None = None
+        self._velocity_anchor: tuple[float, float, int] | None = None
+        self._previous_paddle_x: float | None = None
+        self._paddle_vx = 0.0
         self._vx: float | None = None
         self._vy: float | None = None
         self._last_confidence = 0.0
@@ -493,6 +496,9 @@ class PredictiveBreakoutController:
         bounds = detect_playfield_bounds(image)
         mask = _target_mask(image)
         paddle = _detect_paddle(mask, bounds)
+        paddle_delta = paddle.center_x - self._previous_paddle_x if paddle is not None and self._previous_paddle_x is not None else 0.0
+        self._paddle_vx = paddle_delta if abs(paddle_delta) <= 8.0 else 0.0
+        self._previous_paddle_x = paddle.center_x if paddle is not None else None
         candidates = self._candidate_blobs(image, mask, bounds, paddle)
         selected = self._select_ball_candidate(candidates, bounds)
 
@@ -509,16 +515,23 @@ class PredictiveBreakoutController:
                     abs(dx) <= self.max_ball_speed_pixels_per_frame
                     and abs(dy) <= self.max_ball_speed_pixels_per_frame
                 ):
-                    # Use the newest segment so wall/brick direction changes take effect immediately.
-                    if abs(dx) > 0.05 or self._vx is None:
+                    anchor = self._velocity_anchor
+                    turned = dx * (self._vx or 0.0) < 0 or dy * (self._vy or 0.0) < 0
+                    # Two native-frame intervals remove pixel rounding; a bounce starts a new segment.
+                    if anchor is not None and delta_frames == 1 and self._last_seen_frame - anchor[2] == 1 and not turned:
+                        self._vx = (selected.x - anchor[0]) / 2.0
+                        self._vy = (selected.y - anchor[1]) / 2.0
+                    else:
                         self._vx = float(dx)
-                    if abs(dy) > 0.05 or self._vy is None:
                         self._vy = float(dy)
+                    self._velocity_anchor = (self._last_ball_x, self._last_ball_y, self._last_seen_frame)
                 else:
+                    self._velocity_anchor = None
                     self._vx = None
                     self._vy = None
                     self._last_confidence = selected.confidence * 0.55
             else:
+                self._velocity_anchor = None
                 self._vx = None
                 self._vy = None
             self._last_seen_frame = self._frame_index
@@ -566,6 +579,7 @@ class PredictiveBreakoutController:
             else:
                 if self._track_live and age is not None and age > self.max_missing_frames:
                     self._track_live = False
+                    self._velocity_anchor = None
                     self._vx = None
                     self._vy = None
                 ball = BallEstimate(
@@ -623,6 +637,10 @@ class PredictiveBreakoutController:
                     deadband=self.deadband,
                     hysteresis=self.hysteresis,
                 )
+                # Release early while approaching; opposite steering creates another limit cycle.
+                catch_margin = max(0.0, (paddle.right - paddle.left + 1.0) / 2.0 - 2.0)
+                if abs(error) <= catch_margin or (error * self._paddle_vx > 0 and abs(error) <= 2.0 * abs(self._paddle_vx) + self.deadband):
+                    action = NOOP
 
         latency_ms = (time.perf_counter_ns() - started) / 1_000_000.0
         self._decision_latencies_ms.append(latency_ms)
