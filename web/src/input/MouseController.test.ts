@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { MouseController } from './MouseController';
 
@@ -21,6 +21,32 @@ function moveTo(listeners: Map<string, EventListener>, clientX: number): void {
 }
 
 describe('MouseController', () => {
+  it('captures a touch drag, ignores other fingers, and releases on cancellation', () => {
+    const fixture = canvasFixture();
+    const pad = canvasFixture();
+    const capture = vi.fn();
+    const release = vi.fn();
+    Object.assign(pad.canvas, { setPointerCapture: capture, hasPointerCapture: () => true, releasePointerCapture: release });
+    Object.assign(fixture.canvas, { hasPointerCapture: () => false });
+    const controller = new MouseController();
+    controller.attach(fixture.canvas, pad.canvas);
+    controller.setEnabled(true);
+    const touch = (clientX: number, pointerId = 1) => ({ clientX, pointerId, currentTarget: pad.canvas }) as unknown as PointerEvent;
+    pad.listeners.get('pointerdown')!(touch(150));
+    expect(controller.targetX).toBe(0.25);
+    expect(capture).toHaveBeenCalledWith(1);
+    pad.listeners.get('pointermove')!(touch(290, 2));
+    expect(controller.targetX).toBe(0.25);
+    pad.listeners.get('pointerleave')!(touch(150));
+    expect(controller.targetX).toBe(0.25);
+    pad.listeners.get('pointermove')!(touch(350));
+    expect(controller.targetX).toBe(1);
+    pad.listeners.get('pointercancel')!(touch(350));
+    expect(controller.targetX).toBeNull();
+    expect(release).toHaveBeenCalledWith(1);
+    controller.detach();
+    expect(pad.listeners.size).toBe(0);
+  });
   it('maps responsive canvas coordinates to an absolute paddle target', () => {
     const fixture = canvasFixture();
     const controller = new MouseController();

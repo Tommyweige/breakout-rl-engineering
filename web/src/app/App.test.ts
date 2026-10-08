@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { App } from './App';
 
@@ -13,11 +13,70 @@ beforeEach(() => {
 afterEach(() => {
   app?.destroy();
   app = undefined;
+  vi.unstubAllGlobals();
   document.body.innerHTML = '';
   window.history.replaceState({}, '', '/');
 });
 
 describe('Day 30 Human vs AI browser product', () => {
+  it('keeps the AI score beside the player in sync with the AI panel', () => {
+    const root = document.createElement('div');
+    document.body.append(root);
+    app = new App(root);
+    app.mount();
+    Reflect.get(app, 'setText').call(app, '[data-role="agent-score"]', '42');
+    Reflect.get(app, 'setText').call(app, '[data-role="agent-lives"]', '3');
+    expect([...root.querySelectorAll('[data-role="agent-score"]')].map((el) => el.textContent)).toEqual(['42', '42']);
+    expect([...root.querySelectorAll('[data-role="agent-lives"]')].map((el) => el.textContent)).toEqual(['3', '3']);
+    expect(root.querySelector('[data-role="touch-pad"]')).toBeNull();
+  });
+  it('enables dragging when a desktop browser switches to the mobile layout', () => {
+    let resize = () => {};
+    const mobile = { matches: false, addEventListener: (_: string, listener: () => void) => { resize = listener; }, removeEventListener: vi.fn() };
+    vi.stubGlobal('matchMedia', (query: string) => query === '(pointer: coarse)' ? { matches: false } : mobile);
+    const root = document.createElement('div');
+    document.body.append(root);
+    app = new App(root);
+    app.mount();
+    const input = root.querySelector<HTMLSelectElement>('[data-action="input-mode"]')!;
+    input.value = 'keyboard';
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    mobile.matches = true;
+    resize();
+    expect(input.value).toBe('mouse');
+    expect(root.querySelector<HTMLCanvasElement>('[data-role="human-canvas"]')!.dataset.inputMode).toBe('mouse');
+  });
+  it('accepts arrow keys while pointer controls are selected', () => {
+    const root = document.createElement('div');
+    document.body.append(root);
+    app = new App(root);
+    app.mount();
+    const input = root.querySelector<HTMLSelectElement>('[data-action="input-mode"]')!;
+    input.value = 'mouse';
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'ArrowRight' }));
+    const command = Reflect.get(app, 'currentHumanCommand').call(app);
+    expect(command).toEqual({ kind: 'discrete', actionIndex: 2 });
+    window.dispatchEvent(new KeyboardEvent('keyup', { code: 'ArrowRight' }));
+    expect(Reflect.get(app, 'currentHumanCommand').call(app).kind).toBe('paddle');
+  });
+  it('defaults touch devices to pointer input and switches views without replacing either game', () => {
+    vi.stubGlobal('matchMedia', () => ({ matches: true }));
+    const root = document.createElement('div');
+    document.body.append(root);
+    app = new App(root);
+    app.mount();
+    const canvases = [...root.querySelectorAll('canvas')];
+    expect(root.querySelector<HTMLSelectElement>('[data-action="input-mode"]')!.value).toBe('mouse');
+    expect(root.querySelector('[data-role="human-input-mode"]')!.textContent).toBe('Touch');
+    expect(root.querySelector<HTMLCanvasElement>('[data-role="human-canvas"]')!.dataset.inputMode).toBe('mouse');
+    root.querySelector<HTMLButtonElement>('button[data-view="agent"]')!.click();
+    expect(root.querySelector('.panel-grid')!.getAttribute('data-view')).toBe('agent');
+    expect(root.querySelector('button[data-view="agent"]')!.getAttribute('aria-pressed')).toBe('true');
+    root.querySelector<HTMLButtonElement>('button[data-view="human"]')!.click();
+    expect(root.querySelector('.panel-grid')!.getAttribute('data-view')).toBe('human');
+    expect([...root.querySelectorAll('canvas')]).toEqual(canvases);
+  });
   it('exposes both real-game canvases, user controls, and input mode selection', () => {
     const root = document.createElement('div');
     document.body.append(root);
@@ -66,7 +125,7 @@ describe('Day 30 Human vs AI browser product', () => {
     inputMode.value = 'mouse';
     inputMode.dispatchEvent(new Event('change', { bubbles: true }));
     expect(root.querySelector('[data-role="human-input-mode"]')?.textContent).toBe('Mouse');
-    expect(root.querySelector('[data-role="input-hint"]')?.textContent).toBe('Move mouse to control paddle');
+    expect(root.querySelector('[data-role="input-hint"]')?.textContent).toBe('Move mouse or use ← / → to move paddle');
 
     inputMode.value = 'keyboard';
     inputMode.dispatchEvent(new Event('change', { bubbles: true }));

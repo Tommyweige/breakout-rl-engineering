@@ -4,6 +4,10 @@ export function renderAppShell(debug = false): string {
   return [
     renderMasthead(),
     renderCommandDeck(),
+    `<nav class="mobile-views" aria-label="Game view">
+      <button type="button" data-view="human" aria-pressed="true">Play</button>
+      <button type="button" data-view="agent" aria-pressed="false">Watch AI</button>
+    </nav>`,
     renderPanelGrid(),
     debug ? renderTechnicalDetails() : '',
     renderFooter(),
@@ -34,7 +38,7 @@ function renderCommandDeck(): string {
         <label class="input-picker toolbar-picker" for="input-mode-select">Control
           <select id="input-mode-select" data-action="input-mode" aria-label="Choose human control mode">
             <option value="keyboard" selected>Keyboard</option>
-            <option value="mouse">Mouse</option>
+            <option value="mouse">Touch / Mouse</option>
           </select>
         </label>
         <div class="controls">
@@ -49,7 +53,7 @@ function renderCommandDeck(): string {
 
 function renderPanelGrid(): string {
   return `
-    <section id="play-area" class="panel-grid" aria-label="Human and AI Breakout games">
+    <section id="play-area" class="panel-grid" data-view="human" aria-label="Human and AI Breakout games">
       ${renderHumanPanel()}
       ${renderAgentPanel()}
     </section>
@@ -69,6 +73,8 @@ function renderHumanPanel(): string {
       <dl class="score-row score-row-top" aria-label="Your score and lives">
         <div><dt>Score</dt><dd data-role="human-score">0</dd></div>
         <div><dt>Lives</dt><dd data-role="human-lives">—</dd></div>
+        <div class="mobile-ai-score"><dt>AI score</dt><dd data-role="agent-score">0</dd></div>
+        <div class="mobile-ai-score"><dt>AI lives</dt><dd data-role="agent-lives">—</dd></div>
       </dl>
       <div class="game-stage human-game-stage">
         <div class="stage-topline"><span>PLAYER 01</span><span class="stage-state" data-role="human-stage-state">READY</span></div>
