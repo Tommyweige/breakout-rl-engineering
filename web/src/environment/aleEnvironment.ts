@@ -810,18 +810,7 @@ export class BrowserBreakoutEnvironment {
 
   render(canvas: HTMLCanvasElement): void {
     this.assertActive();
-    canvas.width = ATARI_SCREEN_WIDTH;
-    canvas.height = ATARI_SCREEN_HEIGHT;
-    const context = canvas.getContext('2d');
-    if (!context) throw new Error('2D canvas context is unavailable');
-    const image = context.createImageData(ATARI_SCREEN_WIDTH, ATARI_SCREEN_HEIGHT);
-    for (let index = 0, pixel = 0; index < this.lastRawRgb.length; index += 3, pixel += 4) {
-      image.data[pixel] = this.lastRawRgb[index] ?? 0;
-      image.data[pixel + 1] = this.lastRawRgb[index + 1] ?? 0;
-      image.data[pixel + 2] = this.lastRawRgb[index + 2] ?? 0;
-      image.data[pixel + 3] = 255;
-    }
-    context.putImageData(image, 0, 0);
+    renderRawRgb(canvas, this.lastRawRgb);
   }
 
   private snapshot(): EnvironmentSnapshot {
@@ -1178,12 +1167,18 @@ function configureInteractiveAle(ale: AleLike, contract: BreakoutContractV2, see
   ale.setInt('max_num_frames_per_episode', contract.time_limit_semantics.max_num_frames_per_episode);
 }
 
+const canvasImages = new WeakMap<HTMLCanvasElement, ImageData>();
+
 function renderRawRgb(canvas: HTMLCanvasElement, rawRgb: ArrayLike<number>): void {
-  canvas.width = ATARI_SCREEN_WIDTH;
-  canvas.height = ATARI_SCREEN_HEIGHT;
+  if (canvas.width !== ATARI_SCREEN_WIDTH) canvas.width = ATARI_SCREEN_WIDTH;
+  if (canvas.height !== ATARI_SCREEN_HEIGHT) canvas.height = ATARI_SCREEN_HEIGHT;
   const context = canvas.getContext('2d');
   if (!context) throw new Error('2D canvas context is unavailable');
-  const image = context.createImageData(ATARI_SCREEN_WIDTH, ATARI_SCREEN_HEIGHT);
+  let image = canvasImages.get(canvas);
+  if (!image) {
+    image = context.createImageData(ATARI_SCREEN_WIDTH, ATARI_SCREEN_HEIGHT);
+    canvasImages.set(canvas, image);
+  }
   for (let index = 0, pixel = 0; index < rawRgb.length; index += 3, pixel += 4) {
     image.data[pixel] = rawRgb[index] ?? 0;
     image.data[pixel + 1] = rawRgb[index + 1] ?? 0;

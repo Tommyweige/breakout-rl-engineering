@@ -466,7 +466,7 @@ export class App {
       const contract = await this.getContract();
       const vision = this.difficultyPolicy.currentDifficulty === 'unbeatable';
       if (!vision) await this.prepareGameplayPolicy();
-      const actualBackend = vision ? 'vision' : this.policy.actualBackend;
+      const actualBackend = vision ? 'vision' : this.gameplayInferenceWorker?.actualBackend;
       if (!actualBackend) throw new Error('The browser policy did not expose an active backend.');
       if (this.gameLoop) {
         this.scheduler.start();
@@ -503,9 +503,9 @@ export class App {
       };
       if (this.debug) {
         const browser = await detectBrowser();
-        if (actualBackend !== 'vision') this.renderPolicyRuntime(actualBackend, this.policy.ortWebVersion, browser.name, browser.version, browser.platform);
+        if (actualBackend !== 'vision') this.renderPolicyRuntime(actualBackend, this.gameplayInferenceWorker?.ortWebVersion ?? this.policy.ortWebVersion, browser.name, browser.version, browser.platform);
         this.setText('[data-role="environment-parity"]', `${contract.parity.status.toUpperCase()} / ${vision ? 'raw RGB / frame skip 1' : 'Contract v2'}`);
-        this.setText('[data-role="backend-evidence"]', vision ? 'raw RGB pixel tracking' : this.policy.backendEvidence === 'webgpu_session_exposes_env_webgpu_device' ? 'runtime GPU device observed' : 'explicit WASM session');
+        this.setText('[data-role="backend-evidence"]', vision ? 'raw RGB pixel tracking' : this.gameplayBackend === 'webgpu' ? 'runtime GPU device observed' : 'explicit WASM worker session');
         this.setText('[data-role="model-loaded"]', vision ? 'Predictive Vision Controller v1' : 'loaded / Day 21 canonical');
         this.setText('[data-role="gameplay-backend"]', actualBackend.toUpperCase());
         this.setText('[data-role="model-sha"]', vision ? 'No neural model' : this.validationResult?.modelSha256 ?? 'manifest hash recorded by evaluation');
@@ -546,14 +546,14 @@ export class App {
           this.renderAgentStep(step);
         },
         onFrame: () => this.renderCanvases(),
-        onDiagnostics: (diagnostics) => this.updateHumanRuntimeDiagnostics(diagnostics),
+        onDiagnostics: this.debug ? (diagnostics) => this.updateHumanRuntimeDiagnostics(diagnostics) : undefined,
         onError: (error) => this.reportRuntimeError(error),
         // Both policy inference and raw ALE rendering follow browser refresh;
         // the Agent environment preserves its four-frame policy cadence.
         humanTargetFps: 80,
         agentTargetFps: 60,
       });
-      this.updateHumanRuntimeDiagnostics(this.gameLoop.runtimeDiagnostics);
+      if (this.debug) this.updateHumanRuntimeDiagnostics(this.gameLoop.runtimeDiagnostics);
       this.scheduler.start();
       this.gameLoop.start();
       window.__day29Ready = true;
@@ -587,8 +587,10 @@ export class App {
   private renderCanvases(): void {
     if (!this.humanEnvironment || !this.agentEnvironment) return;
     if (!this.latestHumanStep) this.mouse.updatePaddleCenterFromFrame(this.humanEnvironment.rawRgb);
-    this.humanEnvironment.render(this.required<HTMLCanvasElement>('[data-role="human-canvas"]'));
-    this.agentEnvironment.render(this.required<HTMLCanvasElement>('[data-role="agent-canvas"]'));
+    const mobile = !this.debug && this.mobileLayout?.matches;
+    const view = this.required<HTMLElement>('.panel-grid').dataset.view;
+    if (!mobile || view === 'human') this.humanEnvironment.render(this.required<HTMLCanvasElement>('[data-role="human-canvas"]'));
+    if (!mobile || view === 'agent') this.agentEnvironment.render(this.required<HTMLCanvasElement>('[data-role="agent-canvas"]'));
     const loopState = this.gameLoop?.currentStatus ?? 'idle';
     this.setText('[data-role="human-stage-state"]', displayStageState(this.humanEnvironment.isFinished, loopState));
     this.setText('[data-role="agent-stage-state"]', displayStageState(this.agentEnvironment.isFinished, loopState));
@@ -628,7 +630,7 @@ export class App {
       this.setText('[data-role="gameplay-backend"]', vision ? 'PIXEL VISION / JS' : step.policy.actualBackend.toUpperCase());
       this.setText('[data-role="model-sha"]', vision ? 'No neural model' : this.validationResult?.modelSha256 ?? 'manifest hash recorded by evaluation');
       this.setText('[data-role="environment-parity"]', `PARTIAL / ${vision ? 'raw RGB / frame skip 1' : 'Contract v2'}`);
-      this.setText('[data-role="backend-evidence"]', vision ? 'raw RGB pixel tracking' : this.policy.backendEvidence === 'webgpu_session_exposes_env_webgpu_device' ? 'runtime GPU device observed' : 'explicit WASM session');
+      this.setText('[data-role="backend-evidence"]', vision ? 'raw RGB pixel tracking' : this.gameplayBackend === 'webgpu' ? 'runtime GPU device observed' : 'explicit WASM worker session');
       const diagnostics = window.__day30EnvironmentDiagnostics;
       if (diagnostics) {
         Object.assign(diagnostics, this.agentEnvironment!.runtimeDiagnostics, {
@@ -685,17 +687,7 @@ export class App {
     let lastError: unknown = null;
     for (const backend of candidates) {
       try {
-        if (!this.policy.isLoaded || this.policy.requestedBackend !== backend || this.policy.actualBackend !== backend) {
-          await this.gameplayInferenceWorker?.release();
-          this.gameplayInferenceWorker = null;
-          await this.policy.release();
-          this.policy = new OrtWebPolicy({ backend });
-          await this.policy.load();
-        }
-        if (backend === 'wasm') {
-          await this.gameplayInferenceWorker?.release();
-          this.gameplayInferenceWorker = null;
-        } else if (this.gameplayInferenceWorker?.actualBackend !== backend) {
+        if (this.gameplayInferenceWorker?.actualBackend !== backend) {
           await this.gameplayInferenceWorker?.release();
           this.gameplayInferenceWorker = new AgentInferenceWorker(backend);
           await this.gameplayInferenceWorker.load();
@@ -703,10 +695,7 @@ export class App {
         if (this.gameplayInferenceWorker && this.gameplayInferenceWorker.actualBackend !== backend) {
           throw new Error(`gameplay worker requested ${backend.toUpperCase()} but used ${this.gameplayInferenceWorker.actualBackend ?? 'unavailable'}`);
         }
-        this.gameplayBackend = this.policy.actualBackend;
-        if (backend === 'wasm' && support.supported && this.debug) {
-          this.setTechnicalMessage('WebGPU could not start for gameplay; the product is running on its truthful WASM fallback.');
-        }
+        this.gameplayBackend = this.gameplayInferenceWorker.actualBackend;
         return;
       } catch (error) {
         lastError = error;
@@ -1106,7 +1095,9 @@ export class App {
 
   private setText<T extends HTMLElement = HTMLElement>(selector: string, text: string): void {
     this.required<T>(selector);
-    this.root.querySelectorAll<T>(selector).forEach((element) => { element.textContent = text; });
+    this.root.querySelectorAll<T>(selector).forEach((element) => {
+      if (element.textContent !== text) element.textContent = text;
+    });
   }
 
   private required<T extends HTMLElement = HTMLElement>(selector: string): T {
