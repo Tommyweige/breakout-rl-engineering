@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
   createBrowserBreakoutEnvironmentForTest,
@@ -96,6 +96,26 @@ class FakeAle {
 }
 
 describe('ALE Browser environment contract', () => {
+  it('reuses the canvas pixel buffer without clearing its surface on every frame', () => {
+    const image = { data: new Uint8ClampedArray(160 * 210 * 4) };
+    const context = { createImageData: vi.fn(() => image), putImageData: vi.fn() };
+    const resize = vi.fn();
+    const canvas = { getContext: () => context } as unknown as HTMLCanvasElement;
+    Object.defineProperties(canvas, {
+      width: { get: () => 160, set: resize },
+      height: { get: () => 210, set: resize },
+    });
+    const human = createHumanBreakoutEnvironmentForTest(new FakeAle() as unknown as AleLike, contract, 101);
+    const agent = createBrowserBreakoutEnvironmentForTest(new FakeAle() as unknown as AleLike, contract, 101);
+    human.render(canvas);
+    human.render(canvas);
+    agent.render(canvas);
+    agent.render(canvas);
+    expect(resize).not.toHaveBeenCalled();
+    expect(context.createImageData).toHaveBeenCalledTimes(1);
+    expect(context.putImageData).toHaveBeenCalledTimes(4);
+    expect(image.data[3]).toBe(255);
+  });
   it('uses raw RGB FIRE confirmation and one newly selected action per frame for vision', () => {
     const ale = new FakeAle();
     const environment = createBrowserBreakoutEnvironmentForTest(ale as unknown as AleLike, contract, 101);
