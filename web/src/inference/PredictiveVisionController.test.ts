@@ -32,6 +32,15 @@ describe('Predictive Vision Controller v1 browser port', () => {
     controller.select(screen([81, 141], 104, 0));
     expect(controller.select(screen([82, 142], 110)).action).toBe('RIGHT');
   });
+
+  it('starts a fresh episode without carrying paddle coasting into new steering', () => {
+    const controller = new PredictiveVisionController();
+    controller.select(screen([80, 140], 104));
+    expect(controller.select(screen([82, 142], 110)).action).toBe('NOOP');
+    controller.reset();
+    expect(controller.select(screen([80, 140], 110)).action).toBe('NOOP');
+    expect(controller.select(screen([82, 142], 110)).action).toBe('RIGHT');
+  });
   it('releases direction early so a moving paddle settles at a stable landing point', () => {
     const controller = new PredictiveVisionController();
     controller.select(screen([80, 140], 104));

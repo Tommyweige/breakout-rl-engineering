@@ -195,6 +195,14 @@ class PredictiveControlMathTests(unittest.TestCase):
         decision = controller.select_action(screen_fixture(ball=(82, 142), paddle_left=110))
         self.assertEqual(decision.action, RIGHT)
 
+    def test_reset_does_not_carry_paddle_coasting_into_new_steering(self) -> None:
+        controller = PredictiveBreakoutController()
+        controller.select_action(screen_fixture(ball=(80, 140), paddle_left=104))
+        self.assertEqual(controller.select_action(screen_fixture(ball=(82, 142), paddle_left=110)).action, NOOP)
+        controller.reset()
+        self.assertEqual(controller.select_action(screen_fixture(ball=(80, 140), paddle_left=110)).action, NOOP)
+        self.assertEqual(controller.select_action(screen_fixture(ball=(82, 142), paddle_left=110)).action, RIGHT)
+
     def test_moving_paddle_releases_direction_before_coasting_to_the_landing_point(self) -> None:
         controller = PredictiveBreakoutController()
         controller.select_action(screen_fixture(ball=(80, 140), paddle_left=104))
