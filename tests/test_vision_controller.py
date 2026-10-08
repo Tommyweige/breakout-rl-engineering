@@ -47,6 +47,7 @@ def screen_fixture(
     *,
     ball: tuple[int, int] | None = None,
     paddle_left: int = 96,
+    paddle_width: int = 16,
     bricks: bool = True,
 ) -> np.ndarray:
     frame = np.zeros((210, 160, 3), dtype=np.uint8)
@@ -55,7 +56,7 @@ def screen_fixture(
     frame[17:32, :] = RAIL_RGB
     if bricks:
         frame[57:75, 8:152] = BALL_RGB
-    frame[189:193, paddle_left : paddle_left + 16] = BALL_RGB
+    frame[189:193, paddle_left : paddle_left + paddle_width] = BALL_RGB
     if ball is not None:
         x, y = ball
         frame[y : y + 4, x : x + 2] = BALL_RGB
@@ -63,6 +64,24 @@ def screen_fixture(
 
 
 class PredictiveVisionPerceptionTests(unittest.TestCase):
+    def test_straight_fractional_descent_does_not_reverse_paddle_direction(self) -> None:
+        for vx, vy in [(1.5, 1.0), (1.0, 1.5), (0.5, 2.0)]:
+            with self.subTest(vx=vx, vy=vy):
+                controller = PredictiveBreakoutController()
+                actions: list[str] = []
+                intercepts: list[float] = []
+                for frame in range(16):
+                    decision = controller.select_action(
+                        screen_fixture(ball=(100 + int(frame * vx), 112 + int(frame * vy)), paddle_left=64)
+                    )
+                    if frame >= 2:
+                        actions.append(decision.action)
+                        assert decision.predicted_intercept_x is not None
+                        intercepts.append(decision.predicted_intercept_x)
+                movements = [action for action in actions if action != NOOP]
+                self.assertEqual(sum(a != b for a, b in zip(movements, movements[1:])), 0)
+                self.assertLessEqual(max(intercepts) - min(intercepts), 1.0)
+
     def test_ball_connected_component_and_playfield_bounds(self) -> None:
         controller = PredictiveBreakoutController()
         observation = controller.observe(screen_fixture(ball=(78, 120)))
@@ -75,6 +94,22 @@ class PredictiveVisionPerceptionTests(unittest.TestCase):
         self.assertAlmostEqual(observation.ball.y or 0.0, 121.5)
         self.assertEqual(observation.ball.confidence, 1.0)
         self.assertTrue(observation.ball.directly_detected)
+
+    def test_velocity_history_does_not_cross_missing_frames_or_invalid_jumps(self) -> None:
+        controller = PredictiveBreakoutController()
+        for ball in [(20, 100), (22, 102), None, (26, 106)]:
+            observation = controller.observe(screen_fixture(ball=ball))
+        self.assertEqual((observation.ball.vx, observation.ball.vy), (2.0, 2.0))
+        observation = controller.observe(screen_fixture(ball=(27, 107)))
+        self.assertEqual((observation.ball.vx, observation.ball.vy), (1.0, 1.0))
+        for _ in range(5):
+            controller.observe(screen_fixture(ball=None))
+        controller.observe(screen_fixture(ball=(100, 120)))
+        jumped = controller.observe(screen_fixture(ball=(110, 122)))
+        self.assertTrue(jumped.ball.directly_detected)
+        self.assertIsNone(jumped.ball.vx)
+        observation = controller.observe(screen_fixture(ball=(111, 123)))
+        self.assertEqual((observation.ball.vx, observation.ball.vy), (1.0, 1.0))
 
     def test_paddle_detection_uses_visible_edges(self) -> None:
         observation = PredictiveBreakoutController().observe(
@@ -140,9 +175,33 @@ class PredictiveVisionPerceptionTests(unittest.TestCase):
         self.assertEqual(moving_right.ball.vx, 2.0)
         self.assertEqual(moving_left.ball.vx, -2.0)
         self.assertEqual(moving_left.ball.vy, 2.0)
+        moving_up = controller.observe(screen_fixture(ball=(48, 102)))
+        self.assertEqual((moving_up.ball.vx, moving_up.ball.vy), (-2.0, -2.0))
 
 
 class PredictiveControlMathTests(unittest.TestCase):
+    def test_settles_inside_the_catch_region_but_aligns_a_narrow_paddle(self) -> None:
+        for left, width, expected in [(114, 16, NOOP), (118, 8, RIGHT)]:
+            with self.subTest(width=width):
+                controller = PredictiveBreakoutController()
+                controller.select_action(screen_fixture(ball=(80, 140), paddle_left=left, paddle_width=width))
+                decision = controller.select_action(screen_fixture(ball=(82, 142), paddle_left=left, paddle_width=width))
+                self.assertEqual(decision.action, expected)
+
+    def test_missing_paddle_discards_motion_history(self) -> None:
+        controller = PredictiveBreakoutController()
+        controller.select_action(screen_fixture(ball=(80, 140), paddle_left=104))
+        controller.select_action(screen_fixture(ball=(81, 141), paddle_left=104, paddle_width=0))
+        decision = controller.select_action(screen_fixture(ball=(82, 142), paddle_left=110))
+        self.assertEqual(decision.action, RIGHT)
+
+    def test_moving_paddle_releases_direction_before_coasting_to_the_landing_point(self) -> None:
+        controller = PredictiveBreakoutController()
+        controller.select_action(screen_fixture(ball=(80, 140), paddle_left=104))
+        decision = controller.select_action(screen_fixture(ball=(82, 142), paddle_left=110))
+        self.assertEqual(decision.predicted_intercept_x, 126.0)
+        self.assertEqual(decision.action, NOOP)
+
     def test_horizontal_reflection_handles_multiple_wall_bounces(self) -> None:
         self.assertAlmostEqual(reflect_x(170.0, 10.0, 150.0), 130.0)
         self.assertAlmostEqual(reflect_x(-30.0, 10.0, 150.0), 50.0)
