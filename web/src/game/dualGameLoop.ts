@@ -38,6 +38,7 @@ export interface AgentLoopStep {
 export interface AgentRuntimeSemantics {
   outerActionRepeat: number;
   stickyActionProbability: number;
+  stepMode?: 'interactive-frame' | 'decision';
 }
 
 export interface DualLoopDiagnostics {
@@ -325,7 +326,7 @@ export class DualGameLoop {
       const inferenceMs = now() - inferenceStartedAt;
       if (!allowWhenPaused && (this.status !== 'running' || this.destroyed)) return;
       const environmentStartedAt = now();
-      const environment = this.options.agent.stepInteractiveFrame
+      const environment = this.options.agentRuntime.stepMode !== 'decision' && this.options.agent.stepInteractiveFrame
         ? this.options.agent.stepInteractiveFrame(policy.actionIndex, this.options.agentRuntime.outerActionRepeat)
         : this.options.agent.stepAsync
         ? await this.options.agent.stepAsync(policy.actionIndex, this.options.agentRuntime.outerActionRepeat)

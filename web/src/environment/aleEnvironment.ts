@@ -235,6 +235,11 @@ export class BrowserBreakoutEnvironment {
     return new Uint8Array(this.lastRawRgb);
   }
 
+  /** Latest single ALE screen, before display max-pooling. */
+  get currentRawRgb(): Uint8Array {
+    return copyBytes(this.ale.getScreenRGB());
+  }
+
   get currentSeed(): number {
     return this.seed;
   }

@@ -50,6 +50,22 @@ when the Laya latency gate blocks gameplay. Compare completed matched-contract
 episodes only; v3 (`--contract configs/eval/breakout_contract_v3.json`) is reported
 separately, with its optional predictive-controller comparison unrun.
 Keep generated evidence under ignored `evaluations/`, outside `main`.
+
+For the local browser's **Decision Model** difficulty, run the CUDA bridge in
+one terminal and Vite in another:
+
+```powershell
+.\.venv-laya\Scripts\python -m scripts.inference.serve_laya_vision
+cd web
+npm run dev -- --host 127.0.0.1 --port 5180
+```
+
+Open `http://127.0.0.1:5180`, select **Decision Model**, and press Start. Only
+localhost exposes this option; Vite proxies RGB requests to the loopback-only
+Laya service on port 8766. The model stays on CUDA, one request is in flight at
+a time, and the game retains frame skip 4 with wrapper-owned FIRE. At the
+measured inference rate the AI game advances slower than the player's game.
+
 Optional real-model integration tests require cached weights and
 `LAYA_RUN_INTEGRATION=1`; ordinary tests use a mocked external Laya policy.
 

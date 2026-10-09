@@ -72,7 +72,7 @@ describe('DifficultyPolicy', () => {
     };
 
     const counts = AI_DIFFICULTIES.map((difficultyName) => countMistakes(difficultyName));
-    expect(counts).toEqual([2994, 1510, 520, 0]);
+    expect(counts).toEqual([2994, 1510, 520, 0, 0]);
     expect(counts[0]!).toBeGreaterThan(counts[1]!);
     expect(counts[1]!).toBeGreaterThan(counts[2]!);
     expect(counts[2]!).toBeGreaterThan(counts[3]!);

@@ -176,6 +176,7 @@ describe('dual game loop', () => {
   });
 
   it('reports policy inference separately from the Agent environment step', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'performance'] });
     const human = new FakeHumanEnvironment();
     const agent = new FakeAgentEnvironment();
     const steps: AgentLoopStep[] = [];
@@ -191,13 +192,19 @@ describe('dual game loop', () => {
       onAgentStep: (step) => steps.push(step),
     });
 
-    await loop.stepOnce();
+    try {
+      const decision = loop.stepOnce();
+      await vi.advanceTimersByTimeAsync(10);
+      await decision;
 
-    const step = steps[0];
-    expect(step).toBeDefined();
-    expect(step!.inferenceMs).toBeGreaterThanOrEqual(10);
-    expect(step!.environmentStepMs).toBeGreaterThanOrEqual(0);
-    expect(step!.totalDecisionMs).toBeGreaterThanOrEqual(step!.inferenceMs + step!.environmentStepMs);
+      const step = steps[0];
+      expect(step).toBeDefined();
+      expect(step!.inferenceMs).toBe(10);
+      expect(step!.environmentStepMs).toBeGreaterThanOrEqual(0);
+      expect(step!.totalDecisionMs).toBeGreaterThanOrEqual(step!.inferenceMs + step!.environmentStepMs);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('routes each display-paced inference through the interactive frame step with the trained repeat', async () => {
@@ -219,6 +226,22 @@ describe('dual game loop', () => {
 
     expect(agent.stepInteractiveFrame).toHaveBeenCalledWith(2, 4);
     expect(agent.actions).toEqual([2]);
+  });
+
+  it('advances four native frames per expensive decision without discarding intermediate predictions', async () => {
+    const agent = new FakeAgentEnvironment();
+    agent.stepInteractiveFrame = vi.fn(() => fakeAgentStep(2));
+    const infer = vi.fn(async () => policyResult(2));
+    const loop = new DualGameLoop({
+      human: new FakeHumanEnvironment(), agent,
+      agentRuntime: { outerActionRepeat: 4, stickyActionProbability: 0.25, stepMode: 'decision' },
+      humanCommand: () => ({ kind: 'discrete', actionIndex: 0 }), infer,
+    });
+    await loop.stepOnce();
+    expect(infer).toHaveBeenCalledOnce();
+    expect(agent.stepInteractiveFrame).not.toHaveBeenCalled();
+    expect(loop.runtimeDiagnostics.agentRawFrameDelta).toBe(4);
+    expect(loop.runtimeDiagnostics.agentDecisionCount).toBe(1);
   });
 
   it('routes absolute paddle commands only to Human while Agent keeps discrete actions', async () => {

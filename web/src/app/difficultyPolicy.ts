@@ -1,6 +1,6 @@
 import { ACTION_MEANINGS, type PolicyResult } from '../inference/types';
 
-export const AI_DIFFICULTIES = ['easy', 'medium', 'hard', 'unbeatable'] as const;
+export const AI_DIFFICULTIES = ['easy', 'medium', 'hard', 'unbeatable', 'decision-model'] as const;
 export type AiDifficulty = (typeof AI_DIFFICULTIES)[number];
 
 export const AI_DIFFICULTY_LABELS: Record<AiDifficulty, string> = {
@@ -8,6 +8,7 @@ export const AI_DIFFICULTY_LABELS: Record<AiDifficulty, string> = {
   medium: 'MEDIUM',
   hard: 'HARD',
   unbeatable: 'UNBEATABLE',
+  'decision-model': 'DECISION MODEL',
 };
 
 export const AI_DIFFICULTY_MISTAKE_RATES: Record<AiDifficulty, number> = {
@@ -15,6 +16,7 @@ export const AI_DIFFICULTY_MISTAKE_RATES: Record<AiDifficulty, number> = {
   medium: 0.15,
   hard: 0.05,
   unbeatable: 0,
+  'decision-model': 0,
 };
 
 const MOVEMENT_ACTION_INDICES = [0, 2, 3] as const;

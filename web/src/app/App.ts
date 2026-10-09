@@ -13,6 +13,7 @@ import { InferenceScheduler } from '../inference/InferenceScheduler';
 import { AgentInferenceWorker } from '../inference/AgentInferenceWorker';
 import { OrtWebPolicy } from '../inference/OrtWebPolicy';
 import { PredictiveVisionController } from '../inference/PredictiveVisionController';
+import { LayaVisionPolicy } from '../inference/LayaVisionPolicy';
 import { detectBrowser } from '../inference/browserInfo';
 import { detectWebGpuSupport } from '../inference/webgpuSupport';
 import { KeyboardController } from '../input/KeyboardController';
@@ -107,6 +108,7 @@ export class App {
   private readonly mouse = new MouseController();
   private readonly difficultyPolicy = new DifficultyPolicy();
   private readonly visionController = new PredictiveVisionController();
+  private readonly layaPolicy = new LayaVisionPolicy();
   private status: RuntimeStatus = 'idle';
   private selectedBackend: InferenceBackend = 'wasm';
   private gameplayBackend: InferenceBackend | null = null;
@@ -465,8 +467,9 @@ export class App {
     try {
       const contract = await this.getContract();
       const vision = this.difficultyPolicy.currentDifficulty === 'unbeatable';
-      if (!vision) await this.prepareGameplayPolicy();
-      const actualBackend = vision ? 'vision' : this.gameplayInferenceWorker?.actualBackend;
+      const decisionModel = this.difficultyPolicy.currentDifficulty === 'decision-model';
+      await this.prepareGameplayController(this.difficultyPolicy.currentDifficulty);
+      const actualBackend = decisionModel ? 'cuda' : vision ? 'vision' : this.gameplayInferenceWorker?.actualBackend;
       if (!actualBackend) throw new Error('The browser policy did not expose an active backend.');
       if (this.gameLoop) {
         this.scheduler.start();
@@ -488,7 +491,7 @@ export class App {
         humanRuntime: this.humanEnvironment.runtimeDiagnostics,
         agentRuntime: this.agentEnvironment.runtimeDiagnostics,
         interactiveAgentRuntime: {
-          rawFramesPerInference: 1,
+          rawFramesPerInference: decisionModel ? 4 : 1,
           policyActionRepeat: this.agentActionRepeat,
           policyObservationRepeat: this.agentActionRepeat,
           schedule: 'requestAnimationFrame',
@@ -503,12 +506,12 @@ export class App {
       };
       if (this.debug) {
         const browser = await detectBrowser();
-        if (actualBackend !== 'vision') this.renderPolicyRuntime(actualBackend, this.gameplayInferenceWorker?.ortWebVersion ?? this.policy.ortWebVersion, browser.name, browser.version, browser.platform);
+        if (actualBackend !== 'vision' && actualBackend !== 'cuda') this.renderPolicyRuntime(actualBackend, this.gameplayInferenceWorker?.ortWebVersion ?? this.policy.ortWebVersion, browser.name, browser.version, browser.platform);
         this.setText('[data-role="environment-parity"]', `${contract.parity.status.toUpperCase()} / ${vision ? 'raw RGB / frame skip 1' : 'Contract v2'}`);
-        this.setText('[data-role="backend-evidence"]', vision ? 'raw RGB pixel tracking' : this.gameplayBackend === 'webgpu' ? 'runtime GPU device observed' : 'explicit WASM worker session');
-        this.setText('[data-role="model-loaded"]', vision ? 'Predictive Vision Controller v1' : 'loaded / Day 21 canonical');
+        this.setText('[data-role="backend-evidence"]', decisionModel ? 'local Laya CUDA service verified' : vision ? 'raw RGB pixel tracking' : this.gameplayBackend === 'webgpu' ? 'runtime GPU device observed' : 'explicit WASM worker session');
+        this.setText('[data-role="model-loaded"]', decisionModel ? 'Laya Vision / frozen 201M' : vision ? 'Predictive Vision Controller v1' : 'loaded / Day 21 canonical');
         this.setText('[data-role="gameplay-backend"]', actualBackend.toUpperCase());
-        this.setText('[data-role="model-sha"]', vision ? 'No neural model' : this.validationResult?.modelSha256 ?? 'manifest hash recorded by evaluation');
+        this.setText('[data-role="model-sha"]', decisionModel ? this.layaPolicy.modelRevision : vision ? 'No neural model' : this.validationResult?.modelSha256 ?? 'manifest hash recorded by evaluation');
         window.__day29EnvironmentDiagnostics = environmentDiagnostics;
         window.__day30EnvironmentDiagnostics = environmentDiagnostics;
       }
@@ -524,9 +527,13 @@ export class App {
           // action and updates the model observation at the trained frame skip.
           outerActionRepeat: this.agentActionRepeat,
           stickyActionProbability: this.agentEnvironment.contract.sticky_action_probability,
+          stepMode: decisionModel ? 'decision' : 'interactive-frame',
         },
         humanCommand: () => this.currentHumanCommand(),
         infer: async (observation) => {
+          if (this.difficultyPolicy.currentDifficulty === 'decision-model') {
+            return this.layaPolicy.infer(this.agentEnvironment!.currentRawRgb);
+          }
           if (this.difficultyPolicy.currentDifficulty === 'unbeatable') {
             return this.visionController.select(this.agentEnvironment!.rawRgb);
           }
@@ -574,6 +581,10 @@ export class App {
       this.latestHumanStep = null;
       this.latestAgentStep = null;
       this.agentAutoFireCount = 0;
+      this.setText('[data-role="human-score"]', '0');
+      this.setText('[data-role="agent-score"]', '0');
+      this.setText('[data-role="human-lives"]', String(this.humanEnvironment?.currentLives ?? '—'));
+      this.setText('[data-role="agent-lives"]', String(this.agentEnvironment?.currentLives ?? '—'));
       this.initializeHumanDiagnostics();
       this.renderCanvases();
       this.setStatus('ready');
@@ -626,17 +637,18 @@ export class App {
     this.setText('[data-role="agent-stage-state"]', environment.terminated || environment.truncated ? 'GAME OVER' : 'PLAYING');
     if (this.debug) {
       const vision = step.policy.actualBackend === 'vision';
-      this.setText('[data-role="model-loaded"]', vision ? 'Predictive Vision Controller v1' : 'loaded / Day 21 canonical');
+      const decisionModel = step.policy.actualBackend === 'cuda';
+      this.setText('[data-role="model-loaded"]', decisionModel ? 'Laya Vision / frozen 201M' : vision ? 'Predictive Vision Controller v1' : 'loaded / Day 21 canonical');
       this.setText('[data-role="gameplay-backend"]', vision ? 'PIXEL VISION / JS' : step.policy.actualBackend.toUpperCase());
-      this.setText('[data-role="model-sha"]', vision ? 'No neural model' : this.validationResult?.modelSha256 ?? 'manifest hash recorded by evaluation');
+      this.setText('[data-role="model-sha"]', decisionModel ? this.layaPolicy.modelRevision : vision ? 'No neural model' : this.validationResult?.modelSha256 ?? 'manifest hash recorded by evaluation');
       this.setText('[data-role="environment-parity"]', `PARTIAL / ${vision ? 'raw RGB / frame skip 1' : 'Contract v2'}`);
-      this.setText('[data-role="backend-evidence"]', vision ? 'raw RGB pixel tracking' : this.gameplayBackend === 'webgpu' ? 'runtime GPU device observed' : 'explicit WASM worker session');
+      this.setText('[data-role="backend-evidence"]', decisionModel ? 'local Laya CUDA service verified' : vision ? 'raw RGB pixel tracking' : this.gameplayBackend === 'webgpu' ? 'runtime GPU device observed' : 'explicit WASM worker session');
       const diagnostics = window.__day30EnvironmentDiagnostics;
       if (diagnostics) {
         Object.assign(diagnostics, this.agentEnvironment!.runtimeDiagnostics, {
           agentRuntime: this.agentEnvironment!.runtimeDiagnostics,
           actualGameplayBackend: step.policy.actualBackend,
-          interactiveAgentRuntime: { rawFramesPerInference: 1, policyActionRepeat: this.agentActionRepeat, policyObservationRepeat: this.agentActionRepeat, schedule: 'requestAnimationFrame' },
+          interactiveAgentRuntime: { rawFramesPerInference: decisionModel ? 4 : 1, policyActionRepeat: this.agentActionRepeat, policyObservationRepeat: this.agentActionRepeat, schedule: 'requestAnimationFrame' },
         });
       }
       this.setText('[data-role="current-action"]', environment.autoFire ? `FIRE / auto-${environment.autoFireReason}` : environment.executedAction);
@@ -650,7 +662,10 @@ export class App {
       this.setText('[data-role="auto-fire"]', `${this.agentAutoFireCount}`);
       this.required('[data-role="gameplay-q-values"]').innerHTML = vision
         ? '<p>Pixel tracking → reflected paddle intercept. No Q-values.</p>'
-        : renderPolicyQValuesMarkup(step.policy.qValues, step.policy.actionIndex);
+        : decisionModel && step.policy.qValues.length === 0 ? '<p>Laya did not return probability telemetry.</p>'
+        : renderPolicyQValuesMarkup(step.policy.qValues, step.policy.actionIndex, 'LIVE AGENT DECISION', decisionModel ? 'Probability' : 'Q-value');
+      this.setText('[data-role="preprocess-shape"]', decisionModel ? 'Laya input: one RGB (210, 160, 3) screen; grayscale preview belongs to the environment' : 'uint8 (4, 84, 84) → float32 / 255');
+      this.setText('[data-role="model-identity-label"]', decisionModel ? 'Checkpoint revision:' : 'Model SHA256:');
       this.renderPreprocessing(environment.observation, environment.processedFrame);
       this.setText('[data-role="agent-step-latency"]', `${step.environmentStepMs.toFixed(2)} ms`);
       this.setText('[data-role="agent-cycle-latency"]', `${step.totalDecisionMs.toFixed(2)} ms`);
@@ -838,9 +853,19 @@ export class App {
     return this.difficultyPolicy.currentDifficulty === 'unbeatable' ? 1 : 4;
   }
 
+  private async prepareGameplayController(value: AiDifficulty): Promise<void> {
+    if (value === 'decision-model') {
+      this.setUserMessage('Connecting to Laya Vision on your GPU…');
+      await this.layaPolicy.load();
+    } else if (value !== 'unbeatable') {
+      await this.prepareGameplayPolicy();
+    }
+  }
+
   private async setDifficulty(value: string): Promise<void> {
     if (!isAiDifficulty(value)) return;
-    const switchController = (value === 'unbeatable') !== (this.difficultyPolicy.currentDifficulty === 'unbeatable');
+    const controller = (difficulty: AiDifficulty) => difficulty === 'unbeatable' || difficulty === 'decision-model' ? difficulty : 'dqn';
+    const switchController = controller(value) !== controller(this.difficultyPolicy.currentDifficulty);
     const wasRunning = this.gameLoop?.currentStatus === 'running';
     if (switchController && this.gameLoop) {
       this.setBusy(true);
@@ -848,8 +873,9 @@ export class App {
       for (const action of ['start', 'pause', 'reset']) this.button(action).disabled = true;
       try {
         this.gameLoop.pause();
-        if (value !== 'unbeatable') await this.prepareGameplayPolicy();
-        await this.gameLoop.resetAgent({ outerActionRepeat: value === 'unbeatable' ? 1 : 4, stickyActionProbability: 0.25 });
+        await this.prepareGameplayController(value);
+        await this.gameLoop.resetAgent({ outerActionRepeat: value === 'unbeatable' ? 1 : 4, stickyActionProbability: 0.25,
+          stepMode: value === 'decision-model' ? 'decision' : 'interactive-frame' });
         this.latestAgentStep = null;
         this.agentAutoFireCount = 0;
         this.setText('[data-role="agent-score"]', '0');
@@ -872,7 +898,7 @@ export class App {
       this.setText('[data-role="debug-difficulty"]', label);
       this.setText('[data-role="difficulty-rate"]', `${(this.difficultyPolicy.currentMistakeRate * 100).toFixed(0)}%`);
     }
-    this.setText('[data-role="ai-controller-description"]', value === 'unbeatable' ? 'Pixel vision predicts the ball’s landing point.' : 'AI is playing automatically.');
+    this.setText('[data-role="ai-controller-description"]', value === 'decision-model' ? 'Laya Vision chooses from pixels · NVIDIA GPU' : value === 'unbeatable' ? 'Pixel vision predicts the ball’s landing point.' : 'AI is playing automatically.');
     if (switchController && wasRunning) { this.scheduler.start(); this.gameLoop?.start(); }
     this.setUserMessage(`Difficulty: ${label}${switchController && this.gameLoop ? ' · AI game restarted.' : ''}`);
   }
