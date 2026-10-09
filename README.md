@@ -8,6 +8,51 @@ The final application runs both the Atari environment and the trained RL policy 
 
 ## Highlights
 
+### Optional Laya Vision research evaluator
+
+Issue [#69](https://github.com/Tommyweige/breakout-rl-engineering/issues/69)
+adds a frozen 201M pixel-only policy, isolated from DQN training and the browser.
+With the project Conda environment active, create an optional environment:
+
+```powershell
+python -m venv --system-site-packages .venv-laya
+.\.venv-laya\Scripts\python -m pip install -r requirements-laya.txt
+.\.venv-laya\Scripts\python -m scripts.evaluation.evaluate_laya_vision --mode pilot --output-dir evaluations/laya-pilot
+```
+
+Upstream code is pinned to `9e1e2419d855ad3e1a2af4d4bd1ef6be5418842c`;
+`thaitea/laya-vision` weights are pinned to
+`f2fe3c12cb6d04c59d8a190250bf3fb40fc828dc`. Installation checks the Git commit.
+Code is Apache 2.0; weights are CC BY-NC-SA 4.0 and are not redistributed.
+The inherited environment must provide the existing PyTorch/CUDA/ALE dependencies;
+the tested combination is PyTorch 2.13.0+cu130, torchvision 0.28.0 and transformers 5.3.0.
+
+The default protocol runs 100 measured model decisions after warm-up, then gates
+the predeclared v2 seeds 101/202/303 against a one-hour estimated maximum compute
+budget. `--mode seed101` selects the required single-seed evaluation; `--mode full`
+selects the contract's 15 seeds. Declare a different budget before running with
+`--max-pilot-hours`. The gate uses measured p95 latency and the unchanged episode
+limit; smoke never counts as a complete episode. Each run requires a fresh output
+directory and writes `run.json`, `report.md`, compact action traces, three smoke
+frames, and shared evaluator JSON/CSV for completed episodes.
+
+Decisions use one ALE RGB render, never the DQN grayscale stack, RAM or completion
+detector state. The environment retains its exact preprocessing/serve behavior;
+requested and wrapper-executed actions are recorded separately. Model timing
+includes the image tower, connector and decision network; a separate fixed-frame
+benchmark measures upstream image preprocessing. Reported confidence is not
+validated as calibrated on this ALE domain. GPU load measurements target the
+RTX 4060 Laptop 8 GB; unavailable/unsupported CUDA falls back to CPU with provenance.
+
+The existing Day 21 DQN ONNX asset is re-evaluated on the same v2 seeds using
+ONNX Runtime CPU, with model and inference-contract hashes checked. It runs even
+when the Laya latency gate blocks gameplay. Compare completed matched-contract
+episodes only; v3 (`--contract configs/eval/breakout_contract_v3.json`) is reported
+separately, with its optional predictive-controller comparison unrun.
+Keep generated evidence under ignored `evaluations/`, outside `main`.
+Optional real-model integration tests require cached weights and
+`LAYA_RUN_INTEGRATION=1`; ordinary tests use a mocked external Laya policy.
+
 - **DQN family** — Vanilla DQN, Double DQN, and Dueling Double DQN.
 - **GPU training** — PyTorch with CUDA support and vectorized environments.
 - **Replay systems** — CPU and GPU replay-buffer implementations.

@@ -63,3 +63,9 @@ When the environment overrides a requested policy action with mandatory serve `F
 - update tests with behavior changes;
 - keep generated runs, checkpoints, screenshots, benchmark dumps, and article artifacts out of `main`;
 - only commit large assets when they are required by the runtime under `web/`.
+
+## Agent skills
+
+- Issues: GitHub via `gh`; see `docs/agents/issue-tracker.md`.
+- Triage roles: see `docs/agents/triage-labels.md`.
+- Domain docs: optional root `CONTEXT.md` and `docs/adr/`; see `docs/agents/domain.md`.

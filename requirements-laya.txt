@@ -1,0 +1,5 @@
+# Optional; install in an isolated environment with the project's torch/ALE stack.
+laya @ git+https://github.com/r33drichards/laya-vision.git@9e1e2419d855ad3e1a2af4d4bd1ef6be5418842c
+transformers==5.3.0
+torchvision==0.28.0
+huggingface_hub==1.33.0

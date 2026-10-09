@@ -292,7 +292,15 @@ def _contract_runtime_binding(
         else "Contract v2"
     )
 
-    if tuple(evaluation_seeds) != contract.concrete_episode_seeds:
+    declared_subset = values.get("evaluation_seed_subset")
+    if declared_subset is not None:
+        try:
+            subset = _seed_values(declared_subset)
+        except (TypeError, ValueError):
+            return False, "The declared evaluation seed subset is invalid."
+        if tuple(evaluation_seeds) != subset or not set(subset).issubset(contract.concrete_episode_seeds):
+            return False, "Evaluation seeds differ from the declared contract seed subset."
+    elif tuple(evaluation_seeds) != contract.concrete_episode_seeds:
         return False, f"The evaluation seed list does not match {contract_label}."
     if episodes_per_seed != 1:
         return False, f"Canonical {contract_label} evaluation requires one episode per seed."
@@ -1193,6 +1201,8 @@ def evaluate_policy(
     checkpoint_metadata: Mapping[str, Any] | None = None,
     evaluation_id: str | None = None,
     metadata: Mapping[str, Any] | None = None,
+    policy_factory: Callable[[Any], EvaluationPolicy] | None = None,
+    step_callback: Callable[[Mapping[str, Any]], None] | None = None,
 ) -> EvaluationResult:
     """Evaluate Random or DQN using the same environment and episode loop.
 
@@ -1215,6 +1225,10 @@ def evaluate_policy(
     resolved_device = resolve_device(requested_device)
     if not callable(env_factory):
         raise TypeError("env_factory must be callable")
+    if policy_factory is not None and (model is not None or epsilon != 0.0):
+        raise ValueError("custom evaluation policies require model=None and epsilon=0")
+    if policy_factory is not None and not callable(policy_factory):
+        raise TypeError("policy_factory must be callable")
     if model is not None:
         if not isinstance(model, nn.Module):
             raise TypeError("model must be a torch.nn.Module or None")
@@ -1248,7 +1262,9 @@ def evaluate_policy(
                 if runtime_contract_validated
                 else "unverified"
             ),
-            "validation_reason": runtime_contract_reason,
+                "validation_reason": runtime_contract_reason,
+                "evaluated_seeds": list(evaluation_seeds),
+                "seed_scope": "declared_subset" if (metadata or {}).get("evaluation_seed_subset") is not None else "full_contract",
         }
     )
     result_metadata = dict(metadata or {})
@@ -1274,7 +1290,10 @@ def evaluate_policy(
         observation_shape = _observation_shape(env)
         action_names = _action_names(env, action_count)
         environment_id = _environment_id(env)
-        if model is None:
+        if policy_factory is not None:
+            policy = policy_factory(env)
+            resolved_model_id = model_id or policy.policy_type
+        elif model is None:
             policy: EvaluationPolicy = RandomPolicy(action_count)
             resolved_model_id = model_id or "random-policy"
         else:
@@ -1337,6 +1356,13 @@ def evaluate_policy(
                             action_count=action_count,
                         )
                         executed_action_values.append(executed_action)
+                        if step_callback is not None:
+                            step_callback({"seed": episode_seed,
+                                           "agent_step": len(executed_action_values),
+                                           "requested_action": action,
+                                           "executed_action": executed_action,
+                                           "auto_fire": auto_fire,
+                                           "emulator_frame": emulator_frame_now})
                         if auto_fire:
                             auto_fire_count += 1
                             if fire_reason is not None:
