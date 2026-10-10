@@ -76,6 +76,14 @@ The browser service caches the fixed question's token inputs and device buffers
 warms up before listening and schedules decisions independently of canvas paint.
 Use `--reference` on the server CLI to restore the upstream prediction path.
 The debug panel separates service inference time from browser request time.
+Decision Model retains a rolling two-frame max-pool image for each executed ALE
+frame and presents those real frames on a separate clock targeting 60 Hz. Its
+buffer holds at most two decision groups (eight RGB images with frame skip 4);
+when presentation stalls, backpressure defers new predictions. Pause, reset,
+controller switching and errors clear pending display frames. Fast inference is
+capped at 15 four-frame decisions per second to preserve a 60-native-frame budget.
+This improves presentation cadence without reducing model latency; it adds a
+bounded display delay and does not change the research evaluator's control inputs.
 If the fixed template is unsupported or fails startup parity, health reports
 `inferenceMode: reference` and an `optimizationFallback` reason. Debug runtime
 diagnostics also expose native frames/s, scheduling waits and render callback

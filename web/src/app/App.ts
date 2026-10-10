@@ -558,8 +558,7 @@ export class App {
         onFrame: () => this.renderCanvases(),
         onDiagnostics: this.debug ? (diagnostics) => this.updateHumanRuntimeDiagnostics(diagnostics) : undefined,
         onError: (error) => this.reportRuntimeError(error),
-        // Both policy inference and raw ALE rendering follow browser refresh;
-        // the Agent environment preserves its four-frame policy cadence.
+        // Decision Model preserves four-frame control while pacing each real display frame.
         humanTargetFps: 80,
         agentTargetFps: 60,
       });
@@ -604,7 +603,8 @@ export class App {
     const mobile = !this.debug && this.mobileLayout?.matches;
     const view = this.required<HTMLElement>('.panel-grid').dataset.view;
     if (!mobile || view === 'human') this.humanEnvironment.render(this.required<HTMLCanvasElement>('[data-role="human-canvas"]'));
-    if (!mobile || view === 'agent') this.agentEnvironment.render(this.required<HTMLCanvasElement>('[data-role="agent-canvas"]'));
+    if (!mobile || view === 'agent') this.agentEnvironment.render(this.required<HTMLCanvasElement>('[data-role="agent-canvas"]'),
+      this.gameLoop?.agentPresentationRgb ?? undefined);
     const loopState = this.gameLoop?.currentStatus ?? 'idle';
     this.setText('[data-role="human-stage-state"]', displayStageState(this.humanEnvironment.isFinished, loopState));
     this.setText('[data-role="agent-stage-state"]', displayStageState(this.agentEnvironment.isFinished, loopState));

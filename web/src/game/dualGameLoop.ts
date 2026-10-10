@@ -69,6 +69,8 @@ export interface DualLoopDiagnostics {
   agentScheduleWaitP95Ms: number;
   renderCallbackP50Ms: number;
   renderCallbackP95Ms: number;
+  agentPresentationFramesConsumed: number;
+  agentPresentationBufferedFrames: number;
 }
 
 export interface DualGameLoopOptions {
@@ -124,6 +126,14 @@ export class DualGameLoop {
   private readonly agentScheduleWaits: number[] = [];
   private readonly renderIntervals: number[] = [];
   private lastRenderAt: number | null = null;
+  private readonly presentationFrames: Uint8Array[] = [];
+  private presentationRgb: Uint8Array | null = null;
+  private presentationFramesConsumed = 0;
+  private nextPresentationAt = 0;
+
+  get agentPresentationRgb(): Uint8Array | null {
+    return this.presentationRgb;
+  }
 
   constructor(private readonly options: DualGameLoopOptions) {}
 
@@ -165,6 +175,8 @@ export class DualGameLoop {
       agentScheduleWaitP95Ms: percentile(this.agentScheduleWaits, 0.95),
       renderCallbackP50Ms: percentile(this.renderIntervals, 0.5),
       renderCallbackP95Ms: percentile(this.renderIntervals, 0.95),
+      agentPresentationFramesConsumed: this.presentationFramesConsumed,
+      agentPresentationBufferedFrames: this.presentationFrames.length,
     };
   }
 
@@ -190,6 +202,8 @@ export class DualGameLoop {
     // the schedules prevents any new Human/Agent tick, and avoids leaving the
     // formal Agent frame stack half-updated between its four raw frames.
     this.clearScheduledWork();
+    this.presentationFrames.length = 0;
+    this.presentationRgb = null;
     if (this.status === 'running') {
       this.accumulatedActiveMs += now() - (this.activeStartedAt ?? now());
       this.activeStartedAt = null;
@@ -224,6 +238,7 @@ export class DualGameLoop {
     this.lastAgentCompletedAt = null;
     this.agentScheduleWaits.length = 0;
     this.agentElapsedBaselineMs = this.elapsedMs();
+    this.presentationFramesConsumed = 0;
     this.options.onFrame?.();
     this.emitDiagnostics();
   }
@@ -297,6 +312,11 @@ export class DualGameLoop {
 
   private startAgentDecision(startedAt: number): void {
     if (this.agentInFlight) return;
+    if (this.options.agentRuntime.stepMode === 'decision'
+      && this.presentationFrames.length > this.options.agentRuntime.outerActionRepeat) {
+      this.scheduleAgent(1000 / 60);
+      return;
+    }
     this.agentDeadline = startedAt + this.agentIntervalMs();
     const promise = this.processAgentDecision(false);
     this.pendingAgentDecision = promise;
@@ -365,6 +385,10 @@ export class DualGameLoop {
       this.lastAgentDecisionAt = startedAt;
       this.agentDecisionCount += 1;
       this.agentRawFrameDelta += environment.actualEmulatorFrames;
+      if (!allowWhenPaused && this.status === 'running' && this.options.onFrame
+        && this.options.agentRuntime.stepMode === 'decision' && environment.presentationFrames) {
+        this.presentationFrames.push(...environment.presentationFrames);
+      }
       this.options.onAgentStep?.({
         policy,
         environment,
@@ -430,11 +454,20 @@ export class DualGameLoop {
     const current = now();
     if (this.lastRenderAt !== null) recordInterval(this.renderIntervals, current - this.lastRenderAt);
     this.lastRenderAt = current;
+    // Consume at most one real emulator frame per 60 Hz presentation interval.
+    const expected = this.presentationRgb === null ? current : this.nextPresentationAt;
+    if (this.presentationFrames.length && current + 1 >= expected) {
+      this.presentationRgb = this.presentationFrames.shift()!;
+      this.nextPresentationAt = current - expected > 1000 / 60 ? current + 1000 / 60 : expected + 1000 / 60;
+      this.presentationFramesConsumed += 1;
+    }
     this.options.onFrame?.();
   }
 
   private fail(error: unknown): void {
     this.clearScheduledWork();
+    this.presentationFrames.length = 0;
+    this.presentationRgb = null;
     this.status = 'error';
     this.options.onError?.(error);
     this.emitDiagnostics();
@@ -461,6 +494,7 @@ export class DualGameLoop {
     this.agentScheduleWaits.length = 0;
     this.renderIntervals.length = 0;
     this.lastRenderAt = null;
+    this.presentationFramesConsumed = 0;
   }
 
   private elapsedMs(): number {
@@ -472,7 +506,9 @@ export class DualGameLoop {
   }
 
   private agentIntervalMs(): number {
-    return 1000 / (this.options.agentTargetFps ?? 15);
+    const target = this.options.agentTargetFps ?? 15;
+    return 1000 / (this.options.agentRuntime.stepMode === 'decision'
+      ? Math.min(target, 60 / this.options.agentRuntime.outerActionRepeat) : target);
   }
 
   private emitDiagnostics(): void {

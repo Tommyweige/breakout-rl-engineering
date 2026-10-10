@@ -96,6 +96,30 @@ class FakeAle {
 }
 
 describe('ALE Browser environment contract', () => {
+  it('retains each real async frame for presentation without changing the final observation', async () => {
+    const ale = new FakeAle();
+    const asynchronous = createBrowserBreakoutEnvironmentForTest(ale as unknown as AleLike, contract, 101);
+    const synchronous = createBrowserBreakoutEnvironmentForTest(new FakeAle() as unknown as AleLike, contract, 101);
+    const expected = synchronous.step(2);
+    const result = await asynchronous.stepAsync(2);
+    expect(result.presentationFrames?.map(frame => frame[0])).toEqual([1, 2, 3, 4]);
+    expect(result.presentationFrames?.at(-1)).toEqual(result.rawRgb);
+    expect(result.observation).toEqual(expected.observation);
+    expect(result.executedAction).toBe(expected.executedAction);
+    expect(result.actualEmulatorFrames).toBe(expected.actualEmulatorFrames);
+    await asynchronous.stepAsync(3);
+    expect(result.presentationFrames?.map(frame => frame[0])).toEqual([1, 2, 3, 4]);
+  });
+
+  it('buffers only executed frames when an async decision terminates early', async () => {
+    const ale = new FakeAle();
+    const environment = createBrowserBreakoutEnvironmentForTest(ale as unknown as AleLike, contract, 101);
+    ale.gameOver = () => ale.frame >= 2;
+    const result = await environment.stepAsync(2);
+    expect(result.presentationFrames).toHaveLength(2);
+    expect(result.actualEmulatorFrames).toBe(2);
+    expect(result.terminated).toBe(true);
+  });
   it('reuses the canvas pixel buffer without clearing its surface on every frame', () => {
     const image = { data: new Uint8ClampedArray(160 * 210 * 4) };
     const context = { createImageData: vi.fn(() => image), putImageData: vi.fn() };

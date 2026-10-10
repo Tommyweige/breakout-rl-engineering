@@ -27,6 +27,7 @@ export interface EnvironmentStep {
   observation: Uint8Array;
   processedFrame: Uint8Array;
   rawRgb: Uint8Array;
+  presentationFrames?: readonly Uint8Array[];
   requestedModelAction: number;
   requestedAction: ActionMeaning;
   requestedAleAction: AleActionCode;
@@ -501,12 +502,16 @@ export class BrowserBreakoutEnvironment {
     let lastGrayscale: Uint8Array | null = null;
     const sampledGrayscaleFrames: Uint8Array[] = [];
     let actualRawSteps = 0;
+    const presentationFrames: Uint8Array[] = [];
+    let previousPresentationRgb = copyBytes(this.ale.getScreenRGB());
 
     for (let repeat = 0; repeat < rawFrameRepeat; repeat += 1) {
       if (repeat > 0 && rawFrameRepeat > 1) await yieldToEventLoop();
       reward += this.ale.act(executed.aleAction);
       const frame = copyBytes(this.ale.getScreenRGB());
       const grayscale = copyBytes(this.ale.getScreenGrayscale());
+      presentationFrames.push(maxPoolRgbFramesForRender(previousPresentationRgb, frame));
+      previousPresentationRgb = frame;
       actualRawSteps += 1;
       secondLastFrame = lastFrame;
       lastFrame = frame;
@@ -586,6 +591,7 @@ export class BrowserBreakoutEnvironment {
       observation: new Uint8Array(observation),
       processedFrame: new Uint8Array(processedFrame),
       rawRgb: new Uint8Array(rawFrame),
+      presentationFrames,
       requestedModelAction: requested.modelIndex,
       requestedAction: requested.meaning,
       requestedAleAction: requested.aleAction,
@@ -813,9 +819,9 @@ export class BrowserBreakoutEnvironment {
     };
   }
 
-  render(canvas: HTMLCanvasElement): void {
+  render(canvas: HTMLCanvasElement, presentationRgb?: Uint8Array): void {
     this.assertActive();
-    renderRawRgb(canvas, this.lastRawRgb);
+    renderRawRgb(canvas, presentationRgb ?? this.lastRawRgb);
   }
 
   private snapshot(): EnvironmentSnapshot {
