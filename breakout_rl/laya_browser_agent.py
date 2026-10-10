@@ -18,12 +18,12 @@ class LayaBrowserAgent:
         state = {"image": Image.fromarray(np.zeros((210, 160, 3), dtype=np.uint8))}
         prefix = vlm_prefix(agent.processor, [state["image"]], agent.prep)
         question = agent._to_internal(questions["move"])
-        item = build_vlm_inputs(agent.processor, state, question,
-                                agent.cfg.get("max_len", 1024), agent.cfg.get("head_max_len", 256),
+        max_len, head_max_len = agent.cfg.get("max_len", 1024), agent.cfg.get("head_max_len", 256)
+        item = build_vlm_inputs(agent.processor, state, question, max_len, head_max_len,
                                 prefix=prefix)
         truncated = truncation_answer(item["truncation"], question)
         if truncated:
-            raise truncation_error("move", truncated)
+            raise truncation_error("move", truncated, max_len, head_max_len)
         if len(item["markers"]) != 4 or prefix["raw_images"] is None:
             raise ValueError("Browser adapter requires four choices and GPU preprocessing")
         item["qtype"] = QTYPES[question["t"]]

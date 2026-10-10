@@ -6,8 +6,10 @@ import json
 import platform
 import subprocess
 import time
+import uuid
 from threading import Thread
 from urllib.request import Request, urlopen
+from urllib.parse import urlsplit
 
 import numpy as np
 
@@ -72,10 +74,14 @@ def fixture_frames():
 
 def run_laya_benchmark(*, samples=100, rounds=3, stress=1000, url="http://127.0.0.1:8766"):
     import torch
+    target = urlsplit(url)
+    if target.scheme != "http" or target.hostname not in ("127.0.0.1", "localhost") or target.path not in ("", "/") or target.query or target.fragment:
+        raise ValueError("Benchmark URL must be a local HTTP server/proxy origin")
+    run_id = uuid.uuid4().hex
     frames, fixtures = fixture_frames()
     agent = load_laya_agent("cuda", preprocess="gpu")
     runtime = {"device": str(agent.device), "modelRevision": LAYA_MODEL_REVISION,
-               "codeRevision": LAYA_CODE_REVISION}
+               "codeRevision": LAYA_CODE_REVISION, "benchmarkRunId": run_id}
     reference = LayaDecisionService(agent, runtime)
     optimized = LayaDecisionService(agent, runtime, optimized=True)
     optimized.policy.render_rgb = lambda: reference.frame
@@ -83,32 +89,34 @@ def run_laya_benchmark(*, samples=100, rounds=3, stress=1000, url="http://127.0.
     thread = Thread(target=server.serve_forever, daemon=True)
     thread.start()
 
-    def use(service):
-        reference.policy, reference.runtime = service.policy, service.runtime
-
     # Keep separate original handles because the server shares the reference service.
     original_policy, original_runtime = reference.policy, reference.runtime
     records = []
 
+    def use(mode):
+        reference.policy, reference.runtime = ((original_policy, original_runtime) if mode == "reference"
+                                               else (optimized.policy, optimized.runtime))
+
     def request(frame):
-        req = Request(url + "/api/laya/predict", data=frame, headers={
+        req = Request(url.rstrip("/") + "/api/laya/predict", data=frame, headers={
             "Content-Type": "application/octet-stream", "Origin": "http://127.0.0.1:5180"})
         started = time.perf_counter()
         with urlopen(req, timeout=30) as response:
             out = json.load(response)
+        if out.get("benchmarkRunId") != run_id or out.get("inferenceMode") != reference.runtime["inferenceMode"]:
+            raise RuntimeError("Benchmark URL reached another service or the wrong inference mode")
         return out, (time.perf_counter() - started) * 1000
 
     try:
         for mode in ("reference", "optimized"):
-            reference.policy, reference.runtime = ((original_policy, original_runtime) if mode == "reference"
-                                                   else (optimized.policy, optimized.runtime))
+            use(mode)
             for i in range(20):
                 request(frames[i % len(frames)])
         parity = []
         for frame in frames:
-            reference.policy, reference.runtime = original_policy, original_runtime
+            use("reference")
             expected, _ = request(frame)
-            use(optimized)
+            use("optimized")
             actual, _ = request(frame)
             error = max(abs(a - b) for a, b in zip(expected["probabilities"], actual["probabilities"]))
             parity.append({"action_match": expected["actionIndex"] == actual["actionIndex"],
@@ -117,13 +125,12 @@ def run_laya_benchmark(*, samples=100, rounds=3, stress=1000, url="http://127.0.
             for i in range(samples):
                 for mode in (("reference", "optimized") if (i + round_index) % 2 == 0
                              else ("optimized", "reference")):
-                    reference.policy, reference.runtime = ((original_policy, original_runtime) if mode == "reference"
-                                                           else (optimized.policy, optimized.runtime))
+                    use(mode)
                     out, elapsed = request(frames[i % len(frames)])
                     records.append({"round": round_index, "mode": mode, "roundtrip_ms": elapsed,
                                     "inference_ms": out["inferenceMs"]})
             print(f"Finished A/B round {round_index + 1}/{rounds}", flush=True)
-        use(optimized)
+        use("optimized")
         torch.cuda.reset_peak_memory_stats()
         memory = [process_memory()]
         for i in range(stress):

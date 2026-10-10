@@ -28,7 +28,8 @@ def setup(monkeypatch):
                 ("input_ids", "attention_mask", "marker_pos", "marker_mask", "qtype", "option_span")}
 
     upstream = SimpleNamespace(QTYPES={"choice": 0}, build_vlm_inputs=build, collate_vlm=collate,
-                               truncation_answer=lambda *args: {}, truncation_error=lambda *args: ValueError("truncated"),
+                               truncation_answer=lambda *args: {},
+                               truncation_error=lambda qid, report, max_len, head_max_len: ValueError("truncated"),
                                confidence_from_probs=lambda *args: 0.1,
                                vlm_prefix=lambda *args: {"raw_images": torch.zeros(1, 3, 210, 160, dtype=torch.uint8)})
     monkeypatch.setitem(sys.modules, "laya.vlm", upstream)

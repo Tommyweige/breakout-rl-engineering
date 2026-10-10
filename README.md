@@ -71,6 +71,26 @@ preprocessing variant. This accelerated path is not pixel-exact with the CPU
 processor; the research evaluator keeps the checkpoint's original preprocessing
 unless explicitly changed in a separately declared experiment.
 
+The browser service caches the fixed question's token inputs and device buffers
+(`inferenceMode: fixed-eager`), while updating RGB pixels on every request. It
+warms up before listening and schedules decisions independently of canvas paint.
+Use `--reference` on the server CLI to restore the upstream prediction path.
+The debug panel separates service inference time from browser request time.
+
+To compare both paths on one resident model, stop the running Laya service first:
+
+```powershell
+.\.venv-laya\Scripts\python -m scripts.benchmarks.benchmark_laya_browser --output evaluations/laya-browser-benchmark.json --url http://127.0.0.1:5180
+```
+
+This requires the optional Laya dependencies, CUDA and the ALE ROM, plus Vite for
+the proxy URL. It generates 30 distinct native RGB states from seeds 101/202/303,
+checks action/probability parity, alternates three rounds of 100 requests per
+mode, and runs 1,000 optimized requests to measure memory. Exit 1 means parity or
+the 20% median improvement / p95 regression gate failed. Results describe HTTP
+requests, not rendered FPS; native game frames and rendering need separate
+browser measurements. Generated evidence remains under ignored `evaluations/`.
+
 Optional real-model integration tests require cached weights and
 `LAYA_RUN_INTEGRATION=1`; ordinary tests use a mocked external Laya policy.
 
