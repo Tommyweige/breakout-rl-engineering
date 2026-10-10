@@ -174,13 +174,16 @@ def run_laya_benchmark(*, samples=100, rounds=3, stress=1000, url="http://127.0.
                                          start.elapsed_time(end) for start, end in preprocessing_events)})
         optimized.policy.diagnostics = False
         parity = []
-        for frame in frames:
+        for frame, fixture in zip(frames, fixtures):
             use("reference")
             expected, _ = request(frame)
             use("optimized")
             actual, _ = request(frame)
             error = max(abs(a - b) for a, b in zip(expected["probabilities"], actual["probabilities"]))
-            parity.append({"action_match": expected["actionIndex"] == actual["actionIndex"],
+            parity.append({"fixture_sha256": fixture["sha256"],
+                           "reference_action": expected["actionIndex"],
+                           "optimized_action": actual["actionIndex"],
+                           "action_match": expected["actionIndex"] == actual["actionIndex"],
                            "probability_error": error})
         for round_index in range(rounds):
             for i in range(samples):
