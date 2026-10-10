@@ -49,13 +49,16 @@ export interface PolicyResult {
   qValues: readonly number[];
   actionIndex: number;
   action: ActionMeaning;
-  requestedBackend: InferenceBackend | 'vision';
-  actualBackend: InferenceBackend | 'vision';
+  requestedBackend: InferenceBackend | 'vision' | 'cuda';
+  actualBackend: InferenceBackend | 'vision' | 'cuda';
   /** Optional gameplay-only metadata; formal evaluation remains greedy and unchanged. */
   difficulty?: string;
   mistakeRate?: number;
   greedyActionIndex?: number;
   mistakeInjected?: boolean;
+  inferenceMode?: string;
+  serviceInferenceMs?: number;
+  rgbCaptureMs?: number;
 }
 
 export interface QMarginDiagnostics {

@@ -33,11 +33,13 @@ export interface AgentLoopStep {
   inferenceMs: number;
   environmentStepMs: number;
   totalDecisionMs: number;
+  scheduleWaitMs: number;
 }
 
 export interface AgentRuntimeSemantics {
   outerActionRepeat: number;
   stickyActionProbability: number;
+  stepMode?: 'interactive-frame' | 'decision';
 }
 
 export interface DualLoopDiagnostics {
@@ -62,6 +64,13 @@ export interface DualLoopDiagnostics {
   agentDecisionP50Ms: number;
   agentDecisionP95Ms: number;
   agentInferenceInFlight: boolean;
+  agentNativeFramesPerSecond: number;
+  agentScheduleWaitP50Ms: number;
+  agentScheduleWaitP95Ms: number;
+  renderCallbackP50Ms: number;
+  renderCallbackP95Ms: number;
+  agentPresentationFramesConsumed: number;
+  agentPresentationBufferedFrames: number;
 }
 
 export interface DualGameLoopOptions {
@@ -83,8 +92,8 @@ export interface DualGameLoopOptions {
  * Coordinates two simulation clocks and one presentation clock.
  *
  * Human ticks are synchronous one-raw-frame steps. Agent decisions are
- * asynchronous, start on presentation frames, and skip frames while inference
- * is in flight. Neither simulation clock catches up with a burst after delay.
+ * asynchronous; expensive decision mode yields through timers independently of
+ * presentation. Neither simulation clock catches up with a burst after delay.
  */
 export class DualGameLoop {
   private status: LoopStatus = 'idle';
@@ -112,6 +121,19 @@ export class DualGameLoop {
   private readonly agentDecisionIntervals: number[] = [];
   private lastHumanTickAt: number | null = null;
   private lastAgentDecisionAt: number | null = null;
+  private lastAgentCompletedAt: number | null = null;
+  private agentElapsedBaselineMs = 0;
+  private readonly agentScheduleWaits: number[] = [];
+  private readonly renderIntervals: number[] = [];
+  private lastRenderAt: number | null = null;
+  private readonly presentationFrames: Uint8Array[] = [];
+  private presentationRgb: Uint8Array | null = null;
+  private presentationFramesConsumed = 0;
+  private nextPresentationAt = 0;
+
+  get agentPresentationRgb(): Uint8Array | null {
+    return this.presentationRgb;
+  }
 
   constructor(private readonly options: DualGameLoopOptions) {}
 
@@ -125,6 +147,7 @@ export class DualGameLoop {
 
   get runtimeDiagnostics(): DualLoopDiagnostics {
     const elapsedMs = this.elapsedMs();
+    const agentElapsedMs = elapsedMs - this.agentElapsedBaselineMs;
     return {
       status: this.status,
       elapsedMs,
@@ -143,10 +166,17 @@ export class DualGameLoop {
       agentStickyActionProbability: this.options.agentRuntime.stickyActionProbability,
       agentDecisionCount: this.agentDecisionCount,
       agentRawFrameDelta: this.agentRawFrameDelta,
-      agentDecisionsPerSecond: elapsedMs > 0 ? (this.agentDecisionCount / elapsedMs) * 1000 : 0,
+      agentDecisionsPerSecond: agentElapsedMs > 0 ? (this.agentDecisionCount / agentElapsedMs) * 1000 : 0,
       agentDecisionP50Ms: percentile(this.agentDecisionIntervals, 0.5),
       agentDecisionP95Ms: percentile(this.agentDecisionIntervals, 0.95),
       agentInferenceInFlight: this.agentInFlight,
+      agentNativeFramesPerSecond: agentElapsedMs > 0 ? (this.agentRawFrameDelta / agentElapsedMs) * 1000 : 0,
+      agentScheduleWaitP50Ms: percentile(this.agentScheduleWaits, 0.5),
+      agentScheduleWaitP95Ms: percentile(this.agentScheduleWaits, 0.95),
+      renderCallbackP50Ms: percentile(this.renderIntervals, 0.5),
+      renderCallbackP95Ms: percentile(this.renderIntervals, 0.95),
+      agentPresentationFramesConsumed: this.presentationFramesConsumed,
+      agentPresentationBufferedFrames: this.presentationFrames.length,
     };
   }
 
@@ -155,6 +185,10 @@ export class DualGameLoop {
     const current = now();
     this.status = 'running';
     this.activeStartedAt = current;
+    this.lastRenderAt = null;
+    this.lastAgentCompletedAt = null;
+    this.lastHumanTickAt = null;
+    this.lastAgentDecisionAt = null;
     this.humanDeadline = current;
     this.agentDeadline = current;
     this.scheduleHuman(0);
@@ -168,6 +202,8 @@ export class DualGameLoop {
     // the schedules prevents any new Human/Agent tick, and avoids leaving the
     // formal Agent frame stack half-updated between its four raw frames.
     this.clearScheduledWork();
+    this.presentationFrames.length = 0;
+    this.presentationRgb = null;
     if (this.status === 'running') {
       this.accumulatedActiveMs += now() - (this.activeStartedAt ?? now());
       this.activeStartedAt = null;
@@ -199,6 +235,10 @@ export class DualGameLoop {
     this.agentRawFrameDelta = 0;
     this.agentDecisionIntervals.length = 0;
     this.lastAgentDecisionAt = null;
+    this.lastAgentCompletedAt = null;
+    this.agentScheduleWaits.length = 0;
+    this.agentElapsedBaselineMs = this.elapsedMs();
+    this.presentationFramesConsumed = 0;
     this.options.onFrame?.();
     this.emitDiagnostics();
   }
@@ -255,7 +295,7 @@ export class DualGameLoop {
 
   private scheduleAgent(delayMs: number): void {
     if (this.agentTimer !== null || this.agentFrameHandle !== null || this.status !== 'running' || this.destroyed) return;
-    if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+    if (this.options.agentRuntime.stepMode !== 'decision' && typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
       this.agentFrameHandle = window.requestAnimationFrame(() => {
         this.agentFrameHandle = null;
         if (this.status !== 'running' || this.destroyed) return;
@@ -272,6 +312,11 @@ export class DualGameLoop {
 
   private startAgentDecision(startedAt: number): void {
     if (this.agentInFlight) return;
+    if (this.options.agentRuntime.stepMode === 'decision'
+      && this.presentationFrames.length > this.options.agentRuntime.outerActionRepeat) {
+      this.scheduleAgent(1000 / 60);
+      return;
+    }
     this.agentDeadline = startedAt + this.agentIntervalMs();
     const promise = this.processAgentDecision(false);
     this.pendingAgentDecision = promise;
@@ -301,7 +346,7 @@ export class DualGameLoop {
       if (lateness > 2) this.lateHumanTicks += 1;
       if (lateness > this.humanIntervalMs()) this.droppedHumanTicks += 1;
       const previous = this.lastHumanTickAt;
-      if (previous !== null) this.humanTickIntervals.push(startedAt - previous);
+      if (previous !== null) recordInterval(this.humanTickIntervals, startedAt - previous);
       this.lastHumanTickAt = startedAt;
       const command = this.options.humanCommand();
       const step = command.kind === 'paddle'
@@ -319,13 +364,14 @@ export class DualGameLoop {
     if (this.agentInFlight || (!allowWhenPaused && this.status !== 'running') || this.options.agent.isFinished) return;
     this.agentInFlight = true;
     const startedAt = now();
+    const scheduleWaitMs = this.lastAgentCompletedAt === null ? 0 : startedAt - this.lastAgentCompletedAt;
     try {
       const inferenceStartedAt = now();
       const policy = await this.options.infer(this.options.agent.observation);
       const inferenceMs = now() - inferenceStartedAt;
       if (!allowWhenPaused && (this.status !== 'running' || this.destroyed)) return;
       const environmentStartedAt = now();
-      const environment = this.options.agent.stepInteractiveFrame
+      const environment = this.options.agentRuntime.stepMode !== 'decision' && this.options.agent.stepInteractiveFrame
         ? this.options.agent.stepInteractiveFrame(policy.actionIndex, this.options.agentRuntime.outerActionRepeat)
         : this.options.agent.stepAsync
         ? await this.options.agent.stepAsync(policy.actionIndex, this.options.agentRuntime.outerActionRepeat)
@@ -333,16 +379,23 @@ export class DualGameLoop {
       const environmentStepMs = now() - environmentStartedAt;
       const finishedAt = now();
       const previous = this.lastAgentDecisionAt;
-      if (previous !== null) this.agentDecisionIntervals.push(startedAt - previous);
+      if (previous !== null) recordInterval(this.agentDecisionIntervals, startedAt - previous);
+      recordInterval(this.agentScheduleWaits, scheduleWaitMs);
+      this.lastAgentCompletedAt = finishedAt;
       this.lastAgentDecisionAt = startedAt;
       this.agentDecisionCount += 1;
       this.agentRawFrameDelta += environment.actualEmulatorFrames;
+      if (!allowWhenPaused && this.status === 'running' && this.options.onFrame
+        && this.options.agentRuntime.stepMode === 'decision' && environment.presentationFrames) {
+        this.presentationFrames.push(...environment.presentationFrames);
+      }
       this.options.onAgentStep?.({
         policy,
         environment,
         inferenceMs,
         environmentStepMs,
         totalDecisionMs: finishedAt - startedAt,
+        scheduleWaitMs,
       });
     } finally {
       this.agentInFlight = false;
@@ -356,7 +409,7 @@ export class DualGameLoop {
         this.renderHandle = null;
         if (this.status !== 'running' || this.destroyed) return;
         try {
-          this.options.onFrame?.();
+          this.renderFrame();
         } catch (error) {
           this.fail(error);
           return;
@@ -369,7 +422,7 @@ export class DualGameLoop {
       this.renderHandle = null;
       if (this.status !== 'running' || this.destroyed) return;
       try {
-        this.options.onFrame?.();
+        this.renderFrame();
       } catch (error) {
         this.fail(error);
         return;
@@ -397,8 +450,24 @@ export class DualGameLoop {
     this.renderHandle = null;
   }
 
+  private renderFrame(): void {
+    const current = now();
+    if (this.lastRenderAt !== null) recordInterval(this.renderIntervals, current - this.lastRenderAt);
+    this.lastRenderAt = current;
+    // Consume at most one real emulator frame per 60 Hz presentation interval.
+    const expected = this.presentationRgb === null ? current : this.nextPresentationAt;
+    if (this.presentationFrames.length && current + 1 >= expected) {
+      this.presentationRgb = this.presentationFrames.shift()!;
+      this.nextPresentationAt = current - expected > 1000 / 60 ? current + 1000 / 60 : expected + 1000 / 60;
+      this.presentationFramesConsumed += 1;
+    }
+    this.options.onFrame?.();
+  }
+
   private fail(error: unknown): void {
     this.clearScheduledWork();
+    this.presentationFrames.length = 0;
+    this.presentationRgb = null;
     this.status = 'error';
     this.options.onError?.(error);
     this.emitDiagnostics();
@@ -420,6 +489,12 @@ export class DualGameLoop {
     this.agentDecisionIntervals.length = 0;
     this.lastHumanTickAt = null;
     this.lastAgentDecisionAt = null;
+    this.lastAgentCompletedAt = null;
+    this.agentElapsedBaselineMs = 0;
+    this.agentScheduleWaits.length = 0;
+    this.renderIntervals.length = 0;
+    this.lastRenderAt = null;
+    this.presentationFramesConsumed = 0;
   }
 
   private elapsedMs(): number {
@@ -431,12 +506,20 @@ export class DualGameLoop {
   }
 
   private agentIntervalMs(): number {
-    return 1000 / (this.options.agentTargetFps ?? 15);
+    const target = this.options.agentTargetFps ?? 15;
+    return 1000 / (this.options.agentRuntime.stepMode === 'decision'
+      ? Math.min(target, 60 / this.options.agentRuntime.outerActionRepeat) : target);
   }
 
   private emitDiagnostics(): void {
     this.options.onDiagnostics?.(this.runtimeDiagnostics);
   }
+}
+
+// Percentiles describe the last 600 intervals without growing during long play.
+function recordInterval(samples: number[], interval: number): void {
+  samples.push(interval);
+  if (samples.length > 600) samples.shift();
 }
 
 function percentile(values: readonly number[], fraction: number): number {

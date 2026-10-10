@@ -8,6 +8,113 @@ The final application runs both the Atari environment and the trained RL policy 
 
 ## Highlights
 
+### Optional Laya Vision research evaluator
+
+Issue [#69](https://github.com/Tommyweige/breakout-rl-engineering/issues/69)
+adds a frozen 201M pixel-only policy, isolated from DQN training and the browser.
+With the project Conda environment active, create an optional environment:
+
+```powershell
+python -m venv --system-site-packages .venv-laya
+.\.venv-laya\Scripts\python -m pip install -r requirements-laya.txt
+.\.venv-laya\Scripts\python -m scripts.evaluation.evaluate_laya_vision --mode pilot --output-dir evaluations/laya-pilot
+```
+
+Upstream code is pinned to `9e1e2419d855ad3e1a2af4d4bd1ef6be5418842c`;
+`thaitea/laya-vision` weights are pinned to
+`f2fe3c12cb6d04c59d8a190250bf3fb40fc828dc`. Installation checks the Git commit.
+Code is Apache 2.0; weights are CC BY-NC-SA 4.0 and are not redistributed.
+The inherited environment must provide the existing PyTorch/CUDA/ALE dependencies;
+the tested combination is PyTorch 2.13.0+cu130, torchvision 0.28.0 and transformers 5.3.0.
+
+The default protocol runs 100 measured model decisions after warm-up, then gates
+the predeclared v2 seeds 101/202/303 against a one-hour estimated maximum compute
+budget. `--mode seed101` selects the required single-seed evaluation; `--mode full`
+selects the contract's 15 seeds. Declare a different budget before running with
+`--max-pilot-hours`. The gate uses measured p95 latency and the unchanged episode
+limit; smoke never counts as a complete episode. Each run requires a fresh output
+directory and writes `run.json`, `report.md`, compact action traces, three smoke
+frames, and shared evaluator JSON/CSV for completed episodes.
+
+Decisions use one ALE RGB render, never the DQN grayscale stack, RAM or completion
+detector state. The environment retains its exact preprocessing/serve behavior;
+requested and wrapper-executed actions are recorded separately. Model timing
+includes the image tower, connector and decision network; a separate fixed-frame
+benchmark measures upstream image preprocessing. Reported confidence is not
+validated as calibrated on this ALE domain. GPU load measurements target the
+RTX 4060 Laptop 8 GB; unavailable/unsupported CUDA falls back to CPU with provenance.
+
+The existing Day 21 DQN ONNX asset is re-evaluated on the same v2 seeds using
+ONNX Runtime CPU, with model and inference-contract hashes checked. It runs even
+when the Laya latency gate blocks gameplay. Compare completed matched-contract
+episodes only; v3 (`--contract configs/eval/breakout_contract_v3.json`) is reported
+separately, with its optional predictive-controller comparison unrun.
+Keep generated evidence under ignored `evaluations/`, outside `main`.
+
+For the local browser's **Decision Model** difficulty, run the CUDA bridge in
+one terminal and Vite in another:
+
+```powershell
+.\.venv-laya\Scripts\python -m scripts.inference.serve_laya_vision
+cd web
+npm run dev -- --host 127.0.0.1 --port 5180
+```
+
+Open `http://127.0.0.1:5180`, select **Decision Model**, and press Start. Only
+localhost exposes this option; Vite proxies RGB requests to the loopback-only
+Laya service on port 8766. The model stays on CUDA, one request is in flight at
+a time, and the game retains frame skip 4 with wrapper-owned FIRE. At the
+measured inference rate the AI game advances slower than the player's game.
+The browser bridge uses FP32 with upstream GPU image preprocessing at the
+checkpoint's 512-pixel resolution. Its `/api/laya/health` response records the
+preprocessing variant. This accelerated path is not pixel-exact with the CPU
+processor; the research evaluator keeps the checkpoint's original preprocessing
+unless explicitly changed in a separately declared experiment.
+
+The browser service caches the fixed question's token inputs and device buffers
+(`inferenceMode: fixed-eager`), while updating RGB pixels on every request. It
+warms up before listening and schedules decisions independently of canvas paint.
+Use `--reference` on the server CLI to restore the upstream prediction path.
+The debug panel separates service inference time from browser request time.
+Decision Model retains a rolling two-frame max-pool image for each executed ALE
+frame and presents those real frames on a separate clock targeting 60 Hz. Its
+buffer holds at most two decision groups (eight RGB images with frame skip 4);
+when presentation stalls, backpressure defers new predictions. Pause, reset,
+controller switching and errors clear pending display frames. Fast inference is
+capped at 15 four-frame decisions per second to preserve a 60-native-frame budget.
+This improves presentation cadence without reducing model latency; it adds a
+bounded display delay and does not change the research evaluator's control inputs.
+The browser policy brakes an immediate LEFT/RIGHT reversal with one NOOP decision
+when the new direction's probability exceeds the previous direction by less than
+0.08. Strong reversals and FIRE pass through. The next decision can reverse after
+that brake; reset, controller switching and life/serve boundaries clear its memory.
+Raw model probabilities and greedy choices remain visible in debug telemetry.
+This gameplay-only trial can delay a weak reversal by one decision; the Python
+service and formal evaluator retain the original greedy policy.
+If the fixed template is unsupported or fails startup parity, health reports
+`inferenceMode: reference` and an `optimizationFallback` reason. Debug runtime
+diagnostics also expose native frames/s, scheduling waits and render callback
+intervals; interval percentiles cover the last 600 samples, excluding pause gaps.
+
+To compare both paths on one resident model, stop the running Laya service first:
+
+```powershell
+.\.venv-laya\Scripts\python -m scripts.benchmarks.benchmark_laya_browser --output evaluations/laya-browser-benchmark.json --url http://127.0.0.1:5180
+```
+
+This requires the optional Laya dependencies, CUDA and the ALE ROM, plus Vite for
+the proxy URL. It generates 30 distinct native RGB states from seeds 101/202/303,
+checks action/probability parity, alternates three rounds of 100 requests per
+mode, and runs 1,000 optimized requests to measure memory. Exit 1 means parity or
+the 20% median improvement / p95 regression gate failed. Results describe HTTP
+requests, not rendered FPS; native game frames and rendering need separate
+browser measurements. Generated evidence remains under ignored `evaluations/`.
+GPU event spans for vision, connector and decision modules are collected in a
+separate diagnostic pass, so profiling does not inflate optimized A/B timings.
+
+Optional real-model integration tests require cached weights and
+`LAYA_RUN_INTEGRATION=1`; ordinary tests use a mocked external Laya policy.
+
 - **DQN family** — Vanilla DQN, Double DQN, and Dueling Double DQN.
 - **GPU training** — PyTorch with CUDA support and vectorized environments.
 - **Replay systems** — CPU and GPU replay-buffer implementations.

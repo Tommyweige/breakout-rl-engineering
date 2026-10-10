@@ -114,6 +114,21 @@ describe('Day 30 Human vs AI browser product', () => {
     expect(root.querySelectorAll('canvas')).toHaveLength(2);
   });
 
+  it('offers the local Decision Model without replacing either game surface', () => {
+    const root = document.createElement('div');
+    document.body.append(root);
+    app = new App(root);
+    app.mount();
+    const canvases = [...root.querySelectorAll('canvas')];
+    const difficulty = root.querySelector<HTMLSelectElement>('[data-action="difficulty"]')!;
+    expect(difficulty.querySelector('option[value="decision-model"]')?.textContent).toBe('Decision Model');
+    difficulty.value = 'decision-model';
+    difficulty.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(root.querySelector('[data-role="ai-difficulty-label"]')?.textContent).toBe('DECISION MODEL');
+    expect(root.querySelector('[data-role="ai-controller-description"]')?.textContent).toContain('NVIDIA GPU');
+    expect([...root.querySelectorAll('canvas')]).toEqual(canvases);
+  });
+
   it('switches Mouse back to Keyboard without replacing or resetting the game surface', () => {
     const root = document.createElement('div');
     document.body.append(root);

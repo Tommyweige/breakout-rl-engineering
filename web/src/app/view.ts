@@ -105,6 +105,7 @@ function renderAgentPanel(): string {
               <option value="medium">Medium</option>
               <option value="hard" selected>Hard</option>
               <option value="unbeatable">Unbeatable</option>
+              ${['localhost', '127.0.0.1'].includes(window.location.hostname) ? '<option value="decision-model">Decision Model</option>' : ''}
             </select>
           </label>
           <span class="status-chip" data-role="agent-state">Ready</span>
@@ -219,7 +220,7 @@ function renderTechnicalDetails(): string {
               </div>
             </div>
           </div>
-          <p class="model-hash">Model SHA256: <code data-role="model-sha">—</code></p>
+          <p class="model-hash"><span data-role="model-identity-label">Model SHA256:</span> <code data-role="model-sha">—</code></p>
         </section>
         <section class="evidence-card" aria-live="polite">
           <div class="evidence-heading"><div><p class="eyebrow">VALIDATION / EVALUATION</p><h2>Raw evidence</h2></div><div class="evidence-count"><span data-role="evaluation-status">idle</span><span class="count-label">status</span></div></div>
@@ -256,7 +257,7 @@ export function renderPolicyQValuesMarkup(
   return `
     <div class="q-caption"><span>${caption}</span><span>${comparisonLabel}</span></div>
     <div class="q-grid" role="table">
-      <div class="q-header"><span>ACTION</span><span>Q-VALUE</span>${hasReference ? '<span>REFERENCE</span>' : ''}</div>
+      <div class="q-header"><span>ACTION</span><span>${comparisonLabel === 'Probability' ? 'PROBABILITY' : 'Q-VALUE'}</span>${hasReference ? '<span>REFERENCE</span>' : ''}</div>
       ${ACTION_MEANINGS.map((action, index) => renderQRow(action, index, values[index] ?? 0, scale, index === actionIndex, hasReference ? referenceValues?.[index] : undefined)).join('')}
     </div>
     <div class="q-legend"><span><i class="legend-swatch legend-swatch-browser"></i>${hasReference ? 'Browser output' : 'Current policy output'}</span>${hasReference ? '<span><i class="legend-swatch legend-swatch-reference"></i>Reference</span>' : ''}</div>

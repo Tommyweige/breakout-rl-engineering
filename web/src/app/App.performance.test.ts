@@ -18,6 +18,20 @@ let app: App | undefined;
 afterEach(() => { app?.destroy(); app = undefined; mocks.workers.length = 0; vi.clearAllMocks(); vi.unstubAllGlobals(); });
 
 describe('gameplay main-thread budget', () => {
+  it('uses the paced Agent pixels without changing the Human render input', () => {
+    const root = document.createElement('div');
+    app = new App(root);
+    app.mount();
+    const human = { rawRgb: new Uint8Array(160 * 210 * 3), isFinished: false, render: vi.fn(), dispose: vi.fn() };
+    const agent = { isFinished: false, render: vi.fn(), dispose: vi.fn() };
+    const frame = new Uint8Array(160 * 210 * 3).fill(42);
+    Reflect.set(app, 'humanEnvironment', human);
+    Reflect.set(app, 'agentEnvironment', agent);
+    Reflect.set(app, 'gameLoop', { currentStatus: 'running', agentPresentationRgb: frame, destroy: vi.fn() });
+    Reflect.get(app, 'renderCanvases').call(app);
+    expect(agent.render).toHaveBeenCalledWith(root.querySelector('[data-role="agent-canvas"]'), frame);
+    expect(human.render).toHaveBeenCalledWith(root.querySelector('[data-role="human-canvas"]'));
+  });
   it('does not rewrite unchanged score text on every game tick', () => {
     const root = document.createElement('div');
     app = new App(root);

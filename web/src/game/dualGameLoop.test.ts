@@ -132,6 +132,115 @@ function wait(ms: number): Promise<void> {
 }
 
 describe('dual game loop', () => {
+  it.each([60, 144])('presents real intermediate states with 68ms inference at %iHz without extra ALE steps', async (refreshHz) => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'performance'] });
+    vi.stubGlobal('window', {
+      requestAnimationFrame: (callback: FrameRequestCallback) => setTimeout(() => callback(performance.now()), 1000 / refreshHz),
+      cancelAnimationFrame: clearTimeout,
+    });
+    const human = new FakeHumanEnvironment();
+    const agent = new FakeAgentEnvironment();
+    agent.stepAsync = async action => {
+      const firstFrame = agent.actions.length * 4 + 1;
+      agent.actions.push(action);
+      return { ...fakeAgentStep(action), presentationFrames: Array.from({ length: 4 },
+        (_, index) => Uint8Array.of(firstFrame + index)) };
+    };
+    let renders = 0;
+    const states = new Set<number>();
+    const loop = new DualGameLoop({ human, agent,
+      agentRuntime: { outerActionRepeat: 4, stickyActionProbability: .25, stepMode: 'decision' },
+      humanTargetFps: 80, agentTargetFps: 60,
+      humanCommand: () => ({ kind: 'discrete', actionIndex: 0 }),
+      infer: async () => { await wait(68); return policyResult(2); },
+      onFrame: () => { renders += 1; const marker = loop.agentPresentationRgb?.[0]; if (marker) states.add(marker); },
+    });
+    try {
+      loop.start();
+      await vi.advanceTimersByTimeAsync(1000);
+      const diagnostics = loop.runtimeDiagnostics;
+      expect(states.size).toBeGreaterThanOrEqual(50);
+      expect(states.size).toBeLessThanOrEqual(diagnostics.agentRawFrameDelta);
+      expect(diagnostics.agentRawFrameDelta).toBe(agent.actions.length * 4);
+      expect(human.actions.length).toBeGreaterThan(agent.actions.length);
+      expect(diagnostics.agentPresentationBufferedFrames).toBeLessThanOrEqual(8);
+      console.log('[presentation-cadence]', JSON.stringify({ refreshHz, renders, states: states.size,
+        decisions: diagnostics.agentDecisionCount, nativeFrames: diagnostics.agentRawFrameDelta }));
+      loop.pause();
+      expect(loop.agentPresentationRgb).toBeNull();
+      expect(loop.runtimeDiagnostics.agentPresentationBufferedFrames).toBe(0);
+    } finally {
+      loop.pause();
+      await vi.advanceTimersByTimeAsync(100);
+      vi.useRealTimers();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('bounds queued frames and applies backpressure when presentation stops', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'performance'] });
+    vi.stubGlobal('window', { requestAnimationFrame: () => 1, cancelAnimationFrame: vi.fn() });
+    const agent = new FakeAgentEnvironment();
+    agent.stepAsync = async action => ({ ...agent.step(action), presentationFrames: [1, 2, 3, 4].map(n => Uint8Array.of(n)) });
+    const infer = vi.fn(async () => policyResult(2));
+    const loop = new DualGameLoop({ human: new FakeHumanEnvironment(), agent,
+      agentRuntime: { outerActionRepeat: 4, stickyActionProbability: .25, stepMode: 'decision' },
+      agentTargetFps: 60, humanCommand: () => ({ kind: 'discrete', actionIndex: 0 }), infer, onFrame: () => {} });
+    try {
+      loop.start();
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(infer).toHaveBeenCalledTimes(2);
+      expect(loop.runtimeDiagnostics.agentPresentationBufferedFrames).toBe(8);
+      await loop.resetAgent({ outerActionRepeat: 1, stickyActionProbability: .25, stepMode: 'interactive-frame' });
+      expect(loop.runtimeDiagnostics.agentPresentationBufferedFrames).toBe(0);
+      expect(loop.agentPresentationRgb).toBeNull();
+      expect(loop.runtimeDiagnostics.agentPresentationFramesConsumed).toBe(0);
+    } finally {
+      loop.pause();
+      vi.useRealTimers();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('limits fast four-frame decisions to the native 60Hz budget', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'performance'] });
+    const loop = new DualGameLoop({ human: new FakeHumanEnvironment(), agent: new FakeAgentEnvironment(),
+      agentRuntime: { outerActionRepeat: 4, stickyActionProbability: .25, stepMode: 'decision' },
+      agentTargetFps: 60, humanCommand: () => ({ kind: 'discrete', actionIndex: 0 }),
+      infer: async () => { await wait(1); return policyResult(2); } });
+    try {
+      loop.start();
+      await vi.advanceTimersByTimeAsync(1000);
+      // An immediate first decision permits one extra four-frame group at the boundary.
+      expect(loop.runtimeDiagnostics.agentDecisionCount).toBeLessThanOrEqual(16);
+      expect(loop.runtimeDiagnostics.agentRawFrameDelta).toBeLessThanOrEqual(64);
+    } finally {
+      loop.pause();
+      await vi.advanceTimersByTimeAsync(100);
+      vi.useRealTimers();
+    }
+  });
+
+  it('does not enqueue a delayed prediction after pause', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'performance'] });
+    const agent = new FakeAgentEnvironment();
+    agent.stepAsync = vi.fn(async action => ({ ...agent.step(action), presentationFrames: [Uint8Array.of(1)] }));
+    const loop = new DualGameLoop({ human: new FakeHumanEnvironment(), agent,
+      agentRuntime: { outerActionRepeat: 4, stickyActionProbability: .25, stepMode: 'decision' },
+      humanCommand: () => ({ kind: 'discrete', actionIndex: 0 }), onFrame: () => {},
+      infer: async () => { await wait(100); return policyResult(2); } });
+    try {
+      loop.start();
+      await vi.advanceTimersByTimeAsync(20);
+      loop.pause();
+      await vi.advanceTimersByTimeAsync(200);
+      expect(agent.stepAsync).not.toHaveBeenCalled();
+      expect(loop.runtimeDiagnostics.agentPresentationBufferedFrames).toBe(0);
+    } finally {
+      loop.pause();
+      vi.useRealTimers();
+    }
+  });
   it('waits for an in-flight decision before switching cadence and preserves the Human game', async () => {
     const human = new FakeHumanEnvironment();
     const agent = new FakeAgentEnvironment();
@@ -176,6 +285,7 @@ describe('dual game loop', () => {
   });
 
   it('reports policy inference separately from the Agent environment step', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'performance'] });
     const human = new FakeHumanEnvironment();
     const agent = new FakeAgentEnvironment();
     const steps: AgentLoopStep[] = [];
@@ -191,13 +301,19 @@ describe('dual game loop', () => {
       onAgentStep: (step) => steps.push(step),
     });
 
-    await loop.stepOnce();
+    try {
+      const decision = loop.stepOnce();
+      await vi.advanceTimersByTimeAsync(10);
+      await decision;
 
-    const step = steps[0];
-    expect(step).toBeDefined();
-    expect(step!.inferenceMs).toBeGreaterThanOrEqual(10);
-    expect(step!.environmentStepMs).toBeGreaterThanOrEqual(0);
-    expect(step!.totalDecisionMs).toBeGreaterThanOrEqual(step!.inferenceMs + step!.environmentStepMs);
+      const step = steps[0];
+      expect(step).toBeDefined();
+      expect(step!.inferenceMs).toBe(10);
+      expect(step!.environmentStepMs).toBeGreaterThanOrEqual(0);
+      expect(step!.totalDecisionMs).toBeGreaterThanOrEqual(step!.inferenceMs + step!.environmentStepMs);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('routes each display-paced inference through the interactive frame step with the trained repeat', async () => {
@@ -219,6 +335,84 @@ describe('dual game loop', () => {
 
     expect(agent.stepInteractiveFrame).toHaveBeenCalledWith(2, 4);
     expect(agent.actions).toEqual([2]);
+  });
+
+  it('advances four native frames per expensive decision without discarding intermediate predictions', async () => {
+    const agent = new FakeAgentEnvironment();
+    agent.stepInteractiveFrame = vi.fn(() => fakeAgentStep(2));
+    const infer = vi.fn(async () => policyResult(2));
+    const loop = new DualGameLoop({
+      human: new FakeHumanEnvironment(), agent,
+      agentRuntime: { outerActionRepeat: 4, stickyActionProbability: 0.25, stepMode: 'decision' },
+      humanCommand: () => ({ kind: 'discrete', actionIndex: 0 }), infer,
+    });
+    await loop.stepOnce();
+    expect(infer).toHaveBeenCalledOnce();
+    expect(agent.stepInteractiveFrame).not.toHaveBeenCalled();
+    expect(loop.runtimeDiagnostics.agentRawFrameDelta).toBe(4);
+    expect(loop.runtimeDiagnostics.agentDecisionCount).toBe(1);
+  });
+
+  it('keeps slow decisions sequential without waiting for paint and stops new work on pause', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'performance'] });
+    const paint = vi.fn();
+    vi.stubGlobal('requestAnimationFrame', paint);
+    let active = 0;
+    let maxActive = 0;
+    const human = new FakeHumanEnvironment();
+    const agent = new FakeAgentEnvironment();
+    const infer = vi.fn(async () => {
+      active += 1;
+      maxActive = Math.max(maxActive, active);
+      await wait(100);
+      active -= 1;
+      return policyResult(2);
+    });
+    const loop = new DualGameLoop({ human, agent,
+      agentRuntime: { outerActionRepeat: 4, stickyActionProbability: 0.25, stepMode: 'decision' },
+      humanCommand: () => ({ kind: 'discrete', actionIndex: 0 }), infer });
+    try {
+      loop.start();
+      await vi.advanceTimersByTimeAsync(210);
+      expect(infer).toHaveBeenCalledTimes(3);
+      expect(maxActive).toBe(1);
+      expect(paint).not.toHaveBeenCalled();
+      expect(human.actions.length).toBeGreaterThan(agent.actions.length);
+      expect(loop.runtimeDiagnostics.agentRawFrameDelta).toBe(8);
+      expect(loop.runtimeDiagnostics.agentNativeFramesPerSecond).toBeCloseTo(8 / .21);
+      expect(loop.runtimeDiagnostics.agentScheduleWaitP50Ms).toBeGreaterThanOrEqual(0);
+      loop.pause();
+      await vi.advanceTimersByTimeAsync(500);
+      expect(infer).toHaveBeenCalledTimes(3);
+      expect(agent.actions).toHaveLength(2);
+    } finally {
+      loop.pause();
+      vi.useRealTimers();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('measures render callbacks separately from game frame advancement', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'performance'] });
+    vi.stubGlobal('requestAnimationFrame', undefined);
+    const onFrame = vi.fn();
+    const loop = new DualGameLoop({ human: new FakeHumanEnvironment(), agent: new FakeAgentEnvironment(),
+      agentRuntime: { outerActionRepeat: 4, stickyActionProbability: .25, stepMode: 'decision' },
+      humanCommand: () => ({ kind: 'discrete', actionIndex: 0 }),
+      infer: async () => { await wait(100); return policyResult(2); }, onFrame });
+    try {
+      loop.start();
+      await vi.advanceTimersByTimeAsync(250);
+      const diagnostics = loop.runtimeDiagnostics;
+      expect(onFrame.mock.calls.length).toBeGreaterThan(diagnostics.agentDecisionCount);
+      expect(diagnostics.renderCallbackP50Ms).toBeGreaterThan(0);
+      expect(diagnostics.agentNativeFramesPerSecond).toBeCloseTo(8 / .25);
+    } finally {
+      loop.pause();
+      await vi.advanceTimersByTimeAsync(100);
+      vi.useRealTimers();
+      vi.unstubAllGlobals();
+    }
   });
 
   it('routes absolute paddle commands only to Human while Agent keeps discrete actions', async () => {
