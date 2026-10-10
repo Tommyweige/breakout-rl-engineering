@@ -15,11 +15,16 @@ ACTION_NAMES = ("NOOP", "FIRE", "RIGHT", "LEFT")
 
 
 class LayaDecisionService:
-    def __init__(self, agent, runtime: dict):
-        self.runtime = runtime
+    def __init__(self, agent, runtime: dict, *, optimized: bool = False):
+        self.runtime = {**runtime, "inferenceMode": "reference"}
         self.decisions = 0
         self.frame = np.zeros((210, 160, 3), dtype=np.uint8)
         self.policy = LayaVisionPolicy(agent, lambda: self.frame, ACTION_NAMES)
+        if optimized:
+            from breakout_rl.laya_browser_agent import LayaBrowserAgent
+            browser = LayaBrowserAgent(agent, self.policy.questions)
+            self.policy = LayaVisionPolicy(browser, lambda: self.frame, ACTION_NAMES, diagnostics=False)
+            self.runtime["inferenceMode"] = browser.mode
 
     def predict_rgb(self, payload: bytes) -> dict:
         if len(payload) != RGB_BYTES:

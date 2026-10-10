@@ -642,7 +642,7 @@ export class App {
       this.setText('[data-role="gameplay-backend"]', vision ? 'PIXEL VISION / JS' : step.policy.actualBackend.toUpperCase());
       this.setText('[data-role="model-sha"]', decisionModel ? this.layaPolicy.modelRevision : vision ? 'No neural model' : this.validationResult?.modelSha256 ?? 'manifest hash recorded by evaluation');
       this.setText('[data-role="environment-parity"]', `PARTIAL / ${vision ? 'raw RGB / frame skip 1' : 'Contract v2'}`);
-      this.setText('[data-role="backend-evidence"]', decisionModel ? 'local Laya CUDA service verified' : vision ? 'raw RGB pixel tracking' : this.gameplayBackend === 'webgpu' ? 'runtime GPU device observed' : 'explicit WASM worker session');
+      this.setText('[data-role="backend-evidence"]', decisionModel ? `Laya CUDA / ${step.policy.inferenceMode ?? 'unknown mode'}` : vision ? 'raw RGB pixel tracking' : this.gameplayBackend === 'webgpu' ? 'runtime GPU device observed' : 'explicit WASM worker session');
       const diagnostics = window.__day30EnvironmentDiagnostics;
       if (diagnostics) {
         Object.assign(diagnostics, this.agentEnvironment!.runtimeDiagnostics, {
@@ -657,7 +657,7 @@ export class App {
       this.setText('[data-role="greedy-action"]', ACTION_MEANINGS[step.policy.greedyActionIndex ?? step.policy.actionIndex] ?? step.policy.action);
       this.setText('[data-role="mistake-injected"]', step.policy.mistakeInjected ? 'yes' : 'no');
       this.setText('[data-role="episode-return"]', environment.episodeReturn.toFixed(0));
-      this.setText('[data-role="inference-latency"]', `${step.inferenceMs.toFixed(3)} ms`);
+      this.setText('[data-role="inference-latency"]', `${step.inferenceMs.toFixed(3)} ms${step.policy.serviceInferenceMs !== undefined ? ` / service ${step.policy.serviceInferenceMs.toFixed(3)} ms` : ''}`);
       this.setText('[data-role="agent-frame"]', `${environment.frameNumber} / ${environment.agentStep}`);
       this.setText('[data-role="auto-fire"]', `${this.agentAutoFireCount}`);
       this.required('[data-role="gameplay-q-values"]').innerHTML = vision

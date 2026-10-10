@@ -7,6 +7,8 @@ interface LayaResponse {
   action?: unknown;
   probabilities?: unknown;
   modelRevision?: unknown;
+  inferenceMode?: unknown;
+  inferenceMs?: unknown;
 }
 
 /** One RGB image per request; the local service owns the frozen CUDA model. */
@@ -34,12 +36,16 @@ export class LayaVisionPolicy {
       || (probabilities != null && (!Array.isArray(probabilities) || probabilities.length !== 4
       || probabilities.some((value: unknown) => typeof value !== 'number' || !Number.isFinite(value) || value < 0 || value > 1)
       || Math.abs(probabilities.reduce((sum, value) => sum + value, 0) - 1) > 0.001))
+      || (result.inferenceMs != null && (typeof result.inferenceMs !== 'number' || !Number.isFinite(result.inferenceMs) || result.inferenceMs < 0))
+      || (result.inferenceMode != null && (typeof result.inferenceMode !== 'string' || !['reference', 'fixed-eager'].includes(result.inferenceMode)))
       || typeof result.device !== 'string' || !result.device.startsWith('cuda')) {
       throw new Error('The local Laya service returned an invalid decision.');
     }
     return { qValues: Array.isArray(probabilities) ? probabilities : [], actionIndex: index, action: ACTION_MEANINGS[index]!,
       requestedBackend: 'cuda', actualBackend: 'cuda', difficulty: 'decision-model',
-      mistakeRate: 0, greedyActionIndex: index, mistakeInjected: false };
+      mistakeRate: 0, greedyActionIndex: index, mistakeInjected: false,
+      inferenceMode: typeof result.inferenceMode === 'string' ? result.inferenceMode : undefined,
+      serviceInferenceMs: typeof result.inferenceMs === 'number' ? result.inferenceMs : undefined };
   }
 
   private async request(path: string, options: RequestInit = {}): Promise<LayaResponse> {

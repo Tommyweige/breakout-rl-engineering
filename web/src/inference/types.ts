@@ -56,6 +56,8 @@ export interface PolicyResult {
   mistakeRate?: number;
   greedyActionIndex?: number;
   mistakeInjected?: boolean;
+  inferenceMode?: string;
+  serviceInferenceMs?: number;
 }
 
 export interface QMarginDiagnostics {

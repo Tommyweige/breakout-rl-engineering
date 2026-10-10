@@ -42,8 +42,9 @@ def load_laya_agent(device: str = "cuda", *, preprocess: str | None = None) -> A
 class LayaVisionPolicy:
     policy_type = "laya-vision"
 
-    def __init__(self, agent: Any, render_rgb: Callable, action_names: Sequence[str]):
+    def __init__(self, agent: Any, render_rgb: Callable, action_names: Sequence[str], *, diagnostics: bool = True):
         self.agent = agent
+        self.diagnostics = diagnostics
         self.render_rgb = render_rgb
         self.action_names = tuple(action_names)
         if len(self.action_names) != 4 or set(self.action_names) != set(ACTION_DESCRIPTIONS):
@@ -89,7 +90,8 @@ class LayaVisionPolicy:
         del observation, rng
         from PIL import Image
 
-        self._synchronize()
+        if self.diagnostics:
+            self._synchronize()
         started = time.perf_counter()
         frame = self.render_rgb()
         if not isinstance(frame, np.ndarray) or frame.ndim != 3 or frame.shape[2] != 3 or frame.dtype != np.uint8:
@@ -98,7 +100,7 @@ class LayaVisionPolicy:
         converted = time.perf_counter()
         # Hooks observe the supported predict API without replacing its preprocessing.
         handles = []
-        if hasattr(self.agent, "model"):
+        if self.diagnostics and hasattr(self.agent, "model"):
             # predict encodes images outside model.forward; include both image modules.
             modules = [self.agent.model.encoder.vision_model,
                        self.agent.model.encoder.connector, self.agent.model]
@@ -113,7 +115,8 @@ class LayaVisionPolicy:
         finally:
             for handle in handles:
                 handle.remove()
-        self._synchronize()
+        if self.diagnostics:
+            self._synchronize()
         self.model_latencies.extend(
             end - start if isinstance(start, float) else start.elapsed_time(end) / 1000
             for start, end in self._pending_model_times

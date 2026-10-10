@@ -244,6 +244,43 @@ describe('dual game loop', () => {
     expect(loop.runtimeDiagnostics.agentDecisionCount).toBe(1);
   });
 
+  it('keeps slow decisions sequential without waiting for paint and stops new work on pause', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'performance'] });
+    const paint = vi.fn();
+    vi.stubGlobal('requestAnimationFrame', paint);
+    let active = 0;
+    let maxActive = 0;
+    const human = new FakeHumanEnvironment();
+    const agent = new FakeAgentEnvironment();
+    const infer = vi.fn(async () => {
+      active += 1;
+      maxActive = Math.max(maxActive, active);
+      await wait(100);
+      active -= 1;
+      return policyResult(2);
+    });
+    const loop = new DualGameLoop({ human, agent,
+      agentRuntime: { outerActionRepeat: 4, stickyActionProbability: 0.25, stepMode: 'decision' },
+      humanCommand: () => ({ kind: 'discrete', actionIndex: 0 }), infer });
+    try {
+      loop.start();
+      await vi.advanceTimersByTimeAsync(210);
+      expect(infer).toHaveBeenCalledTimes(3);
+      expect(maxActive).toBe(1);
+      expect(paint).not.toHaveBeenCalled();
+      expect(human.actions.length).toBeGreaterThan(agent.actions.length);
+      expect(loop.runtimeDiagnostics.agentRawFrameDelta).toBe(8);
+      loop.pause();
+      await vi.advanceTimersByTimeAsync(500);
+      expect(infer).toHaveBeenCalledTimes(3);
+      expect(agent.actions).toHaveLength(2);
+    } finally {
+      loop.pause();
+      vi.useRealTimers();
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('routes absolute paddle commands only to Human while Agent keeps discrete actions', async () => {
     const human = new FakeHumanEnvironment();
     const agent = new FakeAgentEnvironment();

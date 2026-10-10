@@ -4,6 +4,22 @@ import { LayaVisionPolicy } from './LayaVisionPolicy';
 afterEach(() => vi.unstubAllGlobals());
 
 describe('local Laya decision policy', () => {
+  it('reports service mode and timing without confusing them with browser roundtrip', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      actionIndex: 3, action: 'LEFT', probabilities: null, device: 'cuda:0',
+      inferenceMode: 'fixed-eager', inferenceMs: 65,
+    }))));
+    expect(await new LayaVisionPolicy().infer(new Uint8Array(160 * 210 * 3))).toMatchObject({
+      inferenceMode: 'fixed-eager', serviceInferenceMs: 65,
+    });
+  });
+
+  it.each([{ inferenceMs: -1 }, { inferenceMode: 'fixed-cuda-graph' }])('rejects invalid telemetry %j', async (telemetry) => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      actionIndex: 3, action: 'LEFT', probabilities: null, device: 'cuda:0', ...telemetry,
+    }))));
+    await expect(new LayaVisionPolicy().infer(new Uint8Array(160 * 210 * 3))).rejects.toThrow('invalid');
+  });
   it('sends one RGB frame and preserves the model choice without difficulty noise', async () => {
     const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({
       actionIndex: 3, action: 'LEFT', probabilities: [0.2, 0.1, 0.3, 0.4], device: 'cuda:0',

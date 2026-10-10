@@ -84,8 +84,8 @@ export interface DualGameLoopOptions {
  * Coordinates two simulation clocks and one presentation clock.
  *
  * Human ticks are synchronous one-raw-frame steps. Agent decisions are
- * asynchronous, start on presentation frames, and skip frames while inference
- * is in flight. Neither simulation clock catches up with a burst after delay.
+ * asynchronous; expensive decision mode yields through timers independently of
+ * presentation. Neither simulation clock catches up with a burst after delay.
  */
 export class DualGameLoop {
   private status: LoopStatus = 'idle';
@@ -256,7 +256,7 @@ export class DualGameLoop {
 
   private scheduleAgent(delayMs: number): void {
     if (this.agentTimer !== null || this.agentFrameHandle !== null || this.status !== 'running' || this.destroyed) return;
-    if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+    if (this.options.agentRuntime.stepMode !== 'decision' && typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
       this.agentFrameHandle = window.requestAnimationFrame(() => {
         this.agentFrameHandle = null;
         if (this.status !== 'running' || this.destroyed) return;

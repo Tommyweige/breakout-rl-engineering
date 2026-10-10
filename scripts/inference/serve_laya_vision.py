@@ -10,7 +10,8 @@ def main():
     import torch
 
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.parse_args()
+    parser.add_argument("--reference", action="store_true", help="Use the original upstream prediction path")
+    args = parser.parse_args()
     if not torch.cuda.is_available():
         raise RuntimeError("The local Decision Model demo requires CUDA")
     agent = load_laya_agent("cuda", preprocess="gpu")
@@ -20,7 +21,11 @@ def main():
                "modelRevision": LAYA_MODEL_REVISION, "codeRevision": LAYA_CODE_REVISION,
                "dtype": str(next(agent.model.parameters()).dtype),
                "preprocessing": agent.prep.to_config(), "variant": "fp32-gpu-preprocess"}
-    server = create_laya_server(LayaDecisionService(agent, runtime))
+    service = LayaDecisionService(agent, runtime, optimized=not args.reference)
+    for _ in range(20):
+        service.predict_rgb(bytes(210 * 160 * 3))
+    service.decisions = 0
+    server = create_laya_server(service)
     print(f"Laya ready on {runtime['gpu']} at http://127.0.0.1:{server.server_address[1]}", flush=True)
     try:
         server.serve_forever()
