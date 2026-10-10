@@ -84,6 +84,13 @@ controller switching and errors clear pending display frames. Fast inference is
 capped at 15 four-frame decisions per second to preserve a 60-native-frame budget.
 This improves presentation cadence without reducing model latency; it adds a
 bounded display delay and does not change the research evaluator's control inputs.
+The browser policy brakes an immediate LEFT/RIGHT reversal with one NOOP decision
+when the new direction's probability exceeds the previous direction by less than
+0.08. Strong reversals and FIRE pass through. The next decision can reverse after
+that brake; reset, controller switching and life/serve boundaries clear its memory.
+Raw model probabilities and greedy choices remain visible in debug telemetry.
+This gameplay-only trial can delay a weak reversal by one decision; the Python
+service and formal evaluator retain the original greedy policy.
 If the fixed template is unsupported or fails startup parity, health reports
 `inferenceMode: reference` and an `optimizationFallback` reason. Debug runtime
 diagnostics also expose native frames/s, scheduling waits and render callback

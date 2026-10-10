@@ -14,6 +14,12 @@ interface LayaResponse {
 /** One RGB image per request; the local service owns the frozen CUDA model. */
 export class LayaVisionPolicy {
   modelRevision = 'unknown';
+  private previousAction = 0;
+
+  reset(): void {
+    this.previousAction = 0;
+  }
+
   async load(): Promise<void> {
     const runtime = await this.request('/api/laya/health');
     if (runtime.ready !== true || typeof runtime.device !== 'string' || !runtime.device.startsWith('cuda')) {
@@ -23,6 +29,7 @@ export class LayaVisionPolicy {
       throw new Error('The local Laya service did not identify its pinned checkpoint.');
     }
     this.modelRevision = runtime.modelRevision;
+    this.reset();
   }
 
   async infer(rgb: Uint8Array): Promise<PolicyResult> {
@@ -41,7 +48,15 @@ export class LayaVisionPolicy {
       || typeof result.device !== 'string' || !result.device.startsWith('cuda')) {
       throw new Error('The local Laya service returned an invalid decision.');
     }
-    return { qValues: Array.isArray(probabilities) ? probabilities : [], actionIndex: index, action: ACTION_MEANINGS[index]!,
+    let actionIndex = index;
+    if (Array.isArray(probabilities)
+      && ((this.previousAction === 2 && index === 3) || (this.previousAction === 3 && index === 2))
+      && probabilities[index] - probabilities[this.previousAction] < 0.08) {
+      // Brake for one decision; do not keep moving in the potentially wrong direction.
+      actionIndex = 0;
+    }
+    this.previousAction = Array.isArray(probabilities) ? actionIndex : 0;
+    return { qValues: Array.isArray(probabilities) ? probabilities : [], actionIndex, action: ACTION_MEANINGS[actionIndex]!,
       requestedBackend: 'cuda', actualBackend: 'cuda', difficulty: 'decision-model',
       mistakeRate: 0, greedyActionIndex: index, mistakeInjected: false,
       inferenceMode: typeof result.inferenceMode === 'string' ? result.inferenceMode : undefined,

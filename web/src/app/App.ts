@@ -551,6 +551,8 @@ export class App {
           this.renderHumanStep(step);
         },
         onAgentStep: (step) => {
+          if (step.environment.autoFire || (this.latestAgentStep
+            && step.environment.lives < this.latestAgentStep.environment.lives)) this.layaPolicy.reset();
           this.latestAgentStep = step;
           if (step.environment.autoFire) this.agentAutoFireCount += 1;
           this.renderAgentStep(step);
@@ -580,6 +582,7 @@ export class App {
     try {
       await this.gameLoop.reset();
       this.visionController.reset();
+      this.layaPolicy.reset();
       this.latestHumanStep = null;
       this.latestAgentStep = null;
       this.agentAutoFireCount = 0;
@@ -888,6 +891,7 @@ export class App {
         await this.prepareGameplayController(value);
         await this.gameLoop.resetAgent({ outerActionRepeat: value === 'unbeatable' ? 1 : 4, stickyActionProbability: 0.25,
           stepMode: value === 'decision-model' ? 'decision' : 'interactive-frame' });
+        this.layaPolicy.reset();
         this.latestAgentStep = null;
         this.agentAutoFireCount = 0;
         this.setText('[data-role="agent-score"]', '0');
