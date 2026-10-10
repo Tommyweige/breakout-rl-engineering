@@ -1261,7 +1261,7 @@ function configureAle(ale: AleLike, contract: BreakoutContractV2, seed: number, 
 }
 
 function copyBytes(values: ArrayLike<number>): Uint8Array {
-  return Uint8Array.from(values, (value) => value);
+  return Uint8Array.from(values);
 }
 
 function now(): number {
