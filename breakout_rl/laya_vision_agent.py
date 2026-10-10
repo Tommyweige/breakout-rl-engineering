@@ -58,9 +58,11 @@ class LayaVisionPolicy:
         self.model_latencies: list[float] = []
         self._model_depth = 0
         self._pending_model_times: list[tuple[Any, Any]] = []
+        self._pending_model_stages: list[str] = []
 
     def _model_start(self, module, inputs):
         if self._model_depth == 0:
+            self._model_stage = self._module_labels[id(module)]
             if getattr(getattr(self.agent, "device", None), "type", None) == "cuda":
                 import torch
                 self._model_started = torch.cuda.Event(enable_timing=True)
@@ -72,6 +74,7 @@ class LayaVisionPolicy:
     def _model_end(self, module, inputs, output):
         self._model_depth -= 1
         if self._model_depth == 0:
+            self._pending_model_stages.append(self._model_stage)
             if isinstance(self._model_started, float):
                 self._pending_model_times.append((self._model_started, time.perf_counter()))
             else:
@@ -104,11 +107,14 @@ class LayaVisionPolicy:
             # predict encodes images outside model.forward; include both image modules.
             modules = [self.agent.model.encoder.vision_model,
                        self.agent.model.encoder.connector, self.agent.model]
+            self._module_labels = {id(module): label for module, label in
+                                   zip(modules, ("vision", "connector", "decision"))}
             for module in modules:
                 handles.extend([module.register_forward_pre_hook(self._model_start),
                                 module.register_forward_hook(self._model_end)])
         model_start_index = len(self.model_latencies)
         self._pending_model_times.clear()
+        self._pending_model_stages.clear()
         self._model_depth = 0
         try:
             response = self.agent.predict({"image": image}, self.questions, strict=True)
@@ -117,10 +123,14 @@ class LayaVisionPolicy:
                 handle.remove()
         if self.diagnostics:
             self._synchronize()
-        self.model_latencies.extend(
+        latencies = [
             end - start if isinstance(start, float) else start.elapsed_time(end) / 1000
             for start, end in self._pending_model_times
-        )
+        ]
+        self.model_latencies.extend(latencies)
+        stages = {}
+        for name, latency in zip(self._pending_model_stages, latencies):
+            stages[name] = stages.get(name, 0) + latency
         ended = time.perf_counter()
         try:
             answer = response["answers"]["move"]
@@ -148,6 +158,7 @@ class LayaVisionPolicy:
             "confidence": answer.get("confidence"), "entropy_nats": entropy,
             "rgb_conversion_seconds": converted - started,
             "model_seconds": model_seconds,
+            "model_stage_seconds": stages,
             "predict_non_model_seconds": ended - converted - (model_seconds or 0),
             "decision_seconds": ended - started,
         })

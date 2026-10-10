@@ -33,6 +33,7 @@ export interface AgentLoopStep {
   inferenceMs: number;
   environmentStepMs: number;
   totalDecisionMs: number;
+  scheduleWaitMs: number;
 }
 
 export interface AgentRuntimeSemantics {
@@ -63,6 +64,11 @@ export interface DualLoopDiagnostics {
   agentDecisionP50Ms: number;
   agentDecisionP95Ms: number;
   agentInferenceInFlight: boolean;
+  agentNativeFramesPerSecond: number;
+  agentScheduleWaitP50Ms: number;
+  agentScheduleWaitP95Ms: number;
+  renderCallbackP50Ms: number;
+  renderCallbackP95Ms: number;
 }
 
 export interface DualGameLoopOptions {
@@ -113,6 +119,11 @@ export class DualGameLoop {
   private readonly agentDecisionIntervals: number[] = [];
   private lastHumanTickAt: number | null = null;
   private lastAgentDecisionAt: number | null = null;
+  private lastAgentCompletedAt: number | null = null;
+  private agentElapsedBaselineMs = 0;
+  private readonly agentScheduleWaits: number[] = [];
+  private readonly renderIntervals: number[] = [];
+  private lastRenderAt: number | null = null;
 
   constructor(private readonly options: DualGameLoopOptions) {}
 
@@ -126,6 +137,7 @@ export class DualGameLoop {
 
   get runtimeDiagnostics(): DualLoopDiagnostics {
     const elapsedMs = this.elapsedMs();
+    const agentElapsedMs = elapsedMs - this.agentElapsedBaselineMs;
     return {
       status: this.status,
       elapsedMs,
@@ -144,10 +156,15 @@ export class DualGameLoop {
       agentStickyActionProbability: this.options.agentRuntime.stickyActionProbability,
       agentDecisionCount: this.agentDecisionCount,
       agentRawFrameDelta: this.agentRawFrameDelta,
-      agentDecisionsPerSecond: elapsedMs > 0 ? (this.agentDecisionCount / elapsedMs) * 1000 : 0,
+      agentDecisionsPerSecond: agentElapsedMs > 0 ? (this.agentDecisionCount / agentElapsedMs) * 1000 : 0,
       agentDecisionP50Ms: percentile(this.agentDecisionIntervals, 0.5),
       agentDecisionP95Ms: percentile(this.agentDecisionIntervals, 0.95),
       agentInferenceInFlight: this.agentInFlight,
+      agentNativeFramesPerSecond: agentElapsedMs > 0 ? (this.agentRawFrameDelta / agentElapsedMs) * 1000 : 0,
+      agentScheduleWaitP50Ms: percentile(this.agentScheduleWaits, 0.5),
+      agentScheduleWaitP95Ms: percentile(this.agentScheduleWaits, 0.95),
+      renderCallbackP50Ms: percentile(this.renderIntervals, 0.5),
+      renderCallbackP95Ms: percentile(this.renderIntervals, 0.95),
     };
   }
 
@@ -156,6 +173,10 @@ export class DualGameLoop {
     const current = now();
     this.status = 'running';
     this.activeStartedAt = current;
+    this.lastRenderAt = null;
+    this.lastAgentCompletedAt = null;
+    this.lastHumanTickAt = null;
+    this.lastAgentDecisionAt = null;
     this.humanDeadline = current;
     this.agentDeadline = current;
     this.scheduleHuman(0);
@@ -200,6 +221,9 @@ export class DualGameLoop {
     this.agentRawFrameDelta = 0;
     this.agentDecisionIntervals.length = 0;
     this.lastAgentDecisionAt = null;
+    this.lastAgentCompletedAt = null;
+    this.agentScheduleWaits.length = 0;
+    this.agentElapsedBaselineMs = this.elapsedMs();
     this.options.onFrame?.();
     this.emitDiagnostics();
   }
@@ -302,7 +326,7 @@ export class DualGameLoop {
       if (lateness > 2) this.lateHumanTicks += 1;
       if (lateness > this.humanIntervalMs()) this.droppedHumanTicks += 1;
       const previous = this.lastHumanTickAt;
-      if (previous !== null) this.humanTickIntervals.push(startedAt - previous);
+      if (previous !== null) recordInterval(this.humanTickIntervals, startedAt - previous);
       this.lastHumanTickAt = startedAt;
       const command = this.options.humanCommand();
       const step = command.kind === 'paddle'
@@ -320,6 +344,7 @@ export class DualGameLoop {
     if (this.agentInFlight || (!allowWhenPaused && this.status !== 'running') || this.options.agent.isFinished) return;
     this.agentInFlight = true;
     const startedAt = now();
+    const scheduleWaitMs = this.lastAgentCompletedAt === null ? 0 : startedAt - this.lastAgentCompletedAt;
     try {
       const inferenceStartedAt = now();
       const policy = await this.options.infer(this.options.agent.observation);
@@ -334,7 +359,9 @@ export class DualGameLoop {
       const environmentStepMs = now() - environmentStartedAt;
       const finishedAt = now();
       const previous = this.lastAgentDecisionAt;
-      if (previous !== null) this.agentDecisionIntervals.push(startedAt - previous);
+      if (previous !== null) recordInterval(this.agentDecisionIntervals, startedAt - previous);
+      recordInterval(this.agentScheduleWaits, scheduleWaitMs);
+      this.lastAgentCompletedAt = finishedAt;
       this.lastAgentDecisionAt = startedAt;
       this.agentDecisionCount += 1;
       this.agentRawFrameDelta += environment.actualEmulatorFrames;
@@ -344,6 +371,7 @@ export class DualGameLoop {
         inferenceMs,
         environmentStepMs,
         totalDecisionMs: finishedAt - startedAt,
+        scheduleWaitMs,
       });
     } finally {
       this.agentInFlight = false;
@@ -357,7 +385,7 @@ export class DualGameLoop {
         this.renderHandle = null;
         if (this.status !== 'running' || this.destroyed) return;
         try {
-          this.options.onFrame?.();
+          this.renderFrame();
         } catch (error) {
           this.fail(error);
           return;
@@ -370,7 +398,7 @@ export class DualGameLoop {
       this.renderHandle = null;
       if (this.status !== 'running' || this.destroyed) return;
       try {
-        this.options.onFrame?.();
+        this.renderFrame();
       } catch (error) {
         this.fail(error);
         return;
@@ -398,6 +426,13 @@ export class DualGameLoop {
     this.renderHandle = null;
   }
 
+  private renderFrame(): void {
+    const current = now();
+    if (this.lastRenderAt !== null) recordInterval(this.renderIntervals, current - this.lastRenderAt);
+    this.lastRenderAt = current;
+    this.options.onFrame?.();
+  }
+
   private fail(error: unknown): void {
     this.clearScheduledWork();
     this.status = 'error';
@@ -421,6 +456,11 @@ export class DualGameLoop {
     this.agentDecisionIntervals.length = 0;
     this.lastHumanTickAt = null;
     this.lastAgentDecisionAt = null;
+    this.lastAgentCompletedAt = null;
+    this.agentElapsedBaselineMs = 0;
+    this.agentScheduleWaits.length = 0;
+    this.renderIntervals.length = 0;
+    this.lastRenderAt = null;
   }
 
   private elapsedMs(): number {
@@ -438,6 +478,12 @@ export class DualGameLoop {
   private emitDiagnostics(): void {
     this.options.onDiagnostics?.(this.runtimeDiagnostics);
   }
+}
+
+// Percentiles describe the last 600 intervals without growing during long play.
+function recordInterval(samples: number[], interval: number): void {
+  samples.push(interval);
+  if (samples.length > 600) samples.shift();
 }
 
 function percentile(values: readonly number[], fraction: number): number {

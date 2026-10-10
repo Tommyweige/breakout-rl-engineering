@@ -74,6 +74,8 @@ def fixture_frames():
 
 def run_laya_benchmark(*, samples=100, rounds=3, stress=1000, url="http://127.0.0.1:8766"):
     import torch
+    if samples < 100 or rounds < 3 or stress < 1000:
+        raise ValueError("Acceptance benchmark requires >=100 samples, >=3 rounds and >=1000 stress requests")
     target = urlsplit(url)
     if target.scheme != "http" or target.hostname not in ("127.0.0.1", "localhost") or target.path not in ("", "/") or target.query or target.fragment:
         raise ValueError("Benchmark URL must be a local HTTP server/proxy origin")
@@ -112,6 +114,11 @@ def run_laya_benchmark(*, samples=100, rounds=3, stress=1000, url="http://127.0.
             use(mode)
             for i in range(20):
                 request(frames[i % len(frames)])
+        # Diagnostic CUDA events are measured separately from production A/B latency.
+        use("optimized")
+        optimized.policy.diagnostics = True
+        profiles = [request(frame)[0]["timings"] for frame in frames]
+        optimized.policy.diagnostics = False
         parity = []
         for frame in frames:
             use("reference")
@@ -161,7 +168,8 @@ def run_laya_benchmark(*, samples=100, rounds=3, stress=1000, url="http://127.0.
                 "model_revision": LAYA_MODEL_REVISION, "code_revision": LAYA_CODE_REVISION,
                 "source_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
                 "source_dirty": bool(subprocess.check_output(["git", "status", "--porcelain"], text=True)),
-                "fixtures": fixtures, "parity": parity, "summary": summary, "samples": records,
+                "fixtures": fixtures, "parity": parity, "profiles": profiles,
+                "summary": summary, "samples": records,
                 "stress_requests": stress, "memory": memory,
                 "cuda_peak_allocated": torch.cuda.max_memory_allocated(),
                 "cuda_peak_reserved": torch.cuda.max_memory_reserved()}

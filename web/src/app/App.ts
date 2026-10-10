@@ -532,7 +532,10 @@ export class App {
         humanCommand: () => this.currentHumanCommand(),
         infer: async (observation) => {
           if (this.difficultyPolicy.currentDifficulty === 'decision-model') {
-            return this.layaPolicy.infer(this.agentEnvironment!.currentRawRgb);
+            const started = performance.now();
+            const rgb = this.agentEnvironment!.currentRawRgb;
+            const rgbCaptureMs = performance.now() - started;
+            return { ...await this.layaPolicy.infer(rgb), rgbCaptureMs };
           }
           if (this.difficultyPolicy.currentDifficulty === 'unbeatable') {
             return this.visionController.select(this.agentEnvironment!.rawRgb);
@@ -648,6 +651,12 @@ export class App {
         Object.assign(diagnostics, this.agentEnvironment!.runtimeDiagnostics, {
           agentRuntime: this.agentEnvironment!.runtimeDiagnostics,
           actualGameplayBackend: step.policy.actualBackend,
+          lastDecisionTimings: { rgbCaptureMs: step.policy.rgbCaptureMs,
+            requestAndCaptureMs: step.inferenceMs, serviceInferenceMs: step.policy.serviceInferenceMs,
+            transportAndResponseMs: step.policy.serviceInferenceMs === undefined ? undefined
+              : Math.max(0, step.inferenceMs - step.policy.serviceInferenceMs - (step.policy.rgbCaptureMs ?? 0)),
+            aleStepMs: step.environmentStepMs, totalDecisionMs: step.totalDecisionMs,
+            scheduleWaitMs: step.scheduleWaitMs },
           interactiveAgentRuntime: { rawFramesPerInference: decisionModel ? 4 : 1, policyActionRepeat: this.agentActionRepeat, policyObservationRepeat: this.agentActionRepeat, schedule: 'requestAnimationFrame' },
         });
       }

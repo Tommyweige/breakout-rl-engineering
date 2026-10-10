@@ -270,12 +270,37 @@ describe('dual game loop', () => {
       expect(paint).not.toHaveBeenCalled();
       expect(human.actions.length).toBeGreaterThan(agent.actions.length);
       expect(loop.runtimeDiagnostics.agentRawFrameDelta).toBe(8);
+      expect(loop.runtimeDiagnostics.agentNativeFramesPerSecond).toBeCloseTo(8 / .21);
+      expect(loop.runtimeDiagnostics.agentScheduleWaitP50Ms).toBeGreaterThanOrEqual(0);
       loop.pause();
       await vi.advanceTimersByTimeAsync(500);
       expect(infer).toHaveBeenCalledTimes(3);
       expect(agent.actions).toHaveLength(2);
     } finally {
       loop.pause();
+      vi.useRealTimers();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('measures render callbacks separately from game frame advancement', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'performance'] });
+    vi.stubGlobal('requestAnimationFrame', undefined);
+    const onFrame = vi.fn();
+    const loop = new DualGameLoop({ human: new FakeHumanEnvironment(), agent: new FakeAgentEnvironment(),
+      agentRuntime: { outerActionRepeat: 4, stickyActionProbability: .25, stepMode: 'decision' },
+      humanCommand: () => ({ kind: 'discrete', actionIndex: 0 }),
+      infer: async () => { await wait(100); return policyResult(2); }, onFrame });
+    try {
+      loop.start();
+      await vi.advanceTimersByTimeAsync(250);
+      const diagnostics = loop.runtimeDiagnostics;
+      expect(onFrame.mock.calls.length).toBeGreaterThan(diagnostics.agentDecisionCount);
+      expect(diagnostics.renderCallbackP50Ms).toBeGreaterThan(0);
+      expect(diagnostics.agentNativeFramesPerSecond).toBeCloseTo(8 / .25);
+    } finally {
+      loop.pause();
+      await vi.advanceTimersByTimeAsync(100);
       vi.useRealTimers();
       vi.unstubAllGlobals();
     }

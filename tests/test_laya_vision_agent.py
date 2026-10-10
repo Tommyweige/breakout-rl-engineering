@@ -104,6 +104,8 @@ def test_nested_model_work_is_counted_once():
     policy.select_action(None, rng=np.random.default_rng(101))
     assert len(policy.model_latencies) == 1
     assert 0 < policy.decisions[0]["model_seconds"] <= policy.decisions[0]["decision_seconds"]
+    assert set(policy.decisions[0]["model_stage_seconds"]) == {"decision"}
+    assert policy.decisions[0]["model_stage_seconds"]["decision"] == policy.decisions[0]["model_seconds"]
 
 
 def test_greedy_ties_preserve_upstream_choice_before_probability_rounding():

@@ -15,8 +15,8 @@ def main():
     parser.add_argument("--rounds", type=int, default=3)
     parser.add_argument("--stress", type=int, default=1000)
     args = parser.parse_args()
-    if args.samples < 1 or args.rounds < 1 or args.stress < 0:
-        parser.error("samples/rounds must be positive and stress nonnegative")
+    if args.samples < 100 or args.rounds < 3 or args.stress < 1000:
+        parser.error("acceptance run requires samples >=100, rounds >=3, stress >=1000")
     result = run_laya_benchmark(samples=args.samples, rounds=args.rounds,
                                 stress=args.stress, url=args.url)
     args.output.parent.mkdir(parents=True, exist_ok=True)

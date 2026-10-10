@@ -12,6 +12,7 @@ class LayaBrowserAgent:
                               truncation_error, vlm_prefix)
 
         self.agent = agent
+        self.model = agent.model
         self.device = agent.device
         self.questions = deepcopy(questions)
         self.mode = "fixed-eager"

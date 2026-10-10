@@ -58,6 +58,7 @@ export interface PolicyResult {
   mistakeInjected?: boolean;
   inferenceMode?: string;
   serviceInferenceMs?: number;
+  rgbCaptureMs?: number;
 }
 
 export interface QMarginDiagnostics {

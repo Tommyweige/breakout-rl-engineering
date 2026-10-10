@@ -76,6 +76,10 @@ The browser service caches the fixed question's token inputs and device buffers
 warms up before listening and schedules decisions independently of canvas paint.
 Use `--reference` on the server CLI to restore the upstream prediction path.
 The debug panel separates service inference time from browser request time.
+If the fixed template is unsupported or fails startup parity, health reports
+`inferenceMode: reference` and an `optimizationFallback` reason. Debug runtime
+diagnostics also expose native frames/s, scheduling waits and render callback
+intervals; interval percentiles cover the last 600 samples, excluding pause gaps.
 
 To compare both paths on one resident model, stop the running Laya service first:
 
@@ -90,6 +94,8 @@ mode, and runs 1,000 optimized requests to measure memory. Exit 1 means parity o
 the 20% median improvement / p95 regression gate failed. Results describe HTTP
 requests, not rendered FPS; native game frames and rendering need separate
 browser measurements. Generated evidence remains under ignored `evaluations/`.
+GPU event spans for vision, connector and decision modules are collected in a
+separate diagnostic pass, so profiling does not inflate optimized A/B timings.
 
 Optional real-model integration tests require cached weights and
 `LAYA_RUN_INTEGRATION=1`; ordinary tests use a mocked external Laya policy.

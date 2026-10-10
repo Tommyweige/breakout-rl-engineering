@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import warnings
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import urlsplit
 
@@ -22,9 +23,24 @@ class LayaDecisionService:
         self.policy = LayaVisionPolicy(agent, lambda: self.frame, ACTION_NAMES)
         if optimized:
             from breakout_rl.laya_browser_agent import LayaBrowserAgent
-            browser = LayaBrowserAgent(agent, self.policy.questions)
-            self.policy = LayaVisionPolicy(browser, lambda: self.frame, ACTION_NAMES, diagnostics=False)
-            self.runtime["inferenceMode"] = browser.mode
+            try:
+                browser = LayaBrowserAgent(agent, self.policy.questions)
+                candidate = LayaVisionPolicy(browser, lambda: self.frame, ACTION_NAMES, diagnostics=False)
+                expected_action = self.policy.select_action(None, rng=None)
+                actual_action = candidate.select_action(None, rng=None)
+                expected = self.policy.decisions[-1]["probabilities"]
+                actual = candidate.decisions[-1]["probabilities"]
+                if expected_action != actual_action or expected is None or actual is None or any(
+                    abs(expected[name] - actual[name]) > .0002 for name in ACTION_NAMES
+                ):
+                    raise ValueError("Optimized startup decision differs from reference")
+                self.policy = candidate
+                self.runtime["inferenceMode"] = browser.mode
+            except (RuntimeError, ValueError) as error:
+                self.runtime["optimizationFallback"] = str(error)
+                warnings.warn(f"Laya optimization unavailable; using reference: {error}", stacklevel=2)
+            self.policy.decisions.clear()
+            self.policy.model_latencies.clear()
 
     def predict_rgb(self, payload: bytes) -> dict:
         if len(payload) != RGB_BYTES:
@@ -35,7 +51,12 @@ class LayaDecisionService:
         probabilities = decision["probabilities"]
         result = {"actionIndex": action, "action": ACTION_NAMES[action],
                   "probabilities": [probabilities[name] for name in ACTION_NAMES] if probabilities is not None else None,
-                  "inferenceMs": decision["decision_seconds"] * 1000, **self.runtime}
+                  "inferenceMs": decision["decision_seconds"] * 1000,
+                  "timings": {"rgbConversionMs": decision["rgb_conversion_seconds"] * 1000,
+                              "predictMs": (decision["decision_seconds"] - decision["rgb_conversion_seconds"]) * 1000,
+                              "modelEventMs": decision["model_seconds"] * 1000 if decision["model_seconds"] is not None else None,
+                              "modelStagesMs": {k: v * 1000 for k, v in decision["model_stage_seconds"].items()}},
+                  **self.runtime}
         self.decisions += 1
         self.policy.decisions.clear()
         self.policy.model_latencies.clear()
@@ -63,18 +84,24 @@ def create_laya_server(service: LayaDecisionService, port: int = 8766) -> HTTPSe
             if self.path != "/api/laya/predict":
                 self.reply(404, {"error": "Unknown endpoint"})
                 return
+            if self.headers.get("Content-Type") != "application/octet-stream" or self.headers.get("Content-Length") != str(RGB_BYTES):
+                self.reply(400, {"error": "Expected a complete uint8 RGB frame"})
+                return
+            try:
+                self.connection.settimeout(5)
+                # Drain the bounded frame before rejection so Windows does not reset the HTTP response.
+                payload = self.rfile.read(RGB_BYTES)
+            except TimeoutError as error:
+                self.reply(400, {"error": str(error)})
+                return
             origin = self.headers.get("Origin")
             if origin:
                 parsed = urlsplit(origin)
                 if parsed.scheme != "http" or parsed.hostname not in ("localhost", "127.0.0.1"):
                     self.reply(403, {"error": "Local browser origin required"})
                     return
-            if self.headers.get("Content-Type") != "application/octet-stream" or self.headers.get("Content-Length") != str(RGB_BYTES):
-                self.reply(400, {"error": "Expected a complete uint8 RGB frame"})
-                return
             try:
-                self.connection.settimeout(5)
-                result = service.predict_rgb(self.rfile.read(RGB_BYTES))
+                result = service.predict_rgb(payload)
                 self.reply(200, result)
             except (ValueError, TimeoutError) as error:
                 self.reply(400, {"error": str(error)})
