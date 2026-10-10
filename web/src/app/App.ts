@@ -494,7 +494,7 @@ export class App {
           rawFramesPerInference: decisionModel ? 4 : 1,
           policyActionRepeat: this.agentActionRepeat,
           policyObservationRepeat: this.agentActionRepeat,
-          schedule: 'requestAnimationFrame',
+          schedule: decisionModel ? 'cooperative-timer' : 'requestAnimationFrame',
         },
         humanInstanceId: this.humanEnvironment.instanceId,
         agentInstanceId: this.agentEnvironment.instanceId,

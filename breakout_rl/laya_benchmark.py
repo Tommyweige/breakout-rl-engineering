@@ -151,17 +151,18 @@ def run_laya_benchmark(*, samples=100, rounds=3, stress=1000, url="http://127.0.
                 request(frames[i % len(frames)])
         # Diagnostic CUDA events are measured separately from production A/B latency.
         profiles, preprocessing_events = [], []
-        original_preprocessing = agent.model.prep.pixel_values
+        original_preprocessing = type(agent.model.prep).pixel_values
 
-        def timed_preprocessing(*args, **kwargs):
+        def timed_preprocessing(prep, *args, **kwargs):
             start, end = torch.cuda.Event(enable_timing=True), torch.cuda.Event(enable_timing=True)
             start.record()
-            value = original_preprocessing(*args, **kwargs)
+            value = original_preprocessing(prep, *args, **kwargs)
             end.record()
             preprocessing_events.append((start, end))
             return value
 
-        with patch.object(agent.model.prep, "pixel_values", side_effect=timed_preprocessing):
+        # ImagePrep is frozen; patch its method reversibly, not the instance fields.
+        with patch.object(type(agent.model.prep), "pixel_values", new=timed_preprocessing):
             for mode in ("reference", "optimized"):
                 use(mode)
                 reference.policy.diagnostics = True
