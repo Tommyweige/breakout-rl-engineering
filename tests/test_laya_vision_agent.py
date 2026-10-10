@@ -4,6 +4,29 @@ import numpy as np
 import pytest
 import os
 
+
+def test_gpu_preprocessing_is_opt_in_and_keeps_pinned_frozen_model(monkeypatch):
+    import sys
+    import torch
+    from types import SimpleNamespace
+    import breakout_rl.laya_vision_agent as module
+
+    calls = []
+    def load_vlm(*args, **kwargs):
+        calls.append((args, kwargs))
+        return SimpleNamespace(model=torch.nn.Linear(1, 1))
+    monkeypatch.setitem(sys.modules, 'laya', SimpleNamespace(load_vlm=load_vlm))
+    monkeypatch.setattr(module, 'distribution', lambda name: SimpleNamespace(
+        read_text=lambda path: '{"vcs_info":{"commit_id":"' + module.LAYA_CODE_REVISION + '"}}'))
+    baseline = module.load_laya_agent('cpu')
+    accelerated = module.load_laya_agent('cuda', preprocess='gpu')
+    assert 'preprocess' not in calls[0][1]
+    assert calls[1][1]['preprocess'] == 'gpu'
+    assert calls[1][1]['revision'] == module.LAYA_MODEL_REVISION
+    assert calls[1][1]['device'] == 'cuda'
+    assert not baseline.model.training and not accelerated.model.training
+    assert all(not p.requires_grad for p in accelerated.model.parameters())
+
 from breakout_rl.laya_vision_agent import LayaVisionPolicy
 
 

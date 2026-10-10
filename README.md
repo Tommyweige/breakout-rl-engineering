@@ -65,6 +65,11 @@ localhost exposes this option; Vite proxies RGB requests to the loopback-only
 Laya service on port 8766. The model stays on CUDA, one request is in flight at
 a time, and the game retains frame skip 4 with wrapper-owned FIRE. At the
 measured inference rate the AI game advances slower than the player's game.
+The browser bridge uses FP32 with upstream GPU image preprocessing at the
+checkpoint's 512-pixel resolution. Its `/api/laya/health` response records the
+preprocessing variant. This accelerated path is not pixel-exact with the CPU
+processor; the research evaluator keeps the checkpoint's original preprocessing
+unless explicitly changed in a separately declared experiment.
 
 Optional real-model integration tests require cached weights and
 `LAYA_RUN_INTEGRATION=1`; ordinary tests use a mocked external Laya policy.

@@ -21,7 +21,7 @@ ACTION_DESCRIPTIONS = {
 }
 
 
-def load_laya_agent(device: str = "cuda") -> Any:
+def load_laya_agent(device: str = "cuda", *, preprocess: str | None = None) -> Any:
     """Require the audited upstream code and exact checkpoint revision."""
     import laya
 
@@ -29,7 +29,10 @@ def load_laya_agent(device: str = "cuda") -> Any:
     installed_revision = json.loads(source or "{}").get("vcs_info", {}).get("commit_id")
     if installed_revision != LAYA_CODE_REVISION:
         raise RuntimeError("Install Laya from the pinned Git commit in requirements-laya.txt")
-    agent = laya.load_vlm(LAYA_MODEL_ID, revision=LAYA_MODEL_REVISION, device=device)
+    if preprocess not in (None, "processor", "gpu"):
+        raise ValueError("preprocess must be processor or gpu")
+    options = {} if preprocess is None else {"preprocess": preprocess}
+    agent = laya.load_vlm(LAYA_MODEL_ID, revision=LAYA_MODEL_REVISION, device=device, **options)
     agent.model.eval()
     for parameter in agent.model.parameters():
         parameter.requires_grad_(False)

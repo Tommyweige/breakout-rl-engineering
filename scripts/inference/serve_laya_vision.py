@@ -13,11 +13,13 @@ def main():
     parser.parse_args()
     if not torch.cuda.is_available():
         raise RuntimeError("The local Decision Model demo requires CUDA")
-    agent = load_laya_agent("cuda")
+    agent = load_laya_agent("cuda", preprocess="gpu")
     if any(parameter.device.type != "cuda" for parameter in agent.model.parameters()):
         raise RuntimeError("Laya model parameters are not all on CUDA")
     runtime = {"device": str(agent.device), "gpu": torch.cuda.get_device_name(),
-               "modelRevision": LAYA_MODEL_REVISION, "codeRevision": LAYA_CODE_REVISION}
+               "modelRevision": LAYA_MODEL_REVISION, "codeRevision": LAYA_CODE_REVISION,
+               "dtype": str(next(agent.model.parameters()).dtype),
+               "preprocessing": agent.prep.to_config(), "variant": "fp32-gpu-preprocess"}
     server = create_laya_server(LayaDecisionService(agent, runtime))
     print(f"Laya ready on {runtime['gpu']} at http://127.0.0.1:{server.server_address[1]}", flush=True)
     try:
