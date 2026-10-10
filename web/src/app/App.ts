@@ -655,9 +655,12 @@ export class App {
             requestAndCaptureMs: step.inferenceMs, serviceInferenceMs: step.policy.serviceInferenceMs,
             transportAndResponseMs: step.policy.serviceInferenceMs === undefined ? undefined
               : Math.max(0, step.inferenceMs - step.policy.serviceInferenceMs - (step.policy.rgbCaptureMs ?? 0)),
-            aleStepMs: step.environmentStepMs, totalDecisionMs: step.totalDecisionMs,
+            environmentStepMs: step.environmentStepMs,
+            aleAndFrameReadMs: step.environment.timing.aleStepMs,
+            environmentPreprocessingMs: step.environment.timing.preprocessingMs,
+            totalDecisionMs: step.totalDecisionMs,
             scheduleWaitMs: step.scheduleWaitMs },
-          interactiveAgentRuntime: { rawFramesPerInference: decisionModel ? 4 : 1, policyActionRepeat: this.agentActionRepeat, policyObservationRepeat: this.agentActionRepeat, schedule: 'requestAnimationFrame' },
+          interactiveAgentRuntime: { rawFramesPerInference: decisionModel ? 4 : 1, policyActionRepeat: this.agentActionRepeat, policyObservationRepeat: this.agentActionRepeat, schedule: decisionModel ? 'cooperative-timer' : 'requestAnimationFrame' },
         });
       }
       this.setText('[data-role="current-action"]', environment.autoFire ? `FIRE / auto-${environment.autoFireReason}` : environment.executedAction);

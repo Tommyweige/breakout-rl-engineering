@@ -10,6 +10,7 @@ import uuid
 from threading import Thread
 from urllib.request import Request, urlopen
 from urllib.parse import urlsplit
+from unittest.mock import patch
 
 import numpy as np
 
@@ -49,26 +50,58 @@ def fixture_frames():
             env.reset(seed=seed)
             rng = np.random.default_rng(seed)
             targets = (1, 60, 120, 180, 240, 360, 480, 720, 960, 1200)
-            captured = 0
+            candidates = {}
+            previous = np.asarray(env.unwrapped.ale.getScreenRGB(), dtype=np.uint8).tobytes()
+            previous_frame = env.unwrapped.ale.getFrameNumber()
+            previous_lives = env.unwrapped.ale.lives()
+            first_collision = first_loss = False
+
+            def capture(rgb, tick, native_frame, lives, event):
+                digest = hashlib.sha256(rgb).hexdigest()
+                if digest not in candidates:
+                    candidates[digest] = {"rgb": rgb, "seed": seed, "replay_tick": tick,
+                                          "ale_frame": native_frame, "lives": lives,
+                                          "sha256": digest, "events": []}
+                candidates[digest]["events"].append(event)
+
             for tick in range(1, 1201):
                 action = 1 if tick % 120 == 1 else int(rng.integers(0, 4))
-                _, _, terminated, truncated, _ = env.step(action)
-                if captured < len(targets) and tick >= targets[captured]:
-                    rgb = np.asarray(env.unwrapped.ale.getScreenRGB(), dtype=np.uint8).tobytes()
-                    digest = hashlib.sha256(rgb).hexdigest()
-                    if digest not in seen:
-                        seen.add(digest)
-                        captured += 1
-                        frames.append(rgb)
-                        metadata.append({"seed": seed, "replay_tick": tick,
-                                         "ale_frame": env.unwrapped.ale.getFrameNumber(),
-                                         "lives": env.unwrapped.ale.lives(), "sha256": digest})
+                _, reward, terminated, truncated, _ = env.step(action)
+                rgb = np.asarray(env.unwrapped.ale.getScreenRGB(), dtype=np.uint8).tobytes()
+                native_frame, lives = env.unwrapped.ale.getFrameNumber(), env.unwrapped.ale.lives()
+                if tick == 1:
+                    capture(rgb, tick, native_frame, lives, "serve_boundary")
+                if reward > 0 and not first_collision:
+                    capture(previous, tick - 1, previous_frame, previous_lives, "brick_collision_before")
+                    capture(rgb, tick, native_frame, lives, "brick_collision_after")
+                    first_collision = True
+                if lives < previous_lives and not first_loss:
+                    capture(previous, tick - 1, previous_frame, previous_lives, "life_loss_before")
+                    capture(rgb, tick, native_frame, lives, "life_loss_after")
+                    first_loss = True
+                if tick in targets:
+                    capture(rgb, tick, native_frame, lives, "sampled_motion")
+                previous, previous_frame, previous_lives = rgb, native_frame, lives
                 if terminated or truncated:
                     env.reset(seed=seed + tick)
+                    previous = np.asarray(env.unwrapped.ale.getScreenRGB(), dtype=np.uint8).tobytes()
+                    previous_frame, previous_lives = env.unwrapped.ale.getFrameNumber(), env.unwrapped.ale.lives()
+            ordered = sorted(candidates.values(), key=lambda c: all(e == "sampled_motion" for e in c["events"]))
+            captured = 0
+            for candidate in ordered:
+                if candidate["sha256"] not in seen and captured < 10:
+                    seen.add(candidate["sha256"])
+                    frames.append(candidate.pop("rgb"))
+                    metadata.append(candidate)
+                    captured += 1
         finally:
             env.close()
     if len(frames) != 30:
         raise RuntimeError("Fixture replay did not produce 30 distinct RGB states")
+    coverage = {event for row in metadata for event in row["events"]}
+    required = {"serve_boundary", "brick_collision_before", "brick_collision_after", "life_loss_before", "life_loss_after", "sampled_motion"}
+    if not required.issubset(coverage):
+        raise RuntimeError(f"Fixture replay lacks required event coverage: {required - coverage}")
     return frames, metadata
 
 
@@ -86,6 +119,8 @@ def run_laya_benchmark(*, samples=100, rounds=3, stress=1000, url="http://127.0.
                "codeRevision": LAYA_CODE_REVISION, "benchmarkRunId": run_id}
     reference = LayaDecisionService(agent, runtime)
     optimized = LayaDecisionService(agent, runtime, optimized=True)
+    if optimized.runtime["inferenceMode"] != "fixed-eager":
+        raise RuntimeError(f"Optimized benchmark cannot run after reference fallback: {optimized.runtime}")
     optimized.policy.render_rgb = lambda: reference.frame
     server = create_laya_server(reference)
     thread = Thread(target=server.serve_forever, daemon=True)
@@ -115,9 +150,27 @@ def run_laya_benchmark(*, samples=100, rounds=3, stress=1000, url="http://127.0.
             for i in range(20):
                 request(frames[i % len(frames)])
         # Diagnostic CUDA events are measured separately from production A/B latency.
-        use("optimized")
-        optimized.policy.diagnostics = True
-        profiles = [request(frame)[0]["timings"] for frame in frames]
+        profiles, preprocessing_events = [], []
+        original_preprocessing = agent.model.prep.pixel_values
+
+        def timed_preprocessing(*args, **kwargs):
+            start, end = torch.cuda.Event(enable_timing=True), torch.cuda.Event(enable_timing=True)
+            start.record()
+            value = original_preprocessing(*args, **kwargs)
+            end.record()
+            preprocessing_events.append((start, end))
+            return value
+
+        with patch.object(agent.model.prep, "pixel_values", side_effect=timed_preprocessing):
+            for mode in ("reference", "optimized"):
+                use(mode)
+                reference.policy.diagnostics = True
+                for frame, fixture in zip(frames, fixtures):
+                    preprocessing_events.clear()
+                    out, _ = request(frame)
+                    profiles.append({"mode": mode, "fixture_sha256": fixture["sha256"],
+                                     "timings": out["timings"], "gpuPreprocessEventMs": sum(
+                                         start.elapsed_time(end) for start, end in preprocessing_events)})
         optimized.policy.diagnostics = False
         parity = []
         for frame in frames:
@@ -134,7 +187,7 @@ def run_laya_benchmark(*, samples=100, rounds=3, stress=1000, url="http://127.0.
                              else ("optimized", "reference")):
                     use(mode)
                     out, elapsed = request(frames[i % len(frames)])
-                    records.append({"round": round_index, "mode": mode, "roundtrip_ms": elapsed,
+                    records.append({"round": round_index, "mode": mode, "actual_mode": out["inferenceMode"], "roundtrip_ms": elapsed,
                                     "inference_ms": out["inferenceMs"]})
             print(f"Finished A/B round {round_index + 1}/{rounds}", flush=True)
         use("optimized")
