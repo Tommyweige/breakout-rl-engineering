@@ -18,7 +18,9 @@ runs/
 outputs/
 
 # Historical material belongs on docs/archive branches, not main.
-docs/
+# Exception: the audited closeout index required by issue #73.
+docs/*
+!docs/final-results/
 assets/
 experiments/
 evaluations/

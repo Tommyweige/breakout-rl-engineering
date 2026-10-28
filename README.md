@@ -1,10 +1,21 @@
 # Breakout RL Engineering
 
-[繁體中文](README.zh-TW.md) · [Live Demo](https://breakout.tommypan.dev) · [30-Day Ironman Series](https://github.com/Tommyweige/breakout-rl-engineering/tree/docs-ironman-series/docs)
+[繁體中文](README.zh-TW.md) · [Live Demo](https://breakout.tommypan.com) · [Case Study](https://breakout.tommypan.com/case-study.html) · [Final Results](docs/final-results/README.md) · [30-Day Ironman Series](https://github.com/Tommyweige/breakout-rl-engineering/tree/docs-ironman-series/docs)
 
 An end-to-end reinforcement learning engineering project for Atari Breakout, covering DQN training, reproducible evaluation, CUDA-accelerated workflows, ONNX inference, and browser deployment.
 
 The final application runs both the Atari environment and the trained RL policy directly in the browser, without a Python backend.
+
+> **Project status: frozen evidence closeout (2026-10-28).** This repository is a completed engineering case study, not an active training campaign. **No verified full clear has been recorded.** Contracts, metrics, provenance, and limitations are indexed in [`docs/final-results/`](docs/final-results/README.md); the public narrative is the [interactive case study](https://breakout.tommypan.com/case-study.html).
+
+## Key Findings
+
+- **The DQN family produced a working browser policy, not a solved game.** Dueling Double DQN was selected after the 500K/1M family screen. The frozen 2.5M-transition checkpoint has a reported holdout mean of **30.933** raw score under Contract v2 (15 episodes, historical reported). The raw holdout episodes are not in `main`.
+- **A deterministic pixel controller is cheaper and explainable, but it did not clear.** Under Contract v3 it reported a mean of **137.47** with **0/15** canonical clear detections (historical reported). Its score is **not directly comparable** with the DQN holdout: v2 decides every four emulator frames, v3 every frame.
+- **No verified full clear exists.** The audited detector requires destroying both brick walls (864 points) and validates its positive path with a synthetic RAM/reward fixture, not a natural ALE clear. Phase 2/3 of the [roadmap](https://github.com/Tommyweige/breakout-rl-engineering/issues/14) remain deferred.
+- **Negative and inconclusive results are part of the record.** Life-loss reward shaping did not pass its promotion gate; PER was descriptive only; the first-clear probes ended without a verified clear; the Laya Vision side experiment has latency measurements but no complete episode.
+
+“Unbeatable” in the browser UI is a **difficulty label** (no deliberate mistake injection), not an experimental result. The project makes no world-record, “solved”, stable-clear, or fair-method-winner claim.
 
 ## Highlights
 
@@ -167,7 +178,11 @@ actions may repeat a previous action; the physical action resolved by ALE is not
 
 ## Browser Demo
 
-**Live:** https://breakout.tommypan.dev
+**Live:** https://breakout.tommypan.com
+
+**Research results:** https://breakout.tommypan.com/case-study.html
+
+The case-study page is an independent, directly linkable summary of the research question, method evolution, contracts, results, and limitations. The game page links to it without changing the Human vs AI gameplay surface.
 
 The web application uses:
 
@@ -230,8 +245,33 @@ npm run build
 - Vitest
 - Cloudflare Pages / Wrangler
 
+## Final Results
+
+The frozen evidence pack lives in [`docs/final-results/`](docs/final-results/README.md):
+
+- [`README.md`](docs/final-results/README.md) — results index, contract comparison, limitations, and rerun commands.
+- [`summary.json`](docs/final-results/summary.json) — machine-readable metrics with `value`, `unit`, `contract`, `seed_count`, `source`, `ref`, and `verification_status`.
+- [`evidence-inventory.csv`](docs/final-results/evidence-inventory.csv) — experiment ledger with raw-artifact status.
+- [`artifact-manifest.json`](docs/final-results/artifact-manifest.json) — expected raw-artifact paths, producers, hashes, and missing/not-created status.
+- [`handoff.md`](docs/final-results/handoff.md) — deferred work, Laya blockers, release/deploy/rollback notes, and the `tommypan.com` handoff.
+
+Read the contract before quoting a score. The DQN holdout and the RGB controller were evaluated under Contract v2 and v3 respectively; they are **not directly comparable**.
+
+## Known Limitations
+
+- The raw DQN, controller, reward-shaping, PER, and Laya run outputs are not in `main`; the corresponding numbers are historical reported rather than independently reproducible from this checkout.
+- No verified full clear exists. The completion detector's positive path has a synthetic 864-point fixture, not a natural ALE trajectory.
+- Contract v2 and v3 change the decision cadence. No matched cross-contract comparison was run, and this repository does not claim a fair method winner.
+- The DQN holdout is one model and 15 episodes; the controller result is one 15-seed run.
+- Laya has latency measurements but no complete episode, and its draft PR #74 still needs real browser QA. Issues #70–#72 remain open.
+- No 50-episode browser evaluation or world-record/human-timed attempt was completed in this closeout.
+
 ## Documentation
 
 The development notes and 30-day Ironman series are available on the documentation branch:
 
 [**Browse the 30-Day Ironman Series →**](https://github.com/Tommyweige/breakout-rl-engineering/tree/docs-ironman-series/docs)
+
+The frozen closeout is on `main`:
+
+[**Final results index →**](docs/final-results/README.md) · [**Handoff and deferred work →**](docs/final-results/handoff.md)

@@ -1,10 +1,21 @@
 # Breakout RL Engineering
 
-[English](README.md) · [線上 Demo](https://breakout.tommypan.dev) · [30 天鐵人賽文章](https://github.com/Tommyweige/breakout-rl-engineering/tree/docs-ironman-series/docs)
+[English](README.md) · [線上 Demo](https://breakout.tommypan.com) · [Case Study](https://breakout.tommypan.com/case-study.html) · [最終結果](docs/final-results/README.md) · [30 天鐵人賽文章](https://github.com/Tommyweige/breakout-rl-engineering/tree/docs-ironman-series/docs)
 
 這是一個以 Atari Breakout 為主題的端到端強化學習工程專案，涵蓋 DQN 訓練、可重現評估、CUDA 加速、ONNX 推論，以及瀏覽器部署。
 
 最終應用會直接在瀏覽器中執行 Atari 環境與訓練完成的 RL policy，不需要 Python backend。
+
+> **專案狀態：證據收尾凍結（2026-10-28）。** 這是一個已完成的工程案例，不是持續進行的訓練計畫。**目前沒有記錄任何 verified full clear。** Contract、指標、provenance 與限制都整理在 [`docs/final-results/`](docs/final-results/README.md)；對外敘事入口是 [互動式 case study](https://breakout.tommypan.com/case-study.html)。
+
+## 重點發現
+
+- **DQN family 產出了可用的瀏覽器 policy，但沒有破關。** 500K/1M family screen 後選用 Dueling Double DQN。凍結的 2.5M-transition checkpoint 在 Contract v2 下回報 holdout mean **30.933**（15 局，historical reported）。原始 holdout 逐局紀錄不在 `main`。
+- **Deterministic pixel controller 更便宜、可解釋，但沒有 clear。** 在 Contract v3 下回報 mean **137.47**、**0/15** canonical clear detections（historical reported）。這個分數與 DQN holdout **不能直接比較**：v2 每四個 emulator frames 做一次決策，v3 每個 frame 做一次。
+- **目前沒有 verified full clear。** Audited detector 要求打掉兩面磚牆（864 分），且正向路徑只用 synthetic RAM/reward fixture 驗證，尚未在自然 ALE 軌跡上觀察到。 [#14](https://github.com/Tommyweige/breakout-rl-engineering/issues/14) 的 Phase 2/3 維持 deferred。
+- **負面與未定論結果也是紀錄的一部分。** Life-loss reward shaping 未通過 promotion gate；PER 只有描述性結果；first-clear probes 沒有 verified clear；Laya Vision side experiment 有延遲量測，但沒有完整 episode。
+
+瀏覽器 UI 的「Unbeatable」是**難度名稱**（不注入刻意失誤），不是實驗結論。本專案不宣稱世界紀錄、已破關、穩定 clear，或方法公平勝出。
 
 ## 專案重點
 
@@ -161,7 +172,11 @@ python -m scripts.evaluation.evaluate_predictive_controller \
 
 ## 瀏覽器 Demo
 
-**線上版本：** https://breakout.tommypan.dev
+**線上版本：** https://breakout.tommypan.com
+
+**研究結果：** https://breakout.tommypan.com/case-study.html
+
+Case-study 頁面是獨立、可直接連結的研究問題、方法演進、contract、結果與限制摘要。主遊戲頁可以明顯進入該頁，且不改變 Human vs AI 遊玩介面。
 
 Web application 使用：
 
@@ -224,8 +239,33 @@ npm run build
 - Vitest
 - Cloudflare Pages / Wrangler
 
+## 最終結果
+
+凍結的證據包在 [`docs/final-results/`](docs/final-results/README.md)：
+
+- [`README.md`](docs/final-results/README.md)：results index、contract 對照、限制與可重跑指令。
+- [`summary.json`](docs/final-results/summary.json)：machine-readable metrics，包含 `value`、`unit`、`contract`、`seed_count`、`source`、`ref`、`verification_status`。
+- [`evidence-inventory.csv`](docs/final-results/evidence-inventory.csv)：實驗 ledger 與 raw-artifact 狀態。
+- [`artifact-manifest.json`](docs/final-results/artifact-manifest.json)：預期 raw artifact 路徑、producer、hash，以及 missing/not-created 狀態。
+- [`handoff.md`](docs/final-results/handoff.md)：deferred work、Laya blockers、release/deploy/rollback 與 `tommypan.com` 交接。
+
+引用任何分數前，先確認它所屬的 contract。DQN holdout 與 RGB controller 分別使用 Contract v2 與 v3，**不能直接比較**。
+
+## 已知限制
+
+- DQN、controller、reward shaping、PER 與 Laya 的原始 run outputs 不在 `main`；對應數字屬於 historical reported，無法只靠這個 checkout 獨立重現。
+- 目前沒有 verified full clear。Completion detector 的正向路徑只有 synthetic 864-point fixture，尚未在自然 ALE 軌跡上觀察到。
+- Contract v2 與 v3 改變決策頻率。沒有執行 matched cross-contract 對照，本 repo 不宣稱方法公平勝出。
+- DQN holdout 是單一模型、15 局；controller 結果是單一 15-seed run。
+- Laya 有延遲量測，但沒有完整 episode；draft PR #74 仍需真實瀏覽器 QA，#70–#72 維持 open。
+- 本次收尾沒有完成 50-episode browser evaluation，也沒有世界紀錄或 human-timed 挑戰。
+
 ## 文件
 
 開發筆記與 30 天鐵人賽文章放在文件分支：
 
 [**瀏覽 30 天鐵人賽文章 →**](https://github.com/Tommyweige/breakout-rl-engineering/tree/docs-ironman-series/docs)
+
+凍結收尾文件在 `main`：
+
+[**最終結果索引 →**](docs/final-results/README.md) · [**交接與 deferred work →**](docs/final-results/handoff.md)

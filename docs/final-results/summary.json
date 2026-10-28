@@ -1,0 +1,1041 @@
+{
+  "schema_version": 1,
+  "artifact_type": "breakout_final_results_summary",
+  "project": "Tommyweige/breakout-rl-engineering",
+  "frozen_at": "2026-10-28",
+  "project_status": "frozen_evidence_closeout",
+  "research_question": "Does Atari Breakout need a trained DQN policy, or can an explainable pixel tracker plus predictive control make the same decisions more cheaply?",
+  "claim_policy": {
+    "verified": "Checked against an artifact in this repository or a deterministic command that can be rerun here.",
+    "historical_reported": "Reported in a merged PR, closed issue, or archived article; the raw run output is not in main.",
+    "missing_raw_artifacts": "A result is described, but the raw episodes, logs, or weights needed to audit it are not available in this checkout.",
+    "not_yet_evaluated": "No completed evaluation exists for this claim."
+  },
+  "contracts": {
+    "v2": {
+      "contract_id": "day15-breakout-evaluation-v2-fire-reset",
+      "path": "configs/eval/breakout_contract_v2.json",
+      "sha256": "7eca5ae5262a28aeabf3be658f8275a68f3d2ae40cc74379400be2890dc31a2a",
+      "environment_id": "ALE/Breakout-v5",
+      "frame_skip": 4,
+      "frame_stack": 4,
+      "sticky_action_probability": 0.25,
+      "fire_reset": true,
+      "terminal_on_life_loss": false,
+      "max_num_frames_per_episode": 108000,
+      "agent_step_limit": 27000,
+      "evaluation_epsilon": 0.0,
+      "evaluation_seeds": [
+        101,
+        102,
+        103,
+        104,
+        105,
+        202,
+        203,
+        204,
+        205,
+        206,
+        303,
+        304,
+        305,
+        306,
+        307
+      ],
+      "raw_reward_rule": "sum environment rewards without clipping"
+    },
+    "v3": {
+      "contract_id": "breakout-evaluation-v3-frame-skip-1",
+      "path": "configs/eval/breakout_contract_v3.json",
+      "sha256": "d97b7fcb5758cba495857b3972a119ed3eb7db74fb0145d151e9d82725c5a786",
+      "environment_id": "ALE/Breakout-v5",
+      "frame_skip": 1,
+      "frame_stack": 4,
+      "sticky_action_probability": 0.25,
+      "fire_reset": true,
+      "terminal_on_life_loss": false,
+      "max_num_frames_per_episode": 108000,
+      "agent_step_limit": 108000,
+      "evaluation_epsilon": 0.0,
+      "evaluation_seeds": [
+        101,
+        102,
+        103,
+        104,
+        105,
+        202,
+        203,
+        204,
+        205,
+        206,
+        303,
+        304,
+        305,
+        306,
+        307
+      ],
+      "raw_reward_rule": "sum environment rewards without clipping"
+    }
+  },
+  "headline": {
+    "verified_clears_recorded": 0,
+    "statement": "No verified full clear has been recorded under the audited 864-point ALE Breakout detector.",
+    "scope": "Repository issues, merged pull requests, archived articles, and the completion audit reviewed through 2026-10-28.",
+    "clear_definition": "Destroy both brick walls in ALE/Breakout-v5, one-player Game 1; the audited detector uses the documented 864-point maximum plus the ROM scoreboard in ALE RAM.",
+    "positive_detector_validation": "A synthetic RAM/reward fixture reaches 864. A naturally completed ALE trajectory has not been observed.",
+    "max_observed_probe_score": 302
+  },
+  "metrics": [
+    {
+      "id": "verified_clears_recorded",
+      "label": "Verified full clears recorded",
+      "value": 0,
+      "unit": "count",
+      "contract": {
+        "id": "cross-contract-audit",
+        "path": "configs/eval/breakout_completion_audit_v1.json",
+        "frame_skip": "mixed"
+      },
+      "seed_count": 0,
+      "seed_role": "all reviewed records",
+      "source": "Repository evidence audit; completion audit records no natural positive trajectory.",
+      "ref": "docs/final-results/README.md#what-is-verified",
+      "verification_status": "verified",
+      "raw_artifact_status": "in_repo",
+      "notes": "This is an absence-of-record audit, not a proof that a clear is impossible."
+    },
+    {
+      "id": "clear_score_threshold",
+      "label": "Audited full-clear score",
+      "value": 864,
+      "unit": "raw Breakout score",
+      "contract": {
+        "id": "cross-contract-audit",
+        "path": "configs/eval/breakout_completion_audit_v1.json",
+        "frame_skip": "mixed"
+      },
+      "seed_count": 0,
+      "seed_role": "documented maximum for one-player Game 1",
+      "source": "configs/eval/breakout_completion_audit_v1.json",
+      "ref": "configs/eval/breakout_completion_audit_v1.json",
+      "verification_status": "verified",
+      "raw_artifact_status": "in_repo",
+      "notes": "Destroy both brick walls; the detector uses the ROM scoreboard in ALE RAM and raw-reward agreement."
+    },
+    {
+      "id": "completion_max_observed_probe_score",
+      "label": "Highest score observed in the completion probe",
+      "value": 302,
+      "unit": "raw Breakout score",
+      "contract": {
+        "id": "day15-breakout-evaluation-v2-fire-reset",
+        "path": "configs/eval/breakout_contract_v2.json",
+        "frame_skip": 4
+      },
+      "seed_count": 32,
+      "seed_role": "exploratory seeds 101-132",
+      "source": "configs/eval/breakout_completion_audit_v1.json validation block",
+      "ref": "configs/eval/breakout_completion_audit_v1.json",
+      "verification_status": "historical_reported",
+      "raw_artifact_status": "in_repo",
+      "notes": "The audit records the maximum observed raw score, not a per-seed artifact table."
+    },
+    {
+      "id": "dqn_final_holdout_mean",
+      "label": "DQN final holdout mean",
+      "value": 30.933,
+      "unit": "raw Breakout score per episode (mean)",
+      "contract": {
+        "id": "day15-breakout-evaluation-v2-fire-reset",
+        "path": "configs/eval/breakout_contract_v2.json",
+        "frame_skip": 4
+      },
+      "seed_count": 15,
+      "seed_role": "holdout evaluation episodes; the model was frozen before this set was opened",
+      "source": "Day 21 final long-training article, holdout table",
+      "ref": "https://github.com/Tommyweige/breakout-rl-engineering/blob/docs-ironman-series/articles/day21-final-long-training.md",
+      "verification_status": "historical_reported",
+      "raw_artifact_status": "missing",
+      "notes": "The archived article reports 30.933 (median 32.000). The raw holdout episode log is not in main. Dueling Double DQN, training seed 2022, 2.5M transitions. Cross-checked against the baseline text in breakout_rl/vision_evaluation.py."
+    },
+    {
+      "id": "dqn_final_holdout_median",
+      "label": "DQN final holdout median",
+      "value": 32.0,
+      "unit": "raw Breakout score per episode (median)",
+      "contract": {
+        "id": "day15-breakout-evaluation-v2-fire-reset",
+        "path": "configs/eval/breakout_contract_v2.json",
+        "frame_skip": 4
+      },
+      "seed_count": 15,
+      "seed_role": "holdout evaluation episodes",
+      "source": "Day 21 final long-training article, holdout table",
+      "ref": "https://github.com/Tommyweige/breakout-rl-engineering/blob/docs-ironman-series/articles/day21-final-long-training.md",
+      "verification_status": "historical_reported",
+      "raw_artifact_status": "missing",
+      "notes": "Reported alongside the 30.933 mean."
+    },
+    {
+      "id": "dqn_selection_mean",
+      "label": "DQN model-selection mean",
+      "value": 51.4,
+      "unit": "raw Breakout score per episode (mean)",
+      "contract": {
+        "id": "day15-breakout-evaluation-v2-fire-reset",
+        "path": "configs/eval/breakout_contract_v2.json",
+        "frame_skip": 4
+      },
+      "seed_count": 15,
+      "seed_role": "selection evaluation episodes; reused for checkpoint selection",
+      "source": "Day 21 final long-training article",
+      "ref": "https://github.com/Tommyweige/breakout-rl-engineering/blob/docs-ironman-series/articles/day21-final-long-training.md",
+      "verification_status": "historical_reported",
+      "raw_artifact_status": "missing",
+      "notes": "Not a final score. The same evaluation influenced checkpoint selection, so it is reported separately from the holdout. Cross-checked against the baseline text in breakout_rl/vision_evaluation.py."
+    },
+    {
+      "id": "dqn_training_transitions",
+      "label": "DQN training transitions at the frozen checkpoint",
+      "value": 2500000,
+      "unit": "environment transitions",
+      "contract": {
+        "id": "day15-breakout-evaluation-v2-fire-reset",
+        "path": "configs/eval/breakout_contract_v2.json",
+        "frame_skip": 4
+      },
+      "seed_count": 1,
+      "seed_role": "training seed 2022",
+      "source": "web/public/models/final_model/model.onnx.metadata.json",
+      "ref": "web/public/models/final_model/model.onnx.metadata.json",
+      "verification_status": "verified",
+      "raw_artifact_status": "in_repo",
+      "notes": "The exported ONNX metadata records source_checkpoint_step 2500000 and source_stage stage_b_2_5m."
+    },
+    {
+      "id": "dqn_parameter_count",
+      "label": "Frozen DQN parameter count",
+      "value": 3292837,
+      "unit": "parameters",
+      "contract": {
+        "id": "day22-breakout-inference-v1",
+        "path": "configs/inference/inference_spec.json",
+        "frame_skip": 4
+      },
+      "seed_count": 1,
+      "seed_role": "frozen checkpoint",
+      "source": "web/public/models/final_model/model.onnx.metadata.json",
+      "ref": "web/public/models/final_model/model.onnx.metadata.json",
+      "verification_status": "verified",
+      "raw_artifact_status": "in_repo",
+      "notes": "Dueling architecture, hidden_dim 512, 4 actions, input 4x84x84."
+    },
+    {
+      "id": "onnx_fixture_actions_match",
+      "label": "ONNX fixture actions matching PyTorch",
+      "value": 60,
+      "unit": "matching actions out of 60 fixtures",
+      "contract": {
+        "id": "day22-breakout-inference-v1",
+        "path": "configs/inference/inference_spec.json",
+        "frame_skip": 4
+      },
+      "seed_count": 60,
+      "seed_role": "fixed probe states",
+      "source": "web/public/models/final_model/model.onnx.metadata.json source_model_validation",
+      "ref": "web/public/models/final_model/model.onnx.metadata.json",
+      "verification_status": "verified",
+      "raw_artifact_status": "in_repo",
+      "notes": "source_model_validation.actions_match is true and max_abs_diff_before_vs_after is 0.0."
+    },
+    {
+      "id": "onnx_max_abs_q_diff",
+      "label": "Maximum PyTorch to ONNX Q-value difference",
+      "value": 0.0,
+      "unit": "absolute Q-value difference",
+      "contract": {
+        "id": "day22-breakout-inference-v1",
+        "path": "configs/inference/inference_spec.json",
+        "frame_skip": 4
+      },
+      "seed_count": 60,
+      "seed_role": "fixed probe states",
+      "source": "web/public/models/final_model/model.onnx.metadata.json source_model_validation",
+      "ref": "web/public/models/final_model/model.onnx.metadata.json",
+      "verification_status": "verified",
+      "raw_artifact_status": "in_repo",
+      "notes": "Reported at export time; it is parity evidence, not a gameplay result."
+    },
+    {
+      "id": "onnx_model_sha256",
+      "label": "Runtime ONNX model SHA-256",
+      "value": "cf90c74b1d09d5d7e2e0c71014f2daef2b5e1833425d300da06e34d1e4ef7f12",
+      "unit": "sha256",
+      "contract": {
+        "id": "day22-breakout-inference-v1",
+        "path": "configs/inference/inference_spec.json",
+        "frame_skip": 4
+      },
+      "seed_count": 0,
+      "seed_role": "artifact",
+      "source": "web/public/web-model-manifest.json and model.onnx.metadata.json",
+      "ref": "web/public/web-model-manifest.json",
+      "verification_status": "verified",
+      "raw_artifact_status": "in_repo",
+      "notes": "The manifest and metadata agree; webAssetIntegrity tests check runtime asset hashes."
+    },
+    {
+      "id": "rgb_controller_mean_score",
+      "label": "RGB predictive controller mean",
+      "value": 137.47,
+      "unit": "raw Breakout score per episode (mean)",
+      "contract": {
+        "id": "breakout-evaluation-v3-frame-skip-1",
+        "path": "configs/eval/breakout_contract_v3.json",
+        "frame_skip": 1
+      },
+      "seed_count": 15,
+      "seed_role": "one episode per evaluation seed",
+      "source": "Merged PR #26 (issue #25), 15-seed real ALE evaluation",
+      "ref": "https://github.com/Tommyweige/breakout-rl-engineering/pull/26",
+      "verification_status": "historical_reported",
+      "raw_artifact_status": "missing",
+      "notes": "Generated outputs were ignored under outputs/ and are not in main. The controller is deterministic; there is no training seed."
+    },
+    {
+      "id": "rgb_controller_median_score",
+      "label": "RGB predictive controller median",
+      "value": 95,
+      "unit": "raw Breakout score per episode (median)",
+      "contract": {
+        "id": "breakout-evaluation-v3-frame-skip-1",
+        "path": "configs/eval/breakout_contract_v3.json",
+        "frame_skip": 1
+      },
+      "seed_count": 15,
+      "seed_role": "one episode per evaluation seed",
+      "source": "Merged PR #26 (issue #25)",
+      "ref": "https://github.com/Tommyweige/breakout-rl-engineering/pull/26",
+      "verification_status": "historical_reported",
+      "raw_artifact_status": "missing",
+      "notes": "Reported with the same 15-seed run as the mean."
+    },
+    {
+      "id": "rgb_controller_max_score",
+      "label": "RGB predictive controller maximum",
+      "value": 341,
+      "unit": "raw Breakout score per episode (maximum)",
+      "contract": {
+        "id": "breakout-evaluation-v3-frame-skip-1",
+        "path": "configs/eval/breakout_contract_v3.json",
+        "frame_skip": 1
+      },
+      "seed_count": 15,
+      "seed_role": "one episode per evaluation seed",
+      "source": "Merged PR #26 (issue #25)",
+      "ref": "https://github.com/Tommyweige/breakout-rl-engineering/pull/26",
+      "verification_status": "historical_reported",
+      "raw_artifact_status": "missing",
+      "notes": "The best single episode remains well below the 864-point clear."
+    },
+    {
+      "id": "rgb_controller_canonical_clear_detections",
+      "label": "RGB predictive controller canonical clear detections",
+      "value": 0,
+      "unit": "canonical clear detections out of 15 episodes",
+      "contract": {
+        "id": "breakout-evaluation-v3-frame-skip-1",
+        "path": "configs/eval/breakout_contract_v3.json",
+        "frame_skip": 1
+      },
+      "seed_count": 15,
+      "seed_role": "one episode per evaluation seed",
+      "source": "Merged PR #26 (issue #25)",
+      "ref": "https://github.com/Tommyweige/breakout-rl-engineering/pull/26",
+      "verification_status": "historical_reported",
+      "raw_artifact_status": "missing",
+      "notes": "Canonical detections from the audited detector. PR #26 explicitly says these are not repository verified_clears."
+    },
+    {
+      "id": "rgb_controller_ball_detection_rate",
+      "label": "RGB controller ball detection success",
+      "value": 0.893,
+      "unit": "fraction of observations",
+      "contract": {
+        "id": "breakout-evaluation-v3-frame-skip-1",
+        "path": "configs/eval/breakout_contract_v3.json",
+        "frame_skip": 1
+      },
+      "seed_count": 15,
+      "seed_role": "one episode per evaluation seed",
+      "source": "Merged PR #26 (issue #25)",
+      "ref": "https://github.com/Tommyweige/breakout-rl-engineering/pull/26",
+      "verification_status": "historical_reported",
+      "raw_artifact_status": "missing",
+      "notes": "Perception diagnostic, not a score."
+    },
+    {
+      "id": "rgb_controller_paddle_detection_rate",
+      "label": "RGB controller paddle detection success",
+      "value": 1.0,
+      "unit": "fraction of observations",
+      "contract": {
+        "id": "breakout-evaluation-v3-frame-skip-1",
+        "path": "configs/eval/breakout_contract_v3.json",
+        "frame_skip": 1
+      },
+      "seed_count": 15,
+      "seed_role": "one episode per evaluation seed",
+      "source": "Merged PR #26 (issue #25)",
+      "ref": "https://github.com/Tommyweige/breakout-rl-engineering/pull/26",
+      "verification_status": "historical_reported",
+      "raw_artifact_status": "missing",
+      "notes": "Perception diagnostic, not a score."
+    },
+    {
+      "id": "rgb_controller_latency_ms_per_frame",
+      "label": "RGB controller latency",
+      "value": 2.12,
+      "unit": "ms per controller frame",
+      "contract": {
+        "id": "breakout-evaluation-v3-frame-skip-1",
+        "path": "configs/eval/breakout_contract_v3.json",
+        "frame_skip": 1
+      },
+      "seed_count": 15,
+      "seed_role": "one episode per evaluation seed",
+      "source": "Merged PR #26 (issue #25)",
+      "ref": "https://github.com/Tommyweige/breakout-rl-engineering/pull/26",
+      "verification_status": "historical_reported",
+      "raw_artifact_status": "missing",
+      "notes": "About 2.12 ms per frame in the original run; not remeasured in this closeout."
+    },
+    {
+      "id": "reward_shaping_mean_effect",
+      "label": "Reward shaping mean effect (penalty -1.0 minus baseline)",
+      "value": 3.26,
+      "unit": "raw score mean difference",
+      "contract": {
+        "id": "day15-breakout-evaluation-v2-fire-reset",
+        "path": "configs/eval/breakout_contract_v2.json",
+        "frame_skip": 4
+      },
+      "seed_count": 3,
+      "seed_role": "training seeds 2022, 2023, 2024; 50 paired evaluation episodes each",
+      "source": "Issue #9 final resolution and Issue #10 bootstrap analysis",
+      "ref": "https://github.com/Tommyweige/breakout-rl-engineering/issues/9",
+      "verification_status": "historical_reported",
+      "raw_artifact_status": "missing",
+      "notes": "Positive point estimate but the promotion gate did not pass; the 2.5M comparison was not run."
+    },
+    {
+      "id": "reward_shaping_ci_low",
+      "label": "Reward shaping 95% interval, lower bound",
+      "value": -1.74,
+      "unit": "raw score mean difference",
+      "contract": {
+        "id": "day15-breakout-evaluation-v2-fire-reset",
+        "path": "configs/eval/breakout_contract_v2.json",
+        "frame_skip": 4
+      },
+      "seed_count": 3,
+      "seed_role": "training seeds; training-seed-level 95% bootstrap interval",
+      "source": "Issue #10 bootstrap result quoted in Issue #9",
+      "ref": "https://github.com/Tommyweige/breakout-rl-engineering/issues/10",
+      "verification_status": "historical_reported",
+      "raw_artifact_status": "missing",
+      "notes": "The interval crosses zero. A hierarchical interval was also reported as [-2.3402, 9.62]; this summary keeps the training-seed-level interval."
+    },
+    {
+      "id": "reward_shaping_ci_high",
+      "label": "Reward shaping 95% interval, upper bound",
+      "value": 9.48,
+      "unit": "raw score mean difference",
+      "contract": {
+        "id": "day15-breakout-evaluation-v2-fire-reset",
+        "path": "configs/eval/breakout_contract_v2.json",
+        "frame_skip": 4
+      },
+      "seed_count": 3,
+      "seed_role": "training seeds; training-seed-level 95% bootstrap interval",
+      "source": "Issue #10 bootstrap result quoted in Issue #9",
+      "ref": "https://github.com/Tommyweige/breakout-rl-engineering/issues/10",
+      "verification_status": "historical_reported",
+      "raw_artifact_status": "missing",
+      "notes": "Two of three training seeds had a positive mean; seed 2023 was negative. A hierarchical interval was also reported as [-2.3402, 9.62]; this summary keeps the training-seed-level interval."
+    },
+    {
+      "id": "reward_shaping_positive_training_seeds",
+      "label": "Training seeds where reward shaping had a positive mean",
+      "value": 2,
+      "unit": "training seeds out of 3",
+      "contract": {
+        "id": "day15-breakout-evaluation-v2-fire-reset",
+        "path": "configs/eval/breakout_contract_v2.json",
+        "frame_skip": 4
+      },
+      "seed_count": 3,
+      "seed_role": "training seeds 2022, 2023, 2024",
+      "source": "Issue #9 Stage 3B table",
+      "ref": "https://github.com/Tommyweige/breakout-rl-engineering/issues/9",
+      "verification_status": "historical_reported",
+      "raw_artifact_status": "missing",
+      "notes": "Not enough to promote the shaped variant."
+    },
+    {
+      "id": "per_500k_mean_score",
+      "label": "PER mean at 500K transitions",
+      "value": 19.98,
+      "unit": "raw Breakout score per episode (mean)",
+      "contract": {
+        "id": "day15-breakout-evaluation-v2-fire-reset",
+        "path": "configs/eval/breakout_contract_v2.json",
+        "frame_skip": 4
+      },
+      "seed_count": 3,
+      "seed_role": "training seeds 11, 22, 33; 15 episodes each",
+      "source": "Merged PR #16 (issue #12)",
+      "ref": "https://github.com/Tommyweige/breakout-rl-engineering/pull/16",
+      "verification_status": "historical_reported",
+      "raw_artifact_status": "missing",
+      "notes": "Compared with continuous Uniform replay at 19.31; descriptive only, n=3 training seeds."
+    },
+    {
+      "id": "uniform_500k_mean_score",
+      "label": "Uniform replay mean at 500K transitions",
+      "value": 19.31,
+      "unit": "raw Breakout score per episode (mean)",
+      "contract": {
+        "id": "day15-breakout-evaluation-v2-fire-reset",
+        "path": "configs/eval/breakout_contract_v2.json",
+        "frame_skip": 4
+      },
+      "seed_count": 3,
+      "seed_role": "training seeds 11, 22, 33; 15 episodes each",
+      "source": "Merged PR #16 (issue #12)",
+      "ref": "https://github.com/Tommyweige/breakout-rl-engineering/pull/16",
+      "verification_status": "historical_reported",
+      "raw_artifact_status": "missing",
+      "notes": "The continuous baseline was rerun because the historical Day 20 runs were incompatible staged resumes."
+    },
+    {
+      "id": "per_training_time_ratio",
+      "label": "PER training time ratio at 500K",
+      "value": 1.26,
+      "unit": "PER time / Uniform time",
+      "contract": {
+        "id": "day15-breakout-evaluation-v2-fire-reset",
+        "path": "configs/eval/breakout_contract_v2.json",
+        "frame_skip": 4
+      },
+      "seed_count": 3,
+      "seed_role": "training seeds 11, 22, 33",
+      "source": "Merged PR #16 (issue #12)",
+      "ref": "https://github.com/Tommyweige/breakout-rl-engineering/pull/16",
+      "verification_status": "historical_reported",
+      "raw_artifact_status": "missing",
+      "notes": "About 26% more cumulative training time; quality gain was +0.67 raw score."
+    },
+    {
+      "id": "laya_warm_latency_p50_ms",
+      "label": "Laya warm decision latency p50",
+      "value": 72.56,
+      "unit": "ms per decision",
+      "contract": {
+        "id": "day15-breakout-evaluation-v2-fire-reset",
+        "path": "configs/eval/breakout_contract_v2.json",
+        "frame_skip": 4
+      },
+      "seed_count": 1,
+      "seed_role": "one fixed RGB fixture, 100 warmed predictions",
+      "source": "Issue #70 measured baseline",
+      "ref": "https://github.com/Tommyweige/breakout-rl-engineering/issues/70",
+      "verification_status": "missing_raw_artifacts",
+      "raw_artifact_status": "missing",
+      "notes": "Latency only. It is not a gameplay score and must not be used to infer one."
+    },
+    {
+      "id": "laya_optimized_proxy_p50_ms",
+      "label": "Laya optimized proxy p50 range",
+      "value": "68.36-69.48",
+      "unit": "ms per request (three rounds)",
+      "contract": {
+        "id": "day15-breakout-evaluation-v2-fire-reset",
+        "path": "configs/eval/breakout_contract_v2.json",
+        "frame_skip": 4
+      },
+      "seed_count": 30,
+      "seed_role": "fixed RGB fixtures; 100 requests per round",
+      "source": "Draft PR #74 and Issue #71 measurements",
+      "ref": "https://github.com/Tommyweige/breakout-rl-engineering/pull/74",
+      "verification_status": "missing_raw_artifacts",
+      "raw_artifact_status": "missing",
+      "notes": "Endpoint measurement on a local RTX 4060; raw benchmark output remains local and ignored."
+    },
+    {
+      "id": "laya_parameter_count",
+      "label": "Laya Vision parameter count",
+      "value": "201M",
+      "unit": "parameters (reported, approximate)",
+      "contract": {
+        "id": "day15-breakout-evaluation-v2-fire-reset",
+        "path": "configs/eval/breakout_contract_v2.json",
+        "frame_skip": 4
+      },
+      "seed_count": 0,
+      "seed_role": "frozen model",
+      "source": "Issue #69 model card reference; Issue #70 loading analysis",
+      "ref": "https://github.com/Tommyweige/breakout-rl-engineering/issues/69",
+      "verification_status": "historical_reported",
+      "raw_artifact_status": "missing",
+      "notes": "Approximate published size; weights are not in the repository."
+    },
+    {
+      "id": "laya_control_diagnostic_raw_reversals",
+      "label": "Laya immediate reversal commands before the browser brake",
+      "value": 76,
+      "unit": "immediate reversal commands",
+      "contract": {
+        "id": "day15-breakout-evaluation-v2-fire-reset",
+        "path": "configs/eval/breakout_contract_v2.json",
+        "frame_skip": 4
+      },
+      "seed_count": 3,
+      "seed_role": "seeds 101, 202, 303; 80 four-frame decisions each",
+      "source": "Draft PR #74 control diagnostic",
+      "ref": "https://github.com/Tommyweige/breakout-rl-engineering/pull/74",
+      "verification_status": "missing_raw_artifacts",
+      "raw_artifact_status": "missing",
+      "notes": "Raw greedy browser control, before the one-decision brake. Not a complete episode."
+    },
+    {
+      "id": "laya_model_revision",
+      "label": "Laya checkpoint revision",
+      "value": "f2fe3c12cb6d04c59d8a190250bf3fb40fc828dc",
+      "unit": "Hugging Face revision",
+      "contract": {
+        "id": "day15-breakout-evaluation-v2-fire-reset",
+        "path": "configs/eval/breakout_contract_v2.json",
+        "frame_skip": 4
+      },
+      "seed_count": 0,
+      "seed_role": "frozen model",
+      "source": "Issue #70 pinned loader/model identity",
+      "ref": "https://github.com/Tommyweige/breakout-rl-engineering/issues/70",
+      "verification_status": "historical_reported",
+      "raw_artifact_status": "missing",
+      "notes": "Upstream code revision 9e1e2419d855ad3e1a2af4d4bd1ef6be5418842c. Weights are not in the repository."
+    },
+    {
+      "id": "laya_control_frame_skip",
+      "label": "Laya control cadence",
+      "value": 4,
+      "unit": "native ALE frames per decision",
+      "contract": {
+        "id": "day15-breakout-evaluation-v2-fire-reset",
+        "path": "configs/eval/breakout_contract_v2.json",
+        "frame_skip": 4
+      },
+      "seed_count": 0,
+      "seed_role": "frozen evaluation setting",
+      "source": "Issue #69 primary v2 setting; draft PR #74 browser loop",
+      "ref": "https://github.com/Tommyweige/breakout-rl-engineering/issues/69",
+      "verification_status": "historical_reported",
+      "raw_artifact_status": "missing",
+      "notes": "The Laya line did not change frame skip or the v2/v3 contracts."
+    },
+    {
+      "id": "laya_fixed_fixture_action_agreement",
+      "label": "Laya fixed-fixture action agreement",
+      "value": 30,
+      "unit": "matching actions out of 30 fixtures",
+      "contract": {
+        "id": "day15-breakout-evaluation-v2-fire-reset",
+        "path": "configs/eval/breakout_contract_v2.json",
+        "frame_skip": 4
+      },
+      "seed_count": 30,
+      "seed_role": "fixed RGB fixtures covering serve, collision, and life-loss boundaries",
+      "source": "Draft PR #74 hardware A/B evidence",
+      "ref": "https://github.com/Tommyweige/breakout-rl-engineering/pull/74",
+      "verification_status": "missing_raw_artifacts",
+      "raw_artifact_status": "missing",
+      "notes": "Reference vs optimized adapter; maximum rounded probability difference 0. This is parity, not gameplay quality."
+    },
+    {
+      "id": "laya_cold_start_rss_peak_mib",
+      "label": "Laya sampled cold-start RSS peak",
+      "value": 2176.45,
+      "unit": "MiB process RSS",
+      "contract": {
+        "id": "day15-breakout-evaluation-v2-fire-reset",
+        "path": "configs/eval/breakout_contract_v2.json",
+        "frame_skip": 4
+      },
+      "seed_count": 1,
+      "seed_role": "one standard loader process",
+      "source": "Issue #70 measured baseline",
+      "ref": "https://github.com/Tommyweige/breakout-rl-engineering/issues/70",
+      "verification_status": "missing_raw_artifacts",
+      "raw_artifact_status": "missing",
+      "notes": "Baseline process RSS was 517.72 MiB; the 50 ms sampler may miss the true peak."
+    },
+    {
+      "id": "laya_first_inference_rss_increase_mib",
+      "label": "Laya first-inference RSS increase",
+      "value": 664,
+      "unit": "MiB",
+      "contract": {
+        "id": "day15-breakout-evaluation-v2-fire-reset",
+        "path": "configs/eval/breakout_contract_v2.json",
+        "frame_skip": 4
+      },
+      "seed_count": 1,
+      "seed_role": "first valid CUDA prediction",
+      "source": "Issue #70 measured baseline",
+      "ref": "https://github.com/Tommyweige/breakout-rl-engineering/issues/70",
+      "verification_status": "missing_raw_artifacts",
+      "raw_artifact_status": "missing",
+      "notes": "Approximate; first-use initialization is only partially attributed."
+    },
+    {
+      "id": "laya_warm_rss_growth_mib",
+      "label": "Laya warm RSS growth",
+      "value": 0.44,
+      "unit": "MiB over 100 warmed predictions",
+      "contract": {
+        "id": "day15-breakout-evaluation-v2-fire-reset",
+        "path": "configs/eval/breakout_contract_v2.json",
+        "frame_skip": 4
+      },
+      "seed_count": 1,
+      "seed_role": "one fixed RGB fixture",
+      "source": "Issue #70 measured baseline",
+      "ref": "https://github.com/Tommyweige/breakout-rl-engineering/issues/70",
+      "verification_status": "missing_raw_artifacts",
+      "raw_artifact_status": "missing",
+      "notes": "Bounded probe; it does not exclude leaks with varying inputs or longer sessions. The optimized 1,000-request run reported RSS +0.074 MiB."
+    },
+    {
+      "id": "laya_process_cpu_peak_percent",
+      "label": "Laya process CPU peak",
+      "value": 53.58,
+      "unit": "% normalized across 16 logical CPUs",
+      "contract": {
+        "id": "day15-breakout-evaluation-v2-fire-reset",
+        "path": "configs/eval/breakout_contract_v2.json",
+        "frame_skip": 4
+      },
+      "seed_count": 1,
+      "seed_role": "one standard loader process",
+      "source": "Issue #70 measured baseline",
+      "ref": "https://github.com/Tommyweige/breakout-rl-engineering/issues/70",
+      "verification_status": "missing_raw_artifacts",
+      "raw_artifact_status": "missing",
+      "notes": "System CPU reached 100%; that activity is not all attributable to Laya."
+    },
+    {
+      "id": "laya_peak_vram_mib",
+      "label": "Laya peak VRAM",
+      "value": null,
+      "unit": "MiB",
+      "contract": {
+        "id": "day15-breakout-evaluation-v2-fire-reset",
+        "path": "configs/eval/breakout_contract_v2.json",
+        "frame_skip": 4
+      },
+      "seed_count": 0,
+      "seed_role": "not reported",
+      "source": "Issue #70 and draft PR #74",
+      "ref": "https://github.com/Tommyweige/breakout-rl-engineering/issues/70",
+      "verification_status": "not_yet_evaluated",
+      "raw_artifact_status": "missing",
+      "notes": "Peak VRAM was not reported in the reviewed records. The 1,000-request run reported no CUDA allocated/reserved change."
+    },
+    {
+      "id": "laya_control_diagnostic_reversals",
+      "label": "Laya immediate reversal commands after the browser brake",
+      "value": 10,
+      "unit": "immediate reversal commands (raw run: 76), 3 seeds x 80 decisions",
+      "contract": {
+        "id": "day15-breakout-evaluation-v2-fire-reset",
+        "path": "configs/eval/breakout_contract_v2.json",
+        "frame_skip": 4
+      },
+      "seed_count": 3,
+      "seed_role": "seeds 101, 202, 303; 80 four-frame decisions each",
+      "source": "Draft PR #74 control diagnostic",
+      "ref": "https://github.com/Tommyweige/breakout-rl-engineering/pull/74",
+      "verification_status": "missing_raw_artifacts",
+      "raw_artifact_status": "missing",
+      "notes": "320 native frames per seed, not a complete episode. Both runs totalled 2 reward; lives were [3,3,4] raw and [4,4,3] filtered. No quality or FPS claim."
+    },
+    {
+      "id": "laya_complete_episodes",
+      "label": "Laya complete seeded ALE episodes",
+      "value": 0,
+      "unit": "complete episodes",
+      "contract": {
+        "id": "day15-breakout-evaluation-v2-fire-reset",
+        "path": "configs/eval/breakout_contract_v2.json",
+        "frame_skip": 4
+      },
+      "seed_count": 0,
+      "seed_role": "none completed",
+      "source": "Draft PR #74 and Issues #69-#72",
+      "ref": "https://github.com/Tommyweige/breakout-rl-engineering/pull/74",
+      "verification_status": "not_yet_evaluated",
+      "raw_artifact_status": "missing",
+      "notes": "No complete Laya episode, score, or clear exists in the reviewed records."
+    },
+    {
+      "id": "browser_50_episode_evaluation",
+      "label": "Browser 50-episode policy evaluation",
+      "value": null,
+      "unit": "raw score (not run in this closeout)",
+      "contract": {
+        "id": "day15-breakout-evaluation-v2-fire-reset",
+        "path": "configs/eval/breakout_contract_v2.json",
+        "frame_skip": 4
+      },
+      "seed_count": 0,
+      "seed_role": "none",
+      "source": "The app exposes a 50-episode evaluation control; no committed result was found.",
+      "ref": "web/src/app/App.ts",
+      "verification_status": "not_yet_evaluated",
+      "raw_artifact_status": "missing",
+      "notes": "The closeout did not run a new large browser evaluation."
+    }
+  ],
+  "table_metric_ids": [
+    "verified_clears_recorded",
+    "dqn_final_holdout_mean",
+    "dqn_selection_mean",
+    "rgb_controller_mean_score",
+    "rgb_controller_canonical_clear_detections",
+    "rgb_controller_latency_ms_per_frame",
+    "reward_shaping_mean_effect",
+    "per_500k_mean_score",
+    "laya_warm_latency_p50_ms",
+    "laya_complete_episodes"
+  ],
+  "comparisons": [
+    {
+      "id": "dqn_vs_rgb_controller",
+      "title": "DQN (v2) vs RGB predictive controller (v3)",
+      "left": "Dueling Double DQN, Contract v2, 30.933 holdout mean",
+      "right": "Deterministic RGB controller, Contract v3, 137.47 mean",
+      "comparability": "not_directly_comparable",
+      "reason": "Contract v2 makes one decision per four emulator frames; v3 makes one per emulator frame. The evaluation seed roles and episode sets also differ. The raw scores are descriptive, not a fair ranking or a method win.",
+      "evidence": "docs/final-results/README.md#contracts-and-fairness"
+    },
+    {
+      "id": "laya_vs_dqn_v2",
+      "title": "Laya Vision vs DQN under v2",
+      "left": "Frozen Laya Vision, no complete episode",
+      "right": "Dueling Double DQN, 30.933 holdout mean",
+      "comparability": "not_yet_evaluated",
+      "reason": "No complete matched Laya evaluation exists. A 320-frame control diagnostic is not an episode and cannot be compared with a 15-episode holdout.",
+      "evidence": "https://github.com/Tommyweige/breakout-rl-engineering/pull/74"
+    },
+    {
+      "id": "reward_shaping_vs_baseline",
+      "title": "Reward shaping vs baseline",
+      "left": "Life-loss penalty -1.0, 1M transitions",
+      "right": "Penalty 0.0, 1M transitions",
+      "comparability": "descriptive_only",
+      "reason": "Same Contract v2 and paired 50-seed evaluation, but only three training seeds. The 95% interval includes zero and the promotion gate did not pass.",
+      "evidence": "https://github.com/Tommyweige/breakout-rl-engineering/issues/9"
+    },
+    {
+      "id": "per_vs_uniform",
+      "title": "PER vs Uniform replay",
+      "left": "PER, 500K transitions",
+      "right": "Continuous Uniform, 500K transitions",
+      "comparability": "descriptive_only",
+      "reason": "Three training seeds and 15 episodes per seed. The +0.67 point estimate is not statistical superiority; PER also cost 1.26x training time.",
+      "evidence": "https://github.com/Tommyweige/breakout-rl-engineering/pull/16"
+    },
+    {
+      "id": "v2_vs_v3",
+      "title": "Contract v2 vs Contract v3",
+      "left": "v2: frame_skip=4, agent step limit 27,000",
+      "right": "v3: frame_skip=1, agent step limit 108,000",
+      "comparability": "not_directly_comparable",
+      "reason": "Both use the same 108,000 ALE episode-frame limit, sticky actions, FIRE handling, and 15 seeds, but the decision cadence changes the control problem and the meaning of an agent step.",
+      "evidence": "docs/final-results/README.md#contracts-and-fairness"
+    }
+  ],
+  "experiments": [
+    {
+      "id": "day20-dqn-family",
+      "title": "DQN family comparison at 500K and 1M",
+      "method": "DQN, Double DQN, Dueling Double DQN",
+      "contract": "v2",
+      "seed_summary": "training seeds 11/22/33; 15 evaluation episodes per seed",
+      "headline": "Dueling Double DQN selected for long training (500K mean 20.178; 1M mean 36.111).",
+      "verification_status": "historical_reported",
+      "raw_artifact_status": "missing",
+      "source": "https://github.com/Tommyweige/breakout-rl-engineering/blob/docs-ironman-series/assets/day20/comparison-report.json",
+      "notes": "The archived JSON is a report, not the raw episode logs."
+    },
+    {
+      "id": "day21-final-long-training",
+      "title": "Final long training and holdout",
+      "method": "Dueling Double DQN, training seed 2022",
+      "contract": "v2",
+      "seed_summary": "2.5M transitions; 15 selection episodes and 15 holdout episodes",
+      "headline": "Selection mean 51.400; holdout mean 30.933 (median 32.000). The frozen ONNX metadata pins the 2.5M checkpoint.",
+      "verification_status": "historical_reported",
+      "raw_artifact_status": "missing",
+      "source": "https://github.com/Tommyweige/breakout-rl-engineering/blob/docs-ironman-series/articles/day21-final-long-training.md",
+      "notes": "The model artifact is in main; the raw holdout episodes are not."
+    },
+    {
+      "id": "issue-9-reward-shaping",
+      "title": "Life-loss reward shaping",
+      "method": "Dueling Double DQN with penalty 0.0 vs -1.0",
+      "contract": "v2",
+      "seed_summary": "3 training seeds; 50 paired evaluation episodes per seed",
+      "headline": "Mean effect +3.26 raw score, 95% interval [-1.74, 9.48]; promotion gate not passed; 2.5M stage not run.",
+      "verification_status": "historical_reported",
+      "raw_artifact_status": "missing",
+      "source": "https://github.com/Tommyweige/breakout-rl-engineering/issues/9",
+      "notes": "A negative/inconclusive result is part of the conclusion."
+    },
+    {
+      "id": "issue-12-per",
+      "title": "Prioritized Experience Replay vs Uniform",
+      "method": "Continuous Uniform vs PER, 500K transitions",
+      "contract": "v2",
+      "seed_summary": "3 training seeds; 15 evaluation episodes per seed",
+      "headline": "PER 19.98 vs Uniform 19.31 at 500K (+0.67), at 1.26x training time. Descriptive only.",
+      "verification_status": "historical_reported",
+      "raw_artifact_status": "missing",
+      "source": "https://github.com/Tommyweige/breakout-rl-engineering/pull/16",
+      "notes": "The historical Day 20 uniform runs were rejected as incompatible staged resumes."
+    },
+    {
+      "id": "issue-25-rgb-controller",
+      "title": "Pixel-only predictive controller",
+      "method": "RGB perception + velocity/intercept + closed-loop LEFT/RIGHT/NOOP",
+      "contract": "v3",
+      "seed_summary": "15 evaluation seeds, one episode each",
+      "headline": "0/15 canonical clear detections; mean 137.47, median 95, max 341; 2.12 ms/frame.",
+      "verification_status": "historical_reported",
+      "raw_artifact_status": "missing",
+      "source": "https://github.com/Tommyweige/breakout-rl-engineering/pull/26",
+      "notes": "Canonical detections are not repository verified_clears."
+    },
+    {
+      "id": "issue-27-to-37-vision-diagnostics",
+      "title": "Vision tracking and intercept diagnostics",
+      "method": "Ball dropout, reacquisition, intercept revision, contact probes",
+      "contract": "v3",
+      "seed_summary": "diagnostic probes, not full evaluations",
+      "headline": "Diagnostics explain tracking failure modes; they do not produce a clear or a comparable score.",
+      "verification_status": "historical_reported",
+      "raw_artifact_status": "missing",
+      "source": "https://github.com/Tommyweige/breakout-rl-engineering/issues/27",
+      "notes": "Issues #27-#37 are a diagnostic chain, not a method comparison."
+    },
+    {
+      "id": "issue-41-onnx-first-clear",
+      "title": "Frozen ONNX DQN first-clear probe",
+      "method": "Contract v2 ONNX DQN, CPU execution provider",
+      "contract": "v2",
+      "seed_summary": "seeds 101, 202, 303; one episode each",
+      "headline": "No canonical clear. Scores 73, 58, 35; all three ended game-over.",
+      "verification_status": "historical_reported",
+      "raw_artifact_status": "external_branch",
+      "source": "https://github.com/Tommyweige/breakout-rl-engineering/issues/41",
+      "notes": "Raw results and trajectory are preserved on research/issue-14-phase1."
+    },
+    {
+      "id": "issue-43-q4-smoothing",
+      "title": "Four-decision Q smoothing survival test",
+      "method": "Raw greedy vs rolling Q4",
+      "contract": "v2",
+      "seed_summary": "seeds 102, 203, 304; one episode each",
+      "headline": "Q4 reduced switching but ended 29-69% sooner and scored lower in all three pairs. No clear.",
+      "verification_status": "historical_reported",
+      "raw_artifact_status": "external_branch",
+      "source": "https://github.com/Tommyweige/breakout-rl-engineering/issues/43",
+      "notes": "Descriptive paired diagnostic; not a champion promotion."
+    },
+    {
+      "id": "issue-45-loss-window-audit",
+      "title": "Life-loss observation-window audit",
+      "method": "Raw-greedy Contract v2 ONNX DQN",
+      "contract": "v2",
+      "seed_summary": "seeds 103, 204, 305; one episode each",
+      "headline": "No verified clear. 15/15 life-loss windows captured; 12,511 ALE frames used.",
+      "verification_status": "historical_reported",
+      "raw_artifact_status": "external_branch",
+      "source": "https://github.com/Tommyweige/breakout-rl-engineering/issues/45",
+      "notes": "Observational sample; no causal failure attribution."
+    },
+    {
+      "id": "issue-48-to-61-first-clear-probes",
+      "title": "First-clear probe series",
+      "method": "Q-margin, pixel alignment, grayscale range, replay consistency, ROI reachability, detector audit",
+      "contract": "v2 (reported per issue)",
+      "seed_summary": "frozen per-issue probes; several were blocked or inconclusive",
+      "headline": "No verified clear. The series closed with INCONCLUSIVE/BLOCKED outcomes, not a method failure or success.",
+      "verification_status": "historical_reported",
+      "raw_artifact_status": "missing",
+      "source": "https://github.com/Tommyweige/breakout-rl-engineering/issues/48",
+      "notes": "See the individual issues #48, #50, #52, #54, #56, #58, #60, #61 for exact frozen criteria."
+    },
+    {
+      "id": "issue-69-laya-vision",
+      "title": "Laya Vision side experiment",
+      "method": "Frozen 201M SmolVLM-based vision decision model, FP32 CUDA, one RGB image per decision",
+      "contract": "v2 primary; v3 optional and separate",
+      "seed_summary": "no complete seeded evaluation; 3-seed x 80-decision control diagnostic only",
+      "headline": "Warm latency p50 72.56 ms; optimized proxy p50 68.36-69.48 ms; immediate reversals 76 -> 10 in the control diagnostic. No complete episode or score.",
+      "verification_status": "missing_raw_artifacts",
+      "raw_artifact_status": "missing",
+      "source": "https://github.com/Tommyweige/breakout-rl-engineering/pull/74",
+      "notes": "Pretrained on some Breakout expert data; not zero-shot. Weights are CC BY-NC-SA 4.0 and are not in the repo. PR #74 is draft."
+    },
+    {
+      "id": "day22-to-30-onnx-browser",
+      "title": "ONNX export and browser deployment",
+      "method": "PyTorch to ONNX; ONNX Runtime Web; ALE WASM",
+      "contract": "v2",
+      "seed_summary": "60 fixed probe states for parity; gameplay is interactive",
+      "headline": "60/60 fixture actions match; max Q difference 0.0; runtime model SHA is pinned. No 50-episode browser score is committed.",
+      "verification_status": "verified",
+      "raw_artifact_status": "in_repo",
+      "source": "web/public/models/final_model/model.onnx.metadata.json",
+      "notes": "Parity and artifact integrity are verified; gameplay quality is not."
+    }
+  ],
+  "non_claims": [
+    "No verified full clear, solved game, stable clear, or world record.",
+    "No claim that the RGB controller is a fair winner over DQN; v2 and v3 are not directly comparable.",
+    "No claim that reward shaping or PER produced a stable improvement.",
+    "No claim that Laya Vision is zero-shot or that its latency implies gameplay quality.",
+    "No claim that the UI difficulty label 'Unbeatable' is an experimental result.",
+    "No claim that a 50-episode browser evaluation or a complete Laya episode was run in this closeout."
+  ],
+  "links": {
+    "demo": "https://breakout.tommypan.com/",
+    "case_study": "https://breakout.tommypan.com/case-study.html",
+    "repository": "https://github.com/Tommyweige/breakout-rl-engineering",
+    "results_index": "docs/final-results/README.md",
+    "handoff": "docs/final-results/handoff.md",
+    "evidence_inventory": "docs/final-results/evidence-inventory.csv",
+    "issues": {
+      "roadmap": "https://github.com/Tommyweige/breakout-rl-engineering/issues/14",
+      "closeout": "https://github.com/Tommyweige/breakout-rl-engineering/issues/73",
+      "laya_research": "https://github.com/Tommyweige/breakout-rl-engineering/issues/69",
+      "laya_cold_start": "https://github.com/Tommyweige/breakout-rl-engineering/issues/70",
+      "laya_latency_zh": "https://github.com/Tommyweige/breakout-rl-engineering/issues/71",
+      "laya_latency_en": "https://github.com/Tommyweige/breakout-rl-engineering/issues/72",
+      "laya_pr": "https://github.com/Tommyweige/breakout-rl-engineering/pull/74"
+    },
+    "artifact_manifest": "docs/final-results/artifact-manifest.json"
+  }
+}

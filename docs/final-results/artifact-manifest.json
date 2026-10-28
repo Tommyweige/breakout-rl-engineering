@@ -1,0 +1,177 @@
+{
+  "schema_version": 1,
+  "artifact_type": "breakout_closeout_artifact_manifest",
+  "frozen_at": "2026-10-28",
+  "policy": "Raw run artifacts are intentionally not committed to main. This manifest records the expected path, producer, status, and hash so a future archive or Release can be checked against the evidence index. No missing file is fabricated or implied to exist.",
+  "artifacts": [
+    {
+      "id": "dqn-final-holdout-episodes",
+      "kind": "per_episode_csv",
+      "path": "outputs/day21-final-long-training/holdout/episodes.csv",
+      "producer": "scripts/evaluation/evaluate_dqn.py",
+      "status": "missing",
+      "sha256": null,
+      "expected_columns": [
+        "seed",
+        "episode",
+        "raw_score",
+        "ale_emulator_frames",
+        "agent_steps",
+        "lives_lost",
+        "stop_reason",
+        "cleared",
+        "clear_emulator_frame"
+      ],
+      "source_record": "https://github.com/Tommyweige/breakout-rl-engineering/blob/docs-ironman-series/articles/day21-final-long-training.md"
+    },
+    {
+      "id": "rgb-controller-episodes",
+      "kind": "per_episode_csv",
+      "path": "outputs/issue25-vision-controller/episodes.csv",
+      "producer": "scripts/evaluation/evaluate_predictive_controller.py",
+      "status": "missing",
+      "sha256": null,
+      "expected_columns": [
+        "seed",
+        "raw_score",
+        "ale_emulator_frames",
+        "agent_steps",
+        "lives_lost",
+        "stop_reason",
+        "canonical_clear",
+        "clear_emulator_frame"
+      ],
+      "source_record": "https://github.com/Tommyweige/breakout-rl-engineering/pull/26"
+    },
+    {
+      "id": "rgb-controller-summary",
+      "kind": "summary_json",
+      "path": "outputs/issue25-vision-controller/results.json",
+      "producer": "scripts/evaluation/evaluate_predictive_controller.py",
+      "status": "missing",
+      "sha256": null,
+      "expected_fields": [
+        "contract_id",
+        "seeds",
+        "mean_score",
+        "median_score",
+        "max_score",
+        "canonical_clear_count",
+        "ball_detection_success_rate",
+        "paddle_detection_success_rate",
+        "latency_ms_per_frame"
+      ],
+      "source_record": "https://github.com/Tommyweige/breakout-rl-engineering/pull/26"
+    },
+    {
+      "id": "reward-shaping-comparison",
+      "kind": "comparison_report",
+      "path": "experiments/issue-9-reward-shaping/stage3b/comparison.json",
+      "producer": "scripts/analysis/summarize_reward_shaping_multiseed.py",
+      "status": "missing",
+      "sha256": null,
+      "source_record": "https://github.com/Tommyweige/breakout-rl-engineering/issues/9"
+    },
+    {
+      "id": "per-comparison",
+      "kind": "comparison_report",
+      "path": "experiments/per/comparison.json",
+      "producer": "scripts/analysis/compare_per_experiment.py",
+      "status": "missing",
+      "sha256": null,
+      "source_record": "https://github.com/Tommyweige/breakout-rl-engineering/pull/16"
+    },
+    {
+      "id": "laya-complete-episode",
+      "kind": "per_episode_json",
+      "path": "evaluations/issue69-laya-vision/episodes.json",
+      "producer": "scripts/evaluation/evaluate_laya_vision.py (draft PR #74, not on main)",
+      "status": "not_created",
+      "sha256": null,
+      "expected_fields": [
+        "seed",
+        "contract_id",
+        "model_revision",
+        "raw_score",
+        "ale_emulator_frames",
+        "agent_decisions",
+        "lives_lost",
+        "stop_reason",
+        "canonical_clear"
+      ],
+      "source_record": "https://github.com/Tommyweige/breakout-rl-engineering/pull/74"
+    },
+    {
+      "id": "laya-benchmark-trace",
+      "kind": "benchmark_json",
+      "path": "evaluations/issue71-laya-latency/benchmark.json",
+      "producer": "scripts/benchmarks/ (draft PR #74, not on main)",
+      "status": "not_created",
+      "sha256": null,
+      "source_record": "https://github.com/Tommyweige/breakout-rl-engineering/pull/74"
+    },
+    {
+      "id": "issue-41-first-clear-artifacts",
+      "kind": "branch_archive",
+      "path": "research/issue-41-onnx-dqn-clear-report.md",
+      "producer": "research/issue-14-phase1 branch",
+      "status": "external_branch",
+      "sha256": null,
+      "source_record": "https://github.com/Tommyweige/breakout-rl-engineering/issues/41"
+    },
+    {
+      "id": "issue-43-q4-artifacts",
+      "kind": "branch_archive",
+      "path": "research/issue-43-q4-smoothing-report.md",
+      "producer": "research/issue-14-phase1 branch",
+      "status": "external_branch",
+      "sha256": null,
+      "source_record": "https://github.com/Tommyweige/breakout-rl-engineering/issues/43"
+    },
+    {
+      "id": "issue-45-loss-window-artifacts",
+      "kind": "branch_archive",
+      "path": "outputs/issue-45-loss-window-audit/",
+      "producer": "research/issue-14-phase1 branch",
+      "status": "external_branch",
+      "sha256": null,
+      "source_record": "https://github.com/Tommyweige/breakout-rl-engineering/issues/45"
+    },
+    {
+      "id": "completion-audit-config",
+      "kind": "config",
+      "path": "configs/eval/breakout_completion_audit_v1.json",
+      "producer": "repository",
+      "status": "in_repo",
+      "sha256": "43d431e77a4a3b60dd720933ee399767d456a6c633ee93aab7265d92e4f1b64b",
+      "source_record": "configs/eval/breakout_completion_audit_v1.json"
+    },
+    {
+      "id": "frozen-onnx-model",
+      "kind": "model",
+      "path": "web/public/models/final_model/model.onnx",
+      "producer": "scripts.deployment.export_onnx (recorded in metadata)",
+      "status": "in_repo",
+      "sha256": "cf90c74b1d09d5d7e2e0c71014f2daef2b5e1833425d300da06e34d1e4ef7f12",
+      "source_record": "web/public/models/final_model/model.onnx.metadata.json"
+    },
+    {
+      "id": "case-study-recording",
+      "kind": "video",
+      "path": "web/public/case-study/gameplay.mp4",
+      "producer": "web/scripts/capture-case-study.mjs",
+      "status": "in_repo",
+      "sha256": "1df6d8ac93a4b3616948f202fdb2c1506894354bb9fd31f83eb32a296c1ab65b",
+      "source_record": "docs/final-results/README.md#re-capturing-the-real-gameplay-media"
+    },
+    {
+      "id": "case-study-poster",
+      "kind": "image",
+      "path": "web/public/case-study/gameplay-poster.png",
+      "producer": "web/scripts/capture-case-study.mjs",
+      "status": "in_repo",
+      "sha256": "c815953080759387b2c28cc81b5d05d6e3f09a2dd702055e9ddd5f7aeeffd8dd",
+      "source_record": "docs/final-results/README.md#re-capturing-the-real-gameplay-media"
+    }
+  ]
+}

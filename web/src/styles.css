@@ -64,6 +64,11 @@ h1, h2, p { margin-top: 0; }
 h1 { margin-bottom: 22px; color: var(--text); font: 800 clamp(4rem, 9vw, 9rem)/0.82 var(--display); letter-spacing: -0.07em; text-transform: uppercase; }
 h1 span { color: var(--blue); }
 .subtitle { max-width: 700px; margin-bottom: 0; color: var(--muted); font-size: clamp(1rem, 1.45vw, 1.2rem); line-height: 1.7; }
+.case-study-link { display: inline-flex; align-items: center; gap: 8px; margin-top: 18px; padding-bottom: 3px; color: var(--lime); border-bottom: 1px solid rgba(215, 255, 95, 0.35); font: 750 0.68rem/1.3 var(--mono); letter-spacing: 0.08em; text-decoration: none; text-transform: uppercase; }
+.case-study-link:hover { color: #efffb6; border-color: var(--lime); }
+.page-foot a { color: var(--lime); text-decoration: none; }
+.page-foot a:hover { color: #efffb6; }
+.page-foot .case-study-link { margin-top: 0; border-bottom: 0; }
 .hero-note { display: grid; grid-template-columns: auto 1fr; gap: 13px; min-width: 250px; max-width: 310px; padding: 17px 0 0; border-top: 2px solid var(--coral); }
 .hero-note-mark { color: var(--coral); font: 800 0.72rem/1 var(--mono); }
 .hero-note p { margin: 0; color: var(--muted); font-size: 0.9rem; line-height: 1.55; }

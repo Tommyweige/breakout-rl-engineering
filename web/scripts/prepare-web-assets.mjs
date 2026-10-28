@@ -8,15 +8,18 @@ const repositoryRoot = resolve(webRoot, '..');
 const alePackage = resolve(webRoot, 'node_modules/@farama/ale-wasm');
 const alePublicDirectory = resolve(webRoot, 'public/ale');
 const contractPublicPath = resolve(webRoot, 'public/configs/eval/breakout_contract_v2.json');
+const finalResultsPublicPath = resolve(webRoot, 'public/final-results/summary.json');
 const alePackageMetadata = JSON.parse(await readFile(resolve(alePackage, 'package.json'), 'utf8'));
 
 await mkdir(alePublicDirectory, { recursive: true });
 await mkdir(dirname(contractPublicPath), { recursive: true });
+await mkdir(dirname(finalResultsPublicPath), { recursive: true });
 await Promise.all([
   copyFile(resolve(alePackage, 'ale.js'), resolve(alePublicDirectory, 'ale.js')),
   copyFile(resolve(alePackage, 'ale.wasm'), resolve(alePublicDirectory, 'ale.wasm')),
   copyFile(resolve(alePackage, 'ale.data'), resolve(alePublicDirectory, 'ale.data')),
   copyFile(resolve(repositoryRoot, 'configs/eval/breakout_contract_v2.json'), contractPublicPath),
+  copyFile(resolve(repositoryRoot, 'docs/final-results/summary.json'), finalResultsPublicPath),
 ]);
 
 await writeFile(
