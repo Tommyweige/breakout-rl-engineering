@@ -1214,7 +1214,7 @@
   ],
   "links": {
     "demo": "https://breakout.tommypan.com/",
-    "case_study": "https://breakout.tommypan.com/case-study.html",
+    "case_study": "https://breakout.tommypan.com/case-study",
     "repository": "https://github.com/Tommyweige/breakout-rl-engineering",
     "results_index": "docs/final-results/README.md",
     "handoff": "docs/final-results/handoff.md",

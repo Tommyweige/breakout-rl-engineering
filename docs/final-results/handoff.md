@@ -7,7 +7,7 @@
 ## 1. What this closeout changed
 
 - Added the audited results index in [`README.md`](README.md), the machine-readable [`summary.json`](summary.json), the experiment ledger [`evidence-inventory.csv`](evidence-inventory.csv), and this handoff.
-- Added an independent, directly linkable web page at `/case-study.html` in the browser app, with a prominent entry from the game page.
+- Added an independent, directly linkable web page at `/case-study` in the browser app (`web/case-study.html`), with a prominent entry from the game page.
 - Added a rerunnable capture script for real gameplay screenshots/video under `web/scripts/capture-case-study.mjs`.
 - Added schema/provenance/link checks in `tests/test_final_results_summary.py` and web render tests.
 - Updated `README.md` and `README.zh-TW.md` with a frozen-status summary, key findings, reproducibility commands, and case-study/demo/evidence links.
@@ -109,7 +109,7 @@ Not attempted. No world-record, "solved", or human-comparable claim is supported
 1. `cd web && npm ci`
 2. `npm test`
 3. `npm run build`
-4. Serve `web/dist` and verify `/`, `/case-study.html`, `/final-results/summary.json`, the video, and the poster return 200.
+4. Serve `web/dist` and verify `/` and `/case-study` return 200; `/case-study.html` returns a one-hop 308 to `/case-study`; `/results` returns a one-hop 301 to `/case-study`; `/final-results/summary.json`, the video, and the poster return 200.
 5. Verify the case-study page at 1440 px and 390x844, keyboard-only, and `prefers-reduced-motion: reduce`.
 6. Verify the game page still starts both games, switches difficulty, pauses, resets, and opens the case study.
 7. Deploy through the existing Cloudflare Pages workflow only after human review.
@@ -127,7 +127,7 @@ The personal-site repository was not accessed or modified. If the site owner wan
 > **Breakout RL Engineering — frozen evidence closeout.** A DQN family, a deterministic RGB predictive controller, and a frozen Laya Vision side experiment, compared only where their contracts allow. No verified full clear was recorded. The closeout publishes the contracts, metrics, provenance, and limitations instead of claiming a win.
 >
 > Results: <https://github.com/Tommyweige/breakout-rl-engineering/blob/main/docs/final-results/README.md>
-> Case study: <https://breakout.tommypan.com/case-study.html>
+> Case study: <https://breakout.tommypan.com/case-study>
 > Play: <https://breakout.tommypan.com/>
 
 Suggested section labels: `Research question`, `What was built`, `What the evidence supports`, `What is still open`. Do not use "solved", "unbeatable", "world record", or "fair winner" in the project card. "Unbeatable" is only the UI difficulty label.

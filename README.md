@@ -1,12 +1,12 @@
 # Breakout RL Engineering
 
-[繁體中文](README.zh-TW.md) · [Live Demo](https://breakout.tommypan.com) · [Case Study](https://breakout.tommypan.com/case-study.html) · [Final Results](docs/final-results/README.md) · [30-Day Ironman Series](https://github.com/Tommyweige/breakout-rl-engineering/tree/docs-ironman-series/docs)
+[繁體中文](README.zh-TW.md) · [Live Demo](https://breakout.tommypan.com) · [Case Study](https://breakout.tommypan.com/case-study) · [Final Results](docs/final-results/README.md) · [30-Day Ironman Series](https://github.com/Tommyweige/breakout-rl-engineering/tree/docs-ironman-series/docs)
 
 An end-to-end reinforcement learning engineering project for Atari Breakout, covering DQN training, reproducible evaluation, CUDA-accelerated workflows, ONNX inference, and browser deployment.
 
 The final application runs both the Atari environment and the trained RL policy directly in the browser, without a Python backend.
 
-> **Project status: frozen evidence closeout (2026-10-28).** This repository is a completed engineering case study, not an active training campaign. **No verified full clear has been recorded.** Contracts, metrics, provenance, and limitations are indexed in [`docs/final-results/`](docs/final-results/README.md); the public narrative is the [interactive case study](https://breakout.tommypan.com/case-study.html).
+> **Project status: frozen evidence closeout (2026-10-28).** This repository is a completed engineering case study, not an active training campaign. **No verified full clear has been recorded.** Contracts, metrics, provenance, and limitations are indexed in [`docs/final-results/`](docs/final-results/README.md); the public narrative is the [interactive case study](https://breakout.tommypan.com/case-study).
 
 ## Key Findings
 
@@ -180,7 +180,7 @@ actions may repeat a previous action; the physical action resolved by ALE is not
 
 **Live:** https://breakout.tommypan.com
 
-**Research results:** https://breakout.tommypan.com/case-study.html
+**Research results:** https://breakout.tommypan.com/case-study
 
 The case-study page is an independent, directly linkable summary of the research question, method evolution, contracts, results, and limitations. The game page links to it without changing the Human vs AI gameplay surface.
 

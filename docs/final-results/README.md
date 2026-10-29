@@ -2,7 +2,7 @@
 
 **Status: frozen evidence closeout, 2026-10-28; Laya live browser session added 2026-10-29.** This is an audited index of what the project can and cannot support. It is not a new training campaign and it does not claim that Breakout was solved.
 
-- **Interactive case study:** <https://breakout.tommypan.com/case-study.html>
+- **Interactive case study:** <https://breakout.tommypan.com/case-study>
 - **Playable demo:** <https://breakout.tommypan.com/>
 - **Machine-readable summary:** [`summary.json`](summary.json)
 - **Experiment inventory:** [`evidence-inventory.csv`](evidence-inventory.csv)

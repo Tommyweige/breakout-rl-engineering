@@ -20,7 +20,7 @@ function renderMasthead(): string {
       <div class="hero">
         <div class="hero-copy">
           <h1>BREAKOUT</h1>
-          <a class="case-study-link" href="/case-study.html">
+          <a class="case-study-link" href="/case-study">
             <span>Research results</span>
             <span aria-hidden="true">→</span>
           </a>
@@ -241,7 +241,7 @@ function renderTechnicalDetails(): string {
 }
 
 function renderFooter(): string {
-  return '<footer class="page-foot"><span>BREAKOUT</span><a class="case-study-link" href="/case-study.html">Research results</a></footer>';
+  return '<footer class="page-foot"><span>BREAKOUT</span><a class="case-study-link" href="/case-study">Research results</a></footer>';
 }
 
 export function renderQValuesMarkup(result: FixtureValidationResult): string {

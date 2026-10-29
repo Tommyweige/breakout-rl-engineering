@@ -1,12 +1,12 @@
 # Breakout RL Engineering
 
-[English](README.md) · [線上 Demo](https://breakout.tommypan.com) · [Case Study](https://breakout.tommypan.com/case-study.html) · [最終結果](docs/final-results/README.md) · [30 天鐵人賽文章](https://github.com/Tommyweige/breakout-rl-engineering/tree/docs-ironman-series/docs)
+[English](README.md) · [線上 Demo](https://breakout.tommypan.com) · [Case Study](https://breakout.tommypan.com/case-study) · [最終結果](docs/final-results/README.md) · [30 天鐵人賽文章](https://github.com/Tommyweige/breakout-rl-engineering/tree/docs-ironman-series/docs)
 
 這是一個以 Atari Breakout 為主題的端到端強化學習工程專案，涵蓋 DQN 訓練、可重現評估、CUDA 加速、ONNX 推論，以及瀏覽器部署。
 
 最終應用會直接在瀏覽器中執行 Atari 環境與訓練完成的 RL policy，不需要 Python backend。
 
-> **專案狀態：證據收尾凍結（2026-10-28）。** 這是一個已完成的工程案例，不是持續進行的訓練計畫。**目前沒有記錄任何 verified full clear。** Contract、指標、provenance 與限制都整理在 [`docs/final-results/`](docs/final-results/README.md)；對外敘事入口是 [互動式 case study](https://breakout.tommypan.com/case-study.html)。
+> **專案狀態：證據收尾凍結（2026-10-28）。** 這是一個已完成的工程案例，不是持續進行的訓練計畫。**目前沒有記錄任何 verified full clear。** Contract、指標、provenance 與限制都整理在 [`docs/final-results/`](docs/final-results/README.md)；對外敘事入口是 [互動式 case study](https://breakout.tommypan.com/case-study)。
 
 ## 重點發現
 
@@ -174,7 +174,7 @@ python -m scripts.evaluation.evaluate_predictive_controller \
 
 **線上版本：** https://breakout.tommypan.com
 
-**研究結果：** https://breakout.tommypan.com/case-study.html
+**研究結果：** https://breakout.tommypan.com/case-study
 
 Case-study 頁面是獨立、可直接連結的研究問題、方法演進、contract、結果與限制摘要。主遊戲頁可以明顯進入該頁，且不改變 Human vs AI 遊玩介面。
 

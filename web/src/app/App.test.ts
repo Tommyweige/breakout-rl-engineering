@@ -95,7 +95,7 @@ describe('Day 30 Human vs AI browser product', () => {
     expect(root.querySelector('[data-action="reset"]')).not.toBeNull();
     expect(root.querySelector('[data-action="input-mode"]')).not.toBeNull();
     expect(root.querySelector('[data-action="difficulty"]')).not.toBeNull();
-    expect(root.querySelector<HTMLAnchorElement>('a[href="/case-study.html"]')?.textContent).toContain('Research results');
+    expect(root.querySelector<HTMLAnchorElement>('a[href="/case-study"]')?.textContent).toContain('Research results');
     expect((root.querySelector('[data-action="difficulty"]') as HTMLSelectElement).value).toBe('hard');
     expect(root.querySelector('[data-role="technical-details"]')).toBeNull();
   });

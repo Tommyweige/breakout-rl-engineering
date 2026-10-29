@@ -241,6 +241,10 @@ class FinalResultsSummaryTests(unittest.TestCase):
         self.assertIn('lang="en"', html)
         self.assertIn('/src/case-study/main.ts', html)
         self.assertIn('rel="canonical"', html)
+        self.assertIn(
+            'rel="canonical" href="https://breakout.tommypan.com/case-study"',
+            html,
+        )
 
         for asset in (
             ROOT / "web" / "public" / "case-study" / "gameplay.mp4",
@@ -248,6 +252,22 @@ class FinalResultsSummaryTests(unittest.TestCase):
         ):
             self.assertTrue(asset.is_file(), asset)
             self.assertGreater(asset.stat().st_size, 0, asset)
+
+    def test_case_study_routes_do_not_loop_on_cloudflare_pages(self) -> None:
+        redirects = (ROOT / "web" / "public" / "_redirects").read_text(encoding="utf-8")
+        self.assertNotRegex(redirects, r"(?m)^/case-study\s+/case-study\.html\b")
+        self.assertNotRegex(redirects, r"(?m)^/results\s+/case-study\.html\b")
+        self.assertIn("/results /case-study 301", redirects)
+        self.assertIn("case-study.zh-TW", redirects)
+
+        view = (ROOT / "web" / "src" / "app" / "view.ts").read_text(encoding="utf-8")
+        self.assertIn('href="/case-study"', view)
+        self.assertNotIn('href="/case-study.html"', view)
+        self.assertTrue(
+            self.summary["links"]["case_study"].endswith("/case-study"),
+            self.summary["links"]["case_study"],
+        )
+        self.assertNotIn("/case-study.html", self.summary["links"]["case_study"])
 
     def test_case_study_does_not_hard_code_headline_results(self) -> None:
         renderer = ROOT / "web" / "src" / "case-study" / "renderCaseStudy.ts"

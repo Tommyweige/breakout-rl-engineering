@@ -1,2 +1,5 @@
-/case-study /case-study.html 200
-/results /case-study.html 200
+# Cloudflare Pages pretty URLs serve case-study.html at /case-study.
+# Do not rewrite a clean path back to .html: Pages 308s .html -> clean,
+# so /case-study -> /case-study.html would loop. The future
+# case-study.zh-TW.html is served at /case-study.zh-TW and needs no rule.
+/results /case-study 301
