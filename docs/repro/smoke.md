@@ -32,43 +32,44 @@ frames across 15 episodes in the verified run).
 
 ## Verified output
 
-From a clean clone at commit `5c8db3b` (the review-branch commit used for this
-run; the merge commit will have a different SHA):
+From a clean clone at commit `b39294d` (the review-branch commit used for this
+run; later documentation-only commits do not change the smoke behavior, and
+the merge commit will have a different SHA):
 
 ```text
 $ python -m scripts.smoke.run_smoke --output-dir outputs/smoke
 
 Breakout RL reproducibility smoke
-  repository: /tmp/breakout-clean-room
-  commit:     5c8db3b9eed4b4a6a531e4f9d1bfbbedd53239df
-  describe:   day9-216-g5c8db3b
+  repository: /tmp/breakout-accept
+  commit:     b39294d6c6c4efad0c5d822d26df5b1c7f08847a
+  describe:   day9-217-gb39294d
   python:     3.12.15 (Linux-...-aarch64-with-glibc2.34)
 
 [1/2] Unit tests
-Discovered 315 tests under /tmp/breakout-clean-room/tests
+Discovered 315 tests under /tmp/breakout-accept/tests
 ...
-Ran 315 tests in 23.911s
+Ran 315 tests in 24.9s
 
 FAILED (failures=1, errors=12, skipped=8)
 
 Known pre-existing failures on main: 13
   - test_evaluation: ImportError: scripts.analysis.generate_dqn_milestone_report ...
   ...
-Unit tests: PASSED (294 passed, 8 skipped, 13 failed in 23.9s)
+Unit tests: PASSED (294 passed, 8 skipped, 13 failed in 24.9s)
 
 [2/2] End-to-end smoke: 400 training steps + one 15-episode evaluation
 ...
-Training:   PASS in 59.2s (400 agent steps, 1597 emulator frames)
-Evaluation: PASS in 31.3s (15 episodes, mean return 0.733, 8421 emulator frames)
-Artifacts:  /tmp/breakout-clean-room/outputs/smoke/smoke-20261029T073903Z
-Manifest:   /tmp/breakout-clean-room/outputs/smoke/smoke-20261029T073903Z/smoke-manifest.json
+Training:   PASS in 38.2s (400 agent steps, 1597 emulator frames)
+Evaluation: PASS in 44.6s (15 episodes, mean return 0.733, 8421 emulator frames)
+Artifacts:  /tmp/breakout-accept/outputs/smoke/smoke-20261029T075301Z
+Manifest:   /tmp/breakout-accept/outputs/smoke/smoke-20261029T075301Z/smoke-manifest.json
 
-Smoke: PASS in 116.6s
+Smoke: PASS in 109.9s
 ```
 
-The total was 116.6 seconds on a 4-vCPU ARM host. Another run on the same host
-took 143.5 seconds while the machine was busier. Allow about five minutes on a
-slow CI runner.
+The total was 109.9 seconds on a 4-vCPU ARM host. Earlier runs on the same host
+took 116.6 and 143.5 seconds while the machine was busier. Allow about five
+minutes on a slow CI runner.
 
 ## What it asserts
 
@@ -159,8 +160,8 @@ The manifest is the machine-readable record for the run:
 ```json
 {
   "repository": {
-    "commit": "5c8db3b9eed4b4a6a531e4f9d1bfbbedd53239df",
-    "describe": "day9-216-g5c8db3b",
+    "commit": "b39294d6c6c4efad0c5d822d26df5b1c7f08847a",
+    "describe": "day9-217-gb39294d",
     "dirty": false
   },
   "packages": {"torch": "2.13.0+cpu", "ale-py": "0.12.0", "...": "..."},

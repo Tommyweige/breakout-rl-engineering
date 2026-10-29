@@ -39,10 +39,10 @@ unit tests, trains for 400 agent steps, and evaluates the checkpoint on the 15
 concrete seeds pinned by Breakout Contract v2. A passing run ends with:
 
 ```text
-Unit tests: PASSED (294 passed, 8 skipped, 13 failed in 23.9s)
-Training:   PASS in 59.2s (400 agent steps, 1597 emulator frames)
-Evaluation: PASS in 31.3s (15 episodes, mean return 0.733, 8421 emulator frames)
-Smoke: PASS in 116.6s
+Unit tests: PASSED (294 passed, 8 skipped, 13 failed in 24.9s)
+Training:   PASS in 38.2s (400 agent steps, 1597 emulator frames)
+Evaluation: PASS in 44.6s (15 episodes, mean return 0.733, 8421 emulator frames)
+Smoke: PASS in 109.9s
 ```
 
 The 13 failures are pre-existing on `main`, not caused by the smoke run. They
