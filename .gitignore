@@ -18,7 +18,10 @@ runs/
 outputs/
 
 # Historical material belongs on docs/archive branches, not main.
-docs/
+# Exceptions: the audited closeout index (issue #73) and published writing drafts.
+docs/*
+!docs/final-results/
+!docs/writing/
 assets/
 experiments/
 evaluations/
