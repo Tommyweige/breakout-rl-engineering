@@ -147,6 +147,28 @@ code {
   text-transform: uppercase;
 }
 
+.cs-header-right {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.cs-lang {
+  padding: 6px 10px;
+  color: var(--text);
+  border: 1px solid var(--line-strong);
+  font: 750 0.7rem/1.3 var(--mono);
+  letter-spacing: 0.08em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.cs-lang:hover {
+  color: var(--ink);
+  background: var(--lime);
+  border-color: var(--lime);
+}
+
 .cs-nav a {
   color: var(--muted);
   text-decoration: none;
@@ -449,6 +471,13 @@ main {
   font: 800 clamp(2rem, 4vw, 3.5rem) / 0.92 var(--display);
   letter-spacing: -0.045em;
   text-transform: uppercase;
+  text-wrap: balance;
+}
+
+:lang(zh) .cs-section h2,
+:lang(zh) .cs-cta h2 {
+  line-height: 1.08;
+  letter-spacing: -0.01em;
 }
 
 .cs-section-intro {
@@ -662,6 +691,11 @@ main {
   color: var(--muted);
   font-size: 0.78rem;
   line-height: 1.5;
+}
+
+.cs-table[data-role="results-table"] thead th:last-child,
+.cs-table[data-role="results-table"] tbody td:last-child {
+  white-space: nowrap;
 }
 
 .cs-table td a {
@@ -889,6 +923,7 @@ main {
   font: 800 clamp(1.9rem, 4vw, 3.2rem) / 0.95 var(--display);
   letter-spacing: -0.04em;
   text-transform: uppercase;
+  text-wrap: balance;
 }
 
 .cs-cta p {
@@ -994,6 +1029,11 @@ main {
     align-items: flex-start;
     flex-direction: column;
     gap: 12px;
+  }
+
+  .cs-header-right {
+    justify-content: space-between;
+    width: 100%;
   }
 
   .cs-nav {

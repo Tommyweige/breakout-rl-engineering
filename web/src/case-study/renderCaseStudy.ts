@@ -1,3 +1,5 @@
+import { CASE_STUDY_COPY, type CaseStudyCopy, type Locale } from './content';
+
 export type VerificationStatus =
   | 'verified'
   | 'historical_reported'
@@ -15,7 +17,7 @@ export interface SummaryContractRef {
 export interface SummaryMetric {
   id: string;
   label: string;
-  value: number | string | null;
+  value: number | string | boolean | null;
   unit: string;
   contract: SummaryContractRef;
   seed_count: number;
@@ -96,22 +98,8 @@ export interface FinalResultsSummary {
   };
 }
 
-const STATUS_LABELS: Record<VerificationStatus, string> = {
-  verified: 'Verified',
-  historical_reported: 'Historical reported',
-  missing_raw_artifacts: 'Missing raw artifacts',
-  not_yet_evaluated: 'Not yet evaluated',
-};
-
-const STATUS_DESCRIPTIONS: Record<VerificationStatus, string> = {
-  verified: 'Checked against an artifact in this repository or a rerunnable command.',
-  historical_reported: 'Reported in a merged PR, issue, or archived article; raw run output is not in main.',
-  missing_raw_artifacts: 'Described, but the raw episodes, logs, or weights needed to audit it are unavailable.',
-  not_yet_evaluated: 'No completed evaluation exists for this claim.',
-};
-
 const GITHUB_BLOB = 'https://github.com/Tommyweige/breakout-rl-engineering/blob/main/';
-const GITHUB_TREE = 'https://github.com/Tommyweige/breakout-rl-engineering/tree/main/';
+const TOKEN_PATTERN = /\{\{(metric|contract|seeds):([A-Za-z0-9_.-]+)\}\}/g;
 
 function escapeHtml(value: string): string {
   return value
@@ -123,15 +111,15 @@ function escapeHtml(value: string): string {
 }
 
 function metricSpan(id: string, fallback = '—'): string {
-  return `<span data-metric-id="${escapeHtml(id)}">${fallback}</span>`;
+  return `<span data-metric-id="${escapeHtml(id)}">${escapeHtml(fallback)}</span>`;
 }
 
-function statusChip(status: VerificationStatus, label = STATUS_LABELS[status]): string {
-  return `<span class="cs-status" data-status="${status}">${escapeHtml(label)}</span>`;
+function statusChip(status: VerificationStatus, copy: CaseStudyCopy): string {
+  return `<span class="cs-status" data-status="${status}">${escapeHtml(copy.status.labels[status])}</span>`;
 }
 
-function statusForKey(key: string): string {
-  return `<span class="cs-status" data-status-for="${escapeHtml(key)}">Loading…</span>`;
+function statusForKey(id: string, copy: CaseStudyCopy): string {
+  return `<span class="cs-status" data-status-for="${escapeHtml(id)}">${escapeHtml(copy.common.loading)}</span>`;
 }
 
 function externalLink(href: string, label: string, className = ''): string {
@@ -140,56 +128,68 @@ function externalLink(href: string, label: string, className = ''): string {
 }
 
 function cardMetric(
-  id: string,
-  label: string,
-  note: string,
-  suffix = '',
+  card: CaseStudyCopy['metricCards'][number],
+  copy: CaseStudyCopy,
 ): string {
   return `
     <article class="cs-metric-card">
-      <p class="cs-metric-label">${escapeHtml(label)}</p>
-      <p class="cs-metric-value">${metricSpan(id)}${suffix ? `<small>${escapeHtml(suffix)}</small>` : ''}</p>
-      <p class="cs-metric-note">${escapeHtml(note)}</p>
-      ${statusForKey(id)}
+      <p class="cs-metric-label">${escapeHtml(card.label)}</p>
+      <p class="cs-metric-value">${metricSpan(card.metricId)}</p>
+      <p class="cs-metric-note">${renderCopy(card.note, copy)}</p>
+      ${statusForKey(card.metricId, copy)}
     </article>
   `;
 }
 
-export function renderCaseStudyShell(): string {
+export function renderCopy(template: string, copy: CaseStudyCopy): string {
+  return template.replace(TOKEN_PATTERN, (_match, kind: string, id: string) => {
+    if (kind === 'metric') return metricSpan(id, copy.common.missingMetric);
+    if (kind === 'seeds') {
+      return `<span data-seed-count-id="${escapeHtml(id)}">${escapeHtml(copy.common.missingMetric)}</span>`;
+    }
+    return `<span data-contract-field="${escapeHtml(id)}">${escapeHtml(copy.common.missingMetric)}</span>`;
+  });
+}
+
+export function renderCaseStudyShell(locale: Locale): string {
+  const copy = CASE_STUDY_COPY[locale];
+
   return `
     <header class="cs-header">
-      <a class="cs-brand" href="/" aria-label="Breakout RL home">
-        <span class="cs-brand-mark">BREAKOUT</span>
-        <span class="cs-brand-sub">RESEARCH RESULTS</span>
+      <a class="cs-brand" href="/" aria-label="${escapeHtml(copy.header.brandHomeLabel)}">
+        <span class="cs-brand-mark">${escapeHtml(copy.header.brandMark)}</span>
+        <span class="cs-brand-sub">${escapeHtml(copy.header.brandSub)}</span>
       </a>
-      <nav class="cs-nav" aria-label="Primary">
-        <a href="/">Play demo</a>
-        <a href="#evidence">Evidence</a>
-        <a href="https://github.com/Tommyweige/breakout-rl-engineering" target="_blank" rel="noreferrer">GitHub</a>
-      </nav>
+      <div class="cs-header-right">
+        <nav class="cs-nav" aria-label="${escapeHtml(copy.header.navLabel)}">
+          <a href="/">${escapeHtml(copy.header.playDemo)}</a>
+          <a href="#evidence">${escapeHtml(copy.header.evidence)}</a>
+          <a href="https://github.com/Tommyweige/breakout-rl-engineering" target="_blank" rel="noreferrer">${escapeHtml(copy.header.github)}</a>
+        </nav>
+        <a
+          class="cs-lang"
+          data-role="language-switch"
+          href="${escapeHtml(copy.header.languageSwitch.href)}"
+          hreflang="${escapeHtml(copy.header.languageSwitch.hreflang)}"
+          lang="${escapeHtml(copy.header.languageSwitch.lang)}"
+          aria-label="${escapeHtml(copy.header.languageSwitch.ariaLabel)}"
+        >${escapeHtml(copy.header.languageSwitch.label)}</a>
+      </div>
     </header>
 
     <main id="main">
       <section class="cs-hero" aria-labelledby="hero-title">
         <div class="cs-hero-copy">
-          <p class="cs-eyebrow">FROZEN EVIDENCE · <span data-role="frozen-date">2026-10-28</span></p>
-          <h1 id="hero-title">Does Breakout<br /><span>really need training?</span></h1>
-          <p class="cs-lede">
-            From a DQN family to an explainable pixel tracker and predictive controller.
-            Two decision paradigms, one open question — and no verified full clear yet.
-          </p>
-          <p class="cs-hook">
-            This is the evidence-led closeout of an end-to-end RL engineering project.
-            The interesting result is not a high score. It is how much the answer changes
-            when the control contract changes, and how careful you have to be before calling
-            a game “solved”.
-          </p>
+          <p class="cs-eyebrow">${escapeHtml(copy.hero.eyebrow)} <span data-role="frozen-date">—</span></p>
+          <h1 id="hero-title">${escapeHtml(copy.hero.titleLead)}<br /><span>${escapeHtml(copy.hero.titleTail)}</span></h1>
+          <p class="cs-lede">${escapeHtml(copy.hero.lede)}</p>
+          <p class="cs-hook">${escapeHtml(copy.hero.hook)}</p>
           <div class="cs-hero-actions">
-            <a class="cs-button" href="/">Play the demo</a>
-            <a class="cs-button cs-button-ghost" href="#evidence">Read the evidence</a>
+            <a class="cs-button" href="/">${escapeHtml(copy.hero.playCta)}</a>
+            <a class="cs-button cs-button-ghost" href="#evidence">${escapeHtml(copy.hero.evidenceCta)}</a>
           </div>
           <p class="cs-summary-status" data-role="summary-status" role="status">
-            Loading the machine-readable summary…
+            ${escapeHtml(copy.hero.summaryLoading)}
           </p>
         </div>
         <figure class="cs-media">
@@ -202,50 +202,28 @@ export function renderCaseStudyShell(): string {
             playsinline
             controls
             preload="metadata"
-            aria-label="Recorded Breakout gameplay: the human player on the left and the AI policy on the right."
+            aria-label="${escapeHtml(copy.hero.videoAria)}"
           >
             <source src="/case-study/gameplay.mp4" type="video/mp4" />
-            Your browser cannot play this recording. The
-            <a href="/case-study/gameplay-poster.png">poster frame</a>
-            shows the same real gameplay.
+            ${escapeHtml(copy.hero.videoFallback)}
+            <a href="/case-study/gameplay-poster.png">${escapeHtml(copy.hero.posterLink)}</a>
+            ${escapeHtml(copy.hero.videoFallbackAfter)}
           </video>
-          <figcaption>
-            Real capture from the built app. The left panel is the human surface; the right
-            panel is the AI policy. No mock frames or synthesized gameplay.
-          </figcaption>
+          <figcaption>${escapeHtml(copy.hero.figcaption)}</figcaption>
         </figure>
       </section>
 
-      <section class="cs-metrics" aria-label="Headline results">
-        ${cardMetric(
-          'verified_clears_recorded',
-          'Verified full clears',
-          'Audited 864-point detector; absence of record through the freeze date.',
-        )}
-        ${cardMetric(
-          'dqn_final_holdout_mean',
-          'DQN final holdout mean',
-          'Dueling Double DQN, 2.5M transitions, Contract v2.',
-        )}
-        ${cardMetric(
-          'rgb_controller_mean_score',
-          'RGB controller mean',
-          'Deterministic pixel controller, Contract v3.',
-        )}
-        ${cardMetric(
-          'laya_complete_episodes',
-          'Laya complete episodes',
-          'Frozen 201M vision model; latency was measured, gameplay was not completed.',
-        )}
+      <section class="cs-metrics" aria-label="${escapeHtml(copy.metricsAria)}">
+        ${copy.metricCards.map((card) => cardMetric(card, copy)).join('')}
       </section>
 
-      <div class="cs-reading-key" role="note" aria-label="How to read the evidence status">
-        <p><strong>How to read every claim</strong></p>
+      <div class="cs-reading-key" role="note" aria-label="${escapeHtml(copy.readingKey.ariaLabel)}">
+        <p><strong>${escapeHtml(copy.readingKey.title)}</strong></p>
         <ul>
-          ${(Object.keys(STATUS_LABELS) as VerificationStatus[])
+          ${(Object.keys(copy.status.labels) as VerificationStatus[])
             .map(
               (status) =>
-                `<li>${statusChip(status)} <span>${escapeHtml(STATUS_DESCRIPTIONS[status])}</span></li>`,
+                `<li>${statusChip(status, copy)} <span>${escapeHtml(copy.status.descriptions[status])}</span></li>`,
             )
             .join('')}
         </ul>
@@ -253,135 +231,81 @@ export function renderCaseStudyShell(): string {
 
       <section class="cs-section" aria-labelledby="problem-title">
         <div class="cs-section-heading">
-          <p class="cs-index">01</p>
+          <p class="cs-index">${escapeHtml(copy.problem.index)}</p>
           <div>
-            <p class="cs-kicker">THE PROBLEM</p>
-            <h2 id="problem-title">Breakout is a control problem disguised as a score.</h2>
+            <p class="cs-kicker">${escapeHtml(copy.problem.kicker)}</p>
+            <h2 id="problem-title">${escapeHtml(copy.problem.title)}</h2>
           </div>
         </div>
         <div class="cs-two-column">
           <div class="cs-prose">
-            <p>
-              The ball and paddle are visually separable. Between collisions the motion is close
-              to piecewise linear, and a controller can re-plan after every observation. That makes
-              Breakout a useful test of a simple question: how much of the task actually needs a
-              learned policy?
-            </p>
-            <p>
-              The catch is the environment contract. Frame skip, sticky actions, FIRE handling,
-              life-loss handling, and the episode limit all change the control problem. A score
-              without its contract is not a result; it is a number looking for a footnote.
-            </p>
-            <p class="cs-callout">
-              <strong>The clear condition is explicit.</strong> Destroy both brick walls in
-              ALE/Breakout-v5 one-player Game 1. The audited maximum is
-              ${metricSpan('clear_score_threshold')} points, read from the ROM scoreboard in ALE RAM
-              and cross-checked against raw reward. An episode that ends is not automatically a clear.
-            </p>
+            ${copy.problem.paragraphs.map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join('')}
+            <p class="cs-callout">${renderCopy(copy.problem.callout, copy)}</p>
           </div>
-          <div class="cs-diagram" aria-label="Two decision pipelines compared">
-            <div class="cs-diagram-row">
-              <p class="cs-diagram-label">LEARNED POLICY</p>
-              <p class="cs-pipeline">
-                <span>4 stacked frames</span><b>→</b><span>CNN</span><b>→</b><span>Q-values</span><b>→</b><span>argmax</span>
-              </p>
-              <p class="cs-diagram-note">Contract v2: one decision per four emulator frames.</p>
-            </div>
-            <div class="cs-diagram-row cs-diagram-row-accent">
-              <p class="cs-diagram-label">EXPLICIT CONTROLLER</p>
-              <p class="cs-pipeline">
-                <span>RGB frame</span><b>→</b><span>ball/paddle</span><b>→</b><span>velocity</span><b>→</b><span>intercept</span><b>→</b><span>action</span>
-              </p>
-              <p class="cs-diagram-note">Contract v3: one decision per emulator frame. No training.</p>
-            </div>
+          <div class="cs-diagram" aria-label="${escapeHtml(copy.problem.diagramAria)}">
+            ${copy.problem.diagrams
+              .map(
+                (diagram) => `
+              <div class="cs-diagram-row${diagram.accent ? ' cs-diagram-row-accent' : ''}">
+                <p class="cs-diagram-label">${escapeHtml(diagram.label)}</p>
+                <p class="cs-pipeline">
+                  ${diagram.steps
+                    .map((step) => `<span>${renderCopy(step, copy)}</span>`)
+                    .join('<b>→</b>')}
+                </p>
+                <p class="cs-diagram-note">${renderCopy(diagram.note, copy)}</p>
+              </div>
+            `,
+              )
+              .join('')}
           </div>
         </div>
       </section>
 
       <section class="cs-section" aria-labelledby="method-title">
         <div class="cs-section-heading">
-          <p class="cs-index">02</p>
+          <p class="cs-index">${escapeHtml(copy.method.index)}</p>
           <div>
-            <p class="cs-kicker">METHOD EVOLUTION</p>
-            <h2 id="method-title">Build the baseline, then remove the parts that do not earn their keep.</h2>
+            <p class="cs-kicker">${escapeHtml(copy.method.kicker)}</p>
+            <h2 id="method-title">${escapeHtml(copy.method.title)}</h2>
           </div>
         </div>
         <ol class="cs-timeline">
-          <li>
-            <span class="cs-timeline-year">01</span>
-            <div>
-              <h3>DQN family under Contract v2</h3>
-              <p>
-                DQN → Double DQN → Dueling Double DQN. The family screen selected Dueling Double DQN
-                at 500K transitions and kept it through 1M. The final policy trained for
-                ${metricSpan('dqn_training_transitions')} transitions.
-              </p>
-              ${statusChip('historical_reported')}
-            </div>
-          </li>
-          <li>
-            <span class="cs-timeline-year">02</span>
-            <div>
-              <h3>Controlled experiments that did not promote</h3>
-              <p>
-                Life-loss reward shaping produced a positive but inconsistent point estimate;
-                prioritized replay was descriptive at best. Neither replaced the baseline. These
-                are results, not footnotes.
-              </p>
-              ${statusChip('historical_reported')}
-            </div>
-          </li>
-          <li>
-            <span class="cs-timeline-year">03</span>
-            <div>
-              <h3>A deterministic pixel controller under Contract v3</h3>
-              <p>
-                Detect the ball and paddle, estimate velocity, predict the paddle-plane intercept
-                with wall reflections, and close the loop on observed paddle position. The
-                controller runs at about ${metricSpan('rgb_controller_latency_ms_per_frame')} ms per
-                controller frame — but it did not clear the game.
-              </p>
-              ${statusChip('historical_reported')}
-            </div>
-          </li>
-          <li>
-            <span class="cs-timeline-year">04</span>
-            <div>
-              <h3>A frozen vision model as a side experiment</h3>
-              <p>
-                A ${metricSpan('laya_parameter_count')}-parameter SmolVLM-based checkpoint,
-                already exposed to some Breakout expert data, was tested as a frozen policy. The
-                latency work is real; the gameplay evidence is not complete.
-              </p>
-              ${statusChip('missing_raw_artifacts')}
-            </div>
-          </li>
+          ${copy.method.items
+            .map(
+              (item) => `
+            <li>
+              <span class="cs-timeline-year">${escapeHtml(item.step)}</span>
+              <div>
+                <h3>${escapeHtml(item.title)}</h3>
+                <p>${renderCopy(item.body, copy)}</p>
+                ${statusChip(item.status, copy)}
+              </div>
+            </li>
+          `,
+            )
+            .join('')}
         </ol>
       </section>
 
       <section class="cs-section" aria-labelledby="results-title" id="evidence">
         <div class="cs-section-heading">
-          <p class="cs-index">03</p>
+          <p class="cs-index">${escapeHtml(copy.results.index)}</p>
           <div>
-            <p class="cs-kicker">RESULTS AT A GLANCE</p>
-            <h2 id="results-title">Every number carries its contract and its evidence status.</h2>
+            <p class="cs-kicker">${escapeHtml(copy.results.kicker)}</p>
+            <h2 id="results-title">${escapeHtml(copy.results.title)}</h2>
           </div>
         </div>
-        <p class="cs-section-intro">
-          The table is generated from
-          <a href="/final-results/summary.json">summary.json</a>. The page does not keep a second
-          hand-typed copy of these values. “Historical reported” means the raw run is not in
-          <code>main</code>; it does not mean the number was reproduced here.
-        </p>
+        <p class="cs-section-intro">${renderCopy(copy.results.intro, copy)}</p>
         <div class="cs-table-wrap">
           <table class="cs-table" data-role="results-table">
             <thead>
               <tr>
-                <th scope="col">Metric</th>
-                <th scope="col">Value</th>
-                <th scope="col">Seeds / scope</th>
-                <th scope="col">Evidence</th>
-                <th scope="col">Source</th>
+                <th scope="col">${escapeHtml(copy.results.headers.metric)}</th>
+                <th scope="col">${escapeHtml(copy.results.headers.value)}</th>
+                <th scope="col">${escapeHtml(copy.results.headers.scope)}</th>
+                <th scope="col">${escapeHtml(copy.results.headers.evidence)}</th>
+                <th scope="col">${escapeHtml(copy.results.headers.source)}</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -391,25 +315,20 @@ export function renderCaseStudyShell(): string {
 
       <section class="cs-section" aria-labelledby="fairness-title">
         <div class="cs-section-heading">
-          <p class="cs-index">04</p>
+          <p class="cs-index">${escapeHtml(copy.fairness.index)}</p>
           <div>
-            <p class="cs-kicker">CONTRACTS AND FAIRNESS</p>
-            <h2 id="fairness-title">The two scores answer different questions.</h2>
+            <p class="cs-kicker">${escapeHtml(copy.fairness.kicker)}</p>
+            <h2 id="fairness-title">${escapeHtml(copy.fairness.title)}</h2>
           </div>
         </div>
-        <p class="cs-section-intro">
-          Contract v2 gives the policy one decision per four emulator frames. Contract v3 gives it
-          one decision per frame. Both keep the same 108,000-frame ALE episode limit, but the
-          agent-step budgets are 27,000 and 108,000. A raw-score comparison across them is
-          descriptive, not a ranking.
-        </p>
+        <p class="cs-section-intro">${renderCopy(copy.fairness.intro, copy)}</p>
         <div class="cs-table-wrap">
           <table class="cs-table cs-contract-table" data-role="contract-table">
             <thead>
               <tr>
-                <th scope="col">Property</th>
-                <th scope="col">Contract v2</th>
-                <th scope="col">Contract v3</th>
+                <th scope="col">${escapeHtml(copy.fairness.headers.property)}</th>
+                <th scope="col">${escapeHtml(copy.fairness.headers.v2)}</th>
+                <th scope="col">${escapeHtml(copy.fairness.headers.v3)}</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -417,66 +336,44 @@ export function renderCaseStudyShell(): string {
         </div>
         <p class="cs-callout cs-callout-warn" data-role="comparison-note"></p>
         <ul class="cs-notes">
-          <li><strong>No fair winner claim.</strong> The DQN holdout and the RGB controller were not run under one matched contract, seed set, episode budget, and command.</li>
-          <li><strong>No method ranking from raw score.</strong> A higher score under one cadence does not establish a better method under another.</li>
-          <li><strong>No post-hoc promotion.</strong> A matched comparison would have to be predeclared before looking at its results.</li>
+          ${copy.fairness.notes.map((note) => `<li>${renderCopy(note, copy)}</li>`).join('')}
         </ul>
       </section>
 
       <section class="cs-section cs-section-laya" aria-labelledby="laya-title">
         <div class="cs-section-heading">
-          <p class="cs-index">05</p>
+          <p class="cs-index">${escapeHtml(copy.laya.index)}</p>
           <div>
-            <p class="cs-kicker">SIDE EXPERIMENT</p>
-            <h2 id="laya-title">Laya Vision: real latency, a measured gameplay session, no complete evaluation.</h2>
+            <p class="cs-kicker">${escapeHtml(copy.laya.kicker)}</p>
+            <h2 id="laya-title">${escapeHtml(copy.laya.title)}</h2>
           </div>
         </div>
         <div class="cs-laya-grid">
           <div class="cs-prose">
-            <p>
-              <strong>Motivation.</strong> Test whether a small, frozen, non-generative vision
-              decision model can choose legal Breakout actions from pixels at a practical inference
-              cost.
-            </p>
-            <p>
-              <strong>Frozen hypothesis.</strong> A 201M-parameter SmolVLM-based checkpoint can act
-              as a frozen policy without project-specific training. It was already trained on some
-              Breakout expert-action data, so this is <em>not</em> a zero-shot claim.
-            </p>
-            <p>
-              <strong>What was measured.</strong> Warm decision latency, a bounded control
-              diagnostic, and a live browser session. Warm p50 was ${metricSpan('laya_warm_latency_p50_ms')} ms on one fixed RGB
-              fixture; the optimized local proxy p50 was
-              ${metricSpan('laya_optimized_proxy_p50_ms')} ms across three rounds. Immediate reversal
-              commands went from ${metricSpan('laya_control_diagnostic_raw_reversals')} to
-              ${metricSpan('laya_control_diagnostic_reversals')} in a 3-seed × 80-decision
-              diagnostic. In the browser session the Decision Model scored
-              ${metricSpan('laya_browser_session_score')} and lost every life after
-              ${metricSpan('laya_browser_session_played_s')} s of play, presenting
-              ${metricSpan('laya_browser_presented_fps')} frames per second.
-            </p>
-            <p>
-              <strong>What is still not measured.</strong> No complete evaluator episode,
-              per-episode artifact, or clear exists, so the browser session is not comparable with
-              evaluated episodes. Latency does not imply gameplay quality.
-            </p>
-            <p class="cs-callout cs-callout-warn">
-              <strong>Decision:</strong> keep Laya as a research lead. Draft PR #74 stays draft
-              until a complete evaluated episode exists. #70–#72 stay open.
-            </p>
+            ${copy.laya.paragraphs
+              .map(
+                (paragraph) =>
+                  `<p><strong>${escapeHtml(paragraph.lead)}</strong> ${renderCopy(paragraph.body, copy)}</p>`,
+              )
+              .join('')}
+            <p class="cs-callout cs-callout-warn">${renderCopy(copy.laya.callout, copy)}</p>
           </div>
-          <aside class="cs-fact-panel" aria-label="Laya evidence summary">
-            <p class="cs-fact-heading">Laya at freeze time</p>
+          <aside class="cs-fact-panel" aria-label="${escapeHtml(copy.laya.aside.ariaLabel)}">
+            <p class="cs-fact-heading">${escapeHtml(copy.laya.aside.heading)}</p>
             <dl>
-              <div><dt>Complete episodes</dt><dd>${metricSpan('laya_complete_episodes')}</dd></div>
-              <div><dt>Warm p50</dt><dd>${metricSpan('laya_warm_latency_p50_ms')}<small>ms/decision</small></dd></div>
-              <div><dt>Optimized proxy p50</dt><dd>${metricSpan('laya_optimized_proxy_p50_ms')}<small>ms/request</small></dd></div>
-              <div><dt>Reversals, raw → braked</dt><dd>${metricSpan('laya_control_diagnostic_raw_reversals')} → ${metricSpan('laya_control_diagnostic_reversals')}</dd></div>
+              ${copy.laya.aside.facts
+                .map(
+                  (fact) =>
+                    `<div><dt>${escapeHtml(fact.label)}</dt><dd>${renderCopy(fact.value, copy)}${
+                      fact.unit ? `<small>${escapeHtml(fact.unit)}</small>` : ''
+                    }</dd></div>`,
+                )
+                .join('')}
             </dl>
-            <p class="cs-fact-note">Weights are CC BY-NC-SA 4.0 and are not in the repository.</p>
+            <p class="cs-fact-note">${escapeHtml(copy.laya.aside.note)}</p>
             <p class="cs-fact-links">
-              ${externalLink('https://github.com/Tommyweige/breakout-rl-engineering/issues/69', 'Research issue')}
-              ${externalLink('https://github.com/Tommyweige/breakout-rl-engineering/pull/74', 'Draft PR')}
+              ${externalLink('https://github.com/Tommyweige/breakout-rl-engineering/issues/69', copy.laya.aside.researchLinkLabel)}
+              ${externalLink('https://github.com/Tommyweige/breakout-rl-engineering/pull/74', copy.laya.aside.prLinkLabel)}
             </p>
           </aside>
         </div>
@@ -484,98 +381,74 @@ export function renderCaseStudyShell(): string {
 
       <section class="cs-section" aria-labelledby="negative-title">
         <div class="cs-section-heading">
-          <p class="cs-index">06</p>
+          <p class="cs-index">${escapeHtml(copy.negative.index)}</p>
           <div>
-            <p class="cs-kicker">FAILURES AND NEGATIVE RESULTS</p>
-            <h2 id="negative-title">The experiments that did not promote are part of the result.</h2>
+            <p class="cs-kicker">${escapeHtml(copy.negative.kicker)}</p>
+            <h2 id="negative-title">${escapeHtml(copy.negative.title)}</h2>
           </div>
         </div>
         <div class="cs-negative-grid">
-          <article class="cs-negative-card">
-            <p class="cs-card-kicker">REWARD SHAPING · ISSUE #9</p>
-            <p class="cs-negative-value">${metricSpan('reward_shaping_mean_effect')}<small>mean effect</small></p>
-            <p>
-              95% interval ${metricSpan('reward_shaping_ci_low')} to
-              ${metricSpan('reward_shaping_ci_high')}. Two of three training seeds were positive.
-              The promotion gate did not pass, so the 2.5M comparison was not run.
-            </p>
-            ${statusChip('historical_reported')}
-          </article>
-          <article class="cs-negative-card">
-            <p class="cs-card-kicker">PRIORITIZED REPLAY · ISSUE #12</p>
-            <p class="cs-negative-value">${metricSpan('per_500k_mean_score')}<small>PER mean at 500K</small></p>
-            <p>
-              Uniform replay was ${metricSpan('uniform_500k_mean_score')} at the same milestone.
-              PER cost ${metricSpan('per_training_time_ratio')}× training time. With three seeds,
-              this is descriptive, not statistical superiority.
-            </p>
-            ${statusChip('historical_reported')}
-          </article>
-          <article class="cs-negative-card">
-            <p class="cs-card-kicker">FIRST-CLEAR PROBES · #41, #43, #45, #48–#61</p>
-            <p class="cs-negative-value">0<small>verified clears</small></p>
-            <p>
-              The frozen probes ended without a verified clear. Several were explicitly
-              INCONCLUSIVE or BLOCKED_ENVIRONMENT. They identify failure modes; they do not prove
-              that a method cannot clear.
-            </p>
-            ${statusChip('historical_reported')}
-          </article>
+          ${copy.negative.cards
+            .map(
+              (card) => `
+            <article class="cs-negative-card">
+              <p class="cs-card-kicker">${escapeHtml(card.kicker)}</p>
+              <p class="cs-negative-value">${renderCopy(card.value, copy)}<small>${escapeHtml(card.unit)}</small></p>
+              <p>${renderCopy(card.body, copy)}</p>
+              ${statusChip(card.status, copy)}
+            </article>
+          `,
+            )
+            .join('')}
         </div>
       </section>
 
       <section class="cs-section" aria-labelledby="ledger-title">
         <div class="cs-section-heading">
-          <p class="cs-index">07</p>
+          <p class="cs-index">${escapeHtml(copy.ledger.index)}</p>
           <div>
-            <p class="cs-kicker">PUBLIC EVIDENCE</p>
-            <h2 id="ledger-title">The ledger, not the highlight reel.</h2>
+            <p class="cs-kicker">${escapeHtml(copy.ledger.kicker)}</p>
+            <h2 id="ledger-title">${escapeHtml(copy.ledger.title)}</h2>
           </div>
         </div>
-        <p class="cs-section-intro">
-          Every experiment family in the closeout, with its status and source. The CSV and JSON are
-          the machine-readable versions of this page.
-        </p>
+        <p class="cs-section-intro">${renderCopy(copy.ledger.intro, copy)}</p>
         <div class="cs-ledger" data-role="experiment-list"></div>
         <div class="cs-downloads">
           <a class="cs-button cs-button-ghost" href="/final-results/summary.json">summary.json</a>
-          ${externalLink('docs/final-results/evidence-inventory.csv', 'evidence-inventory.csv', 'cs-button cs-button-ghost')}
-          ${externalLink('docs/final-results/README.md', 'Full results index', 'cs-button cs-button-ghost')}
-          ${externalLink('docs/final-results/handoff.md', 'Handoff and blockers', 'cs-button cs-button-ghost')}
+          ${copy.ledger.downloads
+            .map((download) => externalLink(download.href, download.label, 'cs-button cs-button-ghost'))
+            .join('')}
         </div>
       </section>
 
       <section class="cs-cta" aria-labelledby="cta-title">
-        <p class="cs-kicker">DEMO + SOURCE</p>
-        <h2 id="cta-title">Play the current build, then inspect the evidence behind it.</h2>
-        <p>
-          The demo runs ALE WASM and the ONNX policy entirely in the browser. “Unbeatable” is a
-          UI difficulty label: it injects no deliberate mistakes. It is not a claim that the policy
-          cannot lose.
-        </p>
+        <p class="cs-kicker">${escapeHtml(copy.cta.kicker)}</p>
+        <h2 id="cta-title">${escapeHtml(copy.cta.title)}</h2>
+        <p>${escapeHtml(copy.cta.body)}</p>
         <div class="cs-hero-actions">
-          <a class="cs-button" href="/">Play the demo</a>
-          <a class="cs-button cs-button-ghost" href="https://github.com/Tommyweige/breakout-rl-engineering" target="_blank" rel="noreferrer">GitHub repository</a>
+          <a class="cs-button" href="/">${escapeHtml(copy.cta.playCta)}</a>
+          <a class="cs-button cs-button-ghost" href="https://github.com/Tommyweige/breakout-rl-engineering" target="_blank" rel="noreferrer">${escapeHtml(copy.cta.githubCta)}</a>
         </div>
       </section>
     </main>
 
     <footer class="cs-footer">
       <div>
-        <p class="cs-brand-mark">BREAKOUT · RESEARCH RESULTS</p>
-        <p>Frozen evidence closeout. Last updated <span data-role="frozen-date">2026-10-28</span>.</p>
+        <p class="cs-brand-mark">${escapeHtml(copy.footer.brand)}</p>
+        <p>${escapeHtml(copy.footer.updated)} <span data-role="frozen-date">—</span>.</p>
       </div>
       <div class="cs-footer-note">
-        <p><strong>Not claimed:</strong> solved game, verified clear, reliable clear, world record, fair method winner, or a complete evaluated Laya episode.</p>
-        <p><a href="/">Play demo</a> · <a href="#evidence">Evidence</a> · <a href="https://github.com/Tommyweige/breakout-rl-engineering" target="_blank" rel="noreferrer">GitHub</a></p>
+        <p><strong>${escapeHtml(copy.footer.notClaimedLabel)}</strong> ${escapeHtml(copy.footer.notClaimed)}</p>
+        <p><a href="/">${escapeHtml(copy.footer.playDemo)}</a> · <a href="#evidence">${escapeHtml(copy.footer.evidence)}</a> · <a href="https://github.com/Tommyweige/breakout-rl-engineering" target="_blank" rel="noreferrer">${escapeHtml(copy.footer.github)}</a></p>
       </div>
     </footer>
   `;
 }
 
-export function formatMetricValue(metric: SummaryMetric): string {
-  if (metric.value === null) return 'Not run';
-  if (typeof metric.value === 'boolean') return metric.value ? 'Yes' : 'No';
+export function formatMetricValue(metric: SummaryMetric, locale: Locale = 'en'): string {
+  const copy = CASE_STUDY_COPY[locale];
+  if (metric.value === null) return copy.common.notRun;
+  if (typeof metric.value === 'boolean') return metric.value ? copy.common.yes : copy.common.no;
   if (typeof metric.value === 'number') {
     if (Number.isInteger(metric.value)) return metric.value.toLocaleString('en-US');
     return String(metric.value);
@@ -588,60 +461,102 @@ function sourceHref(ref: string): string {
   return `${GITHUB_BLOB}${ref.replace(/^\/+/, '')}`;
 }
 
-function renderResultsTable(summary: FinalResultsSummary): string {
+function formatContractNumber(value: number): string {
+  return Number.isInteger(value) ? value.toLocaleString('en-US') : String(value);
+}
+
+function renderResultsTable(
+  summary: FinalResultsSummary,
+  copy: CaseStudyCopy,
+  locale: Locale,
+): string {
   const metrics = new Map(summary.metrics.map((metric) => [metric.id, metric]));
   return summary.table_metric_ids
     .map((id) => {
       const metric = metrics.get(id);
       if (!metric) return '';
+      const label = copy.results.metricLabels?.[id] ?? metric.label;
       const scope = metric.seed_role
         ? `${metric.seed_count} · ${metric.seed_role}`
         : String(metric.seed_count);
       return `
         <tr>
           <th scope="row">
-            <span class="cs-table-label">${escapeHtml(metric.label)}</span>
+            <span class="cs-table-label">${escapeHtml(label)}</span>
             <small>${escapeHtml(metric.contract.id)}${metric.contract.frame_skip === 'mixed' ? '' : ` · frame_skip=${metric.contract.frame_skip}`}</small>
           </th>
           <td class="cs-table-value">
-            <span data-metric-id="${escapeHtml(metric.id)}">${escapeHtml(formatMetricValue(metric))}</span>
+            <span data-metric-id="${escapeHtml(metric.id)}">${escapeHtml(formatMetricValue(metric, locale))}</span>
             <small>${escapeHtml(metric.unit)}</small>
           </td>
           <td>${escapeHtml(scope)}</td>
-          <td>${statusChip(metric.verification_status)}</td>
-          <td><a href="${escapeHtml(sourceHref(metric.ref))}" target="_blank" rel="noreferrer">source</a></td>
+          <td>${statusChip(metric.verification_status, copy)}</td>
+          <td><a href="${escapeHtml(sourceHref(metric.ref))}" target="_blank" rel="noreferrer">${escapeHtml(copy.common.source)}</a></td>
         </tr>
       `;
     })
     .join('');
 }
 
-function contractRows(summary: FinalResultsSummary): string {
+function contractRows(summary: FinalResultsSummary, copy: CaseStudyCopy): string {
   const v2 = summary.contracts.v2;
   const v3 = summary.contracts.v3;
+  const phrases = copy.fairness.valuePhrases;
+  const decision = (frameSkip: number): string =>
+    frameSkip === 1
+      ? phrases.decisionPerFrame
+      : phrases.decisionPerFrames.replace('{n}', formatContractNumber(frameSkip));
   const rows: Array<[string, string, string]> = [
-    ['Contract ID', v2.contract_id, v3.contract_id],
-    ['File', v2.path, v3.path],
-    ['SHA-256', `${v2.sha256.slice(0, 12)}…${v2.sha256.slice(-8)}`, `${v3.sha256.slice(0, 12)}…${v3.sha256.slice(-8)}`],
-    ['Decision cadence', `1 per ${v2.frame_skip} emulator frames`, `1 per ${v3.frame_skip} emulator frame`],
-    ['Agent step limit', String(v2.agent_step_limit), String(v3.agent_step_limit)],
-    ['ALE episode-frame limit', String(v2.max_num_frames_per_episode), String(v3.max_num_frames_per_episode)],
-    ['Frame stack', String(v2.frame_stack), String(v3.frame_stack)],
-    ['Sticky actions', String(v2.sticky_action_probability), String(v3.sticky_action_probability)],
-    ['FIRE reset', v2.fire_reset ? 'yes' : 'no', v3.fire_reset ? 'yes' : 'no'],
-    ['Terminal on life loss', v2.terminal_on_life_loss ? 'yes' : 'no', v3.terminal_on_life_loss ? 'yes' : 'no'],
-    ['Evaluation seeds', `${v2.evaluation_seeds.length} seeds`, `${v3.evaluation_seeds.length} seeds`],
-    ['Evaluation epsilon', String(v2.evaluation_epsilon), String(v3.evaluation_epsilon)],
+    [copy.fairness.rows[0]!, v2.contract_id, v3.contract_id],
+    [copy.fairness.rows[1]!, v2.path, v3.path],
+    [
+      copy.fairness.rows[2]!,
+      `${v2.sha256.slice(0, 12)}…${v2.sha256.slice(-8)}`,
+      `${v3.sha256.slice(0, 12)}…${v3.sha256.slice(-8)}`,
+    ],
+    [copy.fairness.rows[3]!, decision(v2.frame_skip), decision(v3.frame_skip)],
+    [
+      copy.fairness.rows[4]!,
+      formatContractNumber(v2.agent_step_limit),
+      formatContractNumber(v3.agent_step_limit),
+    ],
+    [
+      copy.fairness.rows[5]!,
+      formatContractNumber(v2.max_num_frames_per_episode),
+      formatContractNumber(v3.max_num_frames_per_episode),
+    ],
+    [copy.fairness.rows[6]!, String(v2.frame_stack), String(v3.frame_stack)],
+    [
+      copy.fairness.rows[7]!,
+      String(v2.sticky_action_probability),
+      String(v3.sticky_action_probability),
+    ],
+    [
+      copy.fairness.rows[8]!,
+      v2.fire_reset ? phrases.yes : phrases.no,
+      v3.fire_reset ? phrases.yes : phrases.no,
+    ],
+    [
+      copy.fairness.rows[9]!,
+      v2.terminal_on_life_loss ? phrases.yes : phrases.no,
+      v3.terminal_on_life_loss ? phrases.yes : phrases.no,
+    ],
+    [
+      copy.fairness.rows[10]!,
+      phrases.seedCount.replace('{n}', String(v2.evaluation_seeds.length)),
+      phrases.seedCount.replace('{n}', String(v3.evaluation_seeds.length)),
+    ],
+    [copy.fairness.rows[11]!, String(v2.evaluation_epsilon), String(v3.evaluation_epsilon)],
   ];
   return rows
     .map(
       ([property, left, right]) =>
-        `<tr><th scope="row">${escapeHtml(property)}</th><td data-label="Contract v2">${escapeHtml(left)}</td><td data-label="Contract v3">${escapeHtml(right)}</td></tr>`,
+        `<tr><th scope="row">${escapeHtml(property)}</th><td data-label="${escapeHtml(copy.fairness.headers.v2)}">${escapeHtml(left)}</td><td data-label="${escapeHtml(copy.fairness.headers.v3)}">${escapeHtml(right)}</td></tr>`,
     )
     .join('');
 }
 
-function experimentList(summary: FinalResultsSummary): string {
+function experimentList(summary: FinalResultsSummary, copy: CaseStudyCopy): string {
   return summary.experiments
     .map(
       (experiment) => `
@@ -653,8 +568,8 @@ function experimentList(summary: FinalResultsSummary): string {
             <p class="cs-ledger-note">${escapeHtml(experiment.notes)}</p>
           </div>
           <div class="cs-ledger-meta">
-            ${statusChip(experiment.verification_status)}
-            <a href="${escapeHtml(sourceHref(experiment.source))}" target="_blank" rel="noreferrer">source</a>
+            ${statusChip(experiment.verification_status, copy)}
+            <a href="${escapeHtml(sourceHref(experiment.source))}" target="_blank" rel="noreferrer">${escapeHtml(copy.common.source)}</a>
           </div>
         </article>
       `,
@@ -662,46 +577,90 @@ function experimentList(summary: FinalResultsSummary): string {
     .join('');
 }
 
-export function hydrateCaseStudy(root: HTMLElement, summary: FinalResultsSummary): void {
+function contractFieldValue(
+  summary: FinalResultsSummary,
+  path: string,
+  copy: CaseStudyCopy,
+): string | null {
+  const [version, field] = path.split('.');
+  if ((version !== 'v2' && version !== 'v3') || !field) return null;
+  const contract = summary.contracts[version] as unknown as Record<string, unknown>;
+  const value = contract[field];
+  if (typeof value === 'number') return formatContractNumber(value);
+  if (typeof value === 'boolean') return value ? copy.common.yes : copy.common.no;
+  if (typeof value === 'string') return value;
+  return null;
+}
+
+function hydrateContractFields(
+  root: HTMLElement,
+  summary: FinalResultsSummary,
+  copy: CaseStudyCopy,
+): void {
+  root.querySelectorAll<HTMLElement>('[data-contract-field]').forEach((element) => {
+    const value = contractFieldValue(summary, element.dataset.contractField ?? '', copy);
+    element.textContent = value ?? copy.common.unknown;
+  });
+}
+
+export function hydrateCaseStudy(
+  root: HTMLElement,
+  summary: FinalResultsSummary,
+  locale: Locale = 'en',
+): void {
+  const copy = CASE_STUDY_COPY[locale];
   const metrics = new Map(summary.metrics.map((metric) => [metric.id, metric]));
 
   root.querySelectorAll<HTMLElement>('[data-metric-id]').forEach((element) => {
     const metric = metrics.get(element.dataset.metricId ?? '');
     if (!metric) {
-      element.textContent = '—';
+      element.textContent = copy.common.missingMetric;
       return;
     }
-    element.textContent = formatMetricValue(metric);
+    element.textContent = formatMetricValue(metric, locale);
     element.dataset.status = metric.verification_status;
-    element.title = `${metric.label}: ${metric.source}`;
+    element.title = `${copy.results.metricLabels?.[metric.id] ?? metric.label}: ${metric.source}`;
   });
+
+  root.querySelectorAll<HTMLElement>('[data-seed-count-id]').forEach((element) => {
+    const metric = metrics.get(element.dataset.seedCountId ?? '');
+    if (!metric) {
+      element.textContent = copy.common.unknown;
+      return;
+    }
+    element.textContent = metric.seed_count.toLocaleString('en-US');
+  });
+
+  hydrateContractFields(root, summary, copy);
 
   root.querySelectorAll<HTMLElement>('[data-status-for]').forEach((element) => {
     const metric = metrics.get(element.dataset.statusFor ?? '');
     if (!metric) {
-      element.textContent = 'Unknown';
+      element.textContent = copy.common.unknown;
       return;
     }
     element.dataset.status = metric.verification_status;
-    element.textContent = STATUS_LABELS[metric.verification_status];
+    element.textContent = copy.status.labels[metric.verification_status];
   });
 
   const tableBody = root.querySelector<HTMLElement>('[data-role="results-table"] tbody');
-  if (tableBody) tableBody.innerHTML = renderResultsTable(summary);
+  if (tableBody) tableBody.innerHTML = renderResultsTable(summary, copy, locale);
 
   const contractBody = root.querySelector<HTMLElement>('[data-role="contract-table"] tbody');
-  if (contractBody) contractBody.innerHTML = contractRows(summary);
+  if (contractBody) contractBody.innerHTML = contractRows(summary, copy);
 
   const comparison = root.querySelector<HTMLElement>('[data-role="comparison-note"]');
   if (comparison) {
     const item = summary.comparisons.find((entry) => entry.id === 'dqn_vs_rgb_controller');
-    comparison.textContent = item
-      ? `${item.title}: ${item.comparability.replaceAll('_', ' ')}. ${item.reason}`
-      : 'Cross-contract comparison is not directly comparable.';
+    comparison.innerHTML =
+      item && item.comparability === 'not_directly_comparable'
+        ? renderCopy(copy.fairness.comparisonNote, copy)
+        : renderCopy(copy.fairness.comparisonFallback, copy);
+    hydrateContractFields(comparison, summary, copy);
   }
 
   const experimentContainer = root.querySelector<HTMLElement>('[data-role="experiment-list"]');
-  if (experimentContainer) experimentContainer.innerHTML = experimentList(summary);
+  if (experimentContainer) experimentContainer.innerHTML = experimentList(summary, copy);
 
   root.querySelectorAll<HTMLElement>('[data-role="frozen-date"]').forEach((element) => {
     element.textContent = summary.frozen_at;
@@ -709,7 +668,9 @@ export function hydrateCaseStudy(root: HTMLElement, summary: FinalResultsSummary
 
   const status = root.querySelector<HTMLElement>('[data-role="summary-status"]');
   if (status) {
-    status.textContent = `Summary loaded: ${summary.metrics.length} metrics, ${summary.experiments.length} experiment families.`;
+    status.textContent = copy.hero.summaryLoaded
+      .replace('{metrics}', String(summary.metrics.length))
+      .replace('{experiments}', String(summary.experiments.length));
     status.dataset.state = 'loaded';
   }
 
