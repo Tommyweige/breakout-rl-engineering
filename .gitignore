@@ -21,6 +21,7 @@ outputs/
 # Exception: the audited closeout index required by issue #73.
 docs/*
 !docs/final-results/
+!docs/clear-semantics.md
 assets/
 experiments/
 evaluations/

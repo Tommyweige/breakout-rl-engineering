@@ -5,7 +5,18 @@ from __future__ import annotations
 import json
 import unittest
 
-from breakout_env import make_breakout_env
+import gymnasium as gym
+import torch
+
+from breakout_env import BreakoutFireResetWrapper, make_breakout_env, make_breakout_raw_env
+from breakout_rl.evaluation import evaluate_policy
+from tests.fixtures.breakout_clear.generate_fixtures import (
+    FIXTURE_DIR as CLEAR_FIXTURE_DIR,
+    REPOSITORY_ROOT,
+    decode_actions,
+    evade_action,
+    make_fixture_env,
+)
 from breakout_rl.completion import (
     BREAKOUT_AUDIT_CONFIG_PATH,
     BREAKOUT_ALE_PY_VERSION,
@@ -18,7 +29,9 @@ from breakout_rl.completion import (
     ALETransitionFrameCounter,
     BreakoutCompletionDetector,
     CompletionSupport,
+    count_visible_bricks,
     inspect_breakout_completion_support,
+    read_ale_lives,
     read_breakout_score,
     read_ale_episode_frame,
 )
@@ -530,6 +543,206 @@ class CompletionSummaryTests(unittest.TestCase):
         }
         with self.assertRaisesRegex(ValueError, "outside episode bounds"):
             validate_episode_rows(invalid, source="invalid-results")
+
+
+def _load_clear_fixture(name: str) -> tuple[dict, list[int]]:
+    payload = json.loads((CLEAR_FIXTURE_DIR / f"{name}.json").read_text(encoding="utf-8"))
+    return payload, decode_actions(payload["requested_actions_rle"])
+
+
+def _replay_with_detector(env, episode_seed: int, prefix: list[int]) -> dict:
+    """Feed the detector exactly as the evaluators do, one agent step at a time."""
+
+    try:
+        env.reset(seed=episode_seed)
+        support = inspect_breakout_completion_support(env)
+        detector = BreakoutCompletionDetector(support)
+        ale = env.unwrapped.ale
+        origin = read_ale_episode_frame(env)
+        score = 0.0
+        step = 0
+        first_empty_screen = None
+        terminated = truncated = False
+        while not (terminated or truncated):
+            step += 1
+            action = prefix[step - 1] if step <= len(prefix) else evade_action(ale.getRAM())
+            _, reward, terminated, truncated, _ = env.step(action)
+            score += float(reward)
+            state = detector.observe(
+                cumulative_score=score,
+                ram_score=read_breakout_score(env),
+                agent_step=step,
+                emulator_frame=read_ale_episode_frame(env) - origin,
+                lives_remaining=read_ale_lives(env),
+            )
+            if first_empty_screen is None and count_visible_bricks(ale.getScreenRGB()) == 0:
+                first_empty_screen = (step, score, state.cleared)
+        return {
+            "support": support,
+            "state": detector.state,
+            "score": score,
+            "steps": step,
+            "terminated": terminated,
+            "truncated": truncated,
+            "first_empty_screen": first_empty_screen,
+        }
+    finally:
+        env.close()
+
+
+class _ScriptedQNetwork(torch.nn.Module):
+    """Drive evaluate_policy with fixture actions through its greedy argmax."""
+
+    def __init__(self, prefix: list[int], ale_source) -> None:
+        super().__init__()
+        self.anchor = torch.nn.Parameter(torch.zeros(()), requires_grad=False)
+        self.prefix = prefix
+        self.ale_source = ale_source
+        self.calls = 0
+
+    def forward(self, observation):
+        self.calls += 1
+        if self.calls <= len(self.prefix):
+            action = self.prefix[self.calls - 1]
+        else:
+            action = evade_action(self.ale_source().getRAM())
+        q_values = torch.zeros((1, 4), device=observation.device)
+        q_values[0, action] = 1.0
+        return q_values
+
+
+class GenuineClearFixtureTests(unittest.TestCase):
+    """Genuine ALE trajectories with detector-independent, screen-derived ground truth.
+
+    See tests/fixtures/breakout_clear/generate_fixtures.py and docs/clear-semantics.md.
+    """
+
+    def _assert_matches_ground_truth(self, result: dict, truth: dict) -> None:
+        self.assertTrue(result["support"].supported, result["support"].reason)
+        state = result["state"]
+        self.assertEqual(result["score"], truth["final_cumulative_raw_reward"])
+        self.assertEqual(result["steps"], truth["total_agent_steps"])
+        # cleared=None would mean RAM and raw reward disagreed somewhere.
+        self.assertIs(state.cleared, truth["two_wall_clear"])
+        self.assertEqual(state.clear_agent_step, truth["two_wall_clear_agent_step"])
+        self.assertEqual(state.clear_emulator_frame, truth["two_wall_clear_emulator_frame"])
+        self.assertEqual(state.lives_remaining_at_clear, truth["lives_at_two_wall_clear"])
+        if truth["two_wall_clear"]:
+            self.assertEqual(state.clear_score, float(BREAKOUT_FULL_CLEAR_SCORE))
+
+    def test_every_scenario_matches_screen_ground_truth(self) -> None:
+        for name in ("v2_full_clear", "v3_full_clear"):
+            payload, actions = _load_clear_fixture(name)
+            spec = payload["environment"]
+            for scenario, truth in payload["scenarios"].items():
+                with self.subTest(fixture=name, scenario=scenario):
+                    result = _replay_with_detector(
+                        make_fixture_env(spec),
+                        spec["episode_seed"],
+                        actions[: truth["prefix_agent_steps"]],
+                    )
+                    self._assert_matches_ground_truth(result, truth)
+                    # Every scenario ends in a real game over, including the clear.
+                    self.assertTrue(result["terminated"])
+
+    def test_first_empty_screen_is_the_first_wall_not_a_clear(self) -> None:
+        payload, actions = _load_clear_fixture("v3_full_clear")
+        truth = payload["scenarios"]["first_wall_only_then_game_over"]
+        result = _replay_with_detector(
+            make_fixture_env(payload["environment"]),
+            payload["environment"]["episode_seed"],
+            actions[: truth["prefix_agent_steps"]],
+        )
+        first_wall = truth["screen_wall_events"][0]
+        self.assertEqual(
+            result["first_empty_screen"],
+            (first_wall["agent_step"], 432.0, False),
+        )
+        self.assertFalse(result["state"].cleared)
+
+    def test_clear_on_the_same_step_as_the_time_limit_is_still_a_clear(self) -> None:
+        payload, actions = _load_clear_fixture("v3_full_clear")
+        truth = payload["scenarios"]["full_clear_then_game_over"]
+        contract = load_evaluation_contract(REPOSITORY_ROOT / payload["environment"]["contract"])
+        raw = gym.make(
+            BREAKOUT_ENVIRONMENT_ID,
+            mode=BREAKOUT_MODE,
+            difficulty=BREAKOUT_DIFFICULTY,
+            frameskip=1,
+            repeat_action_probability=contract.sticky_action_probability,
+            max_num_frames_per_episode=truth["two_wall_clear_emulator_frame"],
+        )
+        result = _replay_with_detector(
+            BreakoutFireResetWrapper(raw),
+            payload["environment"]["episode_seed"],
+            actions,
+        )
+        self.assertTrue(result["truncated"])
+        self.assertEqual(result["steps"], truth["two_wall_clear_agent_step"])
+        self.assertTrue(result["state"].cleared)
+        self.assertEqual(result["state"].clear_agent_step, truth["two_wall_clear_agent_step"])
+
+    def test_clear_on_the_step_that_loses_the_last_life_is_still_a_clear(self) -> None:
+        # A natural trajectory cannot hit the last brick and lose the ball in the
+        # same agent step, so this edge is exercised on the detector directly.
+        detector = BreakoutCompletionDetector(_supported_runtime())
+        detector.observe(
+            cumulative_score=860.0, ram_score=860, agent_step=4798,
+            emulator_frame=19192, lives_remaining=1,
+        )
+        state = detector.observe(
+            cumulative_score=864.0, ram_score=864, agent_step=4799,
+            emulator_frame=19196, lives_remaining=0,
+        )
+        self.assertTrue(state.cleared)
+        self.assertEqual(state.clear_agent_step, 4799)
+        self.assertEqual(state.lives_remaining_at_clear, 0)
+
+    def test_requested_actions_without_sticky_repeats_do_not_clear(self) -> None:
+        # The same requested inputs only clear because of ALE's sticky repeats;
+        # the detector must follow the emulator outcome, not the input log.
+        payload, actions = _load_clear_fixture("v3_full_clear")
+        contract = load_evaluation_contract(REPOSITORY_ROOT / payload["environment"]["contract"])
+        env = BreakoutFireResetWrapper(make_breakout_raw_env(sticky_action_probability=0.0))
+        result = _replay_with_detector(env, payload["environment"]["episode_seed"], actions)
+        self.assertNotEqual(contract.sticky_action_probability, 0.0)
+        self.assertLess(result["score"], BREAKOUT_FULL_CLEAR_SCORE)
+        self.assertIs(result["state"].cleared, False)
+
+    def test_v2_evaluation_pipeline_reports_fixture_clears(self) -> None:
+        payload, actions = _load_clear_fixture("v2_full_clear")
+        spec = payload["environment"]
+        for scenario in ("full_clear_then_game_over", "last_brick_left_then_game_over"):
+            truth = payload["scenarios"][scenario]
+            with self.subTest(scenario=scenario):
+                environments = []
+
+                def factory():
+                    environments.append(make_fixture_env(spec))
+                    return environments[-1]
+
+                model = _ScriptedQNetwork(
+                    actions[: truth["prefix_agent_steps"]],
+                    lambda: environments[-1].unwrapped.ale,
+                )
+                result = evaluate_policy(
+                    model,
+                    episodes=1,
+                    seeds=[spec["episode_seed"]],
+                    device="cpu",
+                    env_factory=factory,
+                )
+                episode = result.episodes[0]
+                self.assertEqual(episode.episode_return, truth["final_cumulative_raw_reward"])
+                self.assertIs(episode.cleared, truth["two_wall_clear"])
+                self.assertEqual(episode.clear_agent_step, truth["two_wall_clear_agent_step"])
+                self.assertEqual(
+                    episode.clear_emulator_frame, truth["two_wall_clear_emulator_frame"]
+                )
+                self.assertEqual(
+                    episode.completion_outcome,
+                    "cleared" if truth["two_wall_clear"] else "game_over",
+                )
 
 
 if __name__ == "__main__":

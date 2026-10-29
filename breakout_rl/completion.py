@@ -11,8 +11,13 @@ from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
+import numpy as np
+
 
 COMPLETION_SCHEMA_VERSION = 1
+# Pixel bounds (half-open) of the brick wall in the raw ALE RGB screen.
+BREAKOUT_BRICK_ROWS = (57, 93)
+BREAKOUT_BRICK_COLUMNS = (8, 152)
 BREAKOUT_AUDIT_CONFIG_PATH = Path(__file__).resolve().parents[1] / (
     "configs/eval/breakout_completion_audit_v1.json"
 )
@@ -473,6 +478,24 @@ def read_ale_lives(env: Any) -> int | None:
     return _read_ale_integer(env, "lives")
 
 
+def count_visible_bricks(frame: Any) -> int:
+    """Count bricks drawn in a raw ALE Breakout RGB screen (210, 160, 3).
+
+    This is the screen-level "bricks gone" measurement, independent of RAM.
+    The wall is a 6 x 18 grid of 8 x 6-pixel bricks; a cell counts when at
+    least half of its pixels are lit, so the 2 x 4-pixel ball never counts.
+    """
+
+    screen = np.asarray(frame)
+    if screen.shape != (210, 160, 3):
+        raise ValueError("count_visible_bricks requires a raw (210, 160, 3) ALE RGB screen")
+    top, bottom = BREAKOUT_BRICK_ROWS
+    left, right = BREAKOUT_BRICK_COLUMNS
+    lit = screen[top:bottom, left:right].any(axis=2)
+    lit_per_cell = lit.reshape(6, 6, 18, 8).sum(axis=(1, 3))
+    return int(np.count_nonzero(lit_per_cell * 2 >= 6 * 8))
+
+
 def read_breakout_score(env: Any) -> int | None:
     """Read the audited four-digit packed-BCD score from the Breakout ROM."""
 
@@ -514,6 +537,7 @@ __all__ = [
     "ALETransitionFrameCounter",
     "CompletionState",
     "CompletionSupport",
+    "count_visible_bricks",
     "inspect_breakout_completion_support",
     "read_ale_episode_frame",
     "read_ale_lives",
