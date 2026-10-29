@@ -156,9 +156,9 @@
 
 **問題**：不是死連結。實測 `https://breakout.tommypan.dev/` 回 301 轉到 `https://breakout.tommypan.com/`，所以打得開；但同一站在不同頁面給不同網域，讀者與搜尋引擎會收到兩個版本，`.dev` 的示範網址在文章中卻帶著「這是正式展示」的語氣。
 
-**建議**：全站統一 `.com`，`.dev` 只留轉址。
+**建議**：站上所有 `.dev` 連結都換成 `.com`，`.dev` 只留 301 轉址。理由不是美觀，是 canonical 只能有一個：兩個網域都能開，等於把同一份內容登記在兩個地址上；301 是補救，不能取代文章裡的連結。`.dev` 不是死連結，但它永遠只是入口，不是正式地址。
 
-**證據**：`curl -I https://breakout.tommypan.dev/` 回 `HTTP/2 301`、`location: https://breakout.tommypan.com/`；`.com` 直接 `200`。
+**證據**：`curl -I https://breakout.tommypan.dev/` 回 `HTTP/2 301`、`location: https://breakout.tommypan.com/`；`.com` 直接 `200`（2026-10-29 複驗）。
 
 ### B7. reward shaping 的區間寫法容易被讀成信賴區間
 
