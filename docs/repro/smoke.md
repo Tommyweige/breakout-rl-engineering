@@ -68,8 +68,10 @@ Smoke: PASS in 109.9s
 ```
 
 The total was 109.9 seconds on a 4-vCPU ARM host. Earlier runs on the same host
-took 116.6 and 143.5 seconds while the machine was busier. Allow about five
-minutes on a slow CI runner.
+took 116.6 and 143.5 seconds while the machine was busier. A final clean-clone
+run at `49c5f9a` took 80.1 seconds (20.1 s unit tests, 28.5 s training, 29.3 s
+evaluation); timings vary with host load. Allow about five minutes on a slow
+CI runner.
 
 ## What it asserts
 
