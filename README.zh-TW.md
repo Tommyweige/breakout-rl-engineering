@@ -283,6 +283,8 @@ npm run build
 
 引用任何分數前，先確認它所屬的 contract。DQN holdout 與 RGB controller 分別使用 Contract v2 與 v3，**不能直接比較**。
 
+凍結證據包由 commit `77a0c7b` 加入。任何新數字都應標記產生它的 commit（tag + 完整 SHA），方式見 [`docs/repro/versioning.md`](docs/repro/versioning.md)。
+
 ## 已知限制
 
 - DQN、controller、reward shaping、PER 與 Laya 的原始 run outputs 不在 `main`；對應數字屬於 historical reported，無法只靠這個 checkout 獨立重現。

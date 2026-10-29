@@ -306,6 +306,8 @@ The frozen evidence pack lives in [`docs/final-results/`](docs/final-results/REA
 
 Read the contract before quoting a score. The DQN holdout and the RGB controller were evaluated under Contract v2 and v3 respectively; they are **not directly comparable**.
 
+The frozen pack was added in commit `77a0c7b`. Tag the commit that produced any new number and record both the tag and the full SHA; see [`docs/repro/versioning.md`](docs/repro/versioning.md).
+
 ## Known Limitations
 
 - The raw DQN, controller, reward-shaping, PER, and Laya run outputs are not in `main`; the corresponding numbers are historical reported rather than independently reproducible from this checkout.
