@@ -1,0 +1,161 @@
+{
+  "summary": {
+    "ale_input_action_distribution": {
+      "FIRE": 173,
+      "LEFT": 32472,
+      "NOOP": 323012,
+      "RIGHT": 32133
+    },
+    "ball_detection_success_rate": 0.7717475953479976,
+    "best_clear_ale_frame": 22692,
+    "clear_count": 4,
+    "clear_rate": 0.26666666666666666,
+    "controller_decision_latency_ms": {
+      "max": 6.494319,
+      "mean": 2.030341839931406,
+      "median": 2.036919,
+      "p95": 2.12128
+    },
+    "evaluation_agent_steps_per_second": 436.0444999387995,
+    "evaluation_wall_clock_seconds": 889.3358362608124,
+    "failure_reason_counts": {
+      "canonical_clear_detected": 4,
+      "game_over": 11
+    },
+    "left_right_reversal_count": 8855,
+    "left_right_reversal_rate": 0.0228345238402228,
+    "lost_ball_frames": 88514,
+    "max_score": 864,
+    "mean_lives_remaining_at_clear": 1.5,
+    "mean_score": 721.8,
+    "median_clear_ale_frame": 24702,
+    "median_score": 810,
+    "min_score": 425,
+    "noop_rate": 0.8334020990742412,
+    "paddle_detection_success_rate": 1,
+    "requested_action_distribution": {
+      "FIRE": 0,
+      "LEFT": 32472,
+      "NOOP": 323185,
+      "RIGHT": 32133
+    },
+    "trajectory_prediction_count": 155898
+  },
+  "evaluation_protocol": {
+    "action_semantics": {
+      "ale_input_action": "Action sent to ALE after FIRE wrapper overrides, before sticky-action stochasticity; the physical action resolved by ALE is not observed.",
+      "requested_action": "Controller decision before FIRE wrapper overrides."
+    },
+    "clear_count_semantics": "Audited BreakoutCompletionDetector clear events; repository verified_clears requires separate contract/source/provenance validation, which this evaluator does not perform.",
+    "completion_detector": {
+      "ale_py_version": "0.12.0",
+      "audit_config_path": "configs/eval/breakout_completion_audit_v1.json",
+      "completion_detection_source": "ale_ram_bcd_score_and_raw_reward_agreement",
+      "completion_rule": "destroy both brick walls; exact documented maximum score",
+      "detector_id": "ale-breakout-two-wall-score-864-v2",
+      "difficulty": 0,
+      "environment_id": "ALE/Breakout-v5",
+      "game": "breakout",
+      "mode": 0,
+      "reason": null,
+      "rom_sha256": "376323f051c3c373c887fd83abead39d87d844ff283d435f4addbfc1710c6fd5",
+      "schema_version": 1,
+      "score_ram_addresses": [
+        76,
+        77
+      ],
+      "score_ram_byte_order": "high_pair_then_low_pair",
+      "score_ram_encoding": "packed_bcd_four_digit",
+      "score_threshold": 864,
+      "supported": true
+    },
+    "config_path": "/home/user/workspace/repo/configs/eval/breakout_vision_controller_v1.json",
+    "config_sha256": "25ddff6756747a6539ddd6a1eb570e7ef4c274f3e700ae011e68c87cae37c724",
+    "episode_count": 15,
+    "episodes_per_seed": 1,
+    "evaluation_epsilon": 0,
+    "evaluation_seeds": [
+      101,
+      102,
+      103,
+      104,
+      105,
+      202,
+      203,
+      204,
+      205,
+      206,
+      303,
+      304,
+      305,
+      306,
+      307
+    ],
+    "max_steps_per_episode": 108000
+  },
+  "environment": {
+    "base_environment_contract_id": "breakout-evaluation-v3-frame-skip-1",
+    "base_environment_contract_path": "/home/user/workspace/repo/configs/eval/breakout_contract_v3.json",
+    "base_environment_contract_sha256": "d97b7fcb5758cba495857b3972a119ed3eb7db74fb0145d151e9d82725c5a786",
+    "contract_id": "breakout-vision-controller-v1-frame-skip-1",
+    "environment_id": "ALE/Breakout-v5",
+    "fire_reset": true,
+    "frame_skip": 1,
+    "frame_stack": null,
+    "observation_type": "raw ALE RGB pixels (210, 160, 3)",
+    "raw_reward_rule": "sum environment rewards without clipping",
+    "sticky_action_probability": 0.25,
+    "terminal_on_life_loss": false,
+    "time_limit_semantics": {
+      "agent_step_limit": 108000,
+      "external_time_limit_wrapper": false,
+      "max_num_frames_per_episode": 108000,
+      "source": "ale.game_truncated",
+      "truncated_is_finished": true
+    }
+  },
+  "runtime": {
+    "numpy": "2.5.4",
+    "platform": "Linux-6.12.0-206.104.4.4.el9uek.aarch64-aarch64-with-glibc2.36",
+    "python": "3.12.14",
+    "wall_clock_seconds": 889.3358362608124
+  },
+  "source_provenance": {
+    "source_commit": "9d889184d4a8eef0001f726c821492046ce5c9a2",
+    "source_files": [
+      "breakout_env.py",
+      "breakout_rl/completion.py",
+      "breakout_rl/evaluation_contract.py",
+      "configs/eval/breakout_completion_audit_v1.json",
+      "breakout_rl/vision_controller.py",
+      "breakout_rl/vision_evaluation.py",
+      "configs/eval/breakout_vision_controller_v1.json",
+      "configs/eval/breakout_contract_v3.json"
+    ],
+    "source_sha256": "5989e61774525d2262fdfb840cee2939ea063871688099681442e1c1417202d0",
+    "working_tree_dirty": true
+  },
+  "controller": {
+    "actions": [
+      "NOOP",
+      "LEFT",
+      "RIGHT"
+    ],
+    "completion_evaluator_boundary": "BreakoutCompletionDetector is called only by the external evaluation loop.",
+    "control_inputs": [
+      "current and previous raw RGB screen pixels"
+    ],
+    "forbidden_inputs": [
+      "ALE RAM",
+      "emulator object coordinates",
+      "completion detector state"
+    ],
+    "name": "visual ball tracking with side-wall-aware paddle-plane intercept",
+    "options": {
+      "deadband": 3,
+      "hysteresis": 1,
+      "max_ball_speed_pixels_per_frame": 8,
+      "max_missing_frames": 4
+    }
+  }
+}
