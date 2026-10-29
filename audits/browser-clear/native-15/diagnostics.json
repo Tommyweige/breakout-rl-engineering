@@ -1,0 +1,319 @@
+{
+  "episodes": [
+    {
+      "ball_detected_frames": 18463,
+      "ball_detection_success_rate": 0.7857933265236636,
+      "controller_decision_latency_ms": {
+        "max": 5.275799,
+        "mean": 2.024105667177392,
+        "median": 2.0304,
+        "p95": 2.1109400000000003
+      },
+      "episode_seed": 101,
+      "left_right_reversal_count": 550,
+      "left_right_reversal_rate": 0.023408239700374533,
+      "lost_ball_frames": 5033,
+      "noop_rate": 0.8206077630234934,
+      "paddle_detected_frames": 23496,
+      "paddle_detection_success_rate": 1.0,
+      "trajectory_prediction_count": 9685
+    },
+    {
+      "ball_detected_frames": 14573,
+      "ball_detection_success_rate": 0.8105567606652205,
+      "controller_decision_latency_ms": {
+        "max": 5.163559,
+        "mean": 2.033260848378664,
+        "median": 2.03784,
+        "p95": 2.1199239
+      },
+      "episode_seed": 102,
+      "left_right_reversal_count": 362,
+      "left_right_reversal_rate": 0.020134601479503866,
+      "lost_ball_frames": 3406,
+      "noop_rate": 0.8550531175260025,
+      "paddle_detected_frames": 17979,
+      "paddle_detection_success_rate": 1.0,
+      "trajectory_prediction_count": 7455
+    },
+    {
+      "ball_detected_frames": 17915,
+      "ball_detection_success_rate": 0.7521306520005038,
+      "controller_decision_latency_ms": {
+        "max": 5.918079,
+        "mean": 2.0325756716067005,
+        "median": 2.0388,
+        "p95": 2.1214790999999997
+      },
+      "episode_seed": 103,
+      "left_right_reversal_count": 538,
+      "left_right_reversal_rate": 0.02258701036987279,
+      "lost_ball_frames": 5904,
+      "noop_rate": 0.8156513707544397,
+      "paddle_detected_frames": 23819,
+      "paddle_detection_success_rate": 1.0,
+      "trajectory_prediction_count": 9308
+    },
+    {
+      "ball_detected_frames": 17114,
+      "ball_detection_success_rate": 0.7888453560728278,
+      "controller_decision_latency_ms": {
+        "max": 4.16612,
+        "mean": 2.036429494537912,
+        "median": 2.043479,
+        "p95": 2.12116
+      },
+      "episode_seed": 104,
+      "left_right_reversal_count": 559,
+      "left_right_reversal_rate": 0.025766305600368748,
+      "lost_ball_frames": 4581,
+      "noop_rate": 0.8329569025120995,
+      "paddle_detected_frames": 21695,
+      "paddle_detection_success_rate": 1.0,
+      "trajectory_prediction_count": 8859
+    },
+    {
+      "ball_detected_frames": 15658,
+      "ball_detection_success_rate": 0.8010436384099862,
+      "controller_decision_latency_ms": {
+        "max": 5.815559,
+        "mean": 2.0406879543663985,
+        "median": 2.045159,
+        "p95": 2.1242277
+      },
+      "episode_seed": 105,
+      "left_right_reversal_count": 444,
+      "left_right_reversal_rate": 0.022714483040875838,
+      "lost_ball_frames": 3889,
+      "noop_rate": 0.8194607868215071,
+      "paddle_detected_frames": 19547,
+      "paddle_detection_success_rate": 1.0,
+      "trajectory_prediction_count": 8089
+    },
+    {
+      "ball_detected_frames": 35941,
+      "ball_detection_success_rate": 0.7360735643483247,
+      "controller_decision_latency_ms": {
+        "max": 4.870599,
+        "mean": 2.01903196096502,
+        "median": 2.02764,
+        "p95": 2.11288
+      },
+      "episode_seed": 202,
+      "left_right_reversal_count": 1127,
+      "left_right_reversal_rate": 0.023081019087408863,
+      "lost_ball_frames": 12887,
+      "noop_rate": 0.8301998853117064,
+      "paddle_detected_frames": 48828,
+      "paddle_detection_success_rate": 1.0,
+      "trajectory_prediction_count": 18957
+    },
+    {
+      "ball_detected_frames": 9703,
+      "ball_detection_success_rate": 0.8017020573411551,
+      "controller_decision_latency_ms": {
+        "max": 5.074039,
+        "mean": 2.0422210685780384,
+        "median": 2.048479,
+        "p95": 2.127867
+      },
+      "episode_seed": 203,
+      "left_right_reversal_count": 212,
+      "left_right_reversal_rate": 0.017516318268197967,
+      "lost_ball_frames": 2400,
+      "noop_rate": 0.8269024208873833,
+      "paddle_detected_frames": 12103,
+      "paddle_detection_success_rate": 1.0,
+      "trajectory_prediction_count": 5059
+    },
+    {
+      "ball_detected_frames": 22560,
+      "ball_detection_success_rate": 0.7738748627881449,
+      "controller_decision_latency_ms": {
+        "max": 6.110039,
+        "mean": 2.029475329411361,
+        "median": 2.0348794999999997,
+        "p95": 2.12827545
+      },
+      "episode_seed": 204,
+      "left_right_reversal_count": 604,
+      "left_right_reversal_rate": 0.020718990120746433,
+      "lost_ball_frames": 6592,
+      "noop_rate": 0.8413487925356751,
+      "paddle_detected_frames": 29152,
+      "paddle_detection_success_rate": 1.0,
+      "trajectory_prediction_count": 11760
+    },
+    {
+      "ball_detected_frames": 21221,
+      "ball_detection_success_rate": 0.788064468211527,
+      "controller_decision_latency_ms": {
+        "max": 4.671959,
+        "mean": 2.039530229352347,
+        "median": 2.046199,
+        "p95": 2.1270913499999997
+      },
+      "episode_seed": 205,
+      "left_right_reversal_count": 524,
+      "left_right_reversal_rate": 0.019459298871063575,
+      "lost_ball_frames": 5707,
+      "noop_rate": 0.8381981580510992,
+      "paddle_detected_frames": 26928,
+      "paddle_detection_success_rate": 1.0,
+      "trajectory_prediction_count": 10952
+    },
+    {
+      "ball_detected_frames": 11343,
+      "ball_detection_success_rate": 0.7962235013337077,
+      "controller_decision_latency_ms": {
+        "max": 5.542919,
+        "mean": 2.0365176733118067,
+        "median": 2.0426195,
+        "p95": 2.12944
+      },
+      "episode_seed": 206,
+      "left_right_reversal_count": 292,
+      "left_right_reversal_rate": 0.020496981608872665,
+      "lost_ball_frames": 2903,
+      "noop_rate": 0.8435350273761055,
+      "paddle_detected_frames": 14246,
+      "paddle_detection_success_rate": 1.0,
+      "trajectory_prediction_count": 5860
+    },
+    {
+      "ball_detected_frames": 10992,
+      "ball_detection_success_rate": 0.8346875237299719,
+      "controller_decision_latency_ms": {
+        "max": 5.138599,
+        "mean": 2.039441973726175,
+        "median": 2.04436,
+        "p95": 2.1261436
+      },
+      "episode_seed": 303,
+      "left_right_reversal_count": 299,
+      "left_right_reversal_rate": 0.022704837117472853,
+      "lost_ball_frames": 2177,
+      "noop_rate": 0.8269420609005999,
+      "paddle_detected_frames": 13169,
+      "paddle_detection_success_rate": 1.0,
+      "trajectory_prediction_count": 5629
+    },
+    {
+      "ball_detected_frames": 31264,
+      "ball_detection_success_rate": 0.7433720902584587,
+      "controller_decision_latency_ms": {
+        "max": 6.494319,
+        "mean": 2.0215940282473785,
+        "median": 2.026679,
+        "p95": 2.117679
+      },
+      "episode_seed": 304,
+      "left_right_reversal_count": 1104,
+      "left_right_reversal_rate": 0.026250089164705042,
+      "lost_ball_frames": 10793,
+      "noop_rate": 0.8447583042061964,
+      "paddle_detected_frames": 42057,
+      "paddle_detection_success_rate": 1.0,
+      "trajectory_prediction_count": 16348
+    },
+    {
+      "ball_detected_frames": 14488,
+      "ball_detection_success_rate": 0.8227143668370244,
+      "controller_decision_latency_ms": {
+        "max": 5.147399,
+        "mean": 2.0451871432140827,
+        "median": 2.0510595,
+        "p95": 2.12860345
+      },
+      "episode_seed": 305,
+      "left_right_reversal_count": 338,
+      "left_right_reversal_rate": 0.019193639977285633,
+      "lost_ball_frames": 3122,
+      "noop_rate": 0.8289040318001135,
+      "paddle_detected_frames": 17610,
+      "paddle_detection_success_rate": 1.0,
+      "trajectory_prediction_count": 7397
+    },
+    {
+      "ball_detected_frames": 30606,
+      "ball_detection_success_rate": 0.7460874652625421,
+      "controller_decision_latency_ms": {
+        "max": 4.849519,
+        "mean": 2.0247523518599775,
+        "median": 2.032,
+        "p95": 2.12007995
+      },
+      "episode_seed": 306,
+      "left_right_reversal_count": 1142,
+      "left_right_reversal_rate": 0.027838720686460924,
+      "lost_ball_frames": 10416,
+      "noop_rate": 0.8257032811662035,
+      "paddle_detected_frames": 41022,
+      "paddle_detection_success_rate": 1.0,
+      "trajectory_prediction_count": 16166
+    },
+    {
+      "ball_detected_frames": 27435,
+      "ball_detection_success_rate": 0.7591521624837433,
+      "controller_decision_latency_ms": {
+        "max": 4.866599,
+        "mean": 2.030916892111016,
+        "median": 2.03824,
+        "p95": 2.120679
+      },
+      "episode_seed": 307,
+      "left_right_reversal_count": 760,
+      "left_right_reversal_rate": 0.02102991228312903,
+      "lost_ball_frames": 8704,
+      "noop_rate": 0.8430504441185422,
+      "paddle_detected_frames": 36139,
+      "paddle_detection_success_rate": 1.0,
+      "trajectory_prediction_count": 14374
+    }
+  ],
+  "summary": {
+    "ale_input_action_distribution": {
+      "FIRE": 173,
+      "LEFT": 32472,
+      "NOOP": 323012,
+      "RIGHT": 32133
+    },
+    "ball_detection_success_rate": 0.7717475953479976,
+    "best_clear_ale_frame": 22692,
+    "clear_count": 4,
+    "clear_rate": 0.26666666666666666,
+    "controller_decision_latency_ms": {
+      "max": 6.494319,
+      "mean": 2.030341839931406,
+      "median": 2.036919,
+      "p95": 2.12128
+    },
+    "evaluation_agent_steps_per_second": 436.0444999387995,
+    "evaluation_wall_clock_seconds": 889.3358362608124,
+    "failure_reason_counts": {
+      "canonical_clear_detected": 4,
+      "game_over": 11
+    },
+    "left_right_reversal_count": 8855,
+    "left_right_reversal_rate": 0.0228345238402228,
+    "lost_ball_frames": 88514,
+    "max_score": 864.0,
+    "mean_lives_remaining_at_clear": 1.5,
+    "mean_score": 721.8,
+    "median_clear_ale_frame": 24702.0,
+    "median_score": 810.0,
+    "min_score": 425.0,
+    "noop_rate": 0.8334020990742412,
+    "paddle_detection_success_rate": 1.0,
+    "requested_action_distribution": {
+      "FIRE": 0,
+      "LEFT": 32472,
+      "NOOP": 323185,
+      "RIGHT": 32133
+    },
+    "trajectory_prediction_count": 155898
+  },
+  "trace_files": [
+    "controller_trace_seed_101.csv"
+  ]
+}

@@ -1,0 +1,2374 @@
+{
+  "harness": "scripts/analysis/browser-clear-audit.mjs",
+  "ale_version": "0.12.0",
+  "rom_sha256": "376323f051c3c373c887fd83abead39d87d844ff283d435f4addbfc1710c6fd5",
+  "contract": {
+    "frame_skip": 1,
+    "sticky_action_probability": 0.25,
+    "max_num_frames_per_episode": 108000,
+    "outer_action_repeat": 1
+  },
+  "controller": {
+    "source": "web/src/inference/PredictiveVisionController.ts",
+    "source_sha256": "00db1c7802adedc4d46a5b1cb0a763d9b6377a7ed80f6e62f82480328512ff73",
+    "bundle_sha256": "e9a76d7c4e0658268a5312bb0a239b4716b03f219bce891c6481301ad02bc78b"
+  },
+  "definitions": {
+    "screen_wall_clear": "rendered brick grid (18x6 cells, 8x6 px) contains zero bricks on at least one frame",
+    "canonical_clear": "RAM[76:78] packed-BCD score == 864 and equals cumulative raw reward (breakout_rl/completion.py)"
+  },
+  "sources": {
+    "seeds": "101,102,103,104,105,202,203,204,205,206,303,304,305,306,307,401,402,403,404,405",
+    "merged": []
+  },
+  "aggregate": {
+    "episode_count": 20,
+    "brick_clear": {
+      "episodes_with_at_least_one_wall_knocked_out": 16,
+      "share": 0.8,
+      "total_wall_knockouts": 28,
+      "episodes_with_level_advance": 16,
+      "total_level_advances": 20,
+      "episodes_with_pre864_wall_knockout": 16,
+      "share_pre864": 0.8,
+      "total_pre864_wall_knockouts": 16,
+      "post864_wall_knockouts": 12
+    },
+    "canonical_clear": {
+      "count": 9,
+      "share": 0.45
+    },
+    "score": {
+      "mean": 679.1,
+      "median": 827.5,
+      "min": 407,
+      "max": 864,
+      "distribution": [
+        {
+          "range": "<200",
+          "count": 0
+        },
+        {
+          "range": "200-399",
+          "count": 0
+        },
+        {
+          "range": "400-599",
+          "count": 9
+        },
+        {
+          "range": "600-799",
+          "count": 0
+        },
+        {
+          "range": "800-863",
+          "count": 2
+        },
+        {
+          "range": "864",
+          "count": 9
+        }
+      ]
+    },
+    "total_frames": 629572
+  },
+  "episodes": [
+    {
+      "seed": 101,
+      "ale_version": "0.12.0",
+      "score": 864,
+      "cum_reward": 864,
+      "lives_remaining": 0,
+      "bricks_remaining": 0,
+      "min_bricks": 0,
+      "steps": 52993,
+      "emulator_frames": 52993,
+      "terminated": true,
+      "truncated": false,
+      "brick_clear_events": 2,
+      "pre864_wall_clear_events": 1,
+      "post864_wall_clear_events": 1,
+      "level_advance_events": 1,
+      "wall_empty_frames": 16395,
+      "board_empty_at_end": true,
+      "canonical_cleared": true,
+      "canonical_clear": {
+        "step": 36637,
+        "frame": 36637,
+        "score": 864,
+        "cumReward": 864,
+        "lives": 2
+      },
+      "life_loss_steps": [
+        4041,
+        27171,
+        36262,
+        48658,
+        52993
+      ],
+      "ram_reward_mismatch_frames": 0,
+      "events": [
+        {
+          "step": 4041,
+          "frame": 4041,
+          "kind": "life_loss",
+          "score": 92,
+          "cumReward": 92,
+          "lives": 4,
+          "bricks": 61
+        },
+        {
+          "step": 25532,
+          "frame": 25532,
+          "kind": "wall_empty",
+          "score": 432,
+          "cumReward": 432,
+          "lives": 4,
+          "bricksBefore": 1
+        },
+        {
+          "step": 25570,
+          "frame": 25570,
+          "kind": "wall_rebuild",
+          "score": 432,
+          "cumReward": 432,
+          "lives": 4,
+          "bricksBefore": 0,
+          "bricksAfter": 108
+        },
+        {
+          "step": 27171,
+          "frame": 27171,
+          "kind": "life_loss",
+          "score": 477,
+          "cumReward": 477,
+          "lives": 3,
+          "bricks": 81
+        },
+        {
+          "step": 36262,
+          "frame": 36262,
+          "kind": "life_loss",
+          "score": 860,
+          "cumReward": 860,
+          "lives": 2,
+          "bricks": 1
+        },
+        {
+          "step": 36637,
+          "frame": 36637,
+          "kind": "wall_empty",
+          "score": 864,
+          "cumReward": 864,
+          "lives": 2,
+          "bricksBefore": 1
+        },
+        {
+          "step": 36637,
+          "frame": 36637,
+          "kind": "canonical_clear",
+          "score": 864,
+          "cumReward": 864,
+          "lives": 2,
+          "bricks": 0
+        },
+        {
+          "step": 48658,
+          "frame": 48658,
+          "kind": "life_loss",
+          "score": 864,
+          "cumReward": 864,
+          "lives": 1,
+          "bricks": 0
+        },
+        {
+          "step": 52993,
+          "frame": 52993,
+          "kind": "life_loss",
+          "score": 864,
+          "cumReward": 864,
+          "lives": 0,
+          "bricks": 0
+        },
+        {
+          "step": 52993,
+          "frame": 52993,
+          "kind": "game_over",
+          "score": 864,
+          "cumReward": 864,
+          "lives": 0,
+          "bricks": 0
+        }
+      ],
+      "duration_ms": 62852
+    },
+    {
+      "seed": 102,
+      "ale_version": "0.12.0",
+      "score": 425,
+      "cum_reward": 425,
+      "lives_remaining": 0,
+      "bricks_remaining": 1,
+      "min_bricks": 1,
+      "steps": 18917,
+      "emulator_frames": 18917,
+      "terminated": true,
+      "truncated": false,
+      "brick_clear_events": 0,
+      "pre864_wall_clear_events": 0,
+      "post864_wall_clear_events": 0,
+      "level_advance_events": 0,
+      "wall_empty_frames": 0,
+      "board_empty_at_end": false,
+      "canonical_cleared": false,
+      "canonical_clear": null,
+      "life_loss_steps": [
+        4091,
+        9328,
+        12969,
+        15205,
+        18917
+      ],
+      "ram_reward_mismatch_frames": 0,
+      "events": [
+        {
+          "step": 4091,
+          "frame": 4091,
+          "kind": "life_loss",
+          "score": 75,
+          "cumReward": 75,
+          "lives": 4,
+          "bricks": 66
+        },
+        {
+          "step": 9328,
+          "frame": 9328,
+          "kind": "life_loss",
+          "score": 360,
+          "cumReward": 360,
+          "lives": 3,
+          "bricks": 12
+        },
+        {
+          "step": 12969,
+          "frame": 12969,
+          "kind": "life_loss",
+          "score": 400,
+          "cumReward": 400,
+          "lives": 2,
+          "bricks": 5
+        },
+        {
+          "step": 15205,
+          "frame": 15205,
+          "kind": "life_loss",
+          "score": 414,
+          "cumReward": 414,
+          "lives": 1,
+          "bricks": 3
+        },
+        {
+          "step": 18917,
+          "frame": 18917,
+          "kind": "life_loss",
+          "score": 425,
+          "cumReward": 425,
+          "lives": 0,
+          "bricks": 1
+        },
+        {
+          "step": 18917,
+          "frame": 18917,
+          "kind": "game_over",
+          "score": 425,
+          "cumReward": 425,
+          "lives": 0,
+          "bricks": 1
+        }
+      ],
+      "duration_ms": 21766
+    },
+    {
+      "seed": 103,
+      "ale_version": "0.12.0",
+      "score": 864,
+      "cum_reward": 864,
+      "lives_remaining": 0,
+      "bricks_remaining": 0,
+      "min_bricks": 0,
+      "steps": 33065,
+      "emulator_frames": 33065,
+      "terminated": true,
+      "truncated": false,
+      "brick_clear_events": 2,
+      "pre864_wall_clear_events": 1,
+      "post864_wall_clear_events": 1,
+      "level_advance_events": 1,
+      "wall_empty_frames": 694,
+      "board_empty_at_end": true,
+      "canonical_cleared": true,
+      "canonical_clear": {
+        "step": 32429,
+        "frame": 32429,
+        "score": 864,
+        "cumReward": 864,
+        "lives": 2
+      },
+      "life_loss_steps": [
+        20687,
+        22864,
+        28596,
+        32774,
+        33065
+      ],
+      "ram_reward_mismatch_frames": 0,
+      "events": [
+        {
+          "step": 20687,
+          "frame": 20687,
+          "kind": "life_loss",
+          "score": 421,
+          "cumReward": 421,
+          "lives": 4,
+          "bricks": 2
+        },
+        {
+          "step": 21407,
+          "frame": 21407,
+          "kind": "wall_empty",
+          "score": 432,
+          "cumReward": 432,
+          "lives": 4,
+          "bricksBefore": 1
+        },
+        {
+          "step": 21464,
+          "frame": 21464,
+          "kind": "wall_rebuild",
+          "score": 432,
+          "cumReward": 432,
+          "lives": 4,
+          "bricksBefore": 0,
+          "bricksAfter": 108
+        },
+        {
+          "step": 22864,
+          "frame": 22864,
+          "kind": "life_loss",
+          "score": 459,
+          "cumReward": 459,
+          "lives": 3,
+          "bricks": 84
+        },
+        {
+          "step": 28596,
+          "frame": 28596,
+          "kind": "life_loss",
+          "score": 813,
+          "cumReward": 813,
+          "lives": 2,
+          "bricks": 9
+        },
+        {
+          "step": 32429,
+          "frame": 32429,
+          "kind": "wall_empty",
+          "score": 864,
+          "cumReward": 864,
+          "lives": 2,
+          "bricksBefore": 1
+        },
+        {
+          "step": 32429,
+          "frame": 32429,
+          "kind": "canonical_clear",
+          "score": 864,
+          "cumReward": 864,
+          "lives": 2,
+          "bricks": 0
+        },
+        {
+          "step": 32774,
+          "frame": 32774,
+          "kind": "life_loss",
+          "score": 864,
+          "cumReward": 864,
+          "lives": 1,
+          "bricks": 0
+        },
+        {
+          "step": 33065,
+          "frame": 33065,
+          "kind": "life_loss",
+          "score": 864,
+          "cumReward": 864,
+          "lives": 0,
+          "bricks": 0
+        },
+        {
+          "step": 33065,
+          "frame": 33065,
+          "kind": "game_over",
+          "score": 864,
+          "cumReward": 864,
+          "lives": 0,
+          "bricks": 0
+        }
+      ],
+      "duration_ms": 37287
+    },
+    {
+      "seed": 104,
+      "ale_version": "0.12.0",
+      "score": 849,
+      "cum_reward": 849,
+      "lives_remaining": 0,
+      "bricks_remaining": 3,
+      "min_bricks": 0,
+      "steps": 23683,
+      "emulator_frames": 23683,
+      "terminated": true,
+      "truncated": false,
+      "brick_clear_events": 1,
+      "pre864_wall_clear_events": 1,
+      "post864_wall_clear_events": 0,
+      "level_advance_events": 1,
+      "wall_empty_frames": 37,
+      "board_empty_at_end": false,
+      "canonical_cleared": false,
+      "canonical_clear": null,
+      "life_loss_steps": [
+        3898,
+        7309,
+        8272,
+        16173,
+        23683
+      ],
+      "ram_reward_mismatch_frames": 0,
+      "events": [
+        {
+          "step": 3898,
+          "frame": 3898,
+          "kind": "life_loss",
+          "score": 52,
+          "cumReward": 52,
+          "lives": 4,
+          "bricks": 74
+        },
+        {
+          "step": 7309,
+          "frame": 7309,
+          "kind": "life_loss",
+          "score": 374,
+          "cumReward": 374,
+          "lives": 3,
+          "bricks": 13
+        },
+        {
+          "step": 8272,
+          "frame": 8272,
+          "kind": "life_loss",
+          "score": 387,
+          "cumReward": 387,
+          "lives": 2,
+          "bricks": 9
+        },
+        {
+          "step": 12688,
+          "frame": 12688,
+          "kind": "wall_empty",
+          "score": 432,
+          "cumReward": 432,
+          "lives": 2,
+          "bricksBefore": 1
+        },
+        {
+          "step": 12725,
+          "frame": 12725,
+          "kind": "wall_rebuild",
+          "score": 432,
+          "cumReward": 432,
+          "lives": 2,
+          "bricksBefore": 0,
+          "bricksAfter": 108
+        },
+        {
+          "step": 16173,
+          "frame": 16173,
+          "kind": "life_loss",
+          "score": 572,
+          "cumReward": 572,
+          "lives": 1,
+          "bricks": 52
+        },
+        {
+          "step": 23683,
+          "frame": 23683,
+          "kind": "life_loss",
+          "score": 849,
+          "cumReward": 849,
+          "lives": 0,
+          "bricks": 3
+        },
+        {
+          "step": 23683,
+          "frame": 23683,
+          "kind": "game_over",
+          "score": 849,
+          "cumReward": 849,
+          "lives": 0,
+          "bricks": 3
+        }
+      ],
+      "duration_ms": 27399
+    },
+    {
+      "seed": 105,
+      "ale_version": "0.12.0",
+      "score": 470,
+      "cum_reward": 470,
+      "lives_remaining": 0,
+      "bricks_remaining": 82,
+      "min_bricks": 0,
+      "steps": 22458,
+      "emulator_frames": 22458,
+      "terminated": true,
+      "truncated": false,
+      "brick_clear_events": 1,
+      "pre864_wall_clear_events": 1,
+      "post864_wall_clear_events": 0,
+      "level_advance_events": 1,
+      "wall_empty_frames": 55,
+      "board_empty_at_end": false,
+      "canonical_cleared": false,
+      "canonical_clear": null,
+      "life_loss_steps": [
+        3376,
+        6890,
+        7903,
+        13801,
+        22458
+      ],
+      "ram_reward_mismatch_frames": 0,
+      "events": [
+        {
+          "step": 3376,
+          "frame": 3376,
+          "kind": "life_loss",
+          "score": 45,
+          "cumReward": 45,
+          "lives": 4,
+          "bricks": 78
+        },
+        {
+          "step": 6890,
+          "frame": 6890,
+          "kind": "life_loss",
+          "score": 365,
+          "cumReward": 365,
+          "lives": 3,
+          "bricks": 16
+        },
+        {
+          "step": 7903,
+          "frame": 7903,
+          "kind": "life_loss",
+          "score": 404,
+          "cumReward": 404,
+          "lives": 2,
+          "bricks": 7
+        },
+        {
+          "step": 13801,
+          "frame": 13801,
+          "kind": "life_loss",
+          "score": 428,
+          "cumReward": 428,
+          "lives": 1,
+          "bricks": 1
+        },
+        {
+          "step": 20069,
+          "frame": 20069,
+          "kind": "wall_empty",
+          "score": 432,
+          "cumReward": 432,
+          "lives": 1,
+          "bricksBefore": 1
+        },
+        {
+          "step": 20124,
+          "frame": 20124,
+          "kind": "wall_rebuild",
+          "score": 432,
+          "cumReward": 432,
+          "lives": 1,
+          "bricksBefore": 0,
+          "bricksAfter": 108
+        },
+        {
+          "step": 22458,
+          "frame": 22458,
+          "kind": "life_loss",
+          "score": 470,
+          "cumReward": 470,
+          "lives": 0,
+          "bricks": 82
+        },
+        {
+          "step": 22458,
+          "frame": 22458,
+          "kind": "game_over",
+          "score": 470,
+          "cumReward": 470,
+          "lives": 0,
+          "bricks": 82
+        }
+      ],
+      "duration_ms": 26471
+    },
+    {
+      "seed": 202,
+      "ale_version": "0.12.0",
+      "score": 864,
+      "cum_reward": 864,
+      "lives_remaining": 0,
+      "bricks_remaining": 0,
+      "min_bricks": 0,
+      "steps": 30252,
+      "emulator_frames": 30252,
+      "terminated": true,
+      "truncated": false,
+      "brick_clear_events": 2,
+      "pre864_wall_clear_events": 1,
+      "post864_wall_clear_events": 1,
+      "level_advance_events": 1,
+      "wall_empty_frames": 3490,
+      "board_empty_at_end": true,
+      "canonical_cleared": true,
+      "canonical_clear": {
+        "step": 26799,
+        "frame": 26799,
+        "score": 864,
+        "cumReward": 864,
+        "lives": 1
+      },
+      "life_loss_steps": [
+        9196,
+        12979,
+        18522,
+        25433,
+        30252
+      ],
+      "ram_reward_mismatch_frames": 0,
+      "events": [
+        {
+          "step": 9196,
+          "frame": 9196,
+          "kind": "life_loss",
+          "score": 420,
+          "cumReward": 420,
+          "lives": 4,
+          "bricks": 3
+        },
+        {
+          "step": 12979,
+          "frame": 12979,
+          "kind": "life_loss",
+          "score": 425,
+          "cumReward": 425,
+          "lives": 3,
+          "bricks": 1
+        },
+        {
+          "step": 13163,
+          "frame": 13163,
+          "kind": "wall_empty",
+          "score": 432,
+          "cumReward": 432,
+          "lives": 3,
+          "bricksBefore": 1
+        },
+        {
+          "step": 13199,
+          "frame": 13199,
+          "kind": "wall_rebuild",
+          "score": 432,
+          "cumReward": 432,
+          "lives": 3,
+          "bricksBefore": 0,
+          "bricksAfter": 108
+        },
+        {
+          "step": 18522,
+          "frame": 18522,
+          "kind": "life_loss",
+          "score": 778,
+          "cumReward": 778,
+          "lives": 2,
+          "bricks": 14
+        },
+        {
+          "step": 25433,
+          "frame": 25433,
+          "kind": "life_loss",
+          "score": 856,
+          "cumReward": 856,
+          "lives": 1,
+          "bricks": 2
+        },
+        {
+          "step": 26799,
+          "frame": 26799,
+          "kind": "wall_empty",
+          "score": 864,
+          "cumReward": 864,
+          "lives": 1,
+          "bricksBefore": 1
+        },
+        {
+          "step": 26799,
+          "frame": 26799,
+          "kind": "canonical_clear",
+          "score": 864,
+          "cumReward": 864,
+          "lives": 1,
+          "bricks": 0
+        },
+        {
+          "step": 30252,
+          "frame": 30252,
+          "kind": "life_loss",
+          "score": 864,
+          "cumReward": 864,
+          "lives": 0,
+          "bricks": 0
+        },
+        {
+          "step": 30252,
+          "frame": 30252,
+          "kind": "game_over",
+          "score": 864,
+          "cumReward": 864,
+          "lives": 0,
+          "bricks": 0
+        }
+      ],
+      "duration_ms": 33907
+    },
+    {
+      "seed": 203,
+      "ale_version": "0.12.0",
+      "score": 864,
+      "cum_reward": 864,
+      "lives_remaining": 0,
+      "bricks_remaining": 0,
+      "min_bricks": 0,
+      "steps": 26289,
+      "emulator_frames": 26289,
+      "terminated": true,
+      "truncated": false,
+      "brick_clear_events": 2,
+      "pre864_wall_clear_events": 1,
+      "post864_wall_clear_events": 1,
+      "level_advance_events": 1,
+      "wall_empty_frames": 369,
+      "board_empty_at_end": true,
+      "canonical_cleared": true,
+      "canonical_clear": {
+        "step": 25972,
+        "frame": 25972,
+        "score": 864,
+        "cumReward": 864,
+        "lives": 1
+      },
+      "life_loss_steps": [
+        11679,
+        18177,
+        21791,
+        25185,
+        26289
+      ],
+      "ram_reward_mismatch_frames": 0,
+      "events": [
+        {
+          "step": 11679,
+          "frame": 11679,
+          "kind": "life_loss",
+          "score": 427,
+          "cumReward": 427,
+          "lives": 4,
+          "bricks": 2
+        },
+        {
+          "step": 16193,
+          "frame": 16193,
+          "kind": "wall_empty",
+          "score": 432,
+          "cumReward": 432,
+          "lives": 4,
+          "bricksBefore": 1
+        },
+        {
+          "step": 16244,
+          "frame": 16244,
+          "kind": "wall_rebuild",
+          "score": 432,
+          "cumReward": 432,
+          "lives": 4,
+          "bricksBefore": 0,
+          "bricksAfter": 108
+        },
+        {
+          "step": 18177,
+          "frame": 18177,
+          "kind": "life_loss",
+          "score": 455,
+          "cumReward": 455,
+          "lives": 3,
+          "bricks": 88
+        },
+        {
+          "step": 21791,
+          "frame": 21791,
+          "kind": "life_loss",
+          "score": 709,
+          "cumReward": 709,
+          "lives": 2,
+          "bricks": 35
+        },
+        {
+          "step": 25185,
+          "frame": 25185,
+          "kind": "life_loss",
+          "score": 856,
+          "cumReward": 856,
+          "lives": 1,
+          "bricks": 2
+        },
+        {
+          "step": 25972,
+          "frame": 25972,
+          "kind": "wall_empty",
+          "score": 864,
+          "cumReward": 864,
+          "lives": 1,
+          "bricksBefore": 1
+        },
+        {
+          "step": 25972,
+          "frame": 25972,
+          "kind": "canonical_clear",
+          "score": 864,
+          "cumReward": 864,
+          "lives": 1,
+          "bricks": 0
+        },
+        {
+          "step": 26289,
+          "frame": 26289,
+          "kind": "life_loss",
+          "score": 864,
+          "cumReward": 864,
+          "lives": 0,
+          "bricks": 0
+        },
+        {
+          "step": 26289,
+          "frame": 26289,
+          "kind": "game_over",
+          "score": 864,
+          "cumReward": 864,
+          "lives": 0,
+          "bricks": 0
+        }
+      ],
+      "duration_ms": 29745
+    },
+    {
+      "seed": 204,
+      "ale_version": "0.12.0",
+      "score": 864,
+      "cum_reward": 864,
+      "lives_remaining": 0,
+      "bricks_remaining": 0,
+      "min_bricks": 0,
+      "steps": 34655,
+      "emulator_frames": 34655,
+      "terminated": true,
+      "truncated": false,
+      "brick_clear_events": 2,
+      "pre864_wall_clear_events": 1,
+      "post864_wall_clear_events": 1,
+      "level_advance_events": 1,
+      "wall_empty_frames": 9033,
+      "board_empty_at_end": true,
+      "canonical_cleared": true,
+      "canonical_clear": {
+        "step": 25680,
+        "frame": 25680,
+        "score": 864,
+        "cumReward": 864,
+        "lives": 1
+      },
+      "life_loss_steps": [
+        6843,
+        16430,
+        22219,
+        25395,
+        34655
+      ],
+      "ram_reward_mismatch_frames": 0,
+      "events": [
+        {
+          "step": 6843,
+          "frame": 6843,
+          "kind": "life_loss",
+          "score": 314,
+          "cumReward": 314,
+          "lives": 4,
+          "bricks": 19
+        },
+        {
+          "step": 15382,
+          "frame": 15382,
+          "kind": "wall_empty",
+          "score": 432,
+          "cumReward": 432,
+          "lives": 4,
+          "bricksBefore": 1
+        },
+        {
+          "step": 15439,
+          "frame": 15439,
+          "kind": "wall_rebuild",
+          "score": 432,
+          "cumReward": 432,
+          "lives": 4,
+          "bricksBefore": 0,
+          "bricksAfter": 108
+        },
+        {
+          "step": 16430,
+          "frame": 16430,
+          "kind": "life_loss",
+          "score": 455,
+          "cumReward": 455,
+          "lives": 3,
+          "bricks": 91
+        },
+        {
+          "step": 22219,
+          "frame": 22219,
+          "kind": "life_loss",
+          "score": 836,
+          "cumReward": 836,
+          "lives": 2,
+          "bricks": 7
+        },
+        {
+          "step": 25395,
+          "frame": 25395,
+          "kind": "life_loss",
+          "score": 856,
+          "cumReward": 856,
+          "lives": 1,
+          "bricks": 2
+        },
+        {
+          "step": 25680,
+          "frame": 25680,
+          "kind": "wall_empty",
+          "score": 864,
+          "cumReward": 864,
+          "lives": 1,
+          "bricksBefore": 1
+        },
+        {
+          "step": 25680,
+          "frame": 25680,
+          "kind": "canonical_clear",
+          "score": 864,
+          "cumReward": 864,
+          "lives": 1,
+          "bricks": 0
+        },
+        {
+          "step": 34655,
+          "frame": 34655,
+          "kind": "life_loss",
+          "score": 864,
+          "cumReward": 864,
+          "lives": 0,
+          "bricks": 0
+        },
+        {
+          "step": 34655,
+          "frame": 34655,
+          "kind": "game_over",
+          "score": 864,
+          "cumReward": 864,
+          "lives": 0,
+          "bricks": 0
+        }
+      ],
+      "duration_ms": 40005
+    },
+    {
+      "seed": 205,
+      "ale_version": "0.12.0",
+      "score": 549,
+      "cum_reward": 549,
+      "lives_remaining": 0,
+      "bricks_remaining": 54,
+      "min_bricks": 0,
+      "steps": 16525,
+      "emulator_frames": 16525,
+      "terminated": true,
+      "truncated": false,
+      "brick_clear_events": 1,
+      "pre864_wall_clear_events": 1,
+      "post864_wall_clear_events": 0,
+      "level_advance_events": 1,
+      "wall_empty_frames": 35,
+      "board_empty_at_end": false,
+      "canonical_cleared": false,
+      "canonical_clear": null,
+      "life_loss_steps": [
+        2683,
+        6683,
+        10866,
+        12946,
+        16525
+      ],
+      "ram_reward_mismatch_frames": 0,
+      "events": [
+        {
+          "step": 2683,
+          "frame": 2683,
+          "kind": "life_loss",
+          "score": 76,
+          "cumReward": 76,
+          "lives": 4,
+          "bricks": 71
+        },
+        {
+          "step": 6683,
+          "frame": 6683,
+          "kind": "life_loss",
+          "score": 329,
+          "cumReward": 329,
+          "lives": 3,
+          "bricks": 19
+        },
+        {
+          "step": 10866,
+          "frame": 10866,
+          "kind": "life_loss",
+          "score": 410,
+          "cumReward": 410,
+          "lives": 2,
+          "bricks": 4
+        },
+        {
+          "step": 12946,
+          "frame": 12946,
+          "kind": "life_loss",
+          "score": 421,
+          "cumReward": 421,
+          "lives": 1,
+          "bricks": 2
+        },
+        {
+          "step": 13166,
+          "frame": 13166,
+          "kind": "wall_empty",
+          "score": 432,
+          "cumReward": 432,
+          "lives": 1,
+          "bricksBefore": 1
+        },
+        {
+          "step": 13201,
+          "frame": 13201,
+          "kind": "wall_rebuild",
+          "score": 432,
+          "cumReward": 432,
+          "lives": 1,
+          "bricksBefore": 0,
+          "bricksAfter": 108
+        },
+        {
+          "step": 16525,
+          "frame": 16525,
+          "kind": "life_loss",
+          "score": 549,
+          "cumReward": 549,
+          "lives": 0,
+          "bricks": 54
+        },
+        {
+          "step": 16525,
+          "frame": 16525,
+          "kind": "game_over",
+          "score": 549,
+          "cumReward": 549,
+          "lives": 0,
+          "bricks": 54
+        }
+      ],
+      "duration_ms": 19605
+    },
+    {
+      "seed": 206,
+      "ale_version": "0.12.0",
+      "score": 521,
+      "cum_reward": 521,
+      "lives_remaining": 0,
+      "bricks_remaining": 64,
+      "min_bricks": 0,
+      "steps": 23479,
+      "emulator_frames": 23479,
+      "terminated": true,
+      "truncated": false,
+      "brick_clear_events": 1,
+      "pre864_wall_clear_events": 1,
+      "post864_wall_clear_events": 0,
+      "level_advance_events": 1,
+      "wall_empty_frames": 51,
+      "board_empty_at_end": false,
+      "canonical_cleared": false,
+      "canonical_clear": null,
+      "life_loss_steps": [
+        1931,
+        7909,
+        16555,
+        22839,
+        23479
+      ],
+      "ram_reward_mismatch_frames": 0,
+      "events": [
+        {
+          "step": 1931,
+          "frame": 1931,
+          "kind": "life_loss",
+          "score": 49,
+          "cumReward": 49,
+          "lives": 4,
+          "bricks": 83
+        },
+        {
+          "step": 7909,
+          "frame": 7909,
+          "kind": "life_loss",
+          "score": 408,
+          "cumReward": 408,
+          "lives": 3,
+          "bricks": 9
+        },
+        {
+          "step": 16555,
+          "frame": 16555,
+          "kind": "life_loss",
+          "score": 431,
+          "cumReward": 431,
+          "lives": 2,
+          "bricks": 1
+        },
+        {
+          "step": 19227,
+          "frame": 19227,
+          "kind": "wall_empty",
+          "score": 432,
+          "cumReward": 432,
+          "lives": 2,
+          "bricksBefore": 1
+        },
+        {
+          "step": 19278,
+          "frame": 19278,
+          "kind": "wall_rebuild",
+          "score": 432,
+          "cumReward": 432,
+          "lives": 2,
+          "bricksBefore": 0,
+          "bricksAfter": 108
+        },
+        {
+          "step": 22839,
+          "frame": 22839,
+          "kind": "life_loss",
+          "score": 489,
+          "cumReward": 489,
+          "lives": 1,
+          "bricks": 72
+        },
+        {
+          "step": 23479,
+          "frame": 23479,
+          "kind": "life_loss",
+          "score": 521,
+          "cumReward": 521,
+          "lives": 0,
+          "bricks": 64
+        },
+        {
+          "step": 23479,
+          "frame": 23479,
+          "kind": "game_over",
+          "score": 521,
+          "cumReward": 521,
+          "lives": 0,
+          "bricks": 64
+        }
+      ],
+      "duration_ms": 25277
+    },
+    {
+      "seed": 303,
+      "ale_version": "0.12.0",
+      "score": 428,
+      "cum_reward": 428,
+      "lives_remaining": 0,
+      "bricks_remaining": 1,
+      "min_bricks": 1,
+      "steps": 21365,
+      "emulator_frames": 21365,
+      "terminated": true,
+      "truncated": false,
+      "brick_clear_events": 0,
+      "pre864_wall_clear_events": 0,
+      "post864_wall_clear_events": 0,
+      "level_advance_events": 0,
+      "wall_empty_frames": 0,
+      "board_empty_at_end": false,
+      "canonical_cleared": false,
+      "canonical_clear": null,
+      "life_loss_steps": [
+        2965,
+        15204,
+        17855,
+        18899,
+        21365
+      ],
+      "ram_reward_mismatch_frames": 0,
+      "events": [
+        {
+          "step": 2965,
+          "frame": 2965,
+          "kind": "life_loss",
+          "score": 37,
+          "cumReward": 37,
+          "lives": 4,
+          "bricks": 83
+        },
+        {
+          "step": 15204,
+          "frame": 15204,
+          "kind": "life_loss",
+          "score": 401,
+          "cumReward": 401,
+          "lives": 3,
+          "bricks": 7
+        },
+        {
+          "step": 17855,
+          "frame": 17855,
+          "kind": "life_loss",
+          "score": 413,
+          "cumReward": 413,
+          "lives": 2,
+          "bricks": 4
+        },
+        {
+          "step": 18899,
+          "frame": 18899,
+          "kind": "life_loss",
+          "score": 417,
+          "cumReward": 417,
+          "lives": 1,
+          "bricks": 3
+        },
+        {
+          "step": 21365,
+          "frame": 21365,
+          "kind": "life_loss",
+          "score": 428,
+          "cumReward": 428,
+          "lives": 0,
+          "bricks": 1
+        },
+        {
+          "step": 21365,
+          "frame": 21365,
+          "kind": "game_over",
+          "score": 428,
+          "cumReward": 428,
+          "lives": 0,
+          "bricks": 1
+        }
+      ],
+      "duration_ms": 21835
+    },
+    {
+      "seed": 304,
+      "ale_version": "0.12.0",
+      "score": 407,
+      "cum_reward": 407,
+      "lives_remaining": 0,
+      "bricks_remaining": 4,
+      "min_bricks": 4,
+      "steps": 13350,
+      "emulator_frames": 13350,
+      "terminated": true,
+      "truncated": false,
+      "brick_clear_events": 0,
+      "pre864_wall_clear_events": 0,
+      "post864_wall_clear_events": 0,
+      "level_advance_events": 0,
+      "wall_empty_frames": 0,
+      "board_empty_at_end": false,
+      "canonical_cleared": false,
+      "canonical_clear": null,
+      "life_loss_steps": [
+        5359,
+        6410,
+        7048,
+        12871,
+        13350
+      ],
+      "ram_reward_mismatch_frames": 0,
+      "events": [
+        {
+          "step": 5359,
+          "frame": 5359,
+          "kind": "life_loss",
+          "score": 160,
+          "cumReward": 160,
+          "lives": 4,
+          "bricks": 47
+        },
+        {
+          "step": 6410,
+          "frame": 6410,
+          "kind": "life_loss",
+          "score": 254,
+          "cumReward": 254,
+          "lives": 3,
+          "bricks": 31
+        },
+        {
+          "step": 7048,
+          "frame": 7048,
+          "kind": "life_loss",
+          "score": 310,
+          "cumReward": 310,
+          "lives": 2,
+          "bricks": 23
+        },
+        {
+          "step": 12871,
+          "frame": 12871,
+          "kind": "life_loss",
+          "score": 396,
+          "cumReward": 396,
+          "lives": 1,
+          "bricks": 6
+        },
+        {
+          "step": 13350,
+          "frame": 13350,
+          "kind": "life_loss",
+          "score": 407,
+          "cumReward": 407,
+          "lives": 0,
+          "bricks": 4
+        },
+        {
+          "step": 13350,
+          "frame": 13350,
+          "kind": "game_over",
+          "score": 407,
+          "cumReward": 407,
+          "lives": 0,
+          "bricks": 4
+        }
+      ],
+      "duration_ms": 14278
+    },
+    {
+      "seed": 305,
+      "ale_version": "0.12.0",
+      "score": 864,
+      "cum_reward": 864,
+      "lives_remaining": 0,
+      "bricks_remaining": 0,
+      "min_bricks": 0,
+      "steps": 26500,
+      "emulator_frames": 26500,
+      "terminated": true,
+      "truncated": false,
+      "brick_clear_events": 2,
+      "pre864_wall_clear_events": 1,
+      "post864_wall_clear_events": 1,
+      "level_advance_events": 1,
+      "wall_empty_frames": 1211,
+      "board_empty_at_end": true,
+      "canonical_cleared": true,
+      "canonical_clear": {
+        "step": 25351,
+        "frame": 25351,
+        "score": 864,
+        "cumReward": 864,
+        "lives": 1
+      },
+      "life_loss_steps": [
+        7426,
+        9776,
+        13123,
+        22389,
+        26500
+      ],
+      "ram_reward_mismatch_frames": 0,
+      "events": [
+        {
+          "step": 7426,
+          "frame": 7426,
+          "kind": "life_loss",
+          "score": 362,
+          "cumReward": 362,
+          "lives": 4,
+          "bricks": 16
+        },
+        {
+          "step": 9776,
+          "frame": 9776,
+          "kind": "life_loss",
+          "score": 388,
+          "cumReward": 388,
+          "lives": 3,
+          "bricks": 11
+        },
+        {
+          "step": 12636,
+          "frame": 12636,
+          "kind": "wall_empty",
+          "score": 432,
+          "cumReward": 432,
+          "lives": 3,
+          "bricksBefore": 1
+        },
+        {
+          "step": 12697,
+          "frame": 12697,
+          "kind": "wall_rebuild",
+          "score": 432,
+          "cumReward": 432,
+          "lives": 3,
+          "bricksBefore": 0,
+          "bricksAfter": 108
+        },
+        {
+          "step": 13123,
+          "frame": 13123,
+          "kind": "life_loss",
+          "score": 445,
+          "cumReward": 445,
+          "lives": 2,
+          "bricks": 101
+        },
+        {
+          "step": 22389,
+          "frame": 22389,
+          "kind": "life_loss",
+          "score": 846,
+          "cumReward": 846,
+          "lives": 1,
+          "bricks": 6
+        },
+        {
+          "step": 25351,
+          "frame": 25351,
+          "kind": "wall_empty",
+          "score": 864,
+          "cumReward": 864,
+          "lives": 1,
+          "bricksBefore": 1
+        },
+        {
+          "step": 25351,
+          "frame": 25351,
+          "kind": "canonical_clear",
+          "score": 864,
+          "cumReward": 864,
+          "lives": 1,
+          "bricks": 0
+        },
+        {
+          "step": 26500,
+          "frame": 26500,
+          "kind": "life_loss",
+          "score": 864,
+          "cumReward": 864,
+          "lives": 0,
+          "bricks": 0
+        },
+        {
+          "step": 26500,
+          "frame": 26500,
+          "kind": "game_over",
+          "score": 864,
+          "cumReward": 864,
+          "lives": 0,
+          "bricks": 0
+        }
+      ],
+      "duration_ms": 29044
+    },
+    {
+      "seed": 306,
+      "ale_version": "0.12.0",
+      "score": 421,
+      "cum_reward": 421,
+      "lives_remaining": 0,
+      "bricks_remaining": 2,
+      "min_bricks": 2,
+      "steps": 16441,
+      "emulator_frames": 16441,
+      "terminated": true,
+      "truncated": false,
+      "brick_clear_events": 0,
+      "pre864_wall_clear_events": 0,
+      "post864_wall_clear_events": 0,
+      "level_advance_events": 0,
+      "wall_empty_frames": 0,
+      "board_empty_at_end": false,
+      "canonical_cleared": false,
+      "canonical_clear": null,
+      "life_loss_steps": [
+        6343,
+        9418,
+        13791,
+        14243,
+        16441
+      ],
+      "ram_reward_mismatch_frames": 0,
+      "events": [
+        {
+          "step": 6343,
+          "frame": 6343,
+          "kind": "life_loss",
+          "score": 275,
+          "cumReward": 275,
+          "lives": 4,
+          "bricks": 28
+        },
+        {
+          "step": 9418,
+          "frame": 9418,
+          "kind": "life_loss",
+          "score": 357,
+          "cumReward": 357,
+          "lives": 3,
+          "bricks": 15
+        },
+        {
+          "step": 13791,
+          "frame": 13791,
+          "kind": "life_loss",
+          "score": 392,
+          "cumReward": 392,
+          "lives": 2,
+          "bricks": 7
+        },
+        {
+          "step": 14243,
+          "frame": 14243,
+          "kind": "life_loss",
+          "score": 403,
+          "cumReward": 403,
+          "lives": 1,
+          "bricks": 5
+        },
+        {
+          "step": 16441,
+          "frame": 16441,
+          "kind": "life_loss",
+          "score": 421,
+          "cumReward": 421,
+          "lives": 0,
+          "bricks": 2
+        },
+        {
+          "step": 16441,
+          "frame": 16441,
+          "kind": "game_over",
+          "score": 421,
+          "cumReward": 421,
+          "lives": 0,
+          "bricks": 2
+        }
+      ],
+      "duration_ms": 17792
+    },
+    {
+      "seed": 307,
+      "ale_version": "0.12.0",
+      "score": 864,
+      "cum_reward": 864,
+      "lives_remaining": 0,
+      "bricks_remaining": 0,
+      "min_bricks": 0,
+      "steps": 45963,
+      "emulator_frames": 45963,
+      "terminated": true,
+      "truncated": false,
+      "brick_clear_events": 2,
+      "pre864_wall_clear_events": 1,
+      "post864_wall_clear_events": 1,
+      "level_advance_events": 1,
+      "wall_empty_frames": 13708,
+      "board_empty_at_end": true,
+      "canonical_cleared": true,
+      "canonical_clear": {
+        "step": 32293,
+        "frame": 32293,
+        "score": 864,
+        "cumReward": 864,
+        "lives": 1
+      },
+      "life_loss_steps": [
+        23106,
+        28361,
+        30810,
+        31509,
+        45963
+      ],
+      "ram_reward_mismatch_frames": 0,
+      "events": [
+        {
+          "step": 20797,
+          "frame": 20797,
+          "kind": "wall_empty",
+          "score": 432,
+          "cumReward": 432,
+          "lives": 5,
+          "bricksBefore": 1
+        },
+        {
+          "step": 20834,
+          "frame": 20834,
+          "kind": "wall_rebuild",
+          "score": 432,
+          "cumReward": 432,
+          "lives": 5,
+          "bricksBefore": 0,
+          "bricksAfter": 108
+        },
+        {
+          "step": 23106,
+          "frame": 23106,
+          "kind": "life_loss",
+          "score": 506,
+          "cumReward": 506,
+          "lives": 4,
+          "bricks": 70
+        },
+        {
+          "step": 28361,
+          "frame": 28361,
+          "kind": "life_loss",
+          "score": 862,
+          "cumReward": 862,
+          "lives": 3,
+          "bricks": 2
+        },
+        {
+          "step": 30810,
+          "frame": 30810,
+          "kind": "life_loss",
+          "score": 863,
+          "cumReward": 863,
+          "lives": 2,
+          "bricks": 1
+        },
+        {
+          "step": 31509,
+          "frame": 31509,
+          "kind": "life_loss",
+          "score": 863,
+          "cumReward": 863,
+          "lives": 1,
+          "bricks": 1
+        },
+        {
+          "step": 32293,
+          "frame": 32293,
+          "kind": "wall_empty",
+          "score": 864,
+          "cumReward": 864,
+          "lives": 1,
+          "bricksBefore": 1
+        },
+        {
+          "step": 32293,
+          "frame": 32293,
+          "kind": "canonical_clear",
+          "score": 864,
+          "cumReward": 864,
+          "lives": 1,
+          "bricks": 0
+        },
+        {
+          "step": 45963,
+          "frame": 45963,
+          "kind": "life_loss",
+          "score": 864,
+          "cumReward": 864,
+          "lives": 0,
+          "bricks": 0
+        },
+        {
+          "step": 45963,
+          "frame": 45963,
+          "kind": "game_over",
+          "score": 864,
+          "cumReward": 864,
+          "lives": 0,
+          "bricks": 0
+        }
+      ],
+      "duration_ms": 46736
+    },
+    {
+      "seed": 401,
+      "ale_version": "0.12.0",
+      "score": 864,
+      "cum_reward": 864,
+      "lives_remaining": 1,
+      "bricks_remaining": 108,
+      "min_bricks": 0,
+      "steps": 108000,
+      "emulator_frames": 108000,
+      "terminated": true,
+      "truncated": true,
+      "brick_clear_events": 5,
+      "pre864_wall_clear_events": 1,
+      "post864_wall_clear_events": 4,
+      "level_advance_events": 5,
+      "wall_empty_frames": 20084,
+      "board_empty_at_end": false,
+      "canonical_cleared": true,
+      "canonical_clear": {
+        "step": 46511,
+        "frame": 46511,
+        "score": 864,
+        "cumReward": 864,
+        "lives": 1
+      },
+      "life_loss_steps": [
+        13603,
+        14774,
+        19154,
+        45022
+      ],
+      "ram_reward_mismatch_frames": 0,
+      "events": [
+        {
+          "step": 13603,
+          "frame": 13603,
+          "kind": "life_loss",
+          "score": 428,
+          "cumReward": 428,
+          "lives": 4,
+          "bricks": 1
+        },
+        {
+          "step": 14152,
+          "frame": 14152,
+          "kind": "wall_empty",
+          "score": 432,
+          "cumReward": 432,
+          "lives": 4,
+          "bricksBefore": 1
+        },
+        {
+          "step": 14186,
+          "frame": 14186,
+          "kind": "wall_rebuild",
+          "score": 432,
+          "cumReward": 432,
+          "lives": 4,
+          "bricksBefore": 0,
+          "bricksAfter": 108
+        },
+        {
+          "step": 14774,
+          "frame": 14774,
+          "kind": "life_loss",
+          "score": 445,
+          "cumReward": 445,
+          "lives": 3,
+          "bricks": 98
+        },
+        {
+          "step": 19154,
+          "frame": 19154,
+          "kind": "life_loss",
+          "score": 724,
+          "cumReward": 724,
+          "lives": 2,
+          "bricks": 32
+        },
+        {
+          "step": 45022,
+          "frame": 45022,
+          "kind": "life_loss",
+          "score": 860,
+          "cumReward": 860,
+          "lives": 1,
+          "bricks": 1
+        },
+        {
+          "step": 46511,
+          "frame": 46511,
+          "kind": "wall_empty",
+          "score": 864,
+          "cumReward": 864,
+          "lives": 1,
+          "bricksBefore": 1
+        },
+        {
+          "step": 46511,
+          "frame": 46511,
+          "kind": "canonical_clear",
+          "score": 864,
+          "cumReward": 864,
+          "lives": 1,
+          "bricks": 0
+        },
+        {
+          "step": 65793,
+          "frame": 65793,
+          "kind": "wall_rebuild",
+          "score": 864,
+          "cumReward": 864,
+          "lives": 1,
+          "bricksBefore": 0,
+          "bricksAfter": 108
+        },
+        {
+          "step": 69633,
+          "frame": 69633,
+          "kind": "wall_empty",
+          "score": 864,
+          "cumReward": 864,
+          "lives": 1,
+          "bricksBefore": 108
+        },
+        {
+          "step": 69889,
+          "frame": 69889,
+          "kind": "wall_rebuild",
+          "score": 864,
+          "cumReward": 864,
+          "lives": 1,
+          "bricksBefore": 0,
+          "bricksAfter": 108
+        },
+        {
+          "step": 98305,
+          "frame": 98305,
+          "kind": "wall_empty",
+          "score": 864,
+          "cumReward": 864,
+          "lives": 1,
+          "bricksBefore": 108
+        },
+        {
+          "step": 98561,
+          "frame": 98561,
+          "kind": "wall_rebuild",
+          "score": 864,
+          "cumReward": 864,
+          "lives": 1,
+          "bricksBefore": 0,
+          "bricksAfter": 108
+        },
+        {
+          "step": 102401,
+          "frame": 102401,
+          "kind": "wall_empty",
+          "score": 864,
+          "cumReward": 864,
+          "lives": 1,
+          "bricksBefore": 108
+        },
+        {
+          "step": 102657,
+          "frame": 102657,
+          "kind": "wall_rebuild",
+          "score": 864,
+          "cumReward": 864,
+          "lives": 1,
+          "bricksBefore": 0,
+          "bricksAfter": 108
+        },
+        {
+          "step": 108000,
+          "frame": 108000,
+          "kind": "time_limit",
+          "score": 864,
+          "cumReward": 864,
+          "lives": 1,
+          "bricks": 108
+        }
+      ],
+      "duration_ms": 110819
+    },
+    {
+      "seed": 402,
+      "ale_version": "0.12.0",
+      "score": 468,
+      "cum_reward": 468,
+      "lives_remaining": 0,
+      "bricks_remaining": 90,
+      "min_bricks": 0,
+      "steps": 15744,
+      "emulator_frames": 15744,
+      "terminated": true,
+      "truncated": false,
+      "brick_clear_events": 1,
+      "pre864_wall_clear_events": 1,
+      "post864_wall_clear_events": 0,
+      "level_advance_events": 1,
+      "wall_empty_frames": 59,
+      "board_empty_at_end": false,
+      "canonical_cleared": false,
+      "canonical_clear": null,
+      "life_loss_steps": [
+        1763,
+        9802,
+        11853,
+        14898,
+        15744
+      ],
+      "ram_reward_mismatch_frames": 0,
+      "events": [
+        {
+          "step": 1763,
+          "frame": 1763,
+          "kind": "life_loss",
+          "score": 18,
+          "cumReward": 18,
+          "lives": 4,
+          "bricks": 96
+        },
+        {
+          "step": 9802,
+          "frame": 9802,
+          "kind": "life_loss",
+          "score": 400,
+          "cumReward": 400,
+          "lives": 3,
+          "bricks": 8
+        },
+        {
+          "step": 11853,
+          "frame": 11853,
+          "kind": "life_loss",
+          "score": 423,
+          "cumReward": 423,
+          "lives": 2,
+          "bricks": 3
+        },
+        {
+          "step": 14095,
+          "frame": 14095,
+          "kind": "wall_empty",
+          "score": 432,
+          "cumReward": 432,
+          "lives": 2,
+          "bricksBefore": 1
+        },
+        {
+          "step": 14154,
+          "frame": 14154,
+          "kind": "wall_rebuild",
+          "score": 432,
+          "cumReward": 432,
+          "lives": 2,
+          "bricksBefore": 0,
+          "bricksAfter": 108
+        },
+        {
+          "step": 14898,
+          "frame": 14898,
+          "kind": "life_loss",
+          "score": 456,
+          "cumReward": 456,
+          "lives": 1,
+          "bricks": 96
+        },
+        {
+          "step": 15744,
+          "frame": 15744,
+          "kind": "life_loss",
+          "score": 468,
+          "cumReward": 468,
+          "lives": 0,
+          "bricks": 90
+        },
+        {
+          "step": 15744,
+          "frame": 15744,
+          "kind": "game_over",
+          "score": 468,
+          "cumReward": 468,
+          "lives": 0,
+          "bricks": 90
+        }
+      ],
+      "duration_ms": 16593
+    },
+    {
+      "seed": 403,
+      "ale_version": "0.12.0",
+      "score": 864,
+      "cum_reward": 864,
+      "lives_remaining": 0,
+      "bricks_remaining": 0,
+      "min_bricks": 0,
+      "steps": 56178,
+      "emulator_frames": 56178,
+      "terminated": true,
+      "truncated": false,
+      "brick_clear_events": 2,
+      "pre864_wall_clear_events": 1,
+      "post864_wall_clear_events": 1,
+      "level_advance_events": 1,
+      "wall_empty_frames": 35964,
+      "board_empty_at_end": true,
+      "canonical_cleared": true,
+      "canonical_clear": {
+        "step": 20279,
+        "frame": 20279,
+        "score": 864,
+        "cumReward": 864,
+        "lives": 2
+      },
+      "life_loss_steps": [
+        4800,
+        9389,
+        15244,
+        29914,
+        56178
+      ],
+      "ram_reward_mismatch_frames": 0,
+      "events": [
+        {
+          "step": 4800,
+          "frame": 4800,
+          "kind": "life_loss",
+          "score": 119,
+          "cumReward": 119,
+          "lives": 4,
+          "bricks": 55
+        },
+        {
+          "step": 9389,
+          "frame": 9389,
+          "kind": "life_loss",
+          "score": 427,
+          "cumReward": 427,
+          "lives": 3,
+          "bricks": 2
+        },
+        {
+          "step": 11000,
+          "frame": 11000,
+          "kind": "wall_empty",
+          "score": 432,
+          "cumReward": 432,
+          "lives": 3,
+          "bricksBefore": 1
+        },
+        {
+          "step": 11064,
+          "frame": 11064,
+          "kind": "wall_rebuild",
+          "score": 432,
+          "cumReward": 432,
+          "lives": 3,
+          "bricksBefore": 0,
+          "bricksAfter": 108
+        },
+        {
+          "step": 15244,
+          "frame": 15244,
+          "kind": "life_loss",
+          "score": 625,
+          "cumReward": 625,
+          "lives": 2,
+          "bricks": 41
+        },
+        {
+          "step": 20279,
+          "frame": 20279,
+          "kind": "wall_empty",
+          "score": 864,
+          "cumReward": 864,
+          "lives": 2,
+          "bricksBefore": 1
+        },
+        {
+          "step": 20279,
+          "frame": 20279,
+          "kind": "canonical_clear",
+          "score": 864,
+          "cumReward": 864,
+          "lives": 2,
+          "bricks": 0
+        },
+        {
+          "step": 29914,
+          "frame": 29914,
+          "kind": "life_loss",
+          "score": 864,
+          "cumReward": 864,
+          "lives": 1,
+          "bricks": 0
+        },
+        {
+          "step": 56178,
+          "frame": 56178,
+          "kind": "life_loss",
+          "score": 864,
+          "cumReward": 864,
+          "lives": 0,
+          "bricks": 0
+        },
+        {
+          "step": 56178,
+          "frame": 56178,
+          "kind": "game_over",
+          "score": 864,
+          "cumReward": 864,
+          "lives": 0,
+          "bricks": 0
+        }
+      ],
+      "duration_ms": 55838
+    },
+    {
+      "seed": 404,
+      "ale_version": "0.12.0",
+      "score": 462,
+      "cum_reward": 462,
+      "lives_remaining": 0,
+      "bricks_remaining": 87,
+      "min_bricks": 0,
+      "steps": 17881,
+      "emulator_frames": 17881,
+      "terminated": true,
+      "truncated": false,
+      "brick_clear_events": 1,
+      "pre864_wall_clear_events": 1,
+      "post864_wall_clear_events": 0,
+      "level_advance_events": 1,
+      "wall_empty_frames": 136,
+      "board_empty_at_end": false,
+      "canonical_cleared": false,
+      "canonical_clear": null,
+      "life_loss_steps": [
+        4273,
+        10484,
+        14921,
+        15496,
+        17881
+      ],
+      "ram_reward_mismatch_frames": 0,
+      "events": [
+        {
+          "step": 4273,
+          "frame": 4273,
+          "kind": "life_loss",
+          "score": 91,
+          "cumReward": 91,
+          "lives": 4,
+          "bricks": 65
+        },
+        {
+          "step": 10484,
+          "frame": 10484,
+          "kind": "life_loss",
+          "score": 385,
+          "cumReward": 385,
+          "lives": 3,
+          "bricks": 11
+        },
+        {
+          "step": 14921,
+          "frame": 14921,
+          "kind": "life_loss",
+          "score": 421,
+          "cumReward": 421,
+          "lives": 2,
+          "bricks": 2
+        },
+        {
+          "step": 15429,
+          "frame": 15429,
+          "kind": "wall_empty",
+          "score": 432,
+          "cumReward": 432,
+          "lives": 2,
+          "bricksBefore": 1
+        },
+        {
+          "step": 15496,
+          "frame": 15496,
+          "kind": "life_loss",
+          "score": 432,
+          "cumReward": 432,
+          "lives": 1,
+          "bricks": 0
+        },
+        {
+          "step": 15565,
+          "frame": 15565,
+          "kind": "wall_rebuild",
+          "score": 432,
+          "cumReward": 432,
+          "lives": 1,
+          "bricksBefore": 0,
+          "bricksAfter": 108
+        },
+        {
+          "step": 17881,
+          "frame": 17881,
+          "kind": "life_loss",
+          "score": 462,
+          "cumReward": 462,
+          "lives": 0,
+          "bricks": 87
+        },
+        {
+          "step": 17881,
+          "frame": 17881,
+          "kind": "game_over",
+          "score": 462,
+          "cumReward": 462,
+          "lives": 0,
+          "bricks": 87
+        }
+      ],
+      "duration_ms": 18609
+    },
+    {
+      "seed": 405,
+      "ale_version": "0.12.0",
+      "score": 806,
+      "cum_reward": 806,
+      "lives_remaining": 0,
+      "bricks_remaining": 10,
+      "min_bricks": 0,
+      "steps": 25834,
+      "emulator_frames": 25834,
+      "terminated": true,
+      "truncated": false,
+      "brick_clear_events": 1,
+      "pre864_wall_clear_events": 1,
+      "post864_wall_clear_events": 0,
+      "level_advance_events": 1,
+      "wall_empty_frames": 107,
+      "board_empty_at_end": false,
+      "canonical_cleared": false,
+      "canonical_clear": null,
+      "life_loss_steps": [
+        7717,
+        12260,
+        13263,
+        17261,
+        25834
+      ],
+      "ram_reward_mismatch_frames": 0,
+      "events": [
+        {
+          "step": 7717,
+          "frame": 7717,
+          "kind": "life_loss",
+          "score": 407,
+          "cumReward": 407,
+          "lives": 4,
+          "bricks": 7
+        },
+        {
+          "step": 12260,
+          "frame": 12260,
+          "kind": "life_loss",
+          "score": 422,
+          "cumReward": 422,
+          "lives": 3,
+          "bricks": 4
+        },
+        {
+          "step": 13263,
+          "frame": 13263,
+          "kind": "life_loss",
+          "score": 422,
+          "cumReward": 422,
+          "lives": 2,
+          "bricks": 4
+        },
+        {
+          "step": 17261,
+          "frame": 17261,
+          "kind": "life_loss",
+          "score": 431,
+          "cumReward": 431,
+          "lives": 1,
+          "bricks": 1
+        },
+        {
+          "step": 18199,
+          "frame": 18199,
+          "kind": "wall_empty",
+          "score": 432,
+          "cumReward": 432,
+          "lives": 1,
+          "bricksBefore": 1
+        },
+        {
+          "step": 18306,
+          "frame": 18306,
+          "kind": "wall_rebuild",
+          "score": 432,
+          "cumReward": 432,
+          "lives": 1,
+          "bricksBefore": 0,
+          "bricksAfter": 108
+        },
+        {
+          "step": 25834,
+          "frame": 25834,
+          "kind": "life_loss",
+          "score": 806,
+          "cumReward": 806,
+          "lives": 0,
+          "bricks": 10
+        },
+        {
+          "step": 25834,
+          "frame": 25834,
+          "kind": "game_over",
+          "score": 806,
+          "cumReward": 806,
+          "lives": 0,
+          "bricks": 10
+        }
+      ],
+      "duration_ms": 27021
+    }
+  ]
+}
