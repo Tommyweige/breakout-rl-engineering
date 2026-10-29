@@ -236,6 +236,9 @@ conda env create -f environment.yml
 conda activate breakout-rl-engineering
 ```
 
+On a minimal Linux image, install the X/GL libraries from the apt block above
+before running the smoke; they are runtime dependencies of the OpenCV wheel.
+
 `ale-py==0.12.0` bundles the Breakout ROM; no separate ROM download is
 required. Run the unit tests and the end-to-end smoke with one command:
 

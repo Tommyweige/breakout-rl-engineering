@@ -221,6 +221,9 @@ conda env create -f environment.yml
 conda activate breakout-rl-engineering
 ```
 
+最小的 Linux 映像要先裝上面 apt 區塊的 X/GL library；它們是 OpenCV wheel 的
+runtime 依賴。
+
 `ale-py==0.12.0` 已內建 Breakout ROM，不需要另外下載。用一條指令跑單元測試與端到端 smoke：
 
 ```bash
