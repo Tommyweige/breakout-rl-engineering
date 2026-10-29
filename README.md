@@ -1,6 +1,6 @@
 # Breakout RL Engineering
 
-[繁體中文](README.zh-TW.md) · [Live Demo](https://breakout.tommypan.com) · [Case Study](https://breakout.tommypan.com/case-study.html) · [Final Results](docs/final-results/README.md) · [30-Day Ironman Series](https://github.com/Tommyweige/breakout-rl-engineering/tree/docs-ironman-series/docs)
+[繁體中文](README.zh-TW.md) · [Live Demo](https://breakout.tommypan.com) · [Case Study](https://breakout.tommypan.com/case-study.html) · [Final Results](docs/final-results/README.md) · [Reproduce](docs/repro/README.md) · [30-Day Ironman Series](https://github.com/Tommyweige/breakout-rl-engineering/tree/docs-ironman-series/docs)
 
 An end-to-end reinforcement learning engineering project for Atari Breakout, covering DQN training, reproducible evaluation, CUDA-accelerated workflows, ONNX inference, and browser deployment.
 
@@ -193,26 +193,70 @@ The web application uses:
 
 Runtime model assets are stored under `web/public/` because they are required by the deployed application.
 
+## Reproducibility
+
+The full clean-clone walkthrough, with the actual install output and the
+known pre-existing failures, is in [`docs/repro/`](docs/repro/README.md).
+
+- [Clean-clone setup, system dependencies, ALE ROM source, web build](docs/repro/setup.md)
+- [One-command smoke path](docs/repro/smoke.md)
+- [GitHub Actions CI](docs/repro/ci.md)
+- [Version tags and provenance](docs/repro/versioning.md)
+- [Known test failures on `main`](docs/repro/known-test-failures.md)
+
 ## Quick Start
 
 ### Python
 
+CPU-only, Linux (verified with Python 3.12.15). On a minimal Ubuntu/Debian
+image, install the interpreter and OpenCV's X/GL runtime libraries first:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y python3.12 python3.12-venv \
+  libxcb1 libgl1 libglib2.0-0 libxext6 libsm6 libice6
+```
+
+Then:
+
+```bash
+python3.12 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install --index-url https://download.pytorch.org/whl/cpu "torch==2.13.0+cpu"
+python -m pip install \
+  "ale-py==0.12.0" "gymnasium==1.3.0" "onnx==1.19.0" "onnxruntime==1.31.1" \
+  "numpy==2.5.4" "matplotlib==3.11.2" "pillow==13.0.0" "opencv-python==5.0.0.93"
+```
+
+Or use conda (installs the CUDA 13 wheels, ~6.3 GB):
+
 ```bash
 conda env create -f environment.yml
 conda activate breakout-rl-engineering
-
-python -m scripts.training.train_vectorized_dqn --help
-python -m scripts.evaluation.evaluate_dqn --help
 ```
 
-The current environment targets Python 3.12 and includes PyTorch with CUDA support, Gymnasium, ALE, ONNX, and ONNX Runtime GPU.
+`ale-py==0.12.0` bundles the Breakout ROM; no separate ROM download is
+required. Run the unit tests and the end-to-end smoke with one command:
+
+```bash
+python -m scripts.smoke.run_smoke --output-dir outputs/smoke
+```
+
+A passing run takes about two minutes and ends with `Smoke: PASS`. The unit
+suite currently reports 294 passed, 8 CUDA skips, and 13 known pre-existing
+failures; see
+[`docs/repro/known-test-failures.md`](docs/repro/known-test-failures.md) before
+treating the suite as green.
 
 ### Web
 
+Node.js >= 20.19 (verified with v22.23.3):
+
 ```bash
 cd web
-npm install
-npm run dev
+npm ci
+npm run dev      # http://localhost:5173/
 ```
 
 Production build:
@@ -220,6 +264,11 @@ Production build:
 ```bash
 npm run build
 ```
+
+`npm run build` runs `prepare:assets` (copies the ALE WASM, the evaluation
+contract, and the results summary) and `tsc --noEmit` before Vite. Use
+`localhost`, not `127.0.0.1`; see the troubleshooting table in
+[`docs/repro/setup.md`](docs/repro/setup.md#troubleshooting).
 
 ## Tech Stack
 
@@ -265,6 +314,7 @@ Read the contract before quoting a score. The DQN holdout and the RGB controller
 - The DQN holdout is one model and 15 episodes; the controller result is one 15-seed run.
 - Laya has latency measurements but no complete episode, and its draft PR #74 still needs real browser QA. Issues #70–#72 remain open.
 - No 50-episode browser evaluation or world-record/human-timed attempt was completed in this closeout.
+- A clean checkout has 13 pre-existing unit-test failures from the `main` cleanup; they are listed in [`docs/repro/known-test-failures.md`](docs/repro/known-test-failures.md). The smoke classifies them instead of hiding them.
 
 ## Documentation
 
@@ -275,3 +325,7 @@ The development notes and 30-day Ironman series are available on the documentati
 The frozen closeout is on `main`:
 
 [**Final results index →**](docs/final-results/README.md) · [**Handoff and deferred work →**](docs/final-results/handoff.md)
+
+The reproducibility path is on `main`:
+
+[**Clean-clone setup →**](docs/repro/setup.md) · [**Smoke path →**](docs/repro/smoke.md) · [**CI →**](docs/repro/ci.md) · [**Versioning →**](docs/repro/versioning.md)
