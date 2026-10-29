@@ -10,6 +10,7 @@ export default defineConfig({
       input: {
         main: 'index.html',
         'case-study': 'case-study.html',
+        'case-study.zh-TW': 'case-study.zh-TW.html',
       },
     },
   },
