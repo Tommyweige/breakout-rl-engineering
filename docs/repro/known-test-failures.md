@@ -174,9 +174,9 @@ the CPU pip set, not the lockfile.
 
 `VectorizedDQNTrainer` records `runtime.git_commit_sha` by running `git -C
 <run-dir> rev-parse HEAD`. If `--run-dir` is outside the checkout (the smoke's
-default temp directory), the field is `"unavailable"`. The smoke manifest
-records the actual commit instead. Pass `--output-dir` inside the checkout if
-you need training-level provenance in `summary.json`.
+default temporary directory), the field is `"unavailable"`. The smoke manifest
+records the actual commit either way; the documented `--output-dir
+outputs/smoke` path also gives the training summary the commit.
 
 ## Gitignore exception for this directory
 

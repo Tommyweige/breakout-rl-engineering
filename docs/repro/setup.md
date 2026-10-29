@@ -157,6 +157,16 @@ $ micromamba run -n breakout-rl-engineering python -c \
 2.13.0+cu130 False
 ```
 
+The full smoke also passed in this conda environment on the same host:
+
+```text
+Python 3.12.16, torch 2.13.0+cu130 (CPU execution)
+Unit tests: PASSED (294 passed, 8 skipped, 13 failed in 15.6s)
+Training:   PASS in 15.5s (400 agent steps, 1597 emulator frames)
+Evaluation: PASS in 21.0s (15 episodes, mean return 0.733, 8421 emulator frames)
+Smoke: PASS in 58.3s
+```
+
 To actually use the GPU, install an NVIDIA driver compatible with CUDA 13 on
 the host. The conda file does not install a driver.
 

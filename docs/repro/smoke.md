@@ -170,11 +170,11 @@ The manifest is the machine-readable record for the run:
 }
 ```
 
-The training summary records `runtime.git_commit_sha` only when the run
-directory is inside a Git worktree. The smoke writes artifacts outside the
-repository by default, so use the smoke manifest's `repository.commit` (or run
-with `--output-dir` inside the checkout) when you need training-level
-provenance.
+The training summary records `runtime.git_commit_sha` when the run directory is
+inside a Git worktree. The smoke's default temporary directory is outside the
+repository, so that field is `"unavailable"` there. The documented
+`--output-dir outputs/smoke` keeps the run inside the checkout and does record
+the commit. The smoke manifest records the commit either way.
 
 ## CI
 
