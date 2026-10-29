@@ -22,6 +22,7 @@ outputs/
 docs/*
 !docs/final-results/
 !docs/clear-semantics.md
+!docs/repro/
 assets/
 experiments/
 evaluations/

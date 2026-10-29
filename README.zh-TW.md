@@ -1,6 +1,6 @@
 # Breakout RL Engineering
 
-[English](README.md) · [線上 Demo](https://breakout.tommypan.com) · [Case Study](https://breakout.tommypan.com/case-study) · [最終結果](docs/final-results/README.md) · [30 天鐵人賽文章](https://github.com/Tommyweige/breakout-rl-engineering/tree/docs-ironman-series/docs)
+[English](README.md) · [線上 Demo](https://breakout.tommypan.com) · [Case Study](https://breakout.tommypan.com/case-study) · [最終結果](docs/final-results/README.md) · [重現路徑](docs/repro/README.md) · [30 天鐵人賽文章](https://github.com/Tommyweige/breakout-rl-engineering/tree/docs-ironman-series/docs)
 
 這是一個以 Atari Breakout 為主題的端到端強化學習工程專案，涵蓋 DQN 訓練、可重現評估、CUDA 加速、ONNX 推論，以及瀏覽器部署。
 
@@ -189,24 +189,57 @@ Web application 使用：
 
 ## 快速開始
 
+完整乾淨 clone 流程、系統依賴、ALE ROM 來源、conda 與 venv 的取捨、已知測試失敗、CI 與版本標記都在 [`docs/repro/`](docs/repro/README.md)。
+
 ### Python
+
+CPU-only、Linux（以 Python 3.12.15 實測）。最小的 Ubuntu/Debian 映像要先裝
+interpreter 與 OpenCV 需要的 X/GL runtime：
+
+```bash
+sudo apt-get update
+sudo apt-get install -y python3.12 python3.12-venv \
+  libxcb1 libgl1 libglib2.0-0 libxext6 libsm6 libice6
+```
+
+再來：
+
+```bash
+python3.12 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install --index-url https://download.pytorch.org/whl/cpu "torch==2.13.0+cpu"
+python -m pip install \
+  "ale-py==0.12.0" "gymnasium==1.3.0" "onnx==1.19.0" "onnxruntime==1.31.1" \
+  "numpy==2.5.4" "matplotlib==3.11.2" "pillow==13.0.0" "opencv-python==5.0.0.93"
+```
+
+或使用 conda（會安裝 CUDA 13 wheels，約 6.3 GB）：
 
 ```bash
 conda env create -f environment.yml
 conda activate breakout-rl-engineering
-
-python -m scripts.training.train_vectorized_dqn --help
-python -m scripts.evaluation.evaluate_dqn --help
 ```
 
-目前環境使用 Python 3.12，並包含 PyTorch CUDA、Gymnasium、ALE、ONNX 與 ONNX Runtime GPU。
+最小的 Linux 映像要先裝上面 apt 區塊的 X/GL library；它們是 OpenCV wheel 的
+runtime 依賴。
+
+`ale-py==0.12.0` 已內建 Breakout ROM，不需要另外下載。用一條指令跑單元測試與端到端 smoke：
+
+```bash
+python -m scripts.smoke.run_smoke --output-dir outputs/smoke
+```
+
+通過時約兩分鐘，最後一行是 `Smoke: PASS`。目前單元測試是 294 passed、8 個 CUDA skip、13 個既有失敗；詳見 [`docs/repro/known-test-failures.md`](docs/repro/known-test-failures.md)。
 
 ### Web
 
+Node.js >= 20.19（以 v22.23.3 實測）：
+
 ```bash
 cd web
-npm install
-npm run dev
+npm ci
+npm run dev      # http://localhost:5173/
 ```
 
 Production build：
@@ -214,6 +247,8 @@ Production build：
 ```bash
 npm run build
 ```
+
+請用 `localhost`，不要用 `127.0.0.1`；原因與其他排錯方式見 [`docs/repro/setup.md`](docs/repro/setup.md#troubleshooting)。
 
 ## 技術棧
 
@@ -251,6 +286,8 @@ npm run build
 
 引用任何分數前，先確認它所屬的 contract。DQN holdout 與 RGB controller 分別使用 Contract v2 與 v3，**不能直接比較**。
 
+凍結證據包由 commit `77a0c7b` 加入。任何新數字都應標記產生它的 commit（tag + 完整 SHA），方式見 [`docs/repro/versioning.md`](docs/repro/versioning.md)。
+
 ## 已知限制
 
 - DQN、controller、reward shaping、PER 與 Laya 的原始 run outputs 不在 `main`；對應數字屬於 historical reported，無法只靠這個 checkout 獨立重現。
@@ -259,6 +296,7 @@ npm run build
 - DQN holdout 是單一模型、15 局；controller 結果是單一 15-seed run。
 - Laya 有延遲量測，但沒有完整 episode；draft PR #74 仍需真實瀏覽器 QA，#70–#72 維持 open。
 - 本次收尾沒有完成 50-episode browser evaluation，也沒有世界紀錄或 human-timed 挑戰。
+- 乾淨 checkout 有 13 個既有單元測試失敗（來自 `main` 清理）；清單在 [`docs/repro/known-test-failures.md`](docs/repro/known-test-failures.md)，smoke 會分類而不是隱藏。
 
 ## 文件
 
@@ -269,3 +307,7 @@ npm run build
 凍結收尾文件在 `main`：
 
 [**最終結果索引 →**](docs/final-results/README.md) · [**交接與 deferred work →**](docs/final-results/handoff.md)
+
+重現路徑在 `main`：
+
+[**乾淨 clone 安裝 →**](docs/repro/setup.md) · [**Smoke 路徑 →**](docs/repro/smoke.md) · [**CI →**](docs/repro/ci.md) · [**版本標記 →**](docs/repro/versioning.md)

@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "comment": "Pre-existing failures on main. The smoke runner runs the full suite, reports these, and fails only on failures outside this list. Remove an entry when its test is fixed. See docs/repro/known-test-failures.md.",
+  "modules": {
+    "test_evaluation": {
+      "reason": "ImportError: scripts.analysis.generate_dqn_milestone_report and scripts.visualization.visualize_day15_evaluation were deleted from main in 1e50f4b.",
+      "cause_commit": "1e50f4b"
+    },
+    "test_inspect_cnn_dimensions": {
+      "reason": "ImportError: scripts.analysis.inspect_cnn_dimensions was deleted from main in 1e50f4b.",
+      "cause_commit": "1e50f4b"
+    },
+    "test_inspect_dqn_network": {
+      "reason": "ImportError: scripts.analysis.inspect_dqn_network was deleted from main in 1e50f4b.",
+      "cause_commit": "1e50f4b"
+    },
+    "test_inspect_dueling_network": {
+      "reason": "ImportError: scripts.analysis.inspect_dueling_network was deleted from main in 1e50f4b.",
+      "cause_commit": "1e50f4b"
+    },
+    "test_onnx_artifacts": {
+      "reason": "ImportError: scripts.deployment.export_onnx was deleted from main in 1e50f4b.",
+      "cause_commit": "1e50f4b"
+    },
+    "test_precision": {
+      "reason": "ImportError: scripts.deployment.convert_onnx_fp16 was deleted from main in 1e50f4b.",
+      "cause_commit": "1e50f4b"
+    },
+    "test_runtime_scores": {
+      "reason": "ImportError: scripts.visualization.visualize_runtime_score_distribution was deleted from main in 1e50f4b.",
+      "cause_commit": "1e50f4b"
+    }
+  },
+  "tests": {
+    "test_inference.ONNXRuntimePolicyTests.test_cpu_policy_accepts_a_prepared_model_input": {
+      "reason": "FileNotFoundError: assets/day22/models/final_model/model.onnx is not tracked on main (assets/ is ignored).",
+      "cause_commit": "1e50f4b"
+    },
+    "test_inference.ONNXRuntimePolicyTests.test_cpu_policy_validates_dynamic_batch_and_returns_contract_shapes": {
+      "reason": "FileNotFoundError: assets/day22/models/final_model/model.onnx is not tracked on main (assets/ is ignored).",
+      "cause_commit": "1e50f4b"
+    },
+    "test_inference.ONNXRuntimePolicyTests.test_requested_cuda_provider_never_silently_falls_back_when_unavailable": {
+      "reason": "FileNotFoundError: assets/day22/models/final_model/model.onnx is not tracked on main (assets/ is ignored).",
+      "cause_commit": "1e50f4b"
+    },
+    "test_tensorrt.TensorRTTests.test_cli_only_engine_build_is_blocked_without_strong_typing_proof": {
+      "reason": "ModuleNotFoundError: scripts.deployment.build_tensorrt_engine was deleted from main in 1e50f4b.",
+      "cause_commit": "1e50f4b"
+    },
+    "test_tensorrt.TensorRTTests.test_tensorrt_benchmark_uses_prevalidated_runtime_for_both_scopes": {
+      "reason": "ModuleNotFoundError: scripts.analysis.compare_tensorrt was deleted from main in 1e50f4b.",
+      "cause_commit": "1e50f4b"
+    },
+    "test_per_experiment.PERExperimentAnalysisTests.test_day20_staged_replay_reset_is_rejected_as_primary_control": {
+      "reason": "AssertionError: 22 != 18; the PER audit reports more failed checks than the test expects.",
+      "cause_commit": "main data drift"
+    }
+  }
+}
