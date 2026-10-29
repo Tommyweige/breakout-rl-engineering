@@ -14,7 +14,7 @@
 - **Deterministic pixel controller 在官方 15 局中破關 4 局。** 在 native ALE、官方 Contract v3 15 seeds、HEAD `a8445df` 下，mean **721.8**（median 810、max 864），**4/15 canonical clear detections**（[報告](audits/browser-clear/native-15/report.md)）。這個 evaluator 沒有做 artifact provenance 驗證，所以只能稱為 canonical clear detection。
 - **137.47 是舊控制律。** 先前的 mean **137.47**（0/15）是 PR #26 `50ee352` 的 controller，可一字不差重現（[腳本](audits/browser-clear/reproduce-137-47.py)）。它的最高分 341 低於第一面牆的 432 分，所以 0 次是正確量測，不是偵測器判錯。#68 只改了控制律。
 - **在同一個 Contract v3 下，唯一的 DQN baseline 遠遠落後。** Dueling Double DQN（training seed 11、2M frames）在 Contract v3 回報 mean **6.93**、max 12、**0 clears**（historical reported，issue #23）。瀏覽器 DQN 的 30.933 holdout 是 Contract v2 數字，與兩者都**不能直接比較**。
-- **偵測器在真實破關軌跡上驗證過，而且 fail-closed。** 兩面牆全清的 v2/v3 ALE 重播軌跡在第二面牆清空的同一步被判定 clear，432/860 反例不會，6 個偵測器 mutant 全被殺（[clear 語意](docs/clear-semantics.md)）。偵測器狀態 unknown 時報 unknown，不會報成 0。
+- **偵測器在真實破關軌跡上驗證過，而且 fail-closed。** 除了原本的 synthetic RAM/reward fixture，兩條兩面牆全清的 ALE 重播軌跡（契約 v2 與 v3）在第二面牆清空的同一步被判定 clear，432/860 反例不會，6 個偵測器 mutant 全被殺。權威紀錄是 [`docs/clear-semantics.md`](docs/clear-semantics.md)；`configs/eval/breakout_completion_audit_v1.json` 裡「只有 synthetic fixture」的舊限制文字早於這次驗證。偵測器狀態 unknown 時報 unknown，不會報成 0。
 - **瀏覽器端 audit 補充分布，不是官方結果。** 同一套控制律在 pinned ALE WASM 跑 120 局：43/120 canonical clear detections、mean 731.4（[audit](audits/browser-clear/README.md)）。
 - **負面與未定論結果也是紀錄的一部分。** Life-loss reward shaping 未通過 promotion gate；PER 只有描述性結果；DQN first-clear probes 沒有 canonical clear detection；Laya Vision side experiment 有延遲量測，但沒有完整 episode。
 

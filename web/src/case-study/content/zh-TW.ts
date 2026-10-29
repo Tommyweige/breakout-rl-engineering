@@ -23,7 +23,7 @@ export const zhTwCopy: CaseStudyCopy = {
     eyebrow: '凍結證據 ·',
     titleLead: '打磚塊，',
     titleTail: '真的非得靠訓練嗎？',
-    lede: '從 DQN 家族，到可解釋的像素追蹤器與預測控制器。兩種決策範式、一個還沒關掉的問題，以及至今仍沒有的已驗證完整通關。',
+    lede: '從 DQN 家族，到可解釋的像素追蹤器與預測控制器。不經訓練，控制器已經能在部分官方評測契約 v3 回合裡打掉兩面磚牆——以 canonical clear detection 計算，不是用眼睛看。',
     hook: '這是一個端到端強化學習工程專案的證據式收官。真正有意思的不是高分，而是：當控制契約一改，答案會變多少；以及在說一款遊戲「被解掉」之前，你得有多小心。',
     playCta: '開始試玩',
     evidenceCta: '查看證據',
@@ -62,19 +62,19 @@ export const zhTwCopy: CaseStudyCopy = {
   },
   metricCards: [
     {
-      metricId: 'verified_clears_recorded',
-      label: '已驗證的完整通關',
-      note: '以 {{metric:clear_score_threshold}} 分通關偵測器稽核；截至凍結日沒有任何通關紀錄。',
+      metricId: 'rgb_controller_a8445df_canonical_clear_detections',
+      label: 'Canonical clear detection 次數',
+      note: '像素控制器在 {{seeds:rgb_controller_a8445df_canonical_clear_detections}} 局官方回合中打到 {{metric:clear_score_threshold}} 分的次數：native ALE、評測契約 v3、HEAD a8445df。偵測器 fail-closed；未做 artifact provenance 驗證。',
     },
     {
-      metricId: 'dqn_final_holdout_mean',
-      label: 'DQN 最終保留集平均',
-      note: 'Dueling Double DQN，{{metric:dqn_training_transitions}} 次轉移，評測契約 v2。',
+      metricId: 'rgb_controller_a8445df_mean_score',
+      label: 'RGB 控制器平均（a8445df）',
+      note: '不需訓練，評測契約 v3。舊的 PR #26 控制律（50ee352）是 {{metric:rgb_controller_pr26_mean_score}}，最高 {{metric:rgb_controller_pr26_max_score}}，連第一面牆的 432 分都沒到。',
     },
     {
-      metricId: 'rgb_controller_mean_score',
-      label: 'RGB 控制器平均',
-      note: '決定性像素控制器，評測契約 v3。',
+      metricId: 'dqn_v3_2m_mean_score',
+      label: 'DQN 平均（同一份契約 v3）',
+      note: 'Dueling Double DQN，種子 11、2M 影格：{{metric:dqn_v3_2m_clears}} 次通關。瀏覽器 DQN 的保留集平均 {{metric:dqn_final_holdout_mean}} 屬於契約 v2，不能直接比較。',
     },
     {
       metricId: 'laya_complete_episodes',
@@ -96,7 +96,7 @@ export const zhTwCopy: CaseStudyCopy = {
       '麻煩的是環境契約。影格跳躍、黏性動作、FIRE 處理、失去生命怎麼算、回合上限，每一個都會改變控制問題。沒有契約的分數不是成果，只是一個等著被補註腳的數字。',
     ],
     callout:
-      '<strong>通關條件寫得很清楚。</strong>在 ALE/Breakout-v5 單人 Game 1 打掉兩面磚牆。經稽核的上限是 {{metric:clear_score_threshold}} 分，讀自 ALE RAM 裡的 ROM 計分板，並與原始獎勵交叉比對。回合結束不代表通關。',
+      '<strong>通關條件寫得很清楚。</strong>在 ALE/Breakout-v5 單人 Game 1 打掉兩面磚牆。經稽核的上限是 {{metric:clear_score_threshold}} 分，讀自 ALE RAM 裡的 ROM 計分板，並與原始獎勵交叉比對。回合結束不代表通關。偵測器是 fail-closed：執行環境不符、或 RAM 與獎勵不一致時，狀態是 unknown，絕不記成 0。它已在真實的契約 v2 與 v3 ALE 通關軌跡上驗證過，6 個偵測器 mutant 全部被抓到。',
     diagramAria: '兩條決策流程對照',
     diagrams: [
       {
@@ -132,8 +132,8 @@ export const zhTwCopy: CaseStudyCopy = {
       {
         step: '03',
         title: '評測契約 v3 下的決定性像素控制器',
-        body: '偵測球與球拍、估計速度、把牆面反射算進去預測球拍平面上的攔截點，再用實際觀測到的球拍位置閉環修正。控制器每幀約 {{metric:rgb_controller_latency_ms_per_frame}} 毫秒——但它沒有打下這一局。',
-        status: 'historical_reported',
+        body: '偵測球與球拍、估計速度、把牆面反射算進去預測球拍平面上的攔截點，再用實際觀測到的球拍位置閉環修正。PR #26 的控制律（50ee352）平均 {{metric:rgb_controller_pr26_mean_score}}，最高 {{metric:rgb_controller_pr26_max_score}}，連第一面牆（432 分）都沒打完，所以那 {{metric:rgb_controller_pr26_canonical_clear_detections}} 次通關是正確的量測。#68 加入速度錨點與接球前提早放開球拍。在 HEAD a8445df、native ALE、官方 {{seeds:rgb_controller_a8445df_mean_score}} 組種子下，平均 {{metric:rgb_controller_a8445df_mean_score}}，canonical clear detection {{metric:rgb_controller_a8445df_canonical_clear_detections}} 次，每幀約 {{metric:rgb_controller_a8445df_latency_ms_mean}} 毫秒。',
+        status: 'verified',
       },
       {
         step: '04',
@@ -157,12 +157,14 @@ export const zhTwCopy: CaseStudyCopy = {
       source: '來源',
     },
     metricLabels: {
-      verified_clears_recorded: '已驗證的完整通關次數',
+      rgb_controller_a8445df_canonical_clear_detections: 'RGB 預測控制器 canonical clear detection 次數（a8445df）',
+      rgb_controller_a8445df_mean_score: 'RGB 預測控制器平均（a8445df）',
+      rgb_controller_pr26_mean_score: 'RGB 控制器平均，PR #26 控制律（50ee352）',
+      dqn_v3_2m_mean_score: 'DQN 評測契約 v3 平均（種子 11、2M 影格）',
       dqn_final_holdout_mean: 'DQN 最終保留集平均',
       dqn_selection_mean: 'DQN 模型選擇平均',
-      rgb_controller_mean_score: 'RGB 預測控制器平均',
-      rgb_controller_canonical_clear_detections: 'RGB 控制器正式通關偵測次數',
-      rgb_controller_latency_ms_per_frame: 'RGB 控制器延遲',
+      browser_wasm_120_canonical_clear_detections: '瀏覽器控制器 canonical clear detection 次數（120 局 WASM 稽核）',
+      rgb_controller_a8445df_latency_ms_mean: 'RGB 預測控制器決策延遲（a8445df）',
       reward_shaping_mean_effect: '獎勵塑形平均效果（與基線之差）',
       per_500k_mean_score: 'PER 檢查點平均分',
       laya_warm_latency_p50_ms: 'Laya 暖機決策延遲 p50',
@@ -202,10 +204,10 @@ export const zhTwCopy: CaseStudyCopy = {
       no: '否',
     },
     comparisonNote:
-      'DQN（v2）與 RGB 預測控制器（v3）不能直接比較。評測契約 v2 每 {{contract:v2.frame_skip}} 個模擬器影格才做一次決策，v3 每個影格都做一次；評估種子的角色與回合集合也不同。原始分數只能描述現象，不能當作公平排名，也不能當作方法勝負。',
+      'DQN 的 v2 保留集與 RGB 預測控制器（v3）不能直接比較。評測契約 v2 每 {{contract:v2.frame_skip}} 個模擬器影格才做一次決策，v3 每個影格都做一次；評估種子的角色與回合集合也不同。原始分數只能描述現象，不能當作公平排名，也不能當作方法勝負。',
     comparisonFallback: '兩份評測契約的決策頻率不同，跨契約比較不能直接視為可比。',
     notes: [
-      '<strong>不宣稱公平勝出。</strong>DQN 保留集與 RGB 控制器並不是在同一份契約、同一組種子、相同回合預算與同一道指令下跑出來的。',
+      '<strong>同一份契約下的比較只有一組。</strong>在評測契約 v3 下，DQN 基線（種子 11、2M 影格）平均 {{metric:dqn_v3_2m_mean_score}}、通關 {{metric:dqn_v3_2m_clears}} 次；控制器平均 {{metric:rgb_controller_a8445df_mean_score}}、canonical clear detection {{metric:rgb_controller_a8445df_canonical_clear_detections}} 次。DQN 只有一個訓練種子、原始回合也不在 main，因此不宣稱公平勝出。',
       '<strong>不用原始分數替方法排名。</strong>在某一種決策頻率下分數較高，不代表換一種頻率後方法更好。',
       '<strong>不做事後升格。</strong>真正匹配的比較，必須在看到結果之前就先講好。',
     ],
@@ -273,9 +275,9 @@ export const zhTwCopy: CaseStudyCopy = {
       },
       {
         kicker: '首次通關探測 · #41、#43、#45、#48–#61',
-        value: '{{metric:verified_clears_recorded}}',
-        unit: '次已驗證通關',
-        body: '凍結的探測最後都沒有出現已驗證通關。其中幾次明確標記為 INCONCLUSIVE 或 BLOCKED_ENVIRONMENT。它們指出失敗模式，但沒有證明某個方法永遠無法通關。',
+        value: '0',
+        unit: '次 canonical clear detection',
+        body: '凍結的 DQN 探測最後都沒有出現 canonical clear detection。其中幾次明確標記為 INCONCLUSIVE 或 BLOCKED_ENVIRONMENT。它們指出失敗模式，但沒有證明某個方法永遠無法通關。',
         status: 'historical_reported',
       },
     ],
@@ -295,7 +297,7 @@ export const zhTwCopy: CaseStudyCopy = {
   cta: {
     kicker: '展示與原始碼',
     title: '先玩現在的版本，再回頭看它背後的證據。',
-    body: '展示頁把 ALE WASM 與 ONNX 策略全部跑在瀏覽器裡。「Unbeatable」只是介面上的難度名稱：它不會刻意注入失誤，但也不代表這個策略不會輸。',
+    body: '展示頁把 ALE WASM 全部跑在瀏覽器裡：Easy 到 Hard 是 ONNX DQN 策略，「Unbeatable」是像素控制器。「Unbeatable」只是介面上的難度名稱：它不會刻意注入失誤，但也不代表控制器不會輸；稽核過的瀏覽器回合裡，多數仍在打完兩面牆之前結束。',
     playCta: '開始試玩',
     githubCta: 'GitHub 專案',
   },
@@ -303,7 +305,7 @@ export const zhTwCopy: CaseStudyCopy = {
     brand: 'BREAKOUT · 研究成果',
     updated: '凍結證據收官。最後更新',
     notClaimedLabel: '不宣稱：',
-    notClaimed: '遊戲已解、已驗證通關、穩定通關、世界紀錄、在公平比較下勝出，或完整的 Laya 評估回合。',
+    notClaimed: '遊戲已解、超出 canonical clear detection 的通關說法、穩定通關、世界紀錄、在公平比較下勝出，或完整的 Laya 評估回合。',
     playDemo: '試玩',
     evidence: '證據',
     github: 'GitHub',

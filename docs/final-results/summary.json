@@ -86,7 +86,7 @@
     "fail_closed": "The detector is fail-closed: an unsupported runtime or a RAM/raw-reward disagreement makes the episode state unknown (cleared = null). Unknown is never reported as 0, and a clear rate is only stated when every episode state is known.",
     "scope": "Repository issues, merged pull requests, archived articles, the completion audit, and the 2026-10-29 controller and browser audits.",
     "clear_definition": "Destroy both brick walls in ALE/Breakout-v5, one-player Game 1; the audited detector uses the documented 864-point maximum plus the ROM scoreboard in ALE RAM.",
-    "positive_detector_validation": "Replayable Contract v2 and v3 ALE trajectories that clear both walls are detected at the exact step the second wall empties; first-wall (432) and last-brick (860) trajectories are not. Six detector mutants are all killed by tests/test_completion.py.",
+    "positive_detector_validation": "Authoritative record: docs/clear-semantics.md. In addition to the original synthetic RAM/reward fixture, replayable Contract v2 and v3 ALE trajectories that clear both walls are detected at the exact step the second wall empties; first-wall (432) and last-brick (860) trajectories are not. Six detector mutants are all killed by tests/test_completion.py. The synthetic-only limitation text in configs/eval/breakout_completion_audit_v1.json predates this validation and is left unchanged because that file is part of the evaluator source_sha256 provenance.",
     "previous_controller_result": "137.47 is the PR #26 control law (50ee352), not the current controller. Its maximum 341 is below the 432-point first wall, so 0/15 there is a correct measurement, not a detector miss."
   },
   "metrics": [

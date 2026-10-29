@@ -57,9 +57,14 @@ describe.each(locales)('Research results case study (%s)', (locale) => {
     const root = mount(locale);
     hydrateCaseStudy(root, summary, locale);
 
-    expect(text(root, '[data-metric-id="verified_clears_recorded"]')).toBe('0');
+    expect(text(root, '[data-metric-id="rgb_controller_a8445df_canonical_clear_detections"]')).toBe('4');
+    expect(text(root, '[data-seed-count-id="rgb_controller_a8445df_canonical_clear_detections"]')).toBe('15');
+    expect(text(root, '[data-metric-id="rgb_controller_a8445df_mean_score"]')).toBe('721.8');
+    expect(text(root, '[data-metric-id="rgb_controller_pr26_mean_score"]')).toBe('137.47');
+    expect(text(root, '[data-metric-id="rgb_controller_pr26_max_score"]')).toBe('341');
+    expect(text(root, '[data-metric-id="dqn_v3_2m_mean_score"]')).toBe('6.93');
+    expect(text(root, '[data-metric-id="dqn_v3_2m_clears"]')).toBe('0');
     expect(text(root, '[data-metric-id="dqn_final_holdout_mean"]')).toBe('30.933');
-    expect(text(root, '[data-metric-id="rgb_controller_mean_score"]')).toBe('137.47');
     expect(text(root, '[data-metric-id="laya_complete_episodes"]')).toBe('0');
     expect(text(root, '[data-metric-id="clear_score_threshold"]')).toBe('864');
     expect(text(root, '[data-metric-id="dqn_training_transitions"]')).toBe('2,500,000');
@@ -150,7 +155,7 @@ describe('Cross-locale parity', () => {
     const root = mount('zh-TW');
     hydrateCaseStudy(root, summary, 'zh-TW');
     expect(root.querySelector('[data-role="results-table"] tbody')?.textContent).toContain(
-      '已驗證的完整通關次數',
+      'RGB 預測控制器 canonical clear detection 次數（a8445df）',
     );
     expect(root.querySelector('[data-role="results-table"]')?.textContent).toContain('30.933');
     expect(root.querySelectorAll('[data-role="contract-table"] th').length).toBeGreaterThan(0);
@@ -159,7 +164,7 @@ describe('Cross-locale parity', () => {
 
   it('keeps measured values out of locale copy so both pages hydrate from summary.json', () => {
     const serialized = JSON.stringify(CASE_STUDY_COPY);
-    for (const value of ['30.933', '137.47', '864', '2,500,000', '201M', '108,000', '27,000']) {
+    for (const value of ['30.933', '137.47', '721.8', '6.93', '864', '2,500,000', '201M', '108,000', '27,000']) {
       expect(serialized).not.toContain(value);
     }
   });

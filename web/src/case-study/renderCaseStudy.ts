@@ -76,7 +76,8 @@ export interface FinalResultsSummary {
   research_question: string;
   contracts: { v2: SummaryContract; v3: SummaryContract };
   headline: {
-    verified_clears_recorded: number;
+    canonical_clear_detections: number;
+    canonical_clear_episodes: number;
     statement: string;
     scope: string;
     clear_definition: string;

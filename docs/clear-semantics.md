@@ -4,7 +4,7 @@
 
 ## 一句話結論
 
-- **畫面打光不等於破關。** Breakout Game 1 有兩面牆。第一面牆打完（432 分）時，畫面只空一個 emulator frame，下一個 frame ROM 就畫上新牆，看起來像「進下一關」。這是第一面牆，**不是** clear。
+- **畫面打光不等於破關。** Breakout Game 1 有兩面牆。第一面牆打完（432 分）時，畫面會空一小段時間，然後 ROM 畫上新牆，看起來像「進下一關」。v3 fixture 在 native ALE 上重播時是空 34 個 emulator frames（steps 10738–10771）；瀏覽器 WASM audit 量到的是 30–199 frames（中位數 57，見 `audits/browser-clear/README.md`）。這是第一面牆，**不是** clear。
 - **Canonical clear 是兩面牆都打完：ROM 計分板等於 864。** `BreakoutCompletionDetector` 在兩條真實 ALE 破關軌跡（Contract v2 與 v3）上，於第二面牆清空的同一個 agent step 判定 clear，在所有反例上都判定 not cleared。這次驗證**沒有找到 detector 誤判**，所以 detector 判定邏輯沒有修改。
 - **137.47 可以重現**，但只在 PR #26 的 commit `50ee352`。#68（`a8445df`）改了 controller 之後，同一組 seeds 得到 mean 721.8、4/15 canonical clear detections（`77a0c7b` 與 `a8445df` 的產品程式碼完全相同）。見 [137.47 的結論](#13747-的結論)。
 
@@ -15,7 +15,7 @@
 一面牆的「畫面打光事件」發生在一個 agent step 之後的 raw RGB 畫面 `(210, 160, 3)` 滿足下列任一條件：
 
 1. `count_visible_bricks(screen) == 0`，而上一個 step 的畫面還有磚塊；或
-2. 磚塊數比上一個 step 多 50 塊以上（ROM 重畫了一面新牆，代表上一面牆已被清空；這是為了 frame skip 4 時可能抽樣不到那個空畫面）。
+2. 磚塊數比上一個 step 多 50 塊以上（ROM 重畫了一面新牆，代表上一面牆已被清空；當作保險，以防觀測取樣剛好跳過空畫面。實測空畫面維持數十個 frames，所以 frame skip 4 一般也能看到）。
 
 `count_visible_bricks` 在 `breakout_rl/completion.py`：磚牆是 6 列 × 18 欄、每塊 8 × 6 pixels，位於 rows 57–92、columns 8–151；一格至少一半 pixels 亮起才算一塊磚，所以 2 × 4 pixels 的球不會被算成磚。重置後的畫面是 108 塊。
 
@@ -41,7 +41,7 @@
 | 輸入來源 | raw RGB pixels | ALE RAM 計分板 + 累積 raw reward | 沒有任何 clear 判定；只顯示 ALE 分數、命數與畫面 |
 | 判定時機 | 每個 agent step 後的畫面 | 每個 agent step 後，episode 結束判斷之前 | 不適用；「打光」是人看畫面的判斷 |
 | 容錯 | 半格門檻排除球；抽樣不到空畫面時用「新牆出現」補 | RAM 與 reward 不一致或 runtime 不符時 fail closed（`None`，不算失敗） | 無 |
-| 會誤判的情況 | 432 分的第一面牆（偽陽性）；frame skip 4 時抽樣不到空畫面（只能靠新牆補救） | 見下方 | 見下方 |
+| 會誤判的情況 | 432 分的第一面牆（偽陽性）；取樣跳過空畫面時只能靠新牆補救 | 見下方 | 見下方 |
 
 `web/src` 搜尋不到任何 brick / wall / 864 / 432 / RAM 讀取邏輯。瀏覽器 ALE 也沒有跑這個 detector。所以「瀏覽器裡 AI 把磚塊打光、進下一關」只是觀察者的描述，它對應的最可能是 432 分時新牆出現的那一刻。
 
@@ -49,8 +49,8 @@
 
 **畫面打光：**
 
-- **第一面牆被當成破關（偽陽性）。** 432 分時畫面空一個 frame，下一個 frame 新牆就出現。人眼與 pixel 偵測都會看到「打光、進下一關」。
-- **抽樣不到空畫面（偽陰性）。** 空畫面只有一個 emulator frame；Contract v2 每 4 frames 才看一次畫面，可能直接看到新牆。本文件的定義用「新牆出現」補救，但只數「畫面曾經空」的定義會漏掉。
+- **第一面牆被當成破關（偽陽性）。** 432 分時畫面空數十個 frames，接著新牆出現。人眼與 pixel 偵測都會看到「打光、進下一關」。
+- **取樣跳過空畫面（偽陰性，理論上）。** 實測空畫面維持數十個 frames，Contract v2 每 4 frames 看一次仍會看到；若取樣更稀疏，只數「畫面曾經空」的定義可能漏掉，所以本文件的定義另外用「新牆出現」補救。
 - **第二面牆打光之後沒有「下一關」。** 864 分之後畫面保持全空，球繼續彈，不再有任何 reward，直到掉光命或到 time limit。期待「進下一關」的觀察者會以為遊戲卡住。
 
 **Canonical clear：**
@@ -60,6 +60,8 @@
 - **只看 episode 結束狀態。** clear 之後 episode 還會繼續，最後常以 `game_over` 結束（現行 controller 的 4 次 clear 都是這樣）。用 `terminated` 或最終命數判斷成敗的程式會把 clear 算成失敗；detector 是 latch，不受影響。
 - **沒有每步呼叫 `observe`。** 漏呼叫只會延後 `clear_agent_step`，不會讓 clear 消失（分數停在 864）。但報告的 clear 時間會錯。
 - **用 `agent_step × frame_skip` 推算時間。** detector 只接受 ALE native frame；推算值在 v3 會差 4 倍。
+
+**本文件是 detector 正向驗證的權威來源。** 正向路徑現在有兩層證據：(1) 原本的 synthetic RAM/reward fixture（`tests/test_completion.py::BreakoutCompletionDetectorTests::test_ale_scoreboard_ram_fixture_emits_the_documented_maximum_reward`，把 864 寫進 RAM 後驗證下一個真實 ALE transition 的 reward 一致）；(2) 下方兩條真實 ALE 破關軌跡（v2、v3）。`configs/eval/breakout_completion_audit_v1.json` 的 `validation.limitation` 與 `natural_ale_positive_trajectory.status = not_observed` 是這次驗證之前寫的，已被本文件取代；該檔是 evaluator `source_sha256` provenance 的一部分，改動會讓已提交的 `a8445df` native 15 局 provenance 對不上，所以刻意保持原樣。
 
 這次的素材沒有找到 detector 本身的誤判：偽陽性（432、860）、偽陰性（clear 後 game over、clear 與 time limit 同一步、clear 與失去最後一命同一步）與時間都正確。
 

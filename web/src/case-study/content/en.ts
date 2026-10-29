@@ -23,7 +23,7 @@ export const enCopy: CaseStudyCopy = {
     eyebrow: 'FROZEN EVIDENCE ·',
     titleLead: 'Does Breakout',
     titleTail: 'really need training?',
-    lede: 'From a DQN family to an explainable pixel tracker and predictive controller. Two decision paradigms, one open question — and no verified full clear yet.',
+    lede: 'From a DQN family to an explainable pixel tracker and predictive controller. With no training, the controller now clears both brick walls in some official Contract v3 episodes — counted by canonical clear detection, not by eye.',
     hook: 'This is the evidence-led closeout of an end-to-end RL engineering project. The interesting result is not a high score. It is how much the answer changes when the control contract changes, and how careful you have to be before calling a game “solved”.',
     playCta: 'Play the demo',
     evidenceCta: 'Read the evidence',
@@ -68,19 +68,19 @@ export const enCopy: CaseStudyCopy = {
   },
   metricCards: [
     {
-      metricId: 'verified_clears_recorded',
-      label: 'Verified full clears',
-      note: 'Audited {{metric:clear_score_threshold}}-point detector; absence of record through the freeze date.',
+      metricId: 'rgb_controller_a8445df_canonical_clear_detections',
+      label: 'Canonical clear detections',
+      note: 'Pixel controller reaching {{metric:clear_score_threshold}} points in {{seeds:rgb_controller_a8445df_canonical_clear_detections}} official episodes: native ALE, Contract v3, HEAD a8445df. Fail-closed detector; no artifact provenance validation.',
     },
     {
-      metricId: 'dqn_final_holdout_mean',
-      label: 'DQN final holdout mean',
-      note: 'Dueling Double DQN, {{metric:dqn_training_transitions}} transitions, Contract v2.',
+      metricId: 'rgb_controller_a8445df_mean_score',
+      label: 'RGB controller mean (a8445df)',
+      note: 'No training, Contract v3. The old PR #26 control law (50ee352) scored {{metric:rgb_controller_pr26_mean_score}}, max {{metric:rgb_controller_pr26_max_score}} — below the 432-point first wall.',
     },
     {
-      metricId: 'rgb_controller_mean_score',
-      label: 'RGB controller mean',
-      note: 'Deterministic pixel controller, Contract v3.',
+      metricId: 'dqn_v3_2m_mean_score',
+      label: 'DQN mean, same Contract v3',
+      note: 'Dueling Double DQN, seed 11, 2M frames: {{metric:dqn_v3_2m_clears}} clears. The browser DQN’s {{metric:dqn_final_holdout_mean}} holdout is Contract v2 and not directly comparable.',
     },
     {
       metricId: 'laya_complete_episodes',
@@ -102,7 +102,7 @@ export const enCopy: CaseStudyCopy = {
       'The catch is the environment contract. Frame skip, sticky actions, FIRE handling, life-loss handling, and the episode limit all change the control problem. A score without its contract is not a result; it is a number looking for a footnote.',
     ],
     callout:
-      '<strong>The clear condition is explicit.</strong> Destroy both brick walls in ALE/Breakout-v5 one-player Game 1. The audited maximum is {{metric:clear_score_threshold}} points, read from the ROM scoreboard in ALE RAM and cross-checked against raw reward. An episode that ends is not automatically a clear.',
+      '<strong>The clear condition is explicit.</strong> Destroy both brick walls in ALE/Breakout-v5 one-player Game 1. The audited maximum is {{metric:clear_score_threshold}} points, read from the ROM scoreboard in ALE RAM and cross-checked against raw reward. An episode that ends is not automatically a clear. The detector is fail-closed: if the runtime is unsupported or RAM and reward disagree, the state is unknown, never 0. It was validated on genuine Contract v2 and v3 ALE clears, and all six detector mutants were caught.',
     diagramAria: 'Two decision pipelines compared',
     diagrams: [
       {
@@ -138,8 +138,8 @@ export const enCopy: CaseStudyCopy = {
       {
         step: '03',
         title: 'A deterministic pixel controller under Contract v3',
-        body: 'Detect the ball and paddle, estimate velocity, predict the paddle-plane intercept with wall reflections, and close the loop on observed paddle position. The controller runs at about {{metric:rgb_controller_latency_ms_per_frame}} ms per controller frame — but it did not clear the game.',
-        status: 'historical_reported',
+        body: 'Detect the ball and paddle, estimate velocity, predict the paddle-plane intercept with wall reflections, and close the loop on observed paddle position. The PR #26 control law (50ee352) scored {{metric:rgb_controller_pr26_mean_score}} and never finished the first wall (max {{metric:rgb_controller_pr26_max_score}} < 432), so its {{metric:rgb_controller_pr26_canonical_clear_detections}} clears were a correct measurement. #68 added a velocity anchor and an early paddle release. At HEAD a8445df, under native ALE and the official {{seeds:rgb_controller_a8445df_mean_score}} seeds, it scores {{metric:rgb_controller_a8445df_mean_score}} with {{metric:rgb_controller_a8445df_canonical_clear_detections}} canonical clear detections, at about {{metric:rgb_controller_a8445df_latency_ms_mean}} ms per frame.',
+        status: 'verified',
       },
       {
         step: '04',
@@ -196,11 +196,11 @@ export const enCopy: CaseStudyCopy = {
       no: 'no',
     },
     comparisonNote:
-      'DQN (v2) vs RGB predictive controller (v3): not directly comparable. Contract v2 makes one decision per {{contract:v2.frame_skip}} emulator frames; v3 makes one per emulator frame. The evaluation seed roles and episode sets also differ. The raw scores are descriptive, not a fair ranking or a method win.',
+      'DQN v2 holdout vs RGB predictive controller (v3): not directly comparable. Contract v2 makes one decision per {{contract:v2.frame_skip}} emulator frames; v3 makes one per emulator frame. The evaluation seed roles and episode sets also differ. The raw scores are descriptive, not a fair ranking or a method win.',
     comparisonFallback:
       'Cross-contract comparison is not directly comparable because the decision cadence differs.',
     notes: [
-      '<strong>No fair winner claim.</strong> The DQN holdout and the RGB controller were not run under one matched contract, seed set, episode budget, and command.',
+      '<strong>One same-contract comparison exists.</strong> Under Contract v3 the DQN baseline (seed 11, 2M frames) scored {{metric:dqn_v3_2m_mean_score}} with {{metric:dqn_v3_2m_clears}} clears; the controller scored {{metric:rgb_controller_a8445df_mean_score}} with {{metric:rgb_controller_a8445df_canonical_clear_detections}} canonical clear detections. One DQN training seed with no raw episodes in main is not a fair-winner claim.',
       '<strong>No method ranking from raw score.</strong> A higher score under one cadence does not establish a better method under another.',
       '<strong>No post-hoc promotion.</strong> A matched comparison would have to be predeclared before looking at its results.',
     ],
@@ -268,9 +268,9 @@ export const enCopy: CaseStudyCopy = {
       },
       {
         kicker: 'FIRST-CLEAR PROBES · #41, #43, #45, #48–#61',
-        value: '{{metric:verified_clears_recorded}}',
-        unit: 'verified clears',
-        body: 'The frozen probes ended without a verified clear. Several were explicitly INCONCLUSIVE or BLOCKED_ENVIRONMENT. They identify failure modes; they do not prove that a method cannot clear.',
+        value: '0',
+        unit: 'canonical clear detections',
+        body: 'The frozen DQN probes ended without a canonical clear detection. Several were explicitly INCONCLUSIVE or BLOCKED_ENVIRONMENT. They identify failure modes; they do not prove that a method cannot clear.',
         status: 'historical_reported',
       },
     ],
@@ -290,7 +290,7 @@ export const enCopy: CaseStudyCopy = {
   cta: {
     kicker: 'DEMO + SOURCE',
     title: 'Play the current build, then inspect the evidence behind it.',
-    body: 'The demo runs ALE WASM and the ONNX policy entirely in the browser. “Unbeatable” is a UI difficulty label: it injects no deliberate mistakes. It is not a claim that the policy cannot lose.',
+    body: 'The demo runs ALE WASM entirely in the browser: the ONNX DQN policy on Easy to Hard, and the pixel controller on “Unbeatable”. “Unbeatable” is a UI difficulty label: it injects no deliberate mistakes. It is not a claim that the controller cannot lose; most audited browser episodes still end before both walls are cleared.',
     playCta: 'Play the demo',
     githubCta: 'GitHub repository',
   },
@@ -299,7 +299,7 @@ export const enCopy: CaseStudyCopy = {
     updated: 'Frozen evidence closeout. Last updated',
     notClaimedLabel: 'Not claimed:',
     notClaimed:
-      'solved game, verified clear, reliable clear, world record, fair method winner, or a complete evaluated Laya episode.',
+      'solved game, any clear beyond canonical clear detection, reliable clear, world record, fair method winner, or a complete evaluated Laya episode.',
     playDemo: 'Play demo',
     evidence: 'Evidence',
     github: 'GitHub',
