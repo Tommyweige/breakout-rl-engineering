@@ -149,7 +149,7 @@ native 的 4/15 與 browser 的 7/15 在 n=15 下屬抽樣誤差；但逐局贏�
 
 ## 5. 137.47 的重現方法與參數
 
-歷史紀錄（issue #73 body、closeout 的 `docs/final-results/summary.json`）標的是 `historical_reported`、`raw_artifact_status: missing`：
+歷史紀錄（issue #73 body、PR #26）原本標為 `historical_reported`、`raw_artifact_status: missing`；PR #75 的 `docs/final-results/summary.json` 已依本節的重現改標為 `verified`，並註明是 PR #26 `50ee352` 的控制律：
 
 ```
 mean 137.47, median 95, max 341, 0 canonical clears, 15 seeds

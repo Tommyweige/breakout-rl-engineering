@@ -1,12 +1,12 @@
-# Breakout clear 語意：「畫面打光」與「verified clear」
+# Breakout clear 語意：「畫面打光」與「canonical clear」
 
 **狀態：2026-10-29。** 本文件定義專案裡兩種「破關」說法、它們各自能回答的問題、會誤判的情況，以及報告該怎麼引用。所有結論都有可重跑的素材與測試（見[驗證素材](#驗證素材)）。
 
 ## 一句話結論
 
 - **畫面打光不等於破關。** Breakout Game 1 有兩面牆。第一面牆打完（432 分）時，畫面只空一個 emulator frame，下一個 frame ROM 就畫上新牆，看起來像「進下一關」。這是第一面牆，**不是** clear。
-- **Verified clear 是兩面牆都打完：ROM 計分板等於 864。** `BreakoutCompletionDetector` 在兩條真實 ALE 破關軌跡（Contract v2 與 v3）上，於第二面牆清空的同一個 agent step 判定 clear，在所有反例上都判定 not cleared。這次驗證**沒有找到 detector 誤判**，所以 detector 判定邏輯沒有修改。
-- **137.47 可以重現**，但只在 PR #26 的 commit `50ee352`。現在的 `main`（`77a0c7b`）因為 #68 改了 controller，同一組 seeds 得到 mean 721.8、4/15 canonical clears。見 [137.47 的結論](#13747-的結論)。
+- **Canonical clear 是兩面牆都打完：ROM 計分板等於 864。** `BreakoutCompletionDetector` 在兩條真實 ALE 破關軌跡（Contract v2 與 v3）上，於第二面牆清空的同一個 agent step 判定 clear，在所有反例上都判定 not cleared。這次驗證**沒有找到 detector 誤判**，所以 detector 判定邏輯沒有修改。
+- **137.47 可以重現**，但只在 PR #26 的 commit `50ee352`。#68（`a8445df`）改了 controller 之後，同一組 seeds 得到 mean 721.8、4/15 canonical clear detections（`77a0c7b` 與 `a8445df` 的產品程式碼完全相同）。見 [137.47 的結論](#13747-的結論)。
 
 ## 兩個定義
 
@@ -21,7 +21,7 @@
 
 這個定義是**牆層級**的事件。在一局裡它會發生兩次：432 分（第一面牆）與 864 分（第二面牆）。
 
-### Verified clear（canonical clear detection）
+### Canonical clear（canonical clear detection）
 
 `BreakoutCompletionDetector`（`breakout_rl/completion.py`）在每個 agent step 之後讀取：
 
@@ -32,11 +32,11 @@
 
 864 是兩面牆的總分：每面牆 18 欄 × (1 + 1 + 4 + 4 + 7 + 7) = 432。因為 Game 1 不會再產生第三面牆，分數到 864 就代表兩面牆都已清空。素材驗證了這一點：兩條軌跡裡分數到 864 的 step，正好是第二面牆在畫面上清空的 step。
 
-**用語區分：** detector 產生的是 *canonical clear detection*。repository 的 `verified_clears` 另外要求 evaluation artifact 通過 contract、source 與 provenance 驗證（`breakout_rl/evaluation_artifacts.py`）。像 `scripts.evaluation.evaluate_predictive_controller` 這類不做該驗證的 evaluator，只能說「canonical clear detections」。
+**用語區分：** detector 產生的是 *canonical clear detection*。repository 的 artifact gate（`breakout_rl/evaluation_artifacts.py`）另外要求 evaluation artifact 通過 contract、source 與 provenance 驗證。像 `scripts.evaluation.evaluate_predictive_controller` 這類不做該驗證的 evaluator，只能說「canonical clear detections」。
 
 ## 差異對照
 
-| 面向 | 畫面打光 | Verified clear（Python detector） | 瀏覽器（`web/src`） |
+| 面向 | 畫面打光 | Canonical clear（Python detector） | 瀏覽器（`web/src`） |
 |---|---|---|---|
 | 輸入來源 | raw RGB pixels | ALE RAM 計分板 + 累積 raw reward | 沒有任何 clear 判定；只顯示 ALE 分數、命數與畫面 |
 | 判定時機 | 每個 agent step 後的畫面 | 每個 agent step 後，episode 結束判斷之前 | 不適用；「打光」是人看畫面的判斷 |
@@ -53,7 +53,7 @@
 - **抽樣不到空畫面（偽陰性）。** 空畫面只有一個 emulator frame；Contract v2 每 4 frames 才看一次畫面，可能直接看到新牆。本文件的定義用「新牆出現」補救，但只數「畫面曾經空」的定義會漏掉。
 - **第二面牆打光之後沒有「下一關」。** 864 分之後畫面保持全空，球繼續彈，不再有任何 reward，直到掉光命或到 time limit。期待「進下一關」的觀察者會以為遊戲卡住。
 
-**Verified clear：**
+**Canonical clear：**
 
 - **unknown 被當成 0。** runtime 不符或 RAM/reward 不一致時是 `cleared=None`。報告把它算進「0 次 clear」就是誤報。
 - **傳入 shaping 或 clip 過的 reward。** `cumulative_score` 必須是 raw reward，否則與 RAM 不一致，整局變 unknown。
@@ -67,8 +67,8 @@
 
 | 問題 | 用哪個 |
 |---|---|
-| 這局有沒有把兩面牆都打完？什麼時候？剩幾條命？ | Verified clear |
-| clear rate / 第一次破關（First Clear）/ Reliable Clear | Verified clear（只有全部 episode 狀態已知時 clear rate 才有值） |
+| 這局有沒有把兩面牆都打完？什麼時候？剩幾條命？ | Canonical clear |
+| clear rate / 第一次破關（First Clear）/ Reliable Clear | Canonical clear（只有全部 episode 狀態已知時 clear rate 才有值） |
 | 觀察者在畫面上看到的「打光」是哪一面牆？ | 畫面打光事件 + 當下分數（432 = 第一面，864 = 第二面） |
 | pixel controller 看到的牆是否與 RAM 一致？ | 兩者比對（素材測試就是這樣做的） |
 | 瀏覽器 demo 裡有沒有破關？ | 都不能直接回答：瀏覽器沒有記錄 detector 狀態。需要用 Python evaluator 跑同一個 controller 與 seeds |
@@ -119,7 +119,7 @@ python -m tests.fixtures.breakout_clear.generate_fixtures --replan  # 重新搜�
 
 ## 報告裡該怎麼引用
 
-- 寫「canonical clear detections: k / n（`ale-breakout-two-wall-score-864-v2`，Contract v3，seeds …，commit …）」。只有通過 artifact provenance 驗證的 evaluation 才能寫「verified clears」。
+- 寫「canonical clear detections: k / n（`ale-breakout-two-wall-score-864-v2`，Contract v3，seeds …，commit …）」。沒有通過 artifact provenance 驗證的 evaluation，不能寫成比 canonical clear detection 更強的說法。
 - clear rate 只有在每局狀態都已知時才寫數字；有任何 `cleared=None` 就寫「unknown」，不要寫 0。
 - clear 時間用 `clear_emulator_frame`（ALE native frames）與 `clear_agent_step`，並註明 contract；不換算成秒。
 - 描述畫面時寫「第一面牆打光（432 分）」或「兩面牆打光（864 分）」，不要只寫「打光」或「進下一關」。
@@ -187,7 +187,7 @@ python -m tests.fixtures.breakout_clear.generate_fixtures --replan  # 重新搜�
 **結論：**
 
 1. 137.47 / 0 of 15 是 `50ee352` controller 的正確量測，不是 detector 壞掉。
-2. README、`docs/final-results/` 與 #73 把它當成現在 controller 的成績是過期的。現行 `main` 的 controller 在同一個 evaluator 下有 4/15 canonical clear detections。這些是 canonical detections，不是 repository `verified_clears`（evaluator 沒做 artifact provenance 驗證）。
+2. 把它當成現在 controller 的成績是過期的（README、`docs/final-results/` 與 case study 已在 PR #75 更正）。#68 之後（`a8445df`）的 controller 在同一個 evaluator 下有 4/15 canonical clear detections；evaluator 沒做 artifact provenance 驗證，所以只能稱為 canonical clear detections。
 3. 瀏覽器 Unbeatable 跑的是 #68 之後的 controller，所以使用者看到的「打光、進下一關」符合現行版本的量測：14 局分數超過 432，會看到第一面牆打光、新牆出現；4 局真的打完第二面牆。
 
 重現指令（需 ale-py 0.12.0、gymnasium 1.3.0）：

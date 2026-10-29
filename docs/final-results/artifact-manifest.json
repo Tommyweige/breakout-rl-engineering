@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "artifact_type": "breakout_closeout_artifact_manifest",
-  "frozen_at": "2026-10-28",
+  "frozen_at": "2026-10-29",
   "policy": "Raw run artifacts are intentionally not committed to main. This manifest records the expected path, producer, status, and hash so a future archive or Release can be checked against the evidence index. No missing file is fabricated or implied to exist.",
   "artifacts": [
     {
@@ -41,7 +41,8 @@
         "canonical_clear",
         "clear_emulator_frame"
       ],
-      "source_record": "https://github.com/Tommyweige/breakout-rl-engineering/pull/26"
+      "source_record": "https://github.com/Tommyweige/breakout-rl-engineering/pull/26",
+      "notes": "Original PR #26 (50ee352) output; never committed. The 137.47 run is reproducible with audits/browser-clear/reproduce-137-47.py."
     },
     {
       "id": "rgb-controller-summary",
@@ -61,7 +62,8 @@
         "paddle_detection_success_rate",
         "latency_ms_per_frame"
       ],
-      "source_record": "https://github.com/Tommyweige/breakout-rl-engineering/pull/26"
+      "source_record": "https://github.com/Tommyweige/breakout-rl-engineering/pull/26",
+      "notes": "Original PR #26 (50ee352) output; never committed. The 137.47 run is reproducible with audits/browser-clear/reproduce-137-47.py."
     },
     {
       "id": "reward-shaping-comparison",
@@ -237,6 +239,69 @@
       "status": "in_repo",
       "sha256": "c815953080759387b2c28cc81b5d05d6e3f09a2dd702055e9ddd5f7aeeffd8dd",
       "source_record": "docs/final-results/README.md#re-capturing-the-real-gameplay-media"
+    },
+    {
+      "id": "rgb-controller-a8445df-native-episodes",
+      "kind": "per_episode_csv",
+      "path": "audits/browser-clear/native-15/episodes.csv",
+      "producer": "scripts/evaluation/evaluate_predictive_controller.py",
+      "status": "in_repo",
+      "sha256": "e35f4f6bb16619480158086443254f15f261638b32eaf03c43612d4f4acdcc96",
+      "source_record": "audits/browser-clear/native-15/report.md"
+    },
+    {
+      "id": "rgb-controller-a8445df-native-summary",
+      "kind": "summary_json",
+      "path": "audits/browser-clear/native-15/summary.json",
+      "producer": "scripts/evaluation/evaluate_predictive_controller.py",
+      "status": "in_repo",
+      "sha256": "2f2924b162148f623d9f17e27defafbd6066b9e5440f4d1c0d9721b295c7e289",
+      "source_record": "audits/browser-clear/native-15/report.md"
+    },
+    {
+      "id": "rgb-controller-pr26-reproduction",
+      "kind": "script",
+      "path": "audits/browser-clear/reproduce-137-47.py",
+      "producer": "repository",
+      "status": "in_repo",
+      "sha256": "a1bd9e79a12642c16710a5839d121f1f7ab03c1f8e2a0c4a3271bcc1bfa75530",
+      "source_record": "audits/browser-clear/README.md"
+    },
+    {
+      "id": "browser-clear-audit-episodes-120",
+      "kind": "per_episode_csv",
+      "path": "audits/browser-clear/episodes-120.csv",
+      "producer": "scripts/analysis/browser-clear-audit.mjs",
+      "status": "in_repo",
+      "sha256": "ab28dee28c05bfe9ce5a4aa533215bf7c3d24b35001e74bef858cca9d709ef4b",
+      "source_record": "audits/browser-clear/README.md"
+    },
+    {
+      "id": "browser-clear-audit-summary-120",
+      "kind": "summary_json",
+      "path": "audits/browser-clear/summary-120.json",
+      "producer": "scripts/analysis/browser-clear-audit.mjs",
+      "status": "in_repo",
+      "sha256": "8ff7e84c6eb7c393e384e1e3d7928779f75a37475b82f64796f724c42770d8fc",
+      "source_record": "audits/browser-clear/README.md"
+    },
+    {
+      "id": "clear-detector-fixture-v2",
+      "kind": "fixture",
+      "path": "tests/fixtures/breakout_clear/v2_full_clear.json",
+      "producer": "tests/fixtures/breakout_clear/generate_fixtures.py",
+      "status": "in_repo",
+      "sha256": "d46a7ef9b36f807cd57720234fc0f60e64738dd71ccca89d2ab9d15549f30ded",
+      "source_record": "docs/clear-semantics.md"
+    },
+    {
+      "id": "clear-detector-fixture-v3",
+      "kind": "fixture",
+      "path": "tests/fixtures/breakout_clear/v3_full_clear.json",
+      "producer": "tests/fixtures/breakout_clear/generate_fixtures.py",
+      "status": "in_repo",
+      "sha256": "1f830d22b1fa5c7797d1db42813f828b54b43276778f9f0a41b9b571e2d3120b",
+      "source_record": "docs/clear-semantics.md"
     }
   ]
 }

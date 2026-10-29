@@ -1,6 +1,6 @@
 # Final Results — Breakout RL Engineering
 
-**Status: frozen evidence closeout, 2026-10-28; Laya live browser session added 2026-10-29.** This is an audited index of what the project can and cannot support. It is not a new training campaign and it does not claim that Breakout was solved.
+**Status: frozen evidence closeout, 2026-10-28; Laya live browser session, controller re-evaluation, and clear-detector validation added 2026-10-29.** This is an audited index of what the project can and cannot support. It is not a new training campaign and it does not claim that Breakout was solved.
 
 - **Interactive case study:** <https://breakout.tommypan.com/case-study>
 - **Playable demo:** <https://breakout.tommypan.com/>
@@ -9,6 +9,9 @@
 - **Artifact manifest (expected paths and hashes):** [`artifact-manifest.json`](artifact-manifest.json)
 - **Visual evidence:** [before/after screenshots](screenshots/README.md) · [real gameplay recording](../../web/public/case-study/gameplay.mp4)
 - **Handoff and deferred work:** [`handoff.md`](handoff.md)
+- **Clear semantics and detector validation:** [`../clear-semantics.md`](../clear-semantics.md)
+- **Controller evaluations (native 15-seed, 137.47 reproduction, 120-episode WASM audit):** [`../../audits/browser-clear/README.md`](../../audits/browser-clear/README.md)
+- **Reproduction path and CI:** [`../repro/README.md`](../repro/README.md)
 
 ## Research question
 
@@ -16,26 +19,29 @@ Atari Breakout is a low-dimensional control problem: the ball and paddle are vis
 
 > Does Breakout need a trained DQN policy, or can an explainable pixel tracker plus predictive control make useful decisions more cheaply?
 
-The project built both. It did **not** produce a verified full clear, so the honest answer at freeze time is: **the question is still open, and the evidence does not support a fair winner claim.**
+The project built both. Under native ALE, the official Contract v3 15 seeds and HEAD `a8445df`, the pixel controller reaches the 864-point two-wall clear in **4 of 15** episodes by canonical clear detection (mean 721.8); the only Contract v3 DQN baseline scored mean 6.93 with 0 clears. So the answer at freeze time is: **for this contract, an explainable controller with no training does reach canonical clears that the DQN runs never did — but one controller, one seed list and one single-seed DQN baseline do not show that learning cannot get there.**
 
 ## Results at a glance
 
 | Result | Value | Contract | Evidence | Status |
 | --- | ---: | --- | --- | --- |
-| Verified full clears recorded | 0 | audited 864-point detector | repository audit through 2026-10-28 | **verified absence of record** |
+| RGB controller canonical clear detections (`a8445df`) | 4 / 15 (seeds 202, 304, 306, 307) | v3, frame_skip=1; native ALE, official 15 seeds | [native 15-seed report](../../audits/browser-clear/native-15/report.md) | **verified** (canonical detection only) |
+| RGB controller mean (`a8445df`) | 721.8 (median 810, max 864) | v3, frame_skip=1; native ALE, official 15 seeds | [native 15-seed report](../../audits/browser-clear/native-15/report.md) | **verified** |
+| RGB controller latency (`a8445df`) | 2.03 ms/frame mean (p95 2.12) | v3, frame_skip=1 | [native 15-seed report](../../audits/browser-clear/native-15/report.md) | **verified** |
+| DQN Contract v3 baseline (seed 11, 2M frames) | mean 6.93 (median 7, max 12), 0 clears | v3, frame_skip=1 | issue #23 (reporting #21) | **historical reported** |
 | DQN final holdout mean | 30.933 (median 32.000) | v2, frame_skip=4 | Day 21 archived article | **historical reported** |
 | DQN model-selection mean | 51.400 | v2, frame_skip=4 | Day 21 archived article | **historical reported** |
 | DQN training cost | 2,500,000 transitions | v2 | frozen ONNX metadata | **verified artifact** |
-| RGB controller mean | 137.47 (median 95, max 341) | v3, frame_skip=1 | merged PR #26 | **historical reported** |
-| RGB controller canonical clears | 0 / 15 | v3, frame_skip=1 | merged PR #26 | **historical reported** |
-| RGB controller latency | about 2.12 ms/frame | v3, frame_skip=1 | merged PR #26 | **historical reported** |
+| RGB controller mean, PR #26 control law (`50ee352`) | 137.47 (median 95, max 341) | v3, frame_skip=1 | PR #26; [reproduction](../../audits/browser-clear/reproduce-137-47.py) | **verified** (reproduced exactly) |
+| RGB controller canonical clears, PR #26 control law | 0 / 15 (max 341 < 432, first wall never cleared) | v3, frame_skip=1 | PR #26; [reproduction](../../audits/browser-clear/reproduce-137-47.py) | **verified** |
+| Browser controller, 120-episode WASM audit (`a8445df`) | 43 / 120 canonical; mean 731.4 | v3 semantics, pinned ALE WASM, supplementary seeds | [browser audit](../../audits/browser-clear/README.md) | **verified** (supplementary, not official) |
 | Reward shaping mean effect | +3.26, 95% interval [-1.74, 9.48] | v2, frame_skip=4 | issue #9 / #10 | **historical reported; not promoted** |
 | PER vs Uniform at 500K | 19.98 vs 19.31 (+0.67) at 1.26x time | v2, frame_skip=4 | merged PR #16 | **historical reported; descriptive** |
 | Laya complete episodes | 0 | v2 primary | draft PR #74 | **not yet evaluated** |
 | Laya browser session | 4 at 22.7 s (lives 0) | v2, frame_skip=4 | [live browser session](laya-vision.md) | **verified session** |
 | Laya warm latency p50 | 72.56 ms/decision | v2 primary | issue #70 | **missing raw artifacts** |
 
-**Do not read across the Contract column.** The DQN and controller rows use different control cadences. Their raw scores are descriptive, not a ranking. See [Contracts and fairness](#contracts-and-fairness).
+**Do not read across the Contract column.** The v2 DQN rows and the v3 controller rows use different control cadences. The only same-contract comparison is DQN v3 (6.93, 0 clears) against the controller (721.8, 4/15). See [Contracts and fairness](#contracts-and-fairness).
 
 ## What is verified
 
@@ -51,14 +57,15 @@ What is actually verified in this checkout:
 - The frozen DQN artifact: 3,292,837 parameters, 4x84x84 input, 4 actions, ONNX SHA-256 `cf90c74b...ef7f12`, source checkpoint SHA-256 `ab07c0a4...79841c48`, source model SHA-256 `6002029d...624389a`.
 - ONNX/PyTorch parity on 60 fixed probe states: 60/60 actions match, maximum absolute Q-value difference 0.0.
 - Contract v2 and v3 SHA-256 values and their differences: v2 is frame_skip=4 with a 27,000-agent-step limit; v3 is frame_skip=1 with a 108,000-agent-step limit. Both keep the same 108,000 ALE episode-frame limit, frame stack 4, sticky-action probability 0.25, FIRE reset, and 15 evaluation seeds.
-- The completion detector's synthetic 864-point RAM/reward fixture. A **naturally completed** ALE trajectory has not been observed.
+- The completion detector on genuine clears: replayable Contract v2 and v3 ALE trajectories that clear both walls are detected at the exact step the second wall empties; first-wall (432) and last-brick (860) trajectories are not; six detector mutants are all killed. The detector fails closed: an unsupported runtime or a RAM/raw-reward disagreement makes the state unknown, and unknown is never reported as 0. See [clear semantics](../clear-semantics.md).
+- The current controller's official native evaluation (`a8445df`, 15 seeds, per-episode CSV committed) and the exact reproduction of the PR #26 control law's 137.47.
 - The Laya live browser session: score 4, lives 0 after 22.7 s, decision interval p50 67.0 ms, 58.5 presented frames/s, in two runs whose raw records are committed. See [laya-vision.md](laya-vision.md).
 - The web runtime model manifest and asset hashes.
 
 What is **not** verified here:
 
-- Any DQN, RGB-controller, reward-shaping, PER, or Laya **raw episode log**. Those runs were produced outside `main`; their generated directories were intentionally ignored.
-- Any **verified clear**. The repository's `verified_clears` gate requires contract/source/provenance validation that no recorded run has passed.
+- Any DQN, reward-shaping, PER, or Laya **raw episode log**. Those runs were produced outside `main`; their generated directories were intentionally ignored.
+- Any clear beyond **canonical clear detection**. The controller evaluator does not perform artifact provenance validation, and no run has passed the repository's artifact gate.
 - Any stable clearing rate, completion time, or world-record claim.
 - Any complete Laya **evaluator** episode or clear. The interactive browser session is verified as a session with committed raw records, not as an evaluated episode.
 
@@ -81,14 +88,16 @@ Atari results depend on frame skip, frame stack, sticky actions, FIRE handling, 
 | Evaluation seeds | 101-105, 202-206, 303-307 | same 15 seeds |
 | Evaluation epsilon | 0.0 | 0.0 |
 
-The comparison between the DQN holdout and the RGB controller is **not directly comparable**:
+The comparison between the DQN **v2** holdout and the RGB controller is **not directly comparable**:
 
 - v2 gives the policy 27,000 decisions in an episode; v3 gives it 108,000.
 - A v2 agent step is four emulator frames; a v3 agent step is one. Agent-step budgets and "frames per decision" are different units.
 - The DQN holdout is 15 evaluation episodes from a frozen model selected over multiple checkpoints. The controller is deterministic, has no training seed, and was run once per evaluation seed.
-- The controller's 137.47 mean and the DQN's 30.933 holdout mean therefore answer different questions. The controller's higher raw score does **not** establish that it is a better method, and the DQN's lower holdout does **not** establish that learning is unnecessary.
+- The controller's 721.8 mean (`a8445df`) and the DQN's 30.933 holdout mean therefore answer different questions.
 
-If a matched comparison is ever run, it must fix one contract, one seed set, one episode budget, and one evaluation command for both methods, and it must be predeclared before looking at results. That comparison was **not** run in this closeout.
+The same-contract comparison uses the issue #21 DQN baseline under Contract v3: mean 6.93, max 12, 0 clears (training seed 11, 2M frames, historical reported). Against the controller's 721.8 and 4/15 canonical clear detections this is a large gap on one contract, but the DQN side is a single training seed at one budget with no raw episodes in `main`, so it does **not** establish that learning is unnecessary.
+
+A predeclared matched comparison — one contract, one seed set, one episode budget, one evaluation command for both methods, multiple DQN training seeds — was **not** run in this closeout.
 
 ## Method evolution
 
@@ -103,24 +112,25 @@ Atari Breakout (ALE/Breakout-v5)
         ├── Controlled negative/inconclusive experiments (Contract v2)
         │      life-loss reward shaping → not promoted
         │      prioritized replay → descriptive, no stable win
-        │      first-clear probes → no verified clear
+        │      first-clear probes → no canonical clear detection
         │
         └── Pixel-only predictive controller (Contract v3)
                RGB ball/paddle detection → velocity → wall-aware intercept
                → deadband/hysteresis → canonical completion evaluation
-               → 0/15 canonical clear detections
+               → PR #26 law (50ee352): 137.47, 0/15 (max 341 < 432)
+               → #68 law (a8445df): 721.8, 4/15 canonical clear detections
 ```
 
 The DQN family comparison selected Dueling Double DQN at 500K (mean 20.178 versus Double 18.156 and DQN 15.844) and kept it through 1M (36.111). The final 2.5M model was chosen because 2.5M outperformed 5M during selection (51.4 versus 49.9), not because it was the longest run. The later holdout mean fell to 30.933, which is the clearest warning in the project against treating a selection score as a final score.
 
-The controller was built because Breakout's perception problem is explicit: detect the ball and paddle, estimate velocity, predict the paddle-plane intercept with wall reflections, and close the loop on observed paddle position. It is explainable and cheap — about 2.12 ms per controller frame — but it did not clear the game in 15 episodes. Its best episode scored 341, well below 864.
+The controller was built because Breakout's perception problem is explicit: detect the ball and paddle, estimate velocity, predict the paddle-plane intercept with wall reflections, and close the loop on observed paddle position. It is explainable and cheap — about 2 ms per controller frame. The PR #26 control law (`50ee352`) scored 137.47 with a best episode of 341, below the 432-point first wall, so its 0/15 is a correct measurement rather than a detector miss. #68 (`a8445df`) changed only the control law — a velocity anchor over two native-frame intervals and an early paddle release before contact — and the same evaluator, config, contract, seeds and detector then gave mean 721.8 and 4/15 canonical clear detections.
 
 ## What the negative results mean
 
 - **Reward shaping (issue #9):** the -1.0 life-loss penalty had a positive mean effect at 1M (+3.26 raw score), but seed 2023 was negative and both cross-training-seed bootstrap intervals included zero. The promotion gate did not pass, and the 2.5M comparison was not run. This is a **positive but inconsistent point estimate**, not a stable improvement.
 - **PER (issue #12):** PER was +0.67 raw score over continuous Uniform at 500K, at 1.26x training time, with three training seeds. The result is descriptive and does not establish statistical superiority.
-- **First-clear probes (issues #41, #43, #45, #48-#61):** the frozen probes ended without a verified clear. Several were explicitly INCONCLUSIVE or BLOCKED_ENVIRONMENT. They are evidence about specific failure modes, not proof that a method "cannot" clear.
-- **RGB controller (issue #25):** 0/15 canonical clear detections. Canonical detections are not `verified_clears`; the detector's positive path is validated with a synthetic fixture, not a natural clear.
+- **First-clear probes (issues #41, #43, #45, #48-#61):** the frozen DQN probes ended without a canonical clear detection. Several were explicitly INCONCLUSIVE or BLOCKED_ENVIRONMENT. They are evidence about specific failure modes, not proof that a method "cannot" clear.
+- **RGB controller, PR #26 control law (issue #25):** 0/15, but max 341 < 432: the old law never finished one wall, so this is a correct negative, superseded by #68.
 
 ## The Laya Vision side experiment
 
@@ -249,14 +259,15 @@ The deployed ONNX policy is trained under Contract v2. Do not evaluate it under 
 | ONNX runtime model | 13,175,034 bytes, SHA-256 `cf90c74b...ef7f12` | `web/public/models/final_model/model.onnx` |
 | Browser parity | 60/60 actions, max Q diff 0.0 | model metadata |
 
-**Missing raw artifacts.** The DQN holdout episodes, the 15-seed controller episodes, the reward-shaping and PER run directories, and the earlier Laya service runs are not in `main`. The 2026-10-29 browser-session records are committed under `docs/final-results/evidence/laya-vision/`. The repository ignores `outputs/`, `experiments/`, `evaluations/`, and `assets/` by design. No archive or release currently holds them. Until one does, the corresponding numbers remain **historical reported**, not independently reproducible.
+**Missing raw artifacts.** The DQN holdout episodes, the original PR #26 controller output directory (the run is now reproducible, and the `a8445df` run is committed under `audits/browser-clear/native-15/`), the reward-shaping and PER run directories, and the earlier Laya service runs are not in `main`. The 2026-10-29 browser-session records are committed under `docs/final-results/evidence/laya-vision/`. The repository ignores `outputs/`, `experiments/`, `evaluations/`, and `assets/` by design. No archive or release currently holds them. Until one does, the corresponding numbers remain **historical reported**, not independently reproducible.
 
 This is a limitation of the closeout, not a reason to fabricate logs. The expected paths, producers, and hashes for each missing artifact are listed in [`artifact-manifest.json`](artifact-manifest.json). See [`handoff.md`](handoff.md) for the proposed archive/release step.
 
 ## Claims this project does not make
 
-- No verified clear, solved game, reliable clear, or world record.
-- No claim that the RGB controller fairly beats DQN. Contract v2 and v3 are not directly comparable.
+- No clear beyond canonical clear detection; no solved game, reliable clear, or world record. 4/15 is one deterministic controller on one seed list.
+- No claim that the RGB controller fairly beats DQN in general. Contract v2 and v3 are not directly comparable, and the v3 DQN baseline is one training seed.
+- No claim that the 120-episode WASM audit is the official evaluation, that native and WASM runs match seed by seed, or that the deployed production bundle was measured.
 - No claim that reward shaping or PER produced a stable improvement.
 - No claim that Laya Vision is zero-shot, or that its latency predicts gameplay quality.
 - No claim that "Unbeatable" is an experimental result. It is a **UI difficulty label**; it means the browser injects no deliberate mistakes, not that the policy cannot lose.

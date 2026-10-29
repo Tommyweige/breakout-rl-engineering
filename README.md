@@ -6,14 +6,17 @@ An end-to-end reinforcement learning engineering project for Atari Breakout, cov
 
 The final application runs both the Atari environment and the trained RL policy directly in the browser, without a Python backend.
 
-> **Project status: frozen evidence closeout (2026-10-28).** This repository is a completed engineering case study, not an active training campaign. **No verified full clear has been recorded.** Contracts, metrics, provenance, and limitations are indexed in [`docs/final-results/`](docs/final-results/README.md); the public narrative is the [interactive case study](https://breakout.tommypan.com/case-study).
+> **Project status: frozen evidence closeout (2026-10-29).** This repository is a completed engineering case study, not an active training campaign. **The current RGB predictive controller reaches the 864-point two-wall clear in 4/15 episodes by canonical clear detection** (native ALE, official Contract v3 15 seeds, HEAD `a8445df`; mean 721.8). Contracts, metrics, provenance, and limitations are indexed in [`docs/final-results/`](docs/final-results/README.md); the public narrative is the [interactive case study](https://breakout.tommypan.com/case-study).
 
 ## Key Findings
 
 - **The DQN family produced a working browser policy, not a solved game.** Dueling Double DQN was selected after the 500K/1M family screen. The frozen 2.5M-transition checkpoint has a reported holdout mean of **30.933** raw score under Contract v2 (15 episodes, historical reported). The raw holdout episodes are not in `main`.
-- **A deterministic pixel controller is cheaper and explainable, but it did not clear.** Under Contract v3 it reported a mean of **137.47** with **0/15** canonical clear detections (historical reported). Its score is **not directly comparable** with the DQN holdout: v2 decides every four emulator frames, v3 every frame.
-- **No verified full clear exists.** The audited detector requires destroying both brick walls (864 points) and validates its positive path with a synthetic RAM/reward fixture, not a natural ALE clear. Phase 2/3 of the [roadmap](https://github.com/Tommyweige/breakout-rl-engineering/issues/14) remain deferred.
-- **Negative and inconclusive results are part of the record.** Life-loss reward shaping did not pass its promotion gate; PER was descriptive only; the first-clear probes ended without a verified clear; the Laya Vision side experiment has latency measurements but no complete episode.
+- **A deterministic pixel controller clears the game in 4 of 15 official episodes.** Under native ALE, the official Contract v3 15 seeds and HEAD `a8445df`, the controller scores mean **721.8** (median 810, max 864) with **4/15 canonical clear detections** ([report](audits/browser-clear/native-15/report.md)). The evaluator does not perform artifact provenance validation, so these are canonical clear detections, nothing stronger.
+- **137.47 is the old control law.** The earlier mean of **137.47** (0/15) is the PR #26 controller at `50ee352`; it reproduces exactly ([script](audits/browser-clear/reproduce-137-47.py)). Its maximum 341 is below the 432-point first wall, so 0 clears there is a correct measurement, not a detector miss. #68 changed only the control law.
+- **On the same Contract v3, the only DQN baseline is far behind.** Dueling Double DQN (training seed 11, 2M frames) reported mean **6.93**, max 12, **0 clears** under Contract v3 (historical reported, issue #23). The frozen browser DQN's 30.933 holdout is a Contract v2 number and is **not directly comparable** with either.
+- **The detector is validated on genuine clears and fails closed.** Replayable v2/v3 ALE trajectories that clear both walls are detected at the exact second-wall step, 432/860 negatives are not, and six detector mutants are all killed ([clear semantics](docs/clear-semantics.md)). An unknown detector state is reported as unknown, never as 0.
+- **A browser-side audit adds a distribution, not the official result.** 120 episodes of the same control law on pinned ALE WASM: 43/120 canonical clear detections, mean 731.4 ([audit](audits/browser-clear/README.md)).
+- **Negative and inconclusive results are part of the record.** Life-loss reward shaping did not pass its promotion gate; PER was descriptive only; the DQN first-clear probes ended without a canonical clear detection; the Laya Vision side experiment has latency measurements but no complete episode.
 
 “Unbeatable” in the browser UI is a **difficulty label** (no deliberate mistake injection), not an experimental result. The project makes no world-record, “solved”, stable-clear, or fair-method-winner claim.
 
@@ -169,9 +172,9 @@ python -m scripts.evaluation.evaluate_predictive_controller \
 The run writes per-episode scores and canonical clear detections, perception/control
 diagnostics, a first-episode ALE step trace, and a compact comparison report.
 The controller consumes screen frames only; FIRE handling and canonical clear
-detection stay in the external environment/evaluation pipeline. Clear counts use
-the audited `BreakoutCompletionDetector`; they do not establish the repository's
-`verified_clears`, which requires separate contract/source/provenance validation.
+detection stay in the external environment/evaluation pipeline. Clear counts are
+canonical clear detections from the audited `BreakoutCompletionDetector`; this
+evaluator does not perform artifact provenance validation.
 Trace and distribution fields distinguish `requested_action` (controller decision)
 from `ale_input_action` (after FIRE wrapper overrides, sent to ALE). ALE sticky
 actions may repeat a previous action; the physical action resolved by ALE is not observed.
@@ -307,16 +310,16 @@ The frozen evidence pack lives in [`docs/final-results/`](docs/final-results/REA
 - [`artifact-manifest.json`](docs/final-results/artifact-manifest.json) — expected raw-artifact paths, producers, hashes, and missing/not-created status.
 - [`handoff.md`](docs/final-results/handoff.md) — deferred work, Laya blockers, release/deploy/rollback notes, and the `tommypan.com` handoff.
 
-Read the contract before quoting a score. The DQN holdout and the RGB controller were evaluated under Contract v2 and v3 respectively; they are **not directly comparable**.
+Read the contract and commit before quoting a score. The DQN holdout (30.933) is Contract v2 and **not directly comparable** with the controller; the Contract v3 comparison is DQN 6.93 / 0 clears vs controller 721.8 / 4 of 15 at `a8445df`.
 
 The frozen pack was added in commit `77a0c7b`. Tag the commit that produced any new number and record both the tag and the full SHA; see [`docs/repro/versioning.md`](docs/repro/versioning.md).
 
 ## Known Limitations
 
-- The raw DQN, controller, reward-shaping, PER, and Laya run outputs are not in `main`; the corresponding numbers are historical reported rather than independently reproducible from this checkout.
-- No verified full clear exists. The completion detector's positive path has a synthetic 864-point fixture, not a natural ALE trajectory.
+- The raw DQN, reward-shaping, PER, and Laya run outputs are not in `main`; the corresponding numbers are historical reported rather than independently reproducible from this checkout. The controller results (`a8445df` native 15-seed run, the 137.47 reproduction, and the 120-episode WASM audit) are in [`audits/browser-clear/`](audits/browser-clear/README.md).
+- Clear counts are canonical clear detections; no controller run has passed artifact provenance validation. 4/15 is one deterministic controller on one seed list, not a reliable-clear rate.
 - Contract v2 and v3 change the decision cadence. No matched cross-contract comparison was run, and this repository does not claim a fair method winner.
-- The DQN holdout is one model and 15 episodes; the controller result is one 15-seed run.
+- The DQN holdout is one model and 15 episodes; the Contract v3 DQN baseline is one training seed; the controller result is one 15-seed run (the 120-episode WASM audit is supplementary).
 - Laya has latency measurements but no complete episode, and its draft PR #74 still needs real browser QA. Issues #70–#72 remain open.
 - No 50-episode browser evaluation or world-record/human-timed attempt was completed in this closeout.
 - A clean checkout has 13 pre-existing unit-test failures from the `main` cleanup; they are listed in [`docs/repro/known-test-failures.md`](docs/repro/known-test-failures.md). The smoke classifies them instead of hiding them.

@@ -199,7 +199,7 @@ zero; after resume, decisions continued from the same episode.
 - **An interactive session is not a contract evaluation.** The page runs the v2 contract's
   frame skip, sticky actions, FIRE ownership, and seed 101, and the episode ends when lives
   reach zero. It emits no per-episode CSV, no `stop_reason`, and no clear-detection record,
-  so it cannot be counted as a `verified_clears` episode or compared with evaluated DQN
+  so it cannot be counted as a canonical clear detection or compared with evaluated DQN
   and controller episodes.
 - **Two sessions are a repeat, not a distribution.** The environment is seeded, so the
   agreement between runs shows determinism, not variance across seeds or model revisions.

@@ -76,7 +76,10 @@ class FinalResultsSummaryTests(unittest.TestCase):
 
         self.assertEqual(self.summary["schema_version"], 1)
         self.assertEqual(self.summary["project_status"], "frozen_evidence_closeout")
-        self.assertEqual(self.summary["headline"]["verified_clears_recorded"], 0)
+        headline = self.summary["headline"]
+        self.assertEqual(headline["canonical_clear_detections"], 4)
+        self.assertEqual(headline["canonical_clear_episodes"], 15)
+        self.assertIn("a8445df", headline["protocol"])
 
     def test_every_metric_has_the_required_provenance_fields(self) -> None:
         for metric in self.summary["metrics"]:
@@ -141,13 +144,41 @@ class FinalResultsSummaryTests(unittest.TestCase):
         )
         self.assertEqual(comparisons["v2_vs_v3"]["comparability"], "not_directly_comparable")
         self.assertEqual(
-            self.metrics["rgb_controller_canonical_clear_detections"]["value"],
-            0,
+            comparisons["dqn_v3_vs_rgb_controller_v3"]["comparability"],
+            "same_contract_descriptive",
         )
-        self.assertEqual(self.metrics["verified_clears_recorded"]["value"], 0)
+
+    def test_controller_results_are_tied_to_their_control_law(self) -> None:
+        current = self.metrics["rgb_controller_a8445df_canonical_clear_detections"]
+        self.assertEqual((current["value"], current["seed_count"]), (4, 15))
+        self.assertEqual(self.metrics["rgb_controller_a8445df_mean_score"]["value"], 721.8)
+        self.assertEqual(self.metrics["rgb_controller_pr26_mean_score"]["value"], 137.47)
+        self.assertEqual(self.metrics["rgb_controller_pr26_canonical_clear_detections"]["value"], 0)
+        # 0 clears is only a correct measurement because the old law never finished one wall.
+        self.assertLess(self.metrics["rgb_controller_pr26_max_score"]["value"], 432)
+        for metric in self.summary["metrics"]:
+            if metric["id"].startswith(("rgb_controller_pr26_", "rgb_controller_a8445df_")):
+                self.assertEqual(metric["contract"]["id"], "breakout-evaluation-v3-frame-skip-1")
+        dqn_v3 = self.metrics["dqn_v3_2m_mean_score"]
+        self.assertEqual(dqn_v3["contract"]["id"], "breakout-evaluation-v3-frame-skip-1")
+        self.assertEqual(dqn_v3["value"], 6.93)
+        self.assertEqual(self.metrics["dqn_v3_2m_clears"]["value"], 0)
+
+    def test_clear_wording_stays_within_canonical_detection(self) -> None:
+        texts = [
+            json.dumps(self.summary),
+            INVENTORY_PATH.read_text(encoding="utf-8"),
+            (RESULTS_DIR / "README.md").read_text(encoding="utf-8"),
+            (RESULTS_DIR / "handoff.md").read_text(encoding="utf-8"),
+            (ROOT / "README.md").read_text(encoding="utf-8"),
+            (ROOT / "README.zh-TW.md").read_text(encoding="utf-8"),
+            (ROOT / "docs" / "clear-semantics.md").read_text(encoding="utf-8"),
+        ]
+        for text in texts:
+            self.assertIsNone(re.search(r"verified[ _]?(full )?clears?", text, re.I))
 
     def test_local_references_exist(self) -> None:
-        prefixes = ("docs/", "configs/", "web/", "scripts/", "tests/")
+        prefixes = ("docs/", "configs/", "web/", "scripts/", "tests/", "audits/")
         for metric in self.summary["metrics"]:
             ref = metric["ref"]
             if ref.startswith(prefixes) and "://" not in ref:

@@ -1,6 +1,6 @@
 # Handoff — Breakout RL Engineering closeout
 
-**Date:** 2026-10-28
+**Date:** 2026-10-28; integration of the controller, detector, reproduction and i18n branches 2026-10-29
 **Scope:** issue #73 closeout only. No new large-scale training, no Laya fixes, no merges, no deployment, no tag, no Release.
 **Branch:** `codex/issue73-closeout` → PR to `main`.
 
@@ -12,6 +12,7 @@
 - Added schema/provenance/link checks in `tests/test_final_results_summary.py` and web render tests.
 - Updated `README.md` and `README.zh-TW.md` with a frozen-status summary, key findings, reproducibility commands, and case-study/demo/evidence links.
 - Added a narrow `.gitignore` exception so `docs/final-results/` can exist on `main` despite the general `docs/*` rule. No other historical material was restored.
+- 2026-10-29: merged the controller re-evaluation (`audits/browser-clear/`: native ALE official 15 seeds at `a8445df`, the exact 137.47 reproduction, and a 120-episode WASM distribution), the clear-detector validation (`docs/clear-semantics.md`, genuine v2/v3 clear fixtures, `count_visible_bricks`), the reproduction path (`docs/repro/`, `scripts/smoke/`, CPU CI), and the bilingual case study. `summary.json` now leads with the controller's 4/15 canonical clear detections.
 
 ## 2. Freeze state
 
@@ -21,15 +22,17 @@
 | Machine-readable summary | complete and committed |
 | Case-study page | implemented; browser-rendered verification recorded in the PR |
 | DQN results | frozen as historical reported; raw episodes missing |
-| RGB controller results | frozen as historical reported; raw episodes missing |
+| RGB controller results | `a8445df`: 4/15 canonical clear detections, mean 721.8 (native ALE, official 15 seeds, per-episode CSV committed); PR #26 law `50ee352`: 137.47, 0/15, reproduced exactly |
+| DQN Contract v3 baseline | mean 6.93, 0 clears (seed 11, 2M frames); historical reported, raw episodes missing |
+| Clear detector | validated on genuine v2/v3 two-wall clears; 6/6 mutants killed; fail-closed (unknown is never 0) |
 | Laya line | frozen as incomplete; draft PR #74 not merged |
-| #14 Phase 1 | incomplete: no verified clear |
+| #14 Phase 1 | canonical clear detections exist (4/15); no run has passed artifact provenance validation, so Phase 1 is not declared complete here |
 | #14 Phase 2/3 | **deferred, not a blocker** |
 | World record / human timed challenge | not attempted |
 | Issues closed by this closeout | none |
 | Deployment / tag / Release | none |
 
-**Verified vs reported.** The model hashes, ONNX parity, contract hashes, completion-detector configuration, the absence of a recorded verified clear, and the 2026-10-29 Laya browser session in [`laya-vision.md`](laya-vision.md) are audited in this repository. The DQN 30.933 holdout, the controller's 137.47 mean, the reward-shaping and PER results, and the earlier Laya latency, memory, and control-diagnostic numbers are **historical reported** or **missing raw artifacts**; they are not independently reproducible from `main`.
+**Verified vs reported.** The model hashes, ONNX parity, contract hashes, completion-detector configuration and its validation on genuine clears, the `a8445df` controller's native 15-seed run (4/15 canonical clear detections, mean 721.8), the exact reproduction of the PR #26 law's 137.47, the 120-episode WASM audit, and the 2026-10-29 Laya browser session in [`laya-vision.md`](laya-vision.md) are audited in this repository. The DQN 30.933 (v2) holdout, the DQN 6.93 (v3) baseline, the reward-shaping and PER results, and the earlier Laya latency, memory, and control-diagnostic numbers are **historical reported** or **missing raw artifacts**; they are not independently reproducible from `main`.
 
 ## 3. Implementation status vs measurement status
 
@@ -84,7 +87,7 @@ PR #74 is **draft** and must remain draft until the missing acceptance evidence 
 
 ### #14 roadmap — Phase 2/3 deferred
 
-- Phase 1 (first verified clear) is **incomplete**. No verified clear exists.
+- Phase 1 (First Clear): the `a8445df` controller has 4/15 **canonical clear detections** under native ALE and the official Contract v3 seeds. The controller evaluator does not perform artifact provenance validation, so this closeout does not declare Phase 1 complete; that decision belongs in #14.
 - Phase 2 (reliable clear) and Phase 3 (timed challenge / human record) were **not started**. They are deferred, not blockers for this closeout.
 - #14 stays **open**. Do not close it or reinterpret its criteria.
 
@@ -102,7 +105,8 @@ Not attempted. No world-record, "solved", or human-comparable claim is supported
 - Add an independent case-study page and a prominent entry from the game page.
 - Add real gameplay capture and schema/provenance/link checks.
 - Update both READMEs with frozen status, key findings, limitations, and reproducibility entry points.
-- No gameplay, contract, or model change.
+- Add the controller re-evaluation, clear-detector validation, reproduction path with CPU CI, and the bilingual case study.
+- No gameplay, contract, or model change; `breakout_rl/completion.py` gains only the screen-level `count_visible_bricks` helper used by the detector tests.
 
 **Deployment checklist**
 
@@ -124,7 +128,7 @@ Not attempted. No world-record, "solved", or human-comparable claim is supported
 
 The personal-site repository was not accessed or modified. If the site owner wants a project card, use this copy and link the primary evidence:
 
-> **Breakout RL Engineering — frozen evidence closeout.** A DQN family, a deterministic RGB predictive controller, and a frozen Laya Vision side experiment, compared only where their contracts allow. No verified full clear was recorded. The closeout publishes the contracts, metrics, provenance, and limitations instead of claiming a win.
+> **Breakout RL Engineering — frozen evidence closeout.** A DQN family, a deterministic RGB predictive controller, and a frozen Laya Vision side experiment, compared only where their contracts allow. With no training, the controller reaches the 864-point two-wall clear in 4 of 15 official Contract v3 episodes by canonical clear detection (native ALE, mean 721.8); the Contract v3 DQN baseline scored 6.93 with 0 clears. The closeout publishes the contracts, metrics, provenance, and limitations instead of claiming a win.
 >
 > Results: <https://github.com/Tommyweige/breakout-rl-engineering/blob/main/docs/final-results/README.md>
 > Case study: <https://breakout.tommypan.com/case-study>
@@ -137,7 +141,7 @@ Suggested section labels: `Research question`, `What was built`, `What the evide
 The raw logs are the largest remaining gap. A future closeout step should create a GitHub Release (or an external archive) containing:
 
 - DQN holdout episode rows and the exact evaluation command/config hash.
-- RGB controller 15-seed `results.json`, `episodes.csv`, diagnostics, and trace.
+- The `a8445df` controller's full `results.json` and per-seed traces (its `episodes.csv`, summary and diagnostics are already in `audits/browser-clear/native-15/`).
 - Reward-shaping and PER comparison reports plus per-seed artifacts.
 - Laya benchmark traces and any complete episode.
 - SHA-256 for each archive and a `README` mapping each file to the issue/PR.
@@ -148,8 +152,10 @@ Do not upload model weights without confirming the license and distribution righ
 
 - The historical numbers cannot be independently reproduced from `main` until raw artifacts are archived.
 - The DQN 30.933 holdout is a single model and 15 episodes; it is not a population estimate.
-- The RGB controller result is one 15-seed run; its 0/15 canonical clear count is not a `verified_clears` result.
-- The completion detector's positive path has only a synthetic 864-point fixture; no natural clear was observed.
+- The `a8445df` controller result is one 15-seed run of one deterministic controller (bootstrap 95% CI for the clear rate 10-50%). Its 4/15 are canonical clear detections; the evaluator does not perform artifact provenance validation.
+- The committed native run was made from audit commit `9d88918` with untracked audit files present (`working_tree_dirty=true`). Its product code is identical to `a8445df`, and a clean-worktree run at `77a0c7b` (same source sha256 `5989e617…`) gave identical per-episode results (see `docs/clear-semantics.md`), but that clean run's raw output is not committed.
+- The 120-episode WASM audit is supplementary: 115 of its seeds are outside the contract and its sticky-action RNG differs from native ALE.
+- The deployed production bundle was not measured; the audits ran HEAD `a8445df`.
 - The Laya line has no complete evaluator episode; its only gameplay evidence is the two short interactive browser sessions recorded in `docs/final-results/laya-vision.md`.
 - A future agent could mistakenly compare v2 and v3 scores. The summary JSON and case-study page label the comparison `not_directly_comparable`; keep that label.
 - A future agent could treat "Unbeatable" as a result. It is a UI difficulty label only.

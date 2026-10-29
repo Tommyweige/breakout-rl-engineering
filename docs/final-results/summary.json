@@ -2,7 +2,7 @@
   "schema_version": 1,
   "artifact_type": "breakout_final_results_summary",
   "project": "Tommyweige/breakout-rl-engineering",
-  "frozen_at": "2026-10-28",
+  "frozen_at": "2026-10-29",
   "project_status": "frozen_evidence_closeout",
   "research_question": "Does Atari Breakout need a trained DQN policy, or can an explainable pixel tracker plus predictive control make the same decisions more cheaply?",
   "claim_policy": {
@@ -78,32 +78,18 @@
     }
   },
   "headline": {
-    "verified_clears_recorded": 0,
-    "statement": "No verified full clear has been recorded under the audited 864-point ALE Breakout detector.",
-    "scope": "Repository issues, merged pull requests, archived articles, and the completion audit reviewed through 2026-10-28.",
+    "canonical_clear_detections": 4,
+    "canonical_clear_episodes": 15,
+    "statement": "Under native ALE, the official Contract v3 15 seeds and HEAD a8445df, the current RGB predictive controller reached the 864-point two-wall clear in 4 of 15 episodes by canonical clear detection (mean 721.8, median 810).",
+    "protocol": "native ALE (ale-py 0.12.0), official Contract v3 15 seeds, HEAD a8445df",
+    "detection_scope": "Canonical clear detection by BreakoutCompletionDetector (ale-breakout-two-wall-score-864-v2). The controller evaluator does not perform artifact provenance validation, so no clear is reported beyond canonical detection.",
+    "fail_closed": "The detector is fail-closed: an unsupported runtime or a RAM/raw-reward disagreement makes the episode state unknown (cleared = null). Unknown is never reported as 0, and a clear rate is only stated when every episode state is known.",
+    "scope": "Repository issues, merged pull requests, archived articles, the completion audit, and the 2026-10-29 controller and browser audits.",
     "clear_definition": "Destroy both brick walls in ALE/Breakout-v5, one-player Game 1; the audited detector uses the documented 864-point maximum plus the ROM scoreboard in ALE RAM.",
-    "positive_detector_validation": "A synthetic RAM/reward fixture reaches 864. A naturally completed ALE trajectory has not been observed.",
-    "max_observed_probe_score": 302
+    "positive_detector_validation": "Replayable Contract v2 and v3 ALE trajectories that clear both walls are detected at the exact step the second wall empties; first-wall (432) and last-brick (860) trajectories are not. Six detector mutants are all killed by tests/test_completion.py.",
+    "previous_controller_result": "137.47 is the PR #26 control law (50ee352), not the current controller. Its maximum 341 is below the 432-point first wall, so 0/15 there is a correct measurement, not a detector miss."
   },
   "metrics": [
-    {
-      "id": "verified_clears_recorded",
-      "label": "Verified full clears recorded",
-      "value": 0,
-      "unit": "count",
-      "contract": {
-        "id": "cross-contract-audit",
-        "path": "configs/eval/breakout_completion_audit_v1.json",
-        "frame_skip": "mixed"
-      },
-      "seed_count": 0,
-      "seed_role": "all reviewed records",
-      "source": "Repository evidence audit; completion audit records no natural positive trajectory.",
-      "ref": "docs/final-results/README.md#what-is-verified",
-      "verification_status": "verified",
-      "raw_artifact_status": "in_repo",
-      "notes": "This is an absence-of-record audit, not a proof that a clear is impossible."
-    },
     {
       "id": "clear_score_threshold",
       "label": "Audited full-clear score",
@@ -138,7 +124,7 @@
       "ref": "configs/eval/breakout_completion_audit_v1.json",
       "verification_status": "historical_reported",
       "raw_artifact_status": "in_repo",
-      "notes": "The audit records the maximum observed raw score, not a per-seed artifact table."
+      "notes": "The audit records the maximum observed raw score, not a per-seed artifact table. No longer the highest observed score: the a8445df controller reaches 864 (see rgb_controller_a8445df_max_score)."
     },
     {
       "id": "dqn_final_holdout_mean",
@@ -193,6 +179,60 @@
       "verification_status": "historical_reported",
       "raw_artifact_status": "missing",
       "notes": "Not a final score. The same evaluation influenced checkpoint selection, so it is reported separately from the holdout. Cross-checked against the baseline text in breakout_rl/vision_evaluation.py."
+    },
+    {
+      "id": "dqn_v3_2m_mean_score",
+      "label": "DQN Contract v3 mean (seed 11, 2M frames)",
+      "value": 6.93,
+      "unit": "raw Breakout score per episode (mean)",
+      "contract": {
+        "id": "breakout-evaluation-v3-frame-skip-1",
+        "path": "configs/eval/breakout_contract_v3.json",
+        "frame_skip": 1
+      },
+      "seed_count": 15,
+      "seed_role": "Contract v3 evaluation seeds",
+      "source": "Issue #21 seed-11 Contract v3 baseline, as reported in issue #23",
+      "ref": "https://github.com/Tommyweige/breakout-rl-engineering/issues/23",
+      "verification_status": "historical_reported",
+      "raw_artifact_status": "missing",
+      "notes": "Dueling Double DQN, training seed 11, 2M emulator frames, canonical Contract v3 evaluation. Raw episodes and the checkpoint are not in main. Median 7. Earlier checkpoints: 400K mean 2.13, 1M mean 4.60."
+    },
+    {
+      "id": "dqn_v3_2m_max_score",
+      "label": "DQN Contract v3 maximum (seed 11, 2M frames)",
+      "value": 12,
+      "unit": "raw Breakout score per episode (maximum)",
+      "contract": {
+        "id": "breakout-evaluation-v3-frame-skip-1",
+        "path": "configs/eval/breakout_contract_v3.json",
+        "frame_skip": 1
+      },
+      "seed_count": 15,
+      "seed_role": "Contract v3 evaluation seeds",
+      "source": "Issue #21 seed-11 Contract v3 baseline, as reported in issue #23",
+      "ref": "https://github.com/Tommyweige/breakout-rl-engineering/issues/23",
+      "verification_status": "historical_reported",
+      "raw_artifact_status": "missing",
+      "notes": "Dueling Double DQN, training seed 11, 2M emulator frames, canonical Contract v3 evaluation. Raw episodes and the checkpoint are not in main."
+    },
+    {
+      "id": "dqn_v3_2m_clears",
+      "label": "DQN Contract v3 clears (seed 11, 2M frames)",
+      "value": 0,
+      "unit": "clears out of 15 episodes",
+      "contract": {
+        "id": "breakout-evaluation-v3-frame-skip-1",
+        "path": "configs/eval/breakout_contract_v3.json",
+        "frame_skip": 1
+      },
+      "seed_count": 15,
+      "seed_role": "Contract v3 evaluation seeds",
+      "source": "Issue #21 seed-11 Contract v3 baseline, as reported in issue #23",
+      "ref": "https://github.com/Tommyweige/breakout-rl-engineering/issues/23",
+      "verification_status": "historical_reported",
+      "raw_artifact_status": "missing",
+      "notes": "Dueling Double DQN, training seed 11, 2M emulator frames, canonical Contract v3 evaluation. Raw episodes and the checkpoint are not in main. Max 12 is far below the 432-point first wall, so 0 is not a detector question."
     },
     {
       "id": "dqn_training_transitions",
@@ -285,8 +325,8 @@
       "notes": "The manifest and metadata agree; webAssetIntegrity tests check runtime asset hashes."
     },
     {
-      "id": "rgb_controller_mean_score",
-      "label": "RGB predictive controller mean",
+      "id": "rgb_controller_pr26_mean_score",
+      "label": "RGB controller mean, PR #26 control law (50ee352)",
       "value": 137.47,
       "unit": "raw Breakout score per episode (mean)",
       "contract": {
@@ -296,15 +336,15 @@
       },
       "seed_count": 15,
       "seed_role": "one episode per evaluation seed",
-      "source": "Merged PR #26 (issue #25), 15-seed real ALE evaluation",
-      "ref": "https://github.com/Tommyweige/breakout-rl-engineering/pull/26",
-      "verification_status": "historical_reported",
-      "raw_artifact_status": "missing",
-      "notes": "Generated outputs were ignored under outputs/ and are not in main. The controller is deterministic; there is no training seed."
+      "source": "Merged PR #26 (issue #25); reproduced at 50ee352 on 2026-10-29",
+      "ref": "audits/browser-clear/reproduce-137-47.py",
+      "verification_status": "verified",
+      "raw_artifact_status": "in_repo",
+      "notes": "PR #26 control law at 50ee352, superseded by #68 (a8445df). Reproduced exactly with audits/browser-clear/reproduce-137-47.py (mean 137.4667, median 95, max 341, 0/15); per-episode table in docs/clear-semantics.md."
     },
     {
-      "id": "rgb_controller_median_score",
-      "label": "RGB predictive controller median",
+      "id": "rgb_controller_pr26_median_score",
+      "label": "RGB controller median, PR #26 control law (50ee352)",
       "value": 95,
       "unit": "raw Breakout score per episode (median)",
       "contract": {
@@ -314,15 +354,15 @@
       },
       "seed_count": 15,
       "seed_role": "one episode per evaluation seed",
-      "source": "Merged PR #26 (issue #25)",
-      "ref": "https://github.com/Tommyweige/breakout-rl-engineering/pull/26",
-      "verification_status": "historical_reported",
-      "raw_artifact_status": "missing",
-      "notes": "Reported with the same 15-seed run as the mean."
+      "source": "Merged PR #26 (issue #25); reproduced at 50ee352 on 2026-10-29",
+      "ref": "audits/browser-clear/reproduce-137-47.py",
+      "verification_status": "verified",
+      "raw_artifact_status": "in_repo",
+      "notes": "PR #26 control law at 50ee352, superseded by #68 (a8445df). Reproduced exactly with audits/browser-clear/reproduce-137-47.py (mean 137.4667, median 95, max 341, 0/15); per-episode table in docs/clear-semantics.md."
     },
     {
-      "id": "rgb_controller_max_score",
-      "label": "RGB predictive controller maximum",
+      "id": "rgb_controller_pr26_max_score",
+      "label": "RGB controller maximum, PR #26 control law (50ee352)",
       "value": 341,
       "unit": "raw Breakout score per episode (maximum)",
       "contract": {
@@ -332,15 +372,15 @@
       },
       "seed_count": 15,
       "seed_role": "one episode per evaluation seed",
-      "source": "Merged PR #26 (issue #25)",
-      "ref": "https://github.com/Tommyweige/breakout-rl-engineering/pull/26",
-      "verification_status": "historical_reported",
-      "raw_artifact_status": "missing",
-      "notes": "The best single episode remains well below the 864-point clear."
+      "source": "Merged PR #26 (issue #25); reproduced at 50ee352 on 2026-10-29",
+      "ref": "audits/browser-clear/reproduce-137-47.py",
+      "verification_status": "verified",
+      "raw_artifact_status": "in_repo",
+      "notes": "PR #26 control law at 50ee352, superseded by #68 (a8445df). Reproduced exactly with audits/browser-clear/reproduce-137-47.py (mean 137.4667, median 95, max 341, 0/15); per-episode table in docs/clear-semantics.md. 341 < 432 (the first wall), so the controller never cleared even one wall."
     },
     {
-      "id": "rgb_controller_canonical_clear_detections",
-      "label": "RGB predictive controller canonical clear detections",
+      "id": "rgb_controller_pr26_canonical_clear_detections",
+      "label": "RGB controller canonical clear detections, PR #26 control law (50ee352)",
       "value": 0,
       "unit": "canonical clear detections out of 15 episodes",
       "contract": {
@@ -350,15 +390,15 @@
       },
       "seed_count": 15,
       "seed_role": "one episode per evaluation seed",
-      "source": "Merged PR #26 (issue #25)",
-      "ref": "https://github.com/Tommyweige/breakout-rl-engineering/pull/26",
-      "verification_status": "historical_reported",
-      "raw_artifact_status": "missing",
-      "notes": "Canonical detections from the audited detector. PR #26 explicitly says these are not repository verified_clears."
+      "source": "Merged PR #26 (issue #25); reproduced at 50ee352 on 2026-10-29",
+      "ref": "audits/browser-clear/reproduce-137-47.py",
+      "verification_status": "verified",
+      "raw_artifact_status": "in_repo",
+      "notes": "PR #26 control law at 50ee352, superseded by #68 (a8445df). Reproduced exactly with audits/browser-clear/reproduce-137-47.py (mean 137.4667, median 95, max 341, 0/15); per-episode table in docs/clear-semantics.md. Max 341 < 432, so 0 is a correct measurement, not a detector miss."
     },
     {
-      "id": "rgb_controller_ball_detection_rate",
-      "label": "RGB controller ball detection success",
+      "id": "rgb_controller_pr26_ball_detection_rate",
+      "label": "RGB controller ball detection success, PR #26 control law (50ee352)",
       "value": 0.893,
       "unit": "fraction of observations",
       "contract": {
@@ -375,8 +415,8 @@
       "notes": "Perception diagnostic, not a score."
     },
     {
-      "id": "rgb_controller_paddle_detection_rate",
-      "label": "RGB controller paddle detection success",
+      "id": "rgb_controller_pr26_paddle_detection_rate",
+      "label": "RGB controller paddle detection success, PR #26 control law (50ee352)",
       "value": 1.0,
       "unit": "fraction of observations",
       "contract": {
@@ -393,8 +433,8 @@
       "notes": "Perception diagnostic, not a score."
     },
     {
-      "id": "rgb_controller_latency_ms_per_frame",
-      "label": "RGB controller latency",
+      "id": "rgb_controller_pr26_latency_ms_per_frame",
+      "label": "RGB controller latency, PR #26 control law (50ee352)",
       "value": 2.12,
       "unit": "ms per controller frame",
       "contract": {
@@ -409,6 +449,186 @@
       "verification_status": "historical_reported",
       "raw_artifact_status": "missing",
       "notes": "About 2.12 ms per frame in the original run; not remeasured in this closeout."
+    },
+    {
+      "id": "rgb_controller_a8445df_mean_score",
+      "label": "RGB predictive controller mean (a8445df)",
+      "value": 721.8,
+      "unit": "raw Breakout score per episode (mean)",
+      "contract": {
+        "id": "breakout-evaluation-v3-frame-skip-1",
+        "path": "configs/eval/breakout_contract_v3.json",
+        "frame_skip": 1
+      },
+      "seed_count": 15,
+      "seed_role": "official Contract v3 evaluation seeds, one episode each",
+      "source": "python -m scripts.evaluation.evaluate_predictive_controller at HEAD a8445df (run from audit commit 9d88918, whose product code is identical); audits/browser-clear/native-15/",
+      "ref": "audits/browser-clear/native-15/summary.json",
+      "verification_status": "verified",
+      "raw_artifact_status": "in_repo",
+      "notes": "Native ALE, official Contract v3 seeds 101-105/202-206/303-307, HEAD a8445df (#68 control law). All 15 detector states are known (none unknown). The evaluator does not run artifact provenance validation, so these are canonical clear detections only. Bootstrap 95% CI 636.2-800.6."
+    },
+    {
+      "id": "rgb_controller_a8445df_median_score",
+      "label": "RGB predictive controller median (a8445df)",
+      "value": 810,
+      "unit": "raw Breakout score per episode (median)",
+      "contract": {
+        "id": "breakout-evaluation-v3-frame-skip-1",
+        "path": "configs/eval/breakout_contract_v3.json",
+        "frame_skip": 1
+      },
+      "seed_count": 15,
+      "seed_role": "official Contract v3 evaluation seeds, one episode each",
+      "source": "python -m scripts.evaluation.evaluate_predictive_controller at HEAD a8445df (run from audit commit 9d88918, whose product code is identical); audits/browser-clear/native-15/",
+      "ref": "audits/browser-clear/native-15/summary.json",
+      "verification_status": "verified",
+      "raw_artifact_status": "in_repo",
+      "notes": "Native ALE, official Contract v3 seeds 101-105/202-206/303-307, HEAD a8445df (#68 control law). All 15 detector states are known (none unknown). The evaluator does not run artifact provenance validation, so these are canonical clear detections only."
+    },
+    {
+      "id": "rgb_controller_a8445df_max_score",
+      "label": "RGB predictive controller maximum (a8445df)",
+      "value": 864,
+      "unit": "raw Breakout score per episode (maximum)",
+      "contract": {
+        "id": "breakout-evaluation-v3-frame-skip-1",
+        "path": "configs/eval/breakout_contract_v3.json",
+        "frame_skip": 1
+      },
+      "seed_count": 15,
+      "seed_role": "official Contract v3 evaluation seeds, one episode each",
+      "source": "python -m scripts.evaluation.evaluate_predictive_controller at HEAD a8445df (run from audit commit 9d88918, whose product code is identical); audits/browser-clear/native-15/",
+      "ref": "audits/browser-clear/native-15/summary.json",
+      "verification_status": "verified",
+      "raw_artifact_status": "in_repo",
+      "notes": "Native ALE, official Contract v3 seeds 101-105/202-206/303-307, HEAD a8445df (#68 control law). All 15 detector states are known (none unknown). The evaluator does not run artifact provenance validation, so these are canonical clear detections only. Minimum 425."
+    },
+    {
+      "id": "rgb_controller_a8445df_canonical_clear_detections",
+      "label": "RGB predictive controller canonical clear detections (a8445df)",
+      "value": 4,
+      "unit": "canonical clear detections out of 15 episodes",
+      "contract": {
+        "id": "breakout-evaluation-v3-frame-skip-1",
+        "path": "configs/eval/breakout_contract_v3.json",
+        "frame_skip": 1
+      },
+      "seed_count": 15,
+      "seed_role": "official Contract v3 evaluation seeds, one episode each",
+      "source": "python -m scripts.evaluation.evaluate_predictive_controller at HEAD a8445df (run from audit commit 9d88918, whose product code is identical); audits/browser-clear/native-15/",
+      "ref": "audits/browser-clear/native-15/summary.json",
+      "verification_status": "verified",
+      "raw_artifact_status": "in_repo",
+      "notes": "Native ALE, official Contract v3 seeds 101-105/202-206/303-307, HEAD a8445df (#68 control law). All 15 detector states are known (none unknown). The evaluator does not run artifact provenance validation, so these are canonical clear detections only. Seeds 202, 304, 306, 307; the other 11 ended game_over. Bootstrap 95% CI 10.0-50.0%."
+    },
+    {
+      "id": "rgb_controller_a8445df_best_clear_ale_frame",
+      "label": "RGB predictive controller earliest canonical clear (a8445df)",
+      "value": 22692,
+      "unit": "ALE native emulator frames",
+      "contract": {
+        "id": "breakout-evaluation-v3-frame-skip-1",
+        "path": "configs/eval/breakout_contract_v3.json",
+        "frame_skip": 1
+      },
+      "seed_count": 15,
+      "seed_role": "official Contract v3 evaluation seeds, one episode each",
+      "source": "python -m scripts.evaluation.evaluate_predictive_controller at HEAD a8445df (run from audit commit 9d88918, whose product code is identical); audits/browser-clear/native-15/",
+      "ref": "audits/browser-clear/native-15/summary.json",
+      "verification_status": "verified",
+      "raw_artifact_status": "in_repo",
+      "notes": "Native ALE, official Contract v3 seeds 101-105/202-206/303-307, HEAD a8445df (#68 control law). All 15 detector states are known (none unknown). The evaluator does not run artifact provenance validation, so these are canonical clear detections only. Median clear frame 24702 over the 4 detections."
+    },
+    {
+      "id": "rgb_controller_a8445df_latency_ms_mean",
+      "label": "RGB predictive controller decision latency (a8445df)",
+      "value": 2.03,
+      "unit": "ms per controller frame (CPU mean)",
+      "contract": {
+        "id": "breakout-evaluation-v3-frame-skip-1",
+        "path": "configs/eval/breakout_contract_v3.json",
+        "frame_skip": 1
+      },
+      "seed_count": 15,
+      "seed_role": "official Contract v3 evaluation seeds, one episode each",
+      "source": "python -m scripts.evaluation.evaluate_predictive_controller at HEAD a8445df (run from audit commit 9d88918, whose product code is identical); audits/browser-clear/native-15/",
+      "ref": "audits/browser-clear/native-15/summary.json",
+      "verification_status": "verified",
+      "raw_artifact_status": "in_repo",
+      "notes": "Mean 2.0303 ms, p95 2.1213 ms on the oracle-vm ARM64 CPU; not a matched benchmark against DQN."
+    },
+    {
+      "id": "rgb_controller_a8445df_ball_detection_rate",
+      "label": "RGB controller ball detection success (a8445df)",
+      "value": 0.772,
+      "unit": "fraction of observations",
+      "contract": {
+        "id": "breakout-evaluation-v3-frame-skip-1",
+        "path": "configs/eval/breakout_contract_v3.json",
+        "frame_skip": 1
+      },
+      "seed_count": 15,
+      "seed_role": "official Contract v3 evaluation seeds, one episode each",
+      "source": "python -m scripts.evaluation.evaluate_predictive_controller at HEAD a8445df (run from audit commit 9d88918, whose product code is identical); audits/browser-clear/native-15/",
+      "ref": "audits/browser-clear/native-15/summary.json",
+      "verification_status": "verified",
+      "raw_artifact_status": "in_repo",
+      "notes": "Perception diagnostic, not a score. Paddle detection success 1.0."
+    },
+    {
+      "id": "browser_wasm_120_canonical_clear_detections",
+      "label": "Browser controller canonical clear detections, 120-episode WASM audit",
+      "value": 43,
+      "unit": "canonical clear detections out of 120 episodes",
+      "contract": {
+        "id": "breakout-evaluation-v3-frame-skip-1",
+        "path": "configs/eval/breakout_contract_v3.json",
+        "frame_skip": 1
+      },
+      "seed_count": 120,
+      "seed_role": "supplementary audit seeds, one episode each",
+      "source": "node scripts/analysis/browser-clear-audit.mjs (pinned ALE WASM) on the a8445df browser controller",
+      "ref": "audits/browser-clear/summary-120.json",
+      "verification_status": "verified",
+      "raw_artifact_status": "in_repo",
+      "notes": "Supplementary distribution, not the official evaluation: pinned ALE 0.12.0 WASM, Contract v3 task semantics, seeds 101-105/202-206/303-307/401-405 and 501-600 (115 of them outside the contract seed list). The WASM sticky-action RNG stream differs from native ale-py, so only distributions are comparable, not individual seeds. 35.8%, bootstrap 95% CI 27.5-44.2%. No RAM/reward disagreement in 120 episodes."
+    },
+    {
+      "id": "browser_wasm_120_mean_score",
+      "label": "Browser controller mean, 120-episode WASM audit",
+      "value": 731.4,
+      "unit": "raw Breakout score per episode (mean)",
+      "contract": {
+        "id": "breakout-evaluation-v3-frame-skip-1",
+        "path": "configs/eval/breakout_contract_v3.json",
+        "frame_skip": 1
+      },
+      "seed_count": 120,
+      "seed_role": "supplementary audit seeds, one episode each",
+      "source": "node scripts/analysis/browser-clear-audit.mjs (pinned ALE WASM) on the a8445df browser controller",
+      "ref": "audits/browser-clear/summary-120.json",
+      "verification_status": "verified",
+      "raw_artifact_status": "in_repo",
+      "notes": "Supplementary distribution, not the official evaluation: pinned ALE 0.12.0 WASM, Contract v3 task semantics, seeds 101-105/202-206/303-307/401-405 and 501-600 (115 of them outside the contract seed list). The WASM sticky-action RNG stream differs from native ale-py, so only distributions are comparable, not individual seeds. Median 850.5, min 384, max 864; bootstrap 95% CI 699.0-762.5."
+    },
+    {
+      "id": "browser_wasm_120_screen_wall_clears",
+      "label": "Browser controller screen-level wall clears, 120-episode WASM audit",
+      "value": 107,
+      "unit": "episodes with at least one wall emptied on screen (out of 120)",
+      "contract": {
+        "id": "breakout-evaluation-v3-frame-skip-1",
+        "path": "configs/eval/breakout_contract_v3.json",
+        "frame_skip": 1
+      },
+      "seed_count": 120,
+      "seed_role": "supplementary audit seeds, one episode each",
+      "source": "node scripts/analysis/browser-clear-audit.mjs (pinned ALE WASM) on the a8445df browser controller",
+      "ref": "audits/browser-clear/summary-120.json",
+      "verification_status": "verified",
+      "raw_artifact_status": "in_repo",
+      "notes": "Supplementary distribution, not the official evaluation: pinned ALE 0.12.0 WASM, Contract v3 task semantics, seeds 101-105/202-206/303-307/401-405 and 501-600 (115 of them outside the contract seed list). The WASM sticky-action RNG stream differs from native ale-py, so only distributions are comparable, not individual seeds. A screen wall clear is the 432-point first wall disappearing for at least one frame; it is not a canonical clear."
     },
     {
       "id": "reward_shaping_mean_effect",
@@ -988,12 +1208,13 @@
     }
   ],
   "table_metric_ids": [
-    "verified_clears_recorded",
+    "rgb_controller_a8445df_canonical_clear_detections",
+    "rgb_controller_a8445df_mean_score",
+    "rgb_controller_pr26_mean_score",
+    "dqn_v3_2m_mean_score",
     "dqn_final_holdout_mean",
-    "dqn_selection_mean",
-    "rgb_controller_mean_score",
-    "rgb_controller_canonical_clear_detections",
-    "rgb_controller_latency_ms_per_frame",
+    "browser_wasm_120_canonical_clear_detections",
+    "rgb_controller_a8445df_latency_ms_mean",
     "reward_shaping_mean_effect",
     "per_500k_mean_score",
     "laya_warm_latency_p50_ms",
@@ -1004,10 +1225,28 @@
       "id": "dqn_vs_rgb_controller",
       "title": "DQN (v2) vs RGB predictive controller (v3)",
       "left": "Dueling Double DQN, Contract v2, 30.933 holdout mean",
-      "right": "Deterministic RGB controller, Contract v3, 137.47 mean",
+      "right": "Deterministic RGB controller (a8445df), Contract v3, 721.8 mean, 4/15 canonical clear detections",
       "comparability": "not_directly_comparable",
       "reason": "Contract v2 makes one decision per four emulator frames; v3 makes one per emulator frame. The evaluation seed roles and episode sets also differ. The raw scores are descriptive, not a fair ranking or a method win.",
       "evidence": "docs/final-results/README.md#contracts-and-fairness"
+    },
+    {
+      "id": "dqn_v3_vs_rgb_controller_v3",
+      "title": "DQN vs RGB predictive controller, both on Contract v3",
+      "left": "Dueling Double DQN, seed 11, 2M frames: mean 6.93, max 12, 0 clears",
+      "right": "RGB controller (a8445df), native ALE, official 15 seeds: mean 721.8, max 864, 4/15 canonical clear detections",
+      "comparability": "same_contract_descriptive",
+      "reason": "Same Contract v3 task semantics and seed list. The gap is large, but the DQN side is one training seed at a 2M-frame budget with no raw episodes in main, so this shows the controller far ahead of the only v3 DQN baseline; it does not show that learning cannot reach a clear.",
+      "evidence": "audits/browser-clear/native-15/summary.json"
+    },
+    {
+      "id": "rgb_controller_pr26_vs_a8445df",
+      "title": "RGB controller: PR #26 control law vs #68 control law",
+      "left": "50ee352 (PR #26): mean 137.47, max 341, 0/15",
+      "right": "a8445df (#68): mean 721.8, max 864, 4/15 canonical clear detections",
+      "comparability": "same_contract_same_evaluator",
+      "reason": "Same evaluator, config, Contract v3, seeds and detector; only breakout_rl/vision_controller.py changed (velocity anchor and early paddle release before contact).",
+      "evidence": "docs/clear-semantics.md"
     },
     {
       "id": "laya_vs_dqn_v2",
@@ -1097,15 +1336,63 @@
     },
     {
       "id": "issue-25-rgb-controller",
-      "title": "Pixel-only predictive controller",
+      "title": "Pixel-only predictive controller, PR #26 control law",
       "method": "RGB perception + velocity/intercept + closed-loop LEFT/RIGHT/NOOP",
       "contract": "v3",
       "seed_summary": "15 evaluation seeds, one episode each",
-      "headline": "0/15 canonical clear detections; mean 137.47, median 95, max 341; 2.12 ms/frame.",
+      "headline": "PR #26 control law (50ee352): 0/15 canonical clear detections; mean 137.47, median 95, max 341 (< 432, first wall never cleared); 2.12 ms/frame.",
+      "verification_status": "verified",
+      "raw_artifact_status": "in_repo",
+      "source": "https://github.com/Tommyweige/breakout-rl-engineering/pull/26",
+      "notes": "Reproduced exactly at 50ee352 by audits/browser-clear/reproduce-137-47.py. Superseded by the #68 control law."
+    },
+    {
+      "id": "issue-68-controller-native-15",
+      "title": "Current RGB controller, official native evaluation",
+      "method": "RGB perception + velocity anchor + early paddle release (#68)",
+      "contract": "v3",
+      "seed_summary": "official 15 Contract v3 seeds, one episode each, native ALE, HEAD a8445df",
+      "headline": "4/15 canonical clear detections; mean 721.8, median 810, max 864; 2.03 ms/frame.",
+      "verification_status": "verified",
+      "raw_artifact_status": "in_repo",
+      "source": "audits/browser-clear/native-15/report.md",
+      "notes": "Canonical clear detection only; the evaluator does not perform artifact provenance validation."
+    },
+    {
+      "id": "browser-clear-audit-120",
+      "title": "Browser controller 120-episode WASM audit",
+      "method": "Same #68 control law in TypeScript, pinned ALE WASM",
+      "contract": "v3",
+      "seed_summary": "120 seeds (15 contract + 401-405 + 501-600), one episode each",
+      "headline": "43/120 canonical clear detections (35.8%); 107/120 screen-level wall clears; mean 731.4.",
+      "verification_status": "verified",
+      "raw_artifact_status": "in_repo",
+      "source": "audits/browser-clear/README.md",
+      "notes": "Supplementary distribution, not the official evaluation; per-seed results are not comparable with native ALE."
+    },
+    {
+      "id": "issue-21-dqn-contract-v3",
+      "title": "DQN Contract v3 baseline",
+      "method": "Dueling Double DQN, training seed 11",
+      "contract": "v3",
+      "seed_summary": "single training seed; Contract v3 evaluation at 400K / 1M / 2M frames",
+      "headline": "2M frames: mean 6.93, median 7, max 12, 0 clears.",
       "verification_status": "historical_reported",
       "raw_artifact_status": "missing",
-      "source": "https://github.com/Tommyweige/breakout-rl-engineering/pull/26",
-      "notes": "Canonical detections are not repository verified_clears."
+      "source": "https://github.com/Tommyweige/breakout-rl-engineering/issues/23",
+      "notes": "Reported in issue #23; raw episodes not in main."
+    },
+    {
+      "id": "clear-detector-validation",
+      "title": "Clear detector validation on genuine ALE trajectories",
+      "method": "Replayable v2/v3 two-wall clear fixtures plus 432 and 860 negatives; mutation check",
+      "contract": "v2 and v3",
+      "seed_summary": "fixture trajectories from reset seed 101",
+      "headline": "Clear detected at the exact second-wall step in v2 and v3; negatives not cleared; 6/6 detector mutants killed.",
+      "verification_status": "verified",
+      "raw_artifact_status": "in_repo",
+      "source": "docs/clear-semantics.md",
+      "notes": "Detector logic unchanged; fail-closed unknown state is never counted as 0."
     },
     {
       "id": "issue-27-to-37-vision-diagnostics",
@@ -1149,7 +1436,7 @@
       "method": "Raw-greedy Contract v2 ONNX DQN",
       "contract": "v2",
       "seed_summary": "seeds 103, 204, 305; one episode each",
-      "headline": "No verified clear. 15/15 life-loss windows captured; 12,511 ALE frames used.",
+      "headline": "No canonical clear detection. 15/15 life-loss windows captured; 12,511 ALE frames used.",
       "verification_status": "historical_reported",
       "raw_artifact_status": "external_branch",
       "source": "https://github.com/Tommyweige/breakout-rl-engineering/issues/45",
@@ -1161,7 +1448,7 @@
       "method": "Q-margin, pixel alignment, grayscale range, replay consistency, ROI reachability, detector audit",
       "contract": "v2 (reported per issue)",
       "seed_summary": "frozen per-issue probes; several were blocked or inconclusive",
-      "headline": "No verified clear. The series closed with INCONCLUSIVE/BLOCKED outcomes, not a method failure or success.",
+      "headline": "No canonical clear detection. The series closed with INCONCLUSIVE/BLOCKED outcomes, not a method failure or success.",
       "verification_status": "historical_reported",
       "raw_artifact_status": "missing",
       "source": "https://github.com/Tommyweige/breakout-rl-engineering/issues/48",
@@ -1205,12 +1492,15 @@
     }
   ],
   "non_claims": [
-    "No verified full clear, solved game, stable clear, or world record.",
-    "No claim that the RGB controller is a fair winner over DQN; v2 and v3 are not directly comparable.",
+    "No clear beyond canonical clear detection: the controller evaluator does not perform artifact provenance validation.",
+    "No solved game, reliable clear, or world record: 4/15 is one deterministic controller on one seed list.",
+    "No claim that the 120-episode WASM audit is the official evaluation, or that native and WASM results match seed by seed.",
+    "No claim that learning cannot reach a clear: the only Contract v3 DQN baseline is one training seed at 2M frames.",
+    "No claim that the deployed production bundle was measured; the audits ran HEAD a8445df.",
     "No claim that reward shaping or PER produced a stable improvement.",
     "No claim that Laya Vision is zero-shot or that its latency implies gameplay quality.",
     "No claim that the UI difficulty label 'Unbeatable' is an experimental result.",
-    "No claim that a 50-episode browser evaluation or a complete Laya episode was run in this closeout."
+    "No claim that a complete Laya episode was run in this closeout."
   ],
   "links": {
     "demo": "https://breakout.tommypan.com/",
@@ -1228,6 +1518,9 @@
       "laya_latency_en": "https://github.com/Tommyweige/breakout-rl-engineering/issues/72",
       "laya_pr": "https://github.com/Tommyweige/breakout-rl-engineering/pull/74"
     },
-    "artifact_manifest": "docs/final-results/artifact-manifest.json"
+    "artifact_manifest": "docs/final-results/artifact-manifest.json",
+    "clear_semantics": "docs/clear-semantics.md",
+    "browser_clear_audit": "audits/browser-clear/README.md",
+    "native_controller_evaluation": "audits/browser-clear/native-15/report.md"
   }
 }
