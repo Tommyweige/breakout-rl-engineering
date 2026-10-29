@@ -29,7 +29,7 @@
 | Issues closed by this closeout | none |
 | Deployment / tag / Release | none |
 
-**Verified vs reported.** The model hashes, ONNX parity, contract hashes, completion-detector configuration, and the absence of a recorded verified clear are audited in this repository. The DQN 30.933 holdout, the controller's 137.47 mean, the reward-shaping and PER results, and all Laya numbers are **historical reported** or **missing raw artifacts**; they are not independently reproducible from `main`.
+**Verified vs reported.** The model hashes, ONNX parity, contract hashes, completion-detector configuration, the absence of a recorded verified clear, and the 2026-10-29 Laya browser session in [`laya-vision.md`](laya-vision.md) are audited in this repository. The DQN 30.933 holdout, the controller's 137.47 mean, the reward-shaping and PER results, and the earlier Laya latency, memory, and control-diagnostic numbers are **historical reported** or **missing raw artifacts**; they are not independently reproducible from `main`.
 
 ## 3. Implementation status vs measurement status
 
@@ -51,7 +51,7 @@
 ### Pending human acceptance
 
 - Live deployment to `breakout.tommypan.com` and visual review on a real phone.
-- The 60-second desktop closed-loop session and 390x844 play QA for the Laya line (PR #74).
+- The 60-second continuous desktop closed-loop session and 390x844 play QA for the Laya line (PR #74). A 2026-10-29 session of about 23 s per run is recorded in [`laya-vision.md`](laya-vision.md); it is not yet the required 60-second run.
 - A decision on publishing raw artifacts to an archive/Release.
 - A decision on a version tag and Release.
 
@@ -65,10 +65,10 @@ PR #74 is **draft** and must remain draft until the missing acceptance evidence 
 
 **Why it is still blocked**
 
-1. **No complete seeded ALE episode.** The available control diagnostic uses 3 seeds x 80 decisions (320 native frames per seed). That is not an episode. There is no Laya raw score, clear status, or complete-episode artifact in the reviewed records.
-2. **No raw artifacts in the repository.** The CUDA service, fixed fixtures, benchmark traces, and 1,000-request memory run were local and ignored. The weights are not committed (CC BY-NC-SA 4.0, 201M parameters). A reviewer cannot audit the numbers from `main`.
-3. **Real browser QA is missing.** The required 60-second desktop closed-loop session and 390x844 gameplay QA were not performed. Earlier browser automation was rejected by tool policy; endpoint and mocked-loop results cannot prove rendered FPS, mouse responsiveness, or difficulty switching.
-4. **Presentation and latency are not solved end to end.** The optimized proxy p50 is about 68-69 ms, still above the 66.7 ms complete-cycle budget for 60 native frames/s at four frames per decision. No 60 FPS claim is made. The presentation pacing change is real, but the added bounded display lag and live frame pacing remain unmeasured in a real browser.
+1. **No complete evaluator episode.** The control diagnostic uses 3 seeds x 80 decisions (320 native frames per seed). The 2026-10-29 browser session in [`laya-vision.md`](laya-vision.md) plays to game over and scores 4, but it emits no per-episode artifact, ALE-native frame count, or clear status, so it is not a contract evaluation.
+2. **Most raw artifacts are still absent.** The CUDA service benchmarks, fixed fixtures, and 1,000-request memory run were local and ignored. The browser-session records are now committed, but the service-side numbers a reviewer would need for the latency and memory claims are not.
+3. **Browser QA is partial.** Two 2026-10-29 sessions record rendered presentation cadence, decision latency, controller switching, and pause/resume without JavaScript errors. The required 60-second continuous desktop run and 390x844 play QA are still outstanding.
+4. **The 60 native frames/s budget is not met.** The measured decision interval is 67.0 ms against a 66.7 ms budget for 60 native frames/s at four frames per decision, and the panel presents 58.5 frames/s. That is close, but no 60 FPS claim is made, and the bounded display lag added by presentation pacing is still unmeasured.
 5. **Cold start is separate and open.** Issue #70 documents a host-RAM/CPU spike from the upstream loader; no production fix is merged. Issue #70 must not be folded into #71/#72.
 6. **Source scope is not settled.** #71/#72 are implementation/performance tickets. Their acceptance criteria include fresh benchmarks, 30+ varied RGB states, 300+ requests, parity evidence, and a 60-second browser session. None of that is complete.
 
@@ -76,7 +76,7 @@ PR #74 is **draft** and must remain draft until the missing acceptance evidence 
 
 - Publish or attach the exact Laya adapter/benchmark source revision and the raw benchmark output.
 - Complete at least one complete seed-101 episode under a declared contract, with per-episode score, ALE-native frames, life losses, action distribution, and clear/termination status.
-- Complete the 60-second desktop session and 390x844 QA with measured browser cycle, native frames/s, human tick lateness, and presentation lag.
+- Complete the remaining browser QA: a 60-second continuous desktop run and 390x844 play QA with measured human tick lateness and presentation lag. Presentation cadence, decision latency, and switching are now recorded in [`laya-vision.md`](laya-vision.md).
 - Record the cold-start measurements for #70 on the same machine and make the readiness gate fail visibly.
 - Run the matched DQN comparison under v2 (or explicitly declare not comparable), separate from any v3 controller comparison.
 
@@ -150,7 +150,7 @@ Do not upload model weights without confirming the license and distribution righ
 - The DQN 30.933 holdout is a single model and 15 episodes; it is not a population estimate.
 - The RGB controller result is one 15-seed run; its 0/15 canonical clear count is not a `verified_clears` result.
 - The completion detector's positive path has only a synthetic 864-point fixture; no natural clear was observed.
-- The Laya line has no complete episode and no live browser QA.
+- The Laya line has no complete evaluator episode; its only gameplay evidence is the two short interactive browser sessions recorded in `docs/final-results/laya-vision.md`.
 - A future agent could mistakenly compare v2 and v3 scores. The summary JSON and case-study page label the comparison `not_directly_comparable`; keep that label.
 - A future agent could treat "Unbeatable" as a result. It is a UI difficulty label only.
 

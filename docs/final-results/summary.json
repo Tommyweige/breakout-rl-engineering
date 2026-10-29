@@ -786,7 +786,187 @@
       "ref": "https://github.com/Tommyweige/breakout-rl-engineering/pull/74",
       "verification_status": "not_yet_evaluated",
       "raw_artifact_status": "missing",
-      "notes": "No complete Laya episode, score, or clear exists in the reviewed records."
+      "notes": "No complete Laya evaluator episode or clear exists in the reviewed records. The verified interactive browser session in docs/final-results/laya-vision.md scored 4 and ended at lives 0; it is not an evaluator episode."
+    },
+    {
+      "id": "laya_browser_session_score",
+      "label": "Laya browser session score",
+      "value": 4,
+      "unit": "raw score at game over (lives 0)",
+      "contract": {
+        "id": "day15-breakout-evaluation-v2-fire-reset",
+        "path": "configs/eval/breakout_contract_v2.json",
+        "frame_skip": 4
+      },
+      "seed_count": 1,
+      "seed_role": "contract v2 seed 101; two interactive sessions",
+      "source": "Two headed Chrome sessions against the local CUDA bridge, 2026-10-29",
+      "ref": "docs/final-results/laya-vision.md#game-outcome",
+      "verification_status": "verified",
+      "raw_artifact_status": "in_repo",
+      "notes": "Both runs broke four bricks and lost all five lives. The browser applies PR #74's one-decision weak-reversal brake. This is an interactive session, not an evaluator episode."
+    },
+    {
+      "id": "laya_browser_session_played_s",
+      "label": "Laya browser session play time",
+      "value": 22.7,
+      "unit": "seconds from first decision to game over",
+      "contract": {
+        "id": "day15-breakout-evaluation-v2-fire-reset",
+        "path": "configs/eval/breakout_contract_v2.json",
+        "frame_skip": 4
+      },
+      "seed_count": 1,
+      "seed_role": "contract v2 seed 101; two interactive sessions",
+      "source": "Two headed Chrome sessions against the local CUDA bridge, 2026-10-29",
+      "ref": "docs/final-results/laya-vision.md#game-outcome",
+      "verification_status": "verified",
+      "raw_artifact_status": "in_repo",
+      "notes": "22.715 s and 22.751 s in the two recorded runs. Page uptime was longer."
+    },
+    {
+      "id": "laya_browser_decision_interval_p50_ms",
+      "label": "Laya browser decision interval p50",
+      "value": 67.0,
+      "unit": "ms between consecutive decisions",
+      "contract": {
+        "id": "day15-breakout-evaluation-v2-fire-reset",
+        "path": "configs/eval/breakout_contract_v2.json",
+        "frame_skip": 4
+      },
+      "seed_count": 1,
+      "seed_role": "contract v2 seed 101; two interactive sessions",
+      "source": "Two headed Chrome sessions against the local CUDA bridge, 2026-10-29",
+      "ref": "docs/final-results/laya-vision.md#decision-latency",
+      "verification_status": "verified",
+      "raw_artifact_status": "in_repo",
+      "notes": "Delivered cadence, not the model's latency ceiling: the browser paces Decision Model at 15 decisions/s (60 native frames / 4)."
+    },
+    {
+      "id": "laya_browser_decision_interval_p95_ms",
+      "label": "Laya browser decision interval p95",
+      "value": 68.2,
+      "unit": "ms between consecutive decisions",
+      "contract": {
+        "id": "day15-breakout-evaluation-v2-fire-reset",
+        "path": "configs/eval/breakout_contract_v2.json",
+        "frame_skip": 4
+      },
+      "seed_count": 1,
+      "seed_role": "contract v2 seed 101; two interactive sessions",
+      "source": "Two headed Chrome sessions against the local CUDA bridge, 2026-10-29",
+      "ref": "docs/final-results/laya-vision.md#decision-latency",
+      "verification_status": "verified",
+      "raw_artifact_status": "in_repo",
+      "notes": "Both runs; rolling window of the last 600 intervals."
+    },
+    {
+      "id": "laya_browser_service_inference_p50_ms",
+      "label": "Laya service inference p50",
+      "value": "50.36-51.30",
+      "unit": "ms per decision (service side)",
+      "contract": {
+        "id": "day15-breakout-evaluation-v2-fire-reset",
+        "path": "configs/eval/breakout_contract_v2.json",
+        "frame_skip": 4
+      },
+      "seed_count": 1,
+      "seed_role": "contract v2 seed 101; two interactive sessions",
+      "source": "Two headed Chrome sessions against the local CUDA bridge, 2026-10-29",
+      "ref": "docs/final-results/laya-vision.md#decision-latency",
+      "verification_status": "verified",
+      "raw_artifact_status": "in_repo",
+      "notes": "Per-decision rows, 21 samples per run; p95 52.53 and 53.67 ms. This is the model cost inside the 67 ms interval."
+    },
+    {
+      "id": "laya_browser_decision_cycle_p50_ms",
+      "label": "Laya browser full decision cycle p50",
+      "value": "58.30-59.40",
+      "unit": "ms per decision (request to action)",
+      "contract": {
+        "id": "day15-breakout-evaluation-v2-fire-reset",
+        "path": "configs/eval/breakout_contract_v2.json",
+        "frame_skip": 4
+      },
+      "seed_count": 1,
+      "seed_role": "contract v2 seed 101; two interactive sessions",
+      "source": "Two headed Chrome sessions against the local CUDA bridge, 2026-10-29",
+      "ref": "docs/final-results/laya-vision.md#decision-latency",
+      "verification_status": "verified",
+      "raw_artifact_status": "in_repo",
+      "notes": "Includes HTTP transport, one ALE step, frame reads and RGB capture; p95 61.10 and 62.40 ms."
+    },
+    {
+      "id": "laya_browser_presented_fps",
+      "label": "Laya browser presented frames per second",
+      "value": "58.5-58.6",
+      "unit": "presented AI frames per second",
+      "contract": {
+        "id": "day15-breakout-evaluation-v2-fire-reset",
+        "path": "configs/eval/breakout_contract_v2.json",
+        "frame_skip": 4
+      },
+      "seed_count": 1,
+      "seed_role": "contract v2 seed 101; two interactive sessions",
+      "source": "Two headed Chrome sessions against the local CUDA bridge, 2026-10-29",
+      "ref": "docs/final-results/laya-vision.md#presentation",
+      "verification_status": "verified",
+      "raw_artifact_status": "in_repo",
+      "notes": "1,267 and 1,268 presented frames over about 21.6 s; below the loop's 60 Hz presentation ceiling, so native frame production is the limiter."
+    },
+    {
+      "id": "laya_browser_gpu_utilization_p50_percent",
+      "label": "Laya browser GPU utilization p50",
+      "value": "72.5-75.0",
+      "unit": "% GPU utilization (range 56-80)",
+      "contract": {
+        "id": "day15-breakout-evaluation-v2-fire-reset",
+        "path": "configs/eval/breakout_contract_v2.json",
+        "frame_skip": 4
+      },
+      "seed_count": 1,
+      "seed_role": "contract v2 seed 101; two interactive sessions",
+      "source": "Two headed Chrome sessions against the local CUDA bridge, 2026-10-29",
+      "ref": "docs/final-results/laya-vision.md#gpu-usage",
+      "verification_status": "verified",
+      "raw_artifact_status": "in_repo",
+      "notes": "One-second nvidia-smi samples during play; includes Chrome compositing, so it is an upper bound on the model's share."
+    },
+    {
+      "id": "laya_browser_vram_mib",
+      "label": "Laya browser VRAM used",
+      "value": 989,
+      "unit": "MiB",
+      "contract": {
+        "id": "day15-breakout-evaluation-v2-fire-reset",
+        "path": "configs/eval/breakout_contract_v2.json",
+        "frame_skip": 4
+      },
+      "seed_count": 1,
+      "seed_role": "contract v2 seed 101; two interactive sessions",
+      "source": "Two headed Chrome sessions against the local CUDA bridge, 2026-10-29",
+      "ref": "docs/final-results/laya-vision.md#gpu-usage",
+      "verification_status": "verified",
+      "raw_artifact_status": "in_repo",
+      "notes": "Constant at 989 MiB in every sample of both runs; the resident FP32 model plus the CUDA context."
+    },
+    {
+      "id": "laya_browser_js_errors",
+      "label": "Laya browser JavaScript errors",
+      "value": 0,
+      "unit": "errors observed",
+      "contract": {
+        "id": "day15-breakout-evaluation-v2-fire-reset",
+        "path": "configs/eval/breakout_contract_v2.json",
+        "frame_skip": 4
+      },
+      "seed_count": 1,
+      "seed_role": "contract v2 seed 101; two interactive sessions",
+      "source": "Two headed Chrome sessions against the local CUDA bridge, 2026-10-29",
+      "ref": "docs/final-results/laya-vision.md#controller-switching-and-pause",
+      "verification_status": "verified",
+      "raw_artifact_status": "in_repo",
+      "notes": "Zero page errors and zero console errors across both sessions, including two controller switches and pause/resume."
     },
     {
       "id": "browser_50_episode_evaluation",
@@ -1010,6 +1190,18 @@
       "raw_artifact_status": "in_repo",
       "source": "web/public/models/final_model/model.onnx.metadata.json",
       "notes": "Parity and artifact integrity are verified; gameplay quality is not."
+    },
+    {
+      "id": "issue-74-laya-browser-session",
+      "title": "Laya Vision live browser session",
+      "method": "Frozen Laya Vision checkpoint served by the local CUDA HTTP bridge; Chrome on Windows runs the dual-game page with the Decision Model controller",
+      "contract": "v2 (frame skip 4, wrapper-owned FIRE); interactive session, not the formal evaluator",
+      "seed_summary": "contract v2 seed 101; two interactive sessions, each played to game over",
+      "headline": "Score 4 with lives 0 after 22.7 s; decision interval p50 67.0 ms with 50-51 ms of model inference; 58.5 presented frames/s; GPU p50 72.5-75.0% at 989 MiB.",
+      "verification_status": "verified",
+      "raw_artifact_status": "in_repo",
+      "source": "docs/final-results/laya-vision.md",
+      "notes": "Weights are CC BY-NC-SA 4.0 and are not in the repository. The checkpoint was pretrained on game frames that include Breakout, so this is not zero-shot. Controller switching and pause/resume produced no JavaScript errors."
     }
   ],
   "non_claims": [

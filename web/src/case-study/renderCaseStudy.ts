@@ -428,7 +428,7 @@ export function renderCaseStudyShell(): string {
           <p class="cs-index">05</p>
           <div>
             <p class="cs-kicker">SIDE EXPERIMENT</p>
-            <h2 id="laya-title">Laya Vision: a real latency result, an incomplete gameplay result.</h2>
+            <h2 id="laya-title">Laya Vision: real latency, a measured gameplay session, no complete evaluation.</h2>
           </div>
         </div>
         <div class="cs-laya-grid">
@@ -444,22 +444,25 @@ export function renderCaseStudyShell(): string {
               Breakout expert-action data, so this is <em>not</em> a zero-shot claim.
             </p>
             <p>
-              <strong>What was measured.</strong> Warm decision latency and a bounded control
-              diagnostic. Warm p50 was ${metricSpan('laya_warm_latency_p50_ms')} ms on one fixed RGB
+              <strong>What was measured.</strong> Warm decision latency, a bounded control
+              diagnostic, and a live browser session. Warm p50 was ${metricSpan('laya_warm_latency_p50_ms')} ms on one fixed RGB
               fixture; the optimized local proxy p50 was
               ${metricSpan('laya_optimized_proxy_p50_ms')} ms across three rounds. Immediate reversal
               commands went from ${metricSpan('laya_control_diagnostic_raw_reversals')} to
               ${metricSpan('laya_control_diagnostic_reversals')} in a 3-seed × 80-decision
-              diagnostic.
+              diagnostic. In the browser session the Decision Model scored
+              ${metricSpan('laya_browser_session_score')} and lost every life after
+              ${metricSpan('laya_browser_session_played_s')} s of play, presenting
+              ${metricSpan('laya_browser_presented_fps')} frames per second.
             </p>
             <p>
-              <strong>What was not measured.</strong> No complete seeded episode, raw score, clear,
-              or browser frame rate exists in the reviewed records. A 320-frame diagnostic is not
-              an episode, and latency does not imply gameplay quality.
+              <strong>What is still not measured.</strong> No complete evaluator episode,
+              per-episode artifact, or clear exists, so the browser session is not comparable with
+              evaluated episodes. Latency does not imply gameplay quality.
             </p>
             <p class="cs-callout cs-callout-warn">
               <strong>Decision:</strong> keep Laya as a research lead. Draft PR #74 stays draft
-              until complete episodes and real browser QA exist. #70–#72 stay open.
+              until a complete evaluated episode exists. #70–#72 stay open.
             </p>
           </div>
           <aside class="cs-fact-panel" aria-label="Laya evidence summary">
@@ -563,7 +566,7 @@ export function renderCaseStudyShell(): string {
         <p>Frozen evidence closeout. Last updated <span data-role="frozen-date">2026-10-28</span>.</p>
       </div>
       <div class="cs-footer-note">
-        <p><strong>Not claimed:</strong> solved game, verified clear, reliable clear, world record, fair method winner, or complete Laya gameplay.</p>
+        <p><strong>Not claimed:</strong> solved game, verified clear, reliable clear, world record, fair method winner, or a complete evaluated Laya episode.</p>
         <p><a href="/">Play demo</a> · <a href="#evidence">Evidence</a> · <a href="https://github.com/Tommyweige/breakout-rl-engineering" target="_blank" rel="noreferrer">GitHub</a></p>
       </div>
     </footer>

@@ -1,0 +1,9 @@
+# Laya service host environment, captured 2026-10-29 (WSL2, python -V and torch probe)
+python 3.12.15
+torch 2.13.0+cu130
+torch_cuda 13.0
+cuda_available True
+device NVIDIA GeForce RTX 4060 Laptop GPU
+capability (8, 9)
+NVIDIA GeForce RTX 4060 Laptop GPU, 616.92, 8188 MiB
+cpus 16

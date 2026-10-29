@@ -111,6 +111,71 @@
       "source_record": "https://github.com/Tommyweige/breakout-rl-engineering/pull/74"
     },
     {
+      "id": "laya-browser-qa-run-1",
+      "kind": "qa_session_json",
+      "path": "docs/final-results/evidence/laya-vision/laya-browser-qa-run1.json",
+      "producer": "docs/final-results/evidence/laya-vision/browser-qa.mjs",
+      "status": "in_repo",
+      "sha256": "21727b0f9cd1042c7465e83050597df780aaac6d194ffa62fd6fd495232ab932",
+      "source_record": "docs/final-results/laya-vision.md",
+      "recorded_at": "2026-10-29",
+      "expected_fields": [
+        "environment",
+        "runtime",
+        "decision_model_session",
+        "controller_switch",
+        "pause_resume",
+        "gpu",
+        "errors"
+      ]
+    },
+    {
+      "id": "laya-browser-qa-run-2",
+      "kind": "qa_session_json",
+      "path": "docs/final-results/evidence/laya-vision/laya-browser-qa-run2.json",
+      "producer": "docs/final-results/evidence/laya-vision/browser-qa.mjs",
+      "status": "in_repo",
+      "sha256": "6b7107b858df79ec0255d3e4ec0479d86d3044b81cd9e00e9bf1b4d9ef820e97",
+      "source_record": "docs/final-results/laya-vision.md",
+      "recorded_at": "2026-10-29",
+      "expected_fields": [
+        "environment",
+        "runtime",
+        "decision_model_session",
+        "controller_switch",
+        "pause_resume",
+        "gpu",
+        "errors"
+      ]
+    },
+    {
+      "id": "laya-browser-qa-harness",
+      "kind": "qa_harness",
+      "path": "docs/final-results/evidence/laya-vision/browser-qa.mjs",
+      "producer": "chrome + playwright-core 1.63.0",
+      "status": "in_repo",
+      "sha256": "7989e1116c639e8a3d95eaa563afaddfa7c3574eb95e87f512705a6eafd47468",
+      "source_record": "docs/final-results/laya-vision.md",
+      "requires": "Laya CUDA bridge on 127.0.0.1:8766, Vite on 0.0.0.0:5180, Windows Chrome"
+    },
+    {
+      "id": "laya-browser-host-environment",
+      "kind": "environment_record",
+      "path": "docs/final-results/evidence/laya-vision/service-environment.txt",
+      "producer": "python -V, torch probe, nvidia-smi",
+      "status": "in_repo",
+      "sha256": "44e3bd1c4d9386279df15152f572f98a5b11b60f1b1ded95fbca7fee1bd6674f",
+      "source_record": "docs/final-results/laya-vision.md",
+      "expected_fields": [
+        "python",
+        "torch",
+        "torch_cuda",
+        "cuda_available",
+        "device",
+        "driver_version"
+      ]
+    },
+    {
       "id": "issue-41-first-clear-artifacts",
       "kind": "branch_archive",
       "path": "research/issue-41-onnx-dqn-clear-report.md",

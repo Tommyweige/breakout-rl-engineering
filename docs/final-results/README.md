@@ -1,6 +1,6 @@
 # Final Results — Breakout RL Engineering
 
-**Status: frozen evidence closeout, 2026-10-28.** This is an audited index of what the project can and cannot support. It is not a new training campaign and it does not claim that Breakout was solved.
+**Status: frozen evidence closeout, 2026-10-28; Laya live browser session added 2026-10-29.** This is an audited index of what the project can and cannot support. It is not a new training campaign and it does not claim that Breakout was solved.
 
 - **Interactive case study:** <https://breakout.tommypan.com/case-study.html>
 - **Playable demo:** <https://breakout.tommypan.com/>
@@ -32,6 +32,7 @@ The project built both. It did **not** produce a verified full clear, so the hon
 | Reward shaping mean effect | +3.26, 95% interval [-1.74, 9.48] | v2, frame_skip=4 | issue #9 / #10 | **historical reported; not promoted** |
 | PER vs Uniform at 500K | 19.98 vs 19.31 (+0.67) at 1.26x time | v2, frame_skip=4 | merged PR #16 | **historical reported; descriptive** |
 | Laya complete episodes | 0 | v2 primary | draft PR #74 | **not yet evaluated** |
+| Laya browser session | 4 at 22.7 s (lives 0) | v2, frame_skip=4 | [live browser session](laya-vision.md) | **verified session** |
 | Laya warm latency p50 | 72.56 ms/decision | v2 primary | issue #70 | **missing raw artifacts** |
 
 **Do not read across the Contract column.** The DQN and controller rows use different control cadences. Their raw scores are descriptive, not a ranking. See [Contracts and fairness](#contracts-and-fairness).
@@ -51,6 +52,7 @@ What is actually verified in this checkout:
 - ONNX/PyTorch parity on 60 fixed probe states: 60/60 actions match, maximum absolute Q-value difference 0.0.
 - Contract v2 and v3 SHA-256 values and their differences: v2 is frame_skip=4 with a 27,000-agent-step limit; v3 is frame_skip=1 with a 108,000-agent-step limit. Both keep the same 108,000 ALE episode-frame limit, frame stack 4, sticky-action probability 0.25, FIRE reset, and 15 evaluation seeds.
 - The completion detector's synthetic 864-point RAM/reward fixture. A **naturally completed** ALE trajectory has not been observed.
+- The Laya live browser session: score 4, lives 0 after 22.7 s, decision interval p50 67.0 ms, 58.5 presented frames/s, in two runs whose raw records are committed. See [laya-vision.md](laya-vision.md).
 - The web runtime model manifest and asset hashes.
 
 What is **not** verified here:
@@ -58,7 +60,7 @@ What is **not** verified here:
 - Any DQN, RGB-controller, reward-shaping, PER, or Laya **raw episode log**. Those runs were produced outside `main`; their generated directories were intentionally ignored.
 - Any **verified clear**. The repository's `verified_clears` gate requires contract/source/provenance validation that no recorded run has passed.
 - Any stable clearing rate, completion time, or world-record claim.
-- Any complete Laya episode, score, or clear.
+- Any complete Laya **evaluator** episode or clear. The interactive browser session is verified as a session with committed raw records, not as an evaluated episode.
 
 ## Contracts and fairness
 
@@ -134,7 +136,19 @@ The controller was built because Breakout's perception problem is explicit: dete
 - Optimized local proxy p50 68.36-69.48 ms across three rounds, with 30/30 action agreement on fixed fixtures (draft PR #74).
 - A 3-seed x 80-decision control diagnostic reduced immediate reversal commands from 76 to 10. Both runs totalled 2 reward; lives were [3,3,4] raw and [4,4,3] filtered. That is 320 native frames per seed, not a complete episode.
 
-**What was not measured.** No complete seeded episode, raw score, clear, or browser frame rate exists in the reviewed records. Latency does not imply a score, and the control diagnostic does not imply better survival.
+**Live browser session (verified, 2026-10-29).** The Decision Model controller ran in headed
+Chrome on Windows against the local CUDA bridge, on the shipped page and the v2 contract's
+seed 101. Two recorded sessions both scored **4** and lost all five lives after **22.7 s** of
+play (22.715 s and 22.751 s). The decision interval p50 was 67.0 ms, of which 50-51 ms was
+model inference; the AI panel presented 58.5 real frames per second on a 169.5 Hz display;
+GPU utilization was 72.5-75.0% p50 at 989 MiB. Controller switching (Decision Model to ONNX
+WASM DQN and back) and pause/resume produced no JavaScript errors. Method, per-metric
+tables, and the raw records are in [`laya-vision.md`](laya-vision.md).
+
+**What is still not measured.** No complete **evaluator** episode, per-episode artifact, or
+clear exists, so the session cannot be compared with evaluated DQN and controller episodes
+and does not imply a clear. The model is not zero-shot: the upstream checkpoint was trained
+on game frames that include Breakout. Latency still does not imply gameplay quality.
 
 **Setting and resource record (issue #70, draft PR #74).**
 
@@ -149,11 +163,15 @@ The controller was built because Breakout's perception problem is explicit: dete
 | Warm memory | RSS +0.44 MiB over 100 predictions; optimized 1,000-request run RSS +0.074 MiB |
 | Peak VRAM | **Not reported** in the reviewed records |
 | Legal actions | `NOOP` / `FIRE` / `RIGHT` / `LEFT` validation; fixed-fixture action agreement 30/30 |
-| Complete episode | **None** |
+| Complete episode | **None** under the evaluator; two interactive browser sessions in [`laya-vision.md`](laya-vision.md) reached game over |
 
-All values in this table are historical reported or missing raw artifacts; none is independently reproducible from `main`.
+All values in this table are historical reported or missing raw artifacts, except the
+browser-session results in [`laya-vision.md`](laya-vision.md), which are verified against the
+records committed with this closeout.
 
-**Decision.** Laya remains a research lead, not a result. The line is blocked on complete evaluation artifacts and real browser QA; see [`handoff.md`](handoff.md#laya-line-still-blocked).
+**Decision.** Laya remains a research lead, not a result. Its live browser behaviour is now
+recorded, but the line still has no complete evaluator episode; see
+[`handoff.md`](handoff.md#laya-line-still-blocked).
 
 ## Reproducibility
 
@@ -231,7 +249,7 @@ The deployed ONNX policy is trained under Contract v2. Do not evaluate it under 
 | ONNX runtime model | 13,175,034 bytes, SHA-256 `cf90c74b...ef7f12` | `web/public/models/final_model/model.onnx` |
 | Browser parity | 60/60 actions, max Q diff 0.0 | model metadata |
 
-**Missing raw artifacts.** The DQN holdout episodes, the 15-seed controller episodes, the reward-shaping and PER run directories, and all Laya runs are not in `main`. The repository ignores `outputs/`, `experiments/`, `evaluations/`, and `assets/` by design. No archive or release currently holds them. Until one does, the corresponding numbers remain **historical reported**, not independently reproducible.
+**Missing raw artifacts.** The DQN holdout episodes, the 15-seed controller episodes, the reward-shaping and PER run directories, and the earlier Laya service runs are not in `main`. The 2026-10-29 browser-session records are committed under `docs/final-results/evidence/laya-vision/`. The repository ignores `outputs/`, `experiments/`, `evaluations/`, and `assets/` by design. No archive or release currently holds them. Until one does, the corresponding numbers remain **historical reported**, not independently reproducible.
 
 This is a limitation of the closeout, not a reason to fabricate logs. The expected paths, producers, and hashes for each missing artifact are listed in [`artifact-manifest.json`](artifact-manifest.json). See [`handoff.md`](handoff.md) for the proposed archive/release step.
 
@@ -242,7 +260,7 @@ This is a limitation of the closeout, not a reason to fabricate logs. The expect
 - No claim that reward shaping or PER produced a stable improvement.
 - No claim that Laya Vision is zero-shot, or that its latency predicts gameplay quality.
 - No claim that "Unbeatable" is an experimental result. It is a **UI difficulty label**; it means the browser injects no deliberate mistakes, not that the policy cannot lose.
-- No claim that a 50-episode browser evaluation or a complete Laya episode was run in this closeout.
+- No claim that a 50-episode browser evaluation or a formal evaluated Laya episode was run in this closeout. Two short interactive sessions are recorded in [laya-vision.md](laya-vision.md); they are not evaluator episodes.
 
 ## Related records
 
