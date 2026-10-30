@@ -18,7 +18,7 @@ export const enCopy: CaseStudyCopy = {
     },
   },
   hero: {
-    eyebrow: 'FROZEN EVIDENCE ·',
+    eyebrow: 'RESULTS CLOSEOUT ·',
     titleLead: 'Can Breakout',
     titleTail: 'be played without training?',
     lede: 'A hand-written controller with no training reads the screen, works out where the ball will arrive, and puts the paddle there. It has cleared both brick walls more than once, counted by code rather than by eye.',
@@ -58,7 +58,7 @@ export const enCopy: CaseStudyCopy = {
     {
       metricId: 'dqn_v3_2m_mean_score',
       label: 'Mean score, model that learns',
-      note: 'A Dueling Double DQN, one training seed.',
+      note: 'One training seed, {{metric:dqn_training_transitions}} frames of play.',
     },
   ],
   metricsAria: 'Headline results',
@@ -69,7 +69,6 @@ export const enCopy: CaseStudyCopy = {
     paragraphs: [
       'The ball and the paddle are two separate shapes on screen, and between bounces the ball travels close to a straight line, so a controller can work it out again from every frame.',
       'The variable is the rulebook: how often a decision is allowed, whether losing a life ends the episode, how long an episode may run. Change one and the question changes.',
-      'That is why “clearing both walls” is a verdict the code reads from the scoreboard, not something an episode ending implies.',
     ],
   },
   routes: {
@@ -79,7 +78,7 @@ export const enCopy: CaseStudyCopy = {
     items: [
       {
         lead: 'The model that learns',
-        body: 'It looks only at frames and learns roughly what each action is worth. Three variants were tried; the winner was Dueling Double DQN, trained for {{metric:dqn_training_transitions}} transitions. It needs no hand-written rules, and the price is a lot of simulated play.',
+        body: 'It looks only at frames and learns roughly what each action is worth. Three variants were tried; the winner was Dueling Double DQN, trained for {{metric:dqn_training_transitions}} frames of gameplay. It needs no hand-written rules, and the price is a lot of simulated play.',
       },
       {
         lead: 'The controller that does not learn',
@@ -151,7 +150,7 @@ export const enCopy: CaseStudyCopy = {
   },
   footer: {
     brand: 'BREAKOUT · RESEARCH RESULTS',
-    updated: 'Frozen evidence closeout. Last updated',
+    updated: 'Last updated',
     limitsHeading: 'Known limits',
     limits: [
       'Clears are counted as canonical clear detections: the detector reads the scoreboard in the game’s memory to decide whether an episode took down both walls. A verified clear would also check each episode’s raw record, which this batch did not do, so the page uses the narrower term throughout.',

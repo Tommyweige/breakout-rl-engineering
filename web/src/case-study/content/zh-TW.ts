@@ -18,7 +18,7 @@ export const zhTwCopy: CaseStudyCopy = {
     },
   },
   hero: {
-    eyebrow: '凍結證據 ·',
+    eyebrow: '研究成果收官 ·',
     titleLead: '打磚塊，',
     titleTail: '非學不可嗎？',
     lede: '一個完全不訓練的程式，只讀畫面就能算出球會飛到哪裡，再把球拍移過去。它已經不只一次把兩面牆都打穿——判定是程式做的，不是人用眼睛看的。',
@@ -55,7 +55,7 @@ export const zhTwCopy: CaseStudyCopy = {
     {
       metricId: 'dqn_v3_2m_mean_score',
       label: '會學習的模型，平均分',
-      note: 'Dueling Double DQN，只練一個種子。',
+      note: '只練一個種子、{{wan:dqn_training_transitions}} 萬格畫面。',
     },
   ],
   metricsAria: '主要成果',
@@ -66,7 +66,6 @@ export const zhTwCopy: CaseStudyCopy = {
     paragraphs: [
       '球和球拍是畫面上分開的兩團顏色，兩次碰撞之間球幾乎走直線，所以只看畫面就能重算一次。',
       '真正的變數是規則：多久決定一次動作、掉命算不算結束、一局能跑多久，每一項都會換掉題目。',
-      '所以「打穿兩面牆」是程式讀計分板判定的，不是回合結束就算。',
     ],
   },
   routes: {
@@ -76,7 +75,7 @@ export const zhTwCopy: CaseStudyCopy = {
     items: [
       {
         lead: '會學習的模型',
-        body: '只看畫面，自己學會每個動作大概值多少分；三種變體試下來，最後停在 Dueling Double DQN，一共練了 {{metric:dqn_training_transitions}} 次轉移。它不需要人寫規則，代價是要大量的模擬。',
+        body: '只看畫面，自己學會每個動作大概值多少分；三種變體試下來，最後停在 Dueling Double DQN，一共練了 {{wan:dqn_training_transitions}} 萬格遊戲畫面。它不需要人寫規則，代價是要大量的模擬。',
       },
       {
         lead: '不訓練的控制器',
@@ -148,7 +147,7 @@ export const zhTwCopy: CaseStudyCopy = {
   },
   footer: {
     brand: 'BREAKOUT · 研究成果',
-    updated: '凍結證據收官。最後更新',
+    updated: '最後更新',
     limitsHeading: '已知限制',
     limits: [
       '通關用的是 canonical clear detection：偵測器讀遊戲記憶體裡的計分板，判斷一局有沒有打穿兩面牆。verified clear 還要逐筆核對該局的原始紀錄，這批回合沒有做那一步，所以全頁只採前者的說法。',

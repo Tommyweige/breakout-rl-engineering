@@ -99,7 +99,7 @@ export interface FinalResultsSummary {
   };
 }
 
-const TOKEN_PATTERN = /\{\{(metric|seeds):([A-Za-z0-9_.-]+)\}\}/g;
+const TOKEN_PATTERN = /\{\{(metric|seeds|wan):([A-Za-z0-9_.-]+)\}\}/g;
 
 function escapeHtml(value: string): string {
   return value
@@ -117,6 +117,9 @@ function metricSpan(id: string, fallback = '—'): string {
 export function renderCopy(template: string, copy: CaseStudyCopy): string {
   return template.replace(TOKEN_PATTERN, (_match, kind: string, id: string) => {
     if (kind === 'metric') return metricSpan(id, copy.common.missingMetric);
+    if (kind === 'wan') {
+      return `<span data-wan-id="${escapeHtml(id)}">${escapeHtml(copy.common.missingMetric)}</span>`;
+    }
     return `<span data-seed-count-id="${escapeHtml(id)}">${escapeHtml(copy.common.missingMetric)}</span>`;
   });
 }
@@ -336,6 +339,15 @@ export function hydrateCaseStudy(
       return;
     }
     element.textContent = metric.seed_count.toLocaleString('en-US');
+  });
+
+  root.querySelectorAll<HTMLElement>('[data-wan-id]').forEach((element) => {
+    const metric = metrics.get(element.dataset.wanId ?? '');
+    if (!metric || typeof metric.value !== 'number') {
+      element.textContent = copy.common.missingMetric;
+      return;
+    }
+    element.textContent = (metric.value / 10_000).toLocaleString('en-US');
   });
 
   root.querySelectorAll<HTMLElement>('[data-role="frozen-date"]').forEach((element) => {

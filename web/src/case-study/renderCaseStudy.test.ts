@@ -65,11 +65,18 @@ describe.each(locales)('Research results case study (%s)', (locale) => {
     expect(text(root, '[data-metric-id="dqn_v3_2m_clears"]')).toBe('0');
     expect(text(root, '[data-metric-id="laya_complete_episodes"]')).toBe('0');
     expect(text(root, '[data-metric-id="clear_score_threshold"]')).toBe('864');
-    expect(text(root, '[data-metric-id="dqn_training_transitions"]')).toBe('2,500,000');
+    // The Chinese page writes this figure in 萬, so it hydrates a different element.
+    const trainingFrames =
+      locale === 'zh-TW'
+        ? text(root, '[data-wan-id="dqn_training_transitions"]')
+        : text(root, '[data-metric-id="dqn_training_transitions"]');
+    expect(trainingFrames).toBe(locale === 'zh-TW' ? '250' : '2,500,000');
 
-    const unresolved = [...root.querySelectorAll<HTMLElement>('[data-metric-id], [data-seed-count-id]')]
+    const unresolved = [
+      ...root.querySelectorAll<HTMLElement>('[data-metric-id], [data-seed-count-id], [data-wan-id]'),
+    ]
       .filter((element) => (element.textContent ?? '').trim() === '—')
-      .map((element) => element.dataset.metricId ?? element.dataset.seedCountId);
+      .map((element) => element.dataset.metricId ?? element.dataset.seedCountId ?? element.dataset.wanId);
     expect(unresolved).toEqual([]);
     expect(root.textContent).not.toContain('{{');
   });
@@ -137,7 +144,16 @@ describe('Cross-locale parity', () => {
 
     for (const element of en.querySelectorAll<HTMLElement>('[data-metric-id]')) {
       const id = element.dataset.metricId!;
-      expect(text(zh, `[data-metric-id="${id}"]`)).toBe(element.textContent);
+      const zhMetric = zh.querySelector<HTMLElement>(`[data-metric-id="${id}"]`);
+      if (zhMetric) {
+        expect(zhMetric.textContent).toBe(element.textContent);
+        continue;
+      }
+      // The Chinese page writes this figure in 萬, so it must agree after scaling.
+      const zhWan = zh.querySelector<HTMLElement>(`[data-wan-id="${id}"]`);
+      expect(zhWan, `${id} is missing from the Chinese page`).not.toBeNull();
+      const asCount = (value: string | null) => Number((value ?? '').replaceAll(',', ''));
+      expect(asCount(zhWan!.textContent) * 10_000).toBe(asCount(element.textContent));
     }
   });
 
