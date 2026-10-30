@@ -380,8 +380,10 @@ export function renderCaseStudyShell(locale: Locale): string {
     <header class="cs-header">
       <a class="cs-brand" href="/" aria-label="${escapeHtml(copy.header.brandHomeLabel)}">${escapeHtml(copy.header.brandMark)}</a>
       <nav class="cs-nav" aria-label="${escapeHtml(copy.header.navLabel)}">
-        <a href="/">${escapeHtml(copy.header.playDemo)}</a>
-        <a href="${REPOSITORY_URL}" target="_blank" rel="noreferrer">${escapeHtml(copy.header.github)}</a>
+        <span class="cs-nav-track">
+          <a href="/">${escapeHtml(copy.header.playDemo)}</a>
+          <a href="${REPOSITORY_URL}" target="_blank" rel="noreferrer">${escapeHtml(copy.header.github)}</a>
+        </span>
         ${languageSwitch}
       </nav>
     </header>
@@ -429,10 +431,12 @@ export function renderCaseStudyShell(locale: Locale): string {
 
       <div class="cs-layout">
         <nav class="cs-toc" data-role="toc" aria-label="${escapeHtml(copy.header.tocLabel)}">
-          <p class="cs-toc-title">${escapeHtml(copy.header.tocLabel)}</p>
-          <ol>
-            ${toc.map((item) => `<li><a href="#${escapeHtml(item.id)}" data-toc-target="${escapeHtml(item.id)}">${escapeHtml(item.nav)}</a></li>`).join('')}
-          </ol>
+          <details class="cs-toc-details" data-role="toc-details" open>
+            <summary class="cs-toc-title">${escapeHtml(copy.header.tocLabel)}</summary>
+            <ol>
+              ${toc.map((item) => `<li><a href="#${escapeHtml(item.id)}" data-toc-target="${escapeHtml(item.id)}">${escapeHtml(item.nav)}</a></li>`).join('')}
+            </ol>
+          </details>
         </nav>
 
         <div class="cs-content">

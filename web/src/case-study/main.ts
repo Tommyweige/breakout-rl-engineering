@@ -31,6 +31,18 @@ if (video) {
   }
 }
 
+// The table of contents is a sticky side list on wide screens and a collapsed
+// panel above the story on phones, the same way the writing pages on tommypan.com work.
+const tocDetails = appRoot.querySelector<HTMLDetailsElement>('[data-role="toc-details"]');
+const wideScreen = window.matchMedia?.('(min-width: 1024px)');
+if (tocDetails && wideScreen) {
+  const syncToc = () => {
+    tocDetails.open = wideScreen.matches;
+  };
+  syncToc();
+  wideScreen.addEventListener?.('change', syncToc);
+}
+
 // Highlight the chapter being read in the side table of contents.
 const tocLinks = new Map(
   [...appRoot.querySelectorAll<HTMLAnchorElement>('[data-toc-target]')].map((link) => [link.dataset.tocTarget, link]),
