@@ -35,6 +35,7 @@ function showSummaryError(error: unknown): void {
   appRoot.dataset.summaryState = 'error';
   const status = appRoot.querySelector<HTMLElement>('[data-role="summary-status"]');
   if (!status) return;
+  status.hidden = false;
   status.dataset.state = 'error';
   status.textContent = copy.hero.summaryError;
   const link = document.createElement('a');
