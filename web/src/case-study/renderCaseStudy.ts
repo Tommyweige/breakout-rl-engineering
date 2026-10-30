@@ -99,7 +99,7 @@ export interface FinalResultsSummary {
   };
 }
 
-const TOKEN_PATTERN = /\{\{(metric|seeds|wan):([A-Za-z0-9_.-]+)\}\}/g;
+const TOKEN_PATTERN = /\{\{(metric|seeds):([A-Za-z0-9_.-]+)\}\}/g;
 
 function escapeHtml(value: string): string {
   return value
@@ -117,188 +117,175 @@ function metricSpan(id: string, fallback = '—'): string {
 export function renderCopy(template: string, copy: CaseStudyCopy): string {
   return template.replace(TOKEN_PATTERN, (_match, kind: string, id: string) => {
     if (kind === 'metric') return metricSpan(id, copy.common.missingMetric);
-    if (kind === 'wan') {
-      return `<span data-wan-id="${escapeHtml(id)}">${escapeHtml(copy.common.missingMetric)}</span>`;
-    }
     return `<span data-seed-count-id="${escapeHtml(id)}">${escapeHtml(copy.common.missingMetric)}</span>`;
   });
 }
 
-function cardMetric(card: CaseStudyCopy['metricCards'][number], copy: CaseStudyCopy): string {
-  return `
-    <article class="cs-metric-card">
-      <p class="cs-metric-label">${escapeHtml(card.label)}</p>
-      <p class="cs-metric-value">
-        ${metricSpan(card.metricId)}${
-          card.suffix ? `<small class="cs-metric-suffix">${renderCopy(card.suffix, copy)}</small>` : ''
+const REPOSITORY_URL = 'https://github.com/Tommyweige/breakout-rl-engineering';
+const RESULTS_URL = `${REPOSITORY_URL}/blob/main/docs/final-results/README.md`;
+
+type Section = CaseStudyCopy['sections'][number];
+
+function renderSection(section: Section, index: number, copy: CaseStudyCopy): string {
+  const titleId = `${section.id}-title`;
+  const number = String(index + 1).padStart(2, '0');
+  const parts: string[] = [
+    `<p class="cs-kicker"><span class="cs-index">${number}</span>${escapeHtml(section.kicker)}</p>`,
+  ];
+
+  if (section.stat) {
+    parts.push(`
+      <p class="cs-stat">
+        <span class="cs-stat-value">${renderCopy(section.stat.value, copy)}</span>${
+          section.stat.unit ? `<span class="cs-stat-unit">${renderCopy(section.stat.unit, copy)}</span>` : ''
         }
-      </p>
-      <p class="cs-metric-note">${renderCopy(card.note, copy)}</p>
-    </article>
-  `;
-}
+      </p>`);
+  }
 
-function sectionHeading(
-  section: { index: string; kicker: string; title: string },
-  titleId: string,
-): string {
-  return `
-    <div class="cs-section-heading">
-      <p class="cs-index">${escapeHtml(section.index)}</p>
-      <div>
-        <p class="cs-kicker">${escapeHtml(section.kicker)}</p>
-        <h2 id="${escapeHtml(titleId)}">${escapeHtml(section.title)}</h2>
-      </div>
-    </div>
-  `;
-}
+  parts.push(`<h2 id="${escapeHtml(titleId)}">${escapeHtml(section.title)}</h2>`);
+  if (section.lead) {
+    parts.push(`<p class="cs-lead">${renderCopy(section.lead, copy)}</p>`);
+  }
 
-function proseSection(
-  section: CaseStudyCopy['problem'],
-  titleId: string,
-  copy: CaseStudyCopy,
-  sectionId = '',
-): string {
+  if (section.stats) {
+    parts.push(`
+      <dl class="cs-stats">
+        ${section.stats
+          .map(
+            (stat) => `
+          <div class="cs-stats-item">
+            <dt>${escapeHtml(stat.label)}</dt>
+            <dd><span class="cs-stats-value">${renderCopy(stat.value, copy)}</span>${
+              stat.unit ? `<span class="cs-stat-unit">${escapeHtml(stat.unit)}</span>` : ''
+            }</dd>
+          </div>`,
+          )
+          .join('')}
+      </dl>`);
+  }
+
+  if (section.bars) {
+    parts.push(`
+      <div class="cs-bars" data-role="score-bars" data-bar-max-id="${escapeHtml(section.barMaxMetricId ?? '')}">
+        ${section.bars
+          .map(
+            (bar) => `
+          <div class="cs-bar">
+            <p class="cs-bar-name">${escapeHtml(bar.name)}</p>
+            <p class="cs-bar-value">${metricSpan(bar.metricId, copy.common.missingMetric)}</p>
+            <div class="cs-bar-track" aria-hidden="true">
+              <div class="cs-bar-fill" data-bar-metric-id="${escapeHtml(bar.metricId)}"></div>
+            </div>
+          </div>`,
+          )
+          .join('')}
+        ${section.barMaxLabel ? `<p class="cs-bar-scale" aria-hidden="true">${escapeHtml(section.barMaxLabel)}</p>` : ''}
+      </div>`);
+  }
+
+  if (section.cards) {
+    parts.push(`
+      <div class="cs-cards">
+        ${section.cards
+          .map(
+            (card) => `
+          <article class="cs-card">
+            <h3>${escapeHtml(card.name)}</h3>
+            ${card.tagline ? `<p class="cs-card-tagline">${renderCopy(card.tagline, copy)}</p>` : ''}
+            <p class="cs-card-body">${renderCopy(card.body, copy)}</p>
+            ${card.verdict ? `<p class="cs-card-verdict">${escapeHtml(card.verdict)}</p>` : ''}
+            ${card.detail ? `<p class="cs-card-detail">${renderCopy(card.detail, copy)}</p>` : ''}
+          </article>`,
+          )
+          .join('')}
+      </div>`);
+  }
+
+  if (section.body) {
+    parts.push(
+      `<div class="cs-body">${section.body.map((paragraph) => `<p>${renderCopy(paragraph, copy)}</p>`).join('')}</div>`,
+    );
+  }
+
+  if (section.note) {
+    parts.push(`<p class="cs-note">${renderCopy(section.note, copy)}</p>`);
+  }
+
   return `
-    <section class="cs-section"${sectionId ? ` id="${escapeHtml(sectionId)}"` : ''} aria-labelledby="${escapeHtml(titleId)}">
-      ${sectionHeading(section, titleId)}
-      <div class="cs-prose">
-        ${section.paragraphs.map((paragraph) => `<p>${renderCopy(paragraph, copy)}</p>`).join('')}
-      </div>
+    <section class="cs-section" id="${escapeHtml(section.id)}" data-tone="${escapeHtml(section.tone ?? 'plain')}" aria-labelledby="${escapeHtml(titleId)}">
+      <div class="cs-section-inner">${parts.join('')}</div>
     </section>
   `;
 }
 
 export function renderCaseStudyShell(locale: Locale): string {
   const copy = CASE_STUDY_COPY[locale];
+  const languageSwitch = `
+    <a
+      class="cs-lang"
+      data-role="language-switch"
+      href="${escapeHtml(copy.header.languageSwitch.href)}"
+      hreflang="${escapeHtml(copy.header.languageSwitch.hreflang)}"
+      lang="${escapeHtml(copy.header.languageSwitch.lang)}"
+      aria-label="${escapeHtml(copy.header.languageSwitch.ariaLabel)}"
+    >${escapeHtml(copy.header.languageSwitch.label)}</a>`;
 
   return `
     <header class="cs-header">
-      <a class="cs-brand" href="/" aria-label="${escapeHtml(copy.header.brandHomeLabel)}">
-        <span class="cs-brand-mark">${escapeHtml(copy.header.brandMark)}</span>
-        <span class="cs-brand-sub">${escapeHtml(copy.header.brandSub)}</span>
-      </a>
-      <div class="cs-header-right">
-        <nav class="cs-nav" aria-label="${escapeHtml(copy.header.navLabel)}">
-          <a href="/">${escapeHtml(copy.header.playDemo)}</a>
-          <a href="#evidence">${escapeHtml(copy.header.evidence)}</a>
-          <a href="https://github.com/Tommyweige/breakout-rl-engineering" target="_blank" rel="noreferrer">${escapeHtml(copy.header.github)}</a>
-        </nav>
-        <a
-          class="cs-lang"
-          data-role="language-switch"
-          href="${escapeHtml(copy.header.languageSwitch.href)}"
-          hreflang="${escapeHtml(copy.header.languageSwitch.hreflang)}"
-          lang="${escapeHtml(copy.header.languageSwitch.lang)}"
-          aria-label="${escapeHtml(copy.header.languageSwitch.ariaLabel)}"
-        >${escapeHtml(copy.header.languageSwitch.label)}</a>
-      </div>
+      <a class="cs-brand" href="/" aria-label="${escapeHtml(copy.header.brandHomeLabel)}">${escapeHtml(copy.header.brandMark)}</a>
+      <nav class="cs-nav" aria-label="${escapeHtml(copy.header.navLabel)}">
+        <a href="/">${escapeHtml(copy.header.playDemo)}</a>
+        <a href="${REPOSITORY_URL}" target="_blank" rel="noreferrer">${escapeHtml(copy.header.github)}</a>
+        ${languageSwitch}
+      </nav>
     </header>
 
     <main id="main">
       <section class="cs-hero" aria-labelledby="hero-title">
         <div class="cs-hero-copy">
-          <p class="cs-eyebrow">${escapeHtml(copy.hero.eyebrow)} <span data-role="frozen-date">—</span></p>
-          <h1 id="hero-title">${escapeHtml(copy.hero.titleLead)}<br /><span>${escapeHtml(copy.hero.titleTail)}</span></h1>
-          <p class="cs-lede">${escapeHtml(copy.hero.lede)}</p>
-          <p class="cs-hook">${escapeHtml(copy.hero.hook)}</p>
-          <div class="cs-hero-actions">
-            <a class="cs-button" href="/">${escapeHtml(copy.hero.playCta)}</a>
-            <a class="cs-button cs-button-ghost" href="#evidence">${escapeHtml(copy.hero.evidenceCta)}</a>
-          </div>
+          <p class="cs-kicker">${escapeHtml(copy.hero.kicker)}</p>
+          <h1 id="hero-title">${escapeHtml(copy.hero.title)}</h1>
+          <p class="cs-answer">${escapeHtml(copy.hero.answer)}</p>
+          <p class="cs-answer-body">${escapeHtml(copy.hero.answerBody)}</p>
+          <a class="cs-scroll" href="#${escapeHtml(copy.sections[0]?.id ?? 'main')}">${escapeHtml(copy.hero.scrollCta)} <span aria-hidden="true">↓</span></a>
           <p class="cs-summary-status" data-role="summary-status" role="status" hidden></p>
         </div>
-        <figure class="cs-media">
+        <figure class="cs-hero-media">
           <video
             class="cs-video"
             data-role="gameplay-video"
-            poster="/case-study/gameplay-poster.png"
+            poster="/case-study/tracker-poster.png"
             muted
             loop
             playsinline
-            controls
             preload="metadata"
             aria-label="${escapeHtml(copy.hero.videoAria)}"
           >
-            <source src="/case-study/gameplay.mp4" type="video/mp4" />
+            <source src="/case-study/tracker.mp4" type="video/mp4" />
             ${escapeHtml(copy.hero.videoFallback)}
-            <a href="/case-study/gameplay-poster.png">${escapeHtml(copy.hero.posterLink)}</a>
-            ${escapeHtml(copy.hero.videoFallbackAfter)}
           </video>
-          <figcaption>${escapeHtml(copy.hero.figcaption)}</figcaption>
+          <figcaption>${escapeHtml(copy.hero.caption)}</figcaption>
         </figure>
       </section>
 
-      <section class="cs-metrics" aria-label="${escapeHtml(copy.metricsAria)}">
-        ${copy.metricCards.map((card) => cardMetric(card, copy)).join('')}
-      </section>
+      ${copy.sections.map((section, index) => renderSection(section, index, copy)).join('')}
 
-      ${proseSection(copy.problem, 'problem-title', copy)}
-
-      <section class="cs-section" aria-labelledby="routes-title">
-        ${sectionHeading(copy.routes, 'routes-title')}
-        <div class="cs-routes">
-          ${copy.routes.items
-            .map(
-              (item) => `
-            <article class="cs-route">
-              <h3>${escapeHtml(item.lead)}</h3>
-              <p>${renderCopy(item.body, copy)}</p>
-            </article>
-          `,
-            )
-            .join('')}
+      <section class="cs-section cs-evidence" id="evidence" aria-labelledby="evidence-title">
+        <div class="cs-section-inner">
+          <p class="cs-kicker">${escapeHtml(copy.evidence.kicker)}</p>
+          <h2 id="evidence-title">${escapeHtml(copy.evidence.title)}</h2>
+          <div class="cs-body"><p>${escapeHtml(copy.evidence.body)}</p></div>
+          <div class="cs-actions">
+            <a class="cs-button" data-role="evidence-link" href="${RESULTS_URL}" target="_blank" rel="noreferrer">${escapeHtml(copy.evidence.cta)} <span aria-hidden="true">→</span></a>
+            <a class="cs-button cs-button-ghost" href="/">${escapeHtml(copy.evidence.playCta)}</a>
+          </div>
         </div>
       </section>
-
-      <section class="cs-section" id="evidence" aria-labelledby="results-title">
-        ${sectionHeading(copy.results, 'results-title')}
-        <p class="cs-section-intro">${renderCopy(copy.results.intro, copy)}</p>
-        <div class="cs-table-wrap">
-          <table class="cs-table" data-role="results-table">
-            <thead>
-              <tr>
-                <th scope="col">${escapeHtml(copy.results.headers.method)}</th>
-                <th scope="col">${escapeHtml(copy.results.headers.mean)}</th>
-                <th scope="col">${escapeHtml(copy.results.headers.clears)}</th>
-                <th scope="col">${escapeHtml(copy.results.headers.trained)}</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${copy.results.rows
-                .map(
-                  (row) => `
-                <tr>
-                  <th scope="row">${escapeHtml(row.method)}</th>
-                  <td class="cs-table-value" data-label="${escapeHtml(copy.results.headers.mean)}">${renderCopy(row.mean, copy)}</td>
-                  <td class="cs-table-value" data-label="${escapeHtml(copy.results.headers.clears)}">${renderCopy(row.clears, copy)}</td>
-                  <td data-label="${escapeHtml(copy.results.headers.trained)}">${escapeHtml(row.trained)}</td>
-                </tr>
-              `,
-                )
-                .join('')}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      ${proseSection(copy.mistake, 'mistake-title', copy)}
-      ${proseSection(copy.laya, 'laya-title', copy)}
-      ${proseSection(copy.negative, 'negative-title', copy)}
     </main>
 
     <footer class="cs-footer">
-      <div>
-        <p class="cs-brand-mark">${escapeHtml(copy.footer.brand)}</p>
-        <p>${escapeHtml(copy.footer.updated)} <span data-role="frozen-date">—</span>.</p>
-      </div>
-      <div class="cs-footer-note">
-        <p><strong>${escapeHtml(copy.footer.limitsHeading)}</strong></p>
-        ${copy.footer.limits.map((limit) => `<p>${escapeHtml(limit)}</p>`).join('')}
-        <p>
-          <a href="https://github.com/Tommyweige/breakout-rl-engineering/blob/main/docs/final-results/README.md" target="_blank" rel="noreferrer">${escapeHtml(copy.footer.evidenceLine)}</a>
-        </p>
-      </div>
+      <p>${escapeHtml(copy.footer.updated)} <span data-role="frozen-date">—</span></p>
+      ${languageSwitch}
     </footer>
   `;
 }
@@ -341,13 +328,13 @@ export function hydrateCaseStudy(
     element.textContent = metric.seed_count.toLocaleString('en-US');
   });
 
-  root.querySelectorAll<HTMLElement>('[data-wan-id]').forEach((element) => {
-    const metric = metrics.get(element.dataset.wanId ?? '');
-    if (!metric || typeof metric.value !== 'number') {
-      element.textContent = copy.common.missingMetric;
-      return;
-    }
-    element.textContent = (metric.value / 10_000).toLocaleString('en-US');
+  root.querySelectorAll<HTMLElement>('[data-bar-max-id]').forEach((group) => {
+    const max = metrics.get(group.dataset.barMaxId ?? '')?.value;
+    group.querySelectorAll<HTMLElement>('[data-bar-metric-id]').forEach((fill) => {
+      const value = metrics.get(fill.dataset.barMetricId ?? '')?.value;
+      const share = typeof value === 'number' && typeof max === 'number' && max > 0 ? value / max : 0;
+      fill.style.setProperty('--share', String(Math.min(1, Math.max(0, share))));
+    });
   });
 
   root.querySelectorAll<HTMLElement>('[data-role="frozen-date"]').forEach((element) => {

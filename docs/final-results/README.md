@@ -7,7 +7,7 @@
 - **Machine-readable summary:** [`summary.json`](summary.json)
 - **Experiment inventory:** [`evidence-inventory.csv`](evidence-inventory.csv)
 - **Artifact manifest (expected paths and hashes):** [`artifact-manifest.json`](artifact-manifest.json)
-- **Visual evidence:** [before/after screenshots](screenshots/README.md) · [real gameplay recording](../../web/public/case-study/gameplay.mp4)
+- **Visual evidence:** [before/after screenshots](screenshots/README.md) · [real gameplay recording](../../web/public/case-study/tracker.mp4)
 - **Handoff and deferred work:** [`handoff.md`](handoff.md)
 - **Clear semantics and detector validation:** [`../clear-semantics.md`](../clear-semantics.md)
 - **Controller evaluations (native 15-seed, 137.47 reproduction, 120-episode WASM audit):** [`../../audits/browser-clear/README.md`](../../audits/browser-clear/README.md)
@@ -214,28 +214,19 @@ npm run build
 
 ### Re-capturing the real gameplay media
 
-The committed recording and poster are real headless-browser captures from the built app, not mock frames. The rerunnable script records gameplay, the game page before starting, and the case-study page at desktop and mobile widths:
+The committed hero clip is a real recording of the tracker (the web demo's **Unbeatable** AI) playing, taken straight from the AI game canvas, not mock frames. The rerunnable script records the clip, converts it with ffmpeg (`libx264`), and screenshots both case-study pages at desktop and mobile widths:
 
 ```bash
 cd web
-npx playwright@1.63.0 install chromium
 npm run build
 npm run preview -- --port 4173
 node scripts/capture-case-study.mjs \
   --url http://localhost:4173 \
+  --chromium /path/to/chromium \
   --output ../.amp/in/case-study
 ```
 
-The script writes `gameplay.webm` plus a poster frame. The committed site uses H.264 MP4 for compatibility; this host's Playwright-bundled ffmpeg has no H.264 encoder, so the conversion below used an ffmpeg build with `libx264`:
-
-```bash
-ffmpeg -ss 2.5 -t 14.5 -i gameplay.webm \
-  -vf "scale=960:-2:flags=neighbor" \
-  -c:v libx264 -preset slow -crf 20 -pix_fmt yuv420p \
-  -movflags +faststart -an gameplay.mp4
-ffmpeg -ss 8 -i gameplay.webm -frames:v 1 \
-  -vf "scale=960:-2:flags=neighbor" gameplay-poster.png
-```
+By default it records 150 s of play and speeds it up 6×, so the committed `tracker.mp4` is a 25 s loop scaled to 480×630 with nearest-neighbour sampling; `tracker-poster.png` is the frame at 60 % of the clip. Copy both into `web/public/case-study/`. `gameplay-poster.png` and `gameplay-poster.zh-TW.png` are earlier full-app captures kept as the Open Graph share images.
 
 If the capture script cannot run (for example, no browser can be installed), the blocker must be recorded and the page must keep the real poster/recording explanation rather than substitute synthetic gameplay.
 

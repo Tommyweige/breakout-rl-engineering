@@ -1,13 +1,58 @@
 export type Locale = 'en' | 'zh-TW';
 
+/**
+ * Copy templates may contain hydration tokens:
+ * `{{metric:id}}` and `{{seeds:id}}` (episode count).
+ */
+export interface CaseStudyStat {
+  value: string;
+  unit?: string;
+  label: string;
+}
+
+export interface CaseStudyCard {
+  name: string;
+  tagline?: string;
+  body: string;
+  /** Big one-line outcome, e.g. "No gain". */
+  verdict?: string;
+  /** Small monospace line with the numbers behind the verdict. */
+  detail?: string;
+}
+
+export interface CaseStudyBar {
+  name: string;
+  metricId: string;
+}
+
+/** One block of the page. Each block says one thing. */
+export interface CaseStudySection {
+  id: string;
+  kicker: string;
+  title: string;
+  /** One short sentence right under the title, before any numbers. */
+  lead?: string;
+  /** The block's headline number, shown large. */
+  stat?: { value: string; unit?: string };
+  /** Two or more numbers shown side by side. */
+  stats?: CaseStudyStat[];
+  /** Horizontal bars scaled against `barMaxMetricId`. */
+  bars?: CaseStudyBar[];
+  barMaxMetricId?: string;
+  barMaxLabel?: string;
+  cards?: CaseStudyCard[];
+  body?: string[];
+  /** Small print under the block. */
+  note?: string;
+  tone?: 'lime' | 'coral' | 'blue';
+}
+
 export interface CaseStudyCopy {
   header: {
     brandHomeLabel: string;
     brandMark: string;
-    brandSub: string;
     navLabel: string;
     playDemo: string;
-    evidence: string;
     github: string;
     languageSwitch: {
       href: string;
@@ -18,20 +63,16 @@ export interface CaseStudyCopy {
     };
   };
   hero: {
-    eyebrow: string;
-    titleLead: string;
-    titleTail: string;
-    lede: string;
-    hook: string;
-    playCta: string;
-    evidenceCta: string;
+    kicker: string;
+    title: string;
+    answer: string;
+    answerBody: string;
+    scrollCta: string;
     summaryError: string;
     summaryErrorLink: string;
     videoAria: string;
     videoFallback: string;
-    posterLink: string;
-    videoFallbackAfter: string;
-    figcaption: string;
+    caption: string;
   };
   common: {
     notRun: string;
@@ -40,59 +81,15 @@ export interface CaseStudyCopy {
     unknown: string;
     missingMetric: string;
   };
-  metricCards: Array<{
-    metricId: string;
-    label: string;
-    /** Rendered after the value, e.g. "／15 局". */
-    suffix?: string;
-    note: string;
-  }>;
-  metricsAria: string;
-  problem: {
-    index: string;
+  sections: CaseStudySection[];
+  evidence: {
     kicker: string;
     title: string;
-    paragraphs: string[];
-  };
-  routes: {
-    index: string;
-    kicker: string;
-    title: string;
-    items: Array<{ lead: string; body: string }>;
-  };
-  results: {
-    index: string;
-    kicker: string;
-    title: string;
-    intro: string;
-    headers: { method: string; mean: string; clears: string; trained: string };
-    rows: Array<{ method: string; mean: string; clears: string; trained: string }>;
-  };
-  mistake: {
-    index: string;
-    kicker: string;
-    title: string;
-    paragraphs: string[];
-  };
-  laya: {
-    index: string;
-    kicker: string;
-    title: string;
-    paragraphs: string[];
-  };
-  negative: {
-    index: string;
-    kicker: string;
-    title: string;
-    paragraphs: string[];
+    body: string;
+    cta: string;
+    playCta: string;
   };
   footer: {
-    brand: string;
     updated: string;
-    limitsHeading: string;
-    /** Two or three plain sentences. Each limit is stated once, in prose. */
-    limits: string[];
-    /** The single line that sends a reader to the repository. */
-    evidenceLine: string;
   };
 }

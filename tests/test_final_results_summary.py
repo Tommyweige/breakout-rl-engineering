@@ -278,7 +278,8 @@ class FinalResultsSummaryTests(unittest.TestCase):
         )
 
         for asset in (
-            ROOT / "web" / "public" / "case-study" / "gameplay.mp4",
+            ROOT / "web" / "public" / "case-study" / "tracker.mp4",
+            ROOT / "web" / "public" / "case-study" / "tracker-poster.png",
             ROOT / "web" / "public" / "case-study" / "gameplay-poster.png",
         ):
             self.assertTrue(asset.is_file(), asset)

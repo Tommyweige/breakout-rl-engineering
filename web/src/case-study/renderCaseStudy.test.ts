@@ -33,12 +33,12 @@ describe.each(locales)('Research results case study (%s)', (locale) => {
   it('renders an accessible hero with a real gameplay recording', () => {
     const root = mount(locale);
     expect(root.querySelectorAll('h1')).toHaveLength(1);
-    expect(text(root, 'h1')).toContain(copy.hero.titleLead);
-    expect(text(root, 'h1')).toContain(copy.hero.titleTail);
+    expect(text(root, 'h1')).toBe(copy.hero.title);
+    expect(text(root, '.cs-answer')).toBe(copy.hero.answer);
     expect(root.querySelector('video[data-role="gameplay-video"]')).not.toBeNull();
-    expect(root.querySelector('video source')?.getAttribute('src')).toBe('/case-study/gameplay.mp4');
-    expect(root.querySelector('video')?.getAttribute('poster')).toBe('/case-study/gameplay-poster.png');
-    expect(root.querySelectorAll('section[aria-labelledby]').length).toBeGreaterThanOrEqual(6);
+    expect(root.querySelector('video source')?.getAttribute('src')).toBe('/case-study/tracker.mp4');
+    expect(root.querySelector('video')?.getAttribute('poster')).toBe('/case-study/tracker-poster.png');
+    expect(root.querySelectorAll('section[aria-labelledby]')).toHaveLength(copy.sections.length + 2);
   });
 
   it('links to the other locale in the top-right switcher', () => {
@@ -60,44 +60,42 @@ describe.each(locales)('Research results case study (%s)', (locale) => {
     expect(text(root, '[data-metric-id="rgb_controller_a8445df_canonical_clear_detections"]')).toBe('4');
     expect(text(root, '[data-seed-count-id="rgb_controller_a8445df_canonical_clear_detections"]')).toBe('15');
     expect(text(root, '[data-metric-id="rgb_controller_a8445df_mean_score"]')).toBe('721.8');
-    expect(text(root, '[data-metric-id="rgb_controller_pr26_mean_score"]')).toBe('137.47');
     expect(text(root, '[data-metric-id="dqn_v3_2m_mean_score"]')).toBe('6.93');
-    expect(text(root, '[data-metric-id="dqn_v3_2m_clears"]')).toBe('0');
-    expect(text(root, '[data-metric-id="laya_complete_episodes"]')).toBe('0');
+    expect(text(root, '[data-metric-id="laya_browser_session_score"]')).toBe('4');
+    expect(text(root, '[data-metric-id="laya_browser_session_played_s"]')).toBe('22.7');
     expect(text(root, '[data-metric-id="clear_score_threshold"]')).toBe('864');
-    // The Chinese page writes this figure in 萬, so it hydrates a different element.
-    const trainingFrames =
-      locale === 'zh-TW'
-        ? text(root, '[data-wan-id="dqn_training_transitions"]')
-        : text(root, '[data-metric-id="dqn_training_transitions"]');
-    expect(trainingFrames).toBe(locale === 'zh-TW' ? '250' : '2,500,000');
-
     const unresolved = [
-      ...root.querySelectorAll<HTMLElement>('[data-metric-id], [data-seed-count-id], [data-wan-id]'),
+      ...root.querySelectorAll<HTMLElement>('[data-metric-id], [data-seed-count-id]'),
     ]
       .filter((element) => (element.textContent ?? '').trim() === '—')
-      .map((element) => element.dataset.metricId ?? element.dataset.seedCountId ?? element.dataset.wanId);
+      .map((element) => element.dataset.metricId ?? element.dataset.seedCountId);
     expect(unresolved).toEqual([]);
     expect(root.textContent).not.toContain('{{');
   });
 
-  it('renders the three-way comparison as a four-column table', () => {
+  it('scales the average-score bars against the two-wall score', () => {
     const root = mount(locale);
     hydrateCaseStudy(root, summary, locale);
 
-    const table = root.querySelector('[data-role="results-table"]');
-    expect(table).not.toBeNull();
-    const rows = table!.querySelectorAll('tbody tr');
-    expect(rows).toHaveLength(3);
-    expect(table!.querySelectorAll('thead th')).toHaveLength(4);
-    expect(text(table!, 'thead')).toContain(copy.results.headers.method);
-    expect(text(table!, 'thead')).toContain(copy.results.headers.trained);
+    const share = (id: string) =>
+      Number(
+        root.querySelector<HTMLElement>(`[data-bar-metric-id="${id}"]`)?.style.getPropertyValue('--share'),
+      );
+    expect(share('rgb_controller_a8445df_mean_score')).toBeCloseTo(721.8 / 864, 6);
+    expect(share('dqn_v3_2m_mean_score')).toBeCloseTo(6.93 / 864, 6);
+  });
 
-    expect(rows[0]!.querySelector('th')?.textContent?.trim()).toBe(copy.results.rows[0]!.method);
-    expect(rows[0]!.querySelector('[data-metric-id="rgb_controller_a8445df_mean_score"]')?.textContent).toBe(
-      '721.8',
-    );
-    expect(rows[1]!.querySelector('[data-metric-id="dqn_v3_2m_mean_score"]')?.textContent).toBe('6.93');
+  it('tells the story without the removed mix-up or researcher jargon', () => {
+    const root = mount(locale);
+    hydrateCaseStudy(root, summary, locale);
+    const rendered = root.textContent ?? '';
+
+    for (const banned of ['137', '50ee352', 'PR #26', 'canonical', 'seed', 'frame_skip', 'contract', '契約', '種子']) {
+      expect(rendered.toLowerCase(), `${locale} mentions ${banned}`).not.toContain(banned.toLowerCase());
+    }
+    // The neural network that scored 6.93 trained on 2 million frames, not the 2.5 million of another run.
+    expect(rendered).not.toContain('250');
+    expect(root.querySelector('table')).toBeNull();
   });
 
   it('keeps the machine-readable ledger and contract identifiers off the page', () => {
@@ -145,15 +143,8 @@ describe('Cross-locale parity', () => {
     for (const element of en.querySelectorAll<HTMLElement>('[data-metric-id]')) {
       const id = element.dataset.metricId!;
       const zhMetric = zh.querySelector<HTMLElement>(`[data-metric-id="${id}"]`);
-      if (zhMetric) {
-        expect(zhMetric.textContent).toBe(element.textContent);
-        continue;
-      }
-      // The Chinese page writes this figure in 萬, so it must agree after scaling.
-      const zhWan = zh.querySelector<HTMLElement>(`[data-wan-id="${id}"]`);
-      expect(zhWan, `${id} is missing from the Chinese page`).not.toBeNull();
-      const asCount = (value: string | null) => Number((value ?? '').replaceAll(',', ''));
-      expect(asCount(zhWan!.textContent) * 10_000).toBe(asCount(element.textContent));
+      expect(zhMetric, `${id} is missing from the Chinese page`).not.toBeNull();
+      expect(zhMetric!.textContent).toBe(element.textContent);
     }
   });
 
@@ -181,19 +172,21 @@ describe('Cross-locale parity', () => {
     // pinned by rendering a kicker that does contain them.
     const kicker = '首次通關探測 · #41、#43、#45、#48–#61';
     const copy = CASE_STUDY_COPY['zh-TW'];
-    const originalKicker = copy.results.kicker;
-    copy.results.kicker = kicker;
+    const section = copy.sections[0]!;
+    const originalKicker = section.kicker;
+    section.kicker = kicker;
     try {
       const root = mount('zh-TW');
       hydrateCaseStudy(root, summary, 'zh-TW');
-      const heading = root.querySelector('#results-title');
-      expect(heading?.textContent).toBe(copy.results.title);
-      const renderedKicker = heading?.closest('div')?.querySelector('.cs-kicker')?.textContent ?? '';
+      const heading = root.querySelector(`#${section.id}-title`);
+      expect(heading?.textContent).toBe(section.title);
+      const renderedKicker =
+        heading?.closest('section')?.querySelector('.cs-kicker')?.textContent?.replace(/^\d+/, '') ?? '';
       expect(renderedKicker).toBe(kicker);
       expect(renderedKicker).not.toContain('#41、、、–');
       expect(fragmentsOf(copy)).toContain(kicker);
     } finally {
-      copy.results.kicker = originalKicker;
+      section.kicker = originalKicker;
     }
   });
 

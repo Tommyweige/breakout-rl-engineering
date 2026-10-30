@@ -9,6 +9,6 @@ These are real captures from the built browser application, not mock frames. The
 | [`case-study-desktop.png`](case-study-desktop.png) | The case-study first screen at 1440×1000: hook, real gameplay poster, four headline metrics, and evidence statuses. |
 | [`case-study-mobile.png`](case-study-mobile.png) | The case-study first screen at 390×844: hook, video, and the first verified metric card. |
 
-The recorded gameplay used by the case study is [`gameplay.mp4`](../../../web/public/case-study/gameplay.mp4), with poster [`gameplay-poster.png`](../../../web/public/case-study/gameplay-poster.png). The recording is a real capture of the DQN “Hard” mode; it is not a synchronized DQN-vs-controller match.
+The recorded gameplay used by the case study is [`tracker.mp4`](../../../web/public/case-study/tracker.mp4), with poster [`tracker-poster.png`](../../../web/public/case-study/tracker-poster.png). It is a real capture of the web demo’s “Unbeatable” AI (the tracker, the TypeScript port of the pixel controller) played at 6× speed; it is not a scored evaluation episode. [`gameplay-poster.png`](../../../web/public/case-study/gameplay-poster.png) is an earlier full-app capture of the DQN “Hard” mode, kept as the share image.
 
 The before/after game-page pair demonstrates the additive entry point only. It is not evidence of a performance change.

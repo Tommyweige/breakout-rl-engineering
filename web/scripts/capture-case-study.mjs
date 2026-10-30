@@ -1,5 +1,16 @@
+// Records the case-study hero clip (the tracker playing in the web demo) and
+// takes desktop and mobile screenshots of the case study pages.
+//
+//   npm run build && npx vite preview --port 4173 &
+//   node scripts/capture-case-study.mjs --chromium /usr/bin/chromium
+//
+// The clip is recorded straight from the AI game canvas, so it contains only
+// game pixels. ffmpeg then speeds it up, scales it with nearest-neighbour
+// sampling, and writes tracker.mp4 and tracker-poster.png for web/public/case-study.
+
 import assert from 'node:assert/strict';
-import { mkdir } from 'node:fs/promises';
+import { execFileSync } from 'node:child_process';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { fileURLToPath } from 'node:url';
@@ -13,118 +24,104 @@ const { values } = parseArgs({
   options: {
     url: { type: 'string', default: 'http://localhost:4173' },
     output: { type: 'string', default: resolve(webRoot, '..', '.amp/in/case-study') },
-    seconds: { type: 'string', default: '14' },
+    chromium: { type: 'string' },
+    seconds: { type: 'string', default: '150' },
+    speed: { type: 'string', default: '6' },
   },
 });
 
 const baseUrl = new URL(values.url);
 const outputDirectory = resolve(values.output);
 const seconds = Number(values.seconds);
-if (!Number.isFinite(seconds) || seconds < 5) {
-  throw new Error('--seconds must be a number of at least 5');
-}
+const speed = Number(values.speed);
+if (!Number.isFinite(seconds) || seconds < 5) throw new Error('--seconds must be at least 5');
+if (!Number.isFinite(speed) || speed < 1) throw new Error('--speed must be at least 1');
 
-const rawVideoDirectory = resolve(outputDirectory, 'raw');
-await mkdir(rawVideoDirectory, { recursive: true });
+await mkdir(outputDirectory, { recursive: true });
 
-const browser = await chromium.launch({ headless: true });
+const browser = await chromium.launch({ headless: true, executablePath: values.chromium });
 const errors = [];
 
 try {
-  const context = await browser.newContext({
-    viewport: { width: 1280, height: 800 },
-    recordVideo: { dir: rawVideoDirectory, size: { width: 1280, height: 800 } },
-  });
+  const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
   const page = await context.newPage();
   page.on('pageerror', (error) => errors.push(error.message));
-  page.on('console', (message) => {
-    if (message.type() === 'error') errors.push(message.text());
-  });
 
   await page.goto(new URL('/', baseUrl).href, { waitUntil: 'networkidle' });
-  await page.screenshot({ path: resolve(outputDirectory, 'game-before.png'), fullPage: true });
+  await page.selectOption('#difficulty-select', 'unbeatable');
+  await page.evaluate(() => {
+    const canvas = document.querySelectorAll('canvas')[1];
+    const recorder = new MediaRecorder(canvas.captureStream(30), {
+      mimeType: 'video/webm;codecs=vp9',
+      videoBitsPerSecond: 2_000_000,
+    });
+    const chunks = [];
+    recorder.ondataavailable = (event) => chunks.push(event.data);
+    recorder.start(1000);
+    window.__trackerRecording = { recorder, chunks };
+  });
   await page.click('[data-action="start"]');
-  await page.waitForFunction(
-    () => document.querySelector('[data-role="agent-state"]')?.textContent === 'Playing',
-    undefined,
-    { timeout: 30000 },
-  );
-  await page.waitForTimeout(2500);
-  await page.locator('#play-area').scrollIntoViewIfNeeded();
-  await page.waitForTimeout(5000);
-  await page.screenshot({ path: resolve(outputDirectory, 'gameplay-poster.png') });
-  await page.waitForTimeout(Math.max(0, seconds - 5) * 1000);
+  await page.waitForTimeout(seconds * 1000);
 
   const gameplay = await page.evaluate(() => ({
     agentState: document.querySelector('[data-role="agent-state"]')?.textContent ?? null,
-    backend: document.querySelector('[data-role="gameplay-backend"]')?.textContent ?? null,
     agentScore: document.querySelector('[data-role="agent-score"]')?.textContent ?? null,
-    humanScore: document.querySelector('[data-role="human-score"]')?.textContent ?? null,
   }));
-  assert.equal(gameplay.agentState, 'Playing', 'the AI game must be running');
-  const video = page.video();
-  assert.ok(video, 'Playwright did not expose a video recording');
+  const webmBase64 = await page.evaluate(async () => {
+    const { recorder, chunks } = window.__trackerRecording;
+    await new Promise((done) => {
+      recorder.onstop = done;
+      recorder.stop();
+    });
+    const bytes = new Uint8Array(await new Blob(chunks, { type: 'video/webm' }).arrayBuffer());
+    let binary = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    }
+    return btoa(binary);
+  });
   await context.close();
-  await video.saveAs(resolve(outputDirectory, 'gameplay.webm'));
 
-  const evidenceContext = await browser.newContext({
-    viewport: { width: 1440, height: 1000 },
-    reducedMotion: 'reduce',
-  });
-  const evidencePage = await evidenceContext.newPage();
-  evidencePage.on('pageerror', (error) => errors.push(error.message));
-  await evidencePage.goto(new URL('/case-study.html', baseUrl).href, {
-    waitUntil: 'networkidle',
-  });
-  await evidencePage.waitForFunction(
-    () => document.querySelector('#app')?.getAttribute('data-summary-state') === 'loaded',
-    undefined,
-    { timeout: 15000 },
-  );
-  await evidencePage.screenshot({
-    path: resolve(outputDirectory, 'case-study-desktop.png'),
-    fullPage: false,
-  });
-  await evidenceContext.close();
+  const rawClip = resolve(outputDirectory, 'tracker-raw.webm');
+  const clip = resolve(outputDirectory, 'tracker.mp4');
+  const poster = resolve(outputDirectory, 'tracker-poster.png');
+  await writeFile(rawClip, Buffer.from(webmBase64, 'base64'));
+  assert.ok(webmBase64.length > 0, 'the canvas recording is empty');
 
-  const mobileContext = await browser.newContext({
-    viewport: { width: 390, height: 844 },
-    isMobile: true,
-    hasTouch: true,
-    deviceScaleFactor: 2,
-    reducedMotion: 'reduce',
-  });
-  const mobilePage = await mobileContext.newPage();
-  await mobilePage.goto(new URL('/case-study.html', baseUrl).href, { waitUntil: 'networkidle' });
-  await mobilePage.waitForFunction(
-    () => document.querySelector('#app')?.getAttribute('data-summary-state') === 'loaded',
-    undefined,
-    { timeout: 15000 },
-  );
-  await mobilePage.screenshot({
-    path: resolve(outputDirectory, 'case-study-mobile.png'),
-    fullPage: false,
-  });
-  await mobileContext.close();
+  const scale = 'scale=480:630:flags=neighbor';
+  execFileSync('ffmpeg', [
+    '-y', '-loglevel', 'error', '-i', rawClip,
+    '-vf', `setpts=PTS/${speed},fps=30,${scale}`,
+    '-an', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '26', '-movflags', '+faststart',
+    clip,
+  ]);
+  // The poster shows the tracker partway through digging into the wall.
+  const posterAt = ((seconds / speed) * 0.6).toFixed(2);
+  execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-ss', posterAt, '-i', clip, '-frames:v', '1', poster]);
 
-  console.log(
-    JSON.stringify(
-      {
-        outputDirectory,
-        gameplay,
-        recording: resolve(outputDirectory, 'gameplay.webm'),
-        poster: resolve(outputDirectory, 'gameplay-poster.png'),
-        screenshots: [
-          resolve(outputDirectory, 'game-before.png'),
-          resolve(outputDirectory, 'case-study-desktop.png'),
-          resolve(outputDirectory, 'case-study-mobile.png'),
-        ],
-        errors,
-      },
-      null,
-      2,
-    ),
-  );
+  const screenshots = [];
+  for (const [name, options] of [
+    ['desktop', { viewport: { width: 1440, height: 1000 } }],
+    ['mobile', { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 }],
+  ]) {
+    for (const path of ['/case-study.html', '/case-study.zh-TW.html']) {
+      const pageContext = await browser.newContext({ ...options, reducedMotion: 'reduce' });
+      const casePage = await pageContext.newPage();
+      casePage.on('pageerror', (error) => errors.push(error.message));
+      await casePage.goto(new URL(path, baseUrl).href, { waitUntil: 'networkidle' });
+      await casePage.waitForFunction(
+        () => document.querySelector('#app')?.getAttribute('data-summary-state') === 'loaded',
+        undefined,
+        { timeout: 15000 },
+      );
+      const file = resolve(outputDirectory, `case-study-${name}${path.includes('zh-TW') ? '.zh-TW' : ''}.png`);
+      await casePage.screenshot({ path: file, fullPage: true });
+      screenshots.push(file);
+      await pageContext.close();
+    }
+  }
+
+  console.log(JSON.stringify({ outputDirectory, gameplay, clip, poster, screenshots, errors }, null, 2));
 } finally {
   await browser.close();
 }
