@@ -21,10 +21,10 @@ export const enCopy: CaseStudyCopy = {
   },
   hero: {
     eyebrow: 'FROZEN EVIDENCE ·',
-    titleLead: 'Does Breakout',
-    titleTail: 'really need training?',
-    lede: 'From a DQN family to an explainable pixel tracker and predictive controller. With no training, the controller now clears both brick walls in some official Contract v3 episodes — counted by canonical clear detection, not by eye.',
-    hook: 'This is the evidence-led closeout of an end-to-end RL engineering project. The interesting result is not a high score. It is how much the answer changes when the control contract changes, and how careful you have to be before calling a game “solved”.',
+    titleLead: 'Can Breakout',
+    titleTail: 'be played without training?',
+    lede: 'A hand-written controller with no training reads the screen, works out where the ball will arrive, and puts the paddle there. In official episodes it has cleared both brick walls more than once, counted by code rather than by eye.',
+    hook: 'The whole project turns on one question: how much of this game actually needs something that learns? What is more useful than a high score is how far the answer moves when one rule changes.',
     playCta: 'Play the demo',
     evidenceCta: 'Read the evidence',
     summaryLoading: 'Loading the machine-readable summary…',
@@ -57,52 +57,52 @@ export const enCopy: CaseStudyCopy = {
       not_yet_evaluated: 'Not yet evaluated',
     },
     descriptions: {
-      verified:
-        'Checked against an artifact in this repository or a rerunnable command.',
+      verified: 'Checked against a file in this repository, or reproducible with one command.',
       historical_reported:
-        'Reported in a merged PR, issue, or archived article; raw run output is not in main.',
+        'Reported in a merged PR, issue, or archived article; the raw run output is not in main.',
       missing_raw_artifacts:
-        'Described, but the raw episodes, logs, or weights needed to audit it are unavailable.',
-      not_yet_evaluated: 'No completed evaluation exists for this claim.',
+        'Described in words, but the raw episodes, logs, or weights needed to audit it are gone.',
+      not_yet_evaluated: 'No finished evaluation exists for this claim.',
     },
   },
   metricCards: [
     {
       metricId: 'rgb_controller_a8445df_canonical_clear_detections',
-      label: 'Canonical clear detections',
-      note: 'Pixel controller reaching {{metric:clear_score_threshold}} points in {{seeds:rgb_controller_a8445df_canonical_clear_detections}} official episodes: native ALE, Contract v3, HEAD a8445df. Fail-closed detector; no artifact provenance validation.',
+      label: 'Episodes that cleared both walls',
+      note: 'In {{seeds:rgb_controller_a8445df_canonical_clear_detections}} official episodes the pixel controller emptied both brick walls {{metric:rgb_controller_a8445df_canonical_clear_detections}} times, for {{metric:clear_score_threshold}} points. The runs used native ALE under Contract v3, the rulebook that decides on every frame, at a8445df. The verdict is read from the scoreboard in the game’s memory, not from watching; when it cannot tell, the episode is recorded as unknown, never as zero. It does not go on to verify each episode’s raw record, so nothing beyond that check is claimed.',
     },
     {
       metricId: 'rgb_controller_a8445df_mean_score',
-      label: 'RGB controller mean (a8445df)',
-      note: 'No training, Contract v3. The old PR #26 control law (50ee352) scored {{metric:rgb_controller_pr26_mean_score}}, max {{metric:rgb_controller_pr26_max_score}} — below the 432-point first wall.',
+      label: 'Mean score, screen-only controller',
+      note: 'No training at all. The older PR #26 rule (50ee352) averaged {{metric:rgb_controller_pr26_mean_score}} and peaked at {{metric:rgb_controller_pr26_max_score}}, short of the 432 points the first wall takes.',
     },
     {
       metricId: 'dqn_v3_2m_mean_score',
-      label: 'DQN mean, same Contract v3',
-      note: 'Dueling Double DQN, seed 11, 2M frames: {{metric:dqn_v3_2m_clears}} clears. The browser DQN’s {{metric:dqn_final_holdout_mean}} holdout is Contract v2 and not directly comparable.',
+      label: 'Mean score, model that learns, same rules',
+      note: 'A Dueling Double DQN, one training seed, two million frames: {{metric:dqn_v3_2m_clears}} clears. The {{metric:dqn_final_holdout_mean}} holdout for the browser DQN came from the older v2 rules and cannot be compared directly.',
     },
     {
       metricId: 'laya_complete_episodes',
-      label: 'Laya complete episodes',
-      note: 'Frozen {{metric:laya_parameter_count}} vision model; latency was measured, gameplay was not completed.',
+      label: 'Laya episodes played to the end',
+      note: 'A frozen {{metric:laya_parameter_count}}-parameter vision model. Latency was measured; the game was never finished.',
     },
   ],
   metricsAria: 'Headline results',
   readingKey: {
     ariaLabel: 'How to read the evidence status',
-    title: 'How to read every claim',
+    title: 'Who checked this number?',
   },
   problem: {
     index: '01',
     kicker: 'THE PROBLEM',
-    title: 'Breakout is a control problem disguised as a score.',
+    title: 'So what is actually hard about Breakout?',
     paragraphs: [
-      'The ball and paddle are visually separable. Between collisions the motion is close to piecewise linear, and a controller can re-plan after every observation. That makes Breakout a useful test of a simple question: how much of the task actually needs a learned policy?',
-      'The catch is the environment contract. Frame skip, sticky actions, FIRE handling, life-loss handling, and the episode limit all change the control problem. A score without its contract is not a result; it is a number looking for a footnote.',
+      'The ball and the paddle are two separate shapes on screen, and between bounces the ball travels close to a straight line, so a controller can work it out again from every frame. That makes Breakout a good place to ask how much of the task really needs a model that learns.',
+      'The hard part is the rulebook. How many frames pass between decisions, whether an action gets repeated, who presses FIRE, whether losing a life ends the episode, and how long an episode may run all change the question.',
+      'A score without that rulebook is a number waiting for a footnote, not a result.',
     ],
     callout:
-      '<strong>The clear condition is explicit.</strong> Destroy both brick walls in ALE/Breakout-v5 one-player Game 1. The audited maximum is {{metric:clear_score_threshold}} points, read from the ROM scoreboard in ALE RAM and cross-checked against raw reward. An episode that ends is not automatically a clear. The detector is fail-closed: if the runtime is unsupported or RAM and reward disagree, the state is unknown, never 0. It was validated on genuine Contract v2 and v3 ALE clears, and all six detector mutants were caught.',
+      '<strong>What counts as clearing both walls?</strong> Emptying both brick walls in ALE/Breakout-v5 one-player Game 1, which is {{metric:clear_score_threshold}} points. That number is read from the scoreboard in the game’s memory and cross-checked against the reward the game returns; an episode ending is not a clear. When the runtime is unfamiliar or the two sources disagree, the check reports unknown and never quietly records a zero. It has been validated on real episodes that clear both walls, and six deliberately broken versions of it were all caught.',
     diagramAria: 'Two decision pipelines compared',
     diagrams: [
       {
@@ -121,30 +121,30 @@ export const enCopy: CaseStudyCopy = {
   method: {
     index: '02',
     kicker: 'METHOD EVOLUTION',
-    title: 'Build the baseline, then remove the parts that do not earn their keep.',
+    title: 'What survives once you take away everything that does not pay for itself?',
     items: [
       {
         step: '01',
-        title: 'DQN family under Contract v2',
-        body: 'DQN → Double DQN → Dueling Double DQN. The family screen selected Dueling Double DQN at an early checkpoint and kept it. The final policy trained for {{metric:dqn_training_transitions}} transitions.',
+        title: 'First rulebook: let the model learn',
+        body: 'The DQN approach looks only at frames and learns roughly what each action is worth. Three variants were tried; the early checkpoint already picked Dueling Double DQN, nothing replaced it, and the final policy trained for {{metric:dqn_training_transitions}} transitions. Under the first rulebook it decided once every {{contract:v2.frame_skip}} frames.',
         status: 'historical_reported',
       },
       {
         step: '02',
-        title: 'Controlled experiments that did not promote',
-        body: 'Life-loss reward shaping produced a positive but inconsistent point estimate; prioritized replay was descriptive at best. Neither replaced the baseline. These are results, not footnotes.',
+        title: 'Two detours that were not adopted',
+        body: 'One charged extra for losing a life, hoping the model would stop dropping the ball; the direction was right but the result was unstable. The other replayed surprising frames more often, which at best described a run. Neither replaced the baseline.',
         status: 'historical_reported',
       },
       {
         step: '03',
-        title: 'A deterministic pixel controller under Contract v3',
-        body: 'Detect the ball and paddle, estimate velocity, predict the paddle-plane intercept with wall reflections, and close the loop on observed paddle position. The PR #26 control law (50ee352) scored {{metric:rgb_controller_pr26_mean_score}} and never finished the first wall (max {{metric:rgb_controller_pr26_max_score}} < 432), so its {{metric:rgb_controller_pr26_canonical_clear_detections}} clears were a correct measurement. #68 added a velocity anchor and an early paddle release. At HEAD a8445df, under native ALE and the official {{seeds:rgb_controller_a8445df_mean_score}} seeds, it scores {{metric:rgb_controller_a8445df_mean_score}} with {{metric:rgb_controller_a8445df_canonical_clear_detections}} canonical clear detections, at about {{metric:rgb_controller_a8445df_latency_ms_mean}} ms per frame.',
+        title: 'Second rulebook: aim the paddle instead of learning the score',
+        body: 'This one does not learn. It finds the ball and the paddle, estimates the ball’s speed, folds in the wall bounces to predict where the ball meets the paddle plane, and corrects with the paddle it actually sees. The earlier version of this rule (PR #26, 50ee352) averaged {{metric:rgb_controller_pr26_mean_score}} with a best of {{metric:rgb_controller_pr26_max_score}}, never finishing the first wall, so the {{metric:rgb_controller_pr26_canonical_clear_detections}} recorded there was measured correctly rather than missed. #68 added a velocity anchor and released the paddle early; at a8445df on native ALE with the official {{seeds:rgb_controller_a8445df_mean_score}} seeds it averages {{metric:rgb_controller_a8445df_mean_score}}, clears both walls {{metric:rgb_controller_a8445df_canonical_clear_detections}} times, and decides in about {{metric:rgb_controller_a8445df_latency_ms_mean}} ms per frame.',
         status: 'verified',
       },
       {
         step: '04',
-        title: 'A frozen vision model as a side experiment',
-        body: 'A {{metric:laya_parameter_count}}-parameter SmolVLM-based checkpoint, already exposed to some Breakout expert data, was tested as a frozen policy. The latency work is real; the gameplay evidence is not complete.',
+        title: 'A side experiment: a frozen vision model',
+        body: 'A {{metric:laya_parameter_count}}-parameter SmolVLM-based checkpoint was frozen and asked to pick actions. It had already seen some Breakout expert play, so this is not a “works without ever seeing the game” result. The speed work is real; the gameplay evidence is not complete.',
         status: 'missing_raw_artifacts',
       },
     ],
@@ -152,9 +152,9 @@ export const enCopy: CaseStudyCopy = {
   results: {
     index: '03',
     kicker: 'RESULTS AT A GLANCE',
-    title: 'Every number carries its contract and its evidence status.',
+    title: 'What conditions was each of these numbers measured under?',
     intro:
-      'The table is generated from <a href="/final-results/summary.json">summary.json</a>. The page does not keep a second hand-typed copy of these values. “Historical reported” means the raw run is not in <code>main</code>; it does not mean the number was reproduced here.',
+      'The table is built from <a href="/final-results/summary.json">summary.json</a>; the page keeps no second hand-typed copy. “Historical reported” means the raw run is not in <code>main</code>, not that the number was reproduced here.',
     headers: {
       metric: 'Metric',
       value: 'Value',
@@ -166,9 +166,9 @@ export const enCopy: CaseStudyCopy = {
   fairness: {
     index: '04',
     kicker: 'CONTRACTS AND FAIRNESS',
-    title: 'The two scores answer different questions.',
+    title: 'Can scores from two rulebooks be compared?',
     intro:
-      'Contract v2 gives the policy one decision per {{contract:v2.frame_skip}} emulator frames. Contract v3 gives it one decision per frame. Both keep the same {{contract:v2.max_num_frames_per_episode}}-frame ALE episode limit, but the agent-step budgets are {{contract:v2.agent_step_limit}} and {{contract:v3.agent_step_limit}}. A raw-score comparison across them is descriptive, not a ranking.',
+      'The two rulebooks differ mainly in how often a decision is allowed: the older one (v2) decides once every {{contract:v2.frame_skip}} frames, the newer one (v3) decides on every frame. Both cap an episode at {{contract:v2.max_num_frames_per_episode}} frames, but allow {{contract:v2.agent_step_limit}} and {{contract:v3.agent_step_limit}} decisions respectively. Comparing raw scores across them describes two situations; it does not rank them.',
     headers: {
       property: 'Property',
       v2: 'Contract v2',
@@ -196,48 +196,52 @@ export const enCopy: CaseStudyCopy = {
       no: 'no',
     },
     comparisonNote:
-      'DQN v2 holdout vs RGB predictive controller (v3): not directly comparable. Contract v2 makes one decision per {{contract:v2.frame_skip}} emulator frames; v3 makes one per emulator frame. The evaluation seed roles and episode sets also differ. The raw scores are descriptive, not a fair ranking or a method win.',
+      'The DQN holdout and the pixel controller are not directly comparable. The older rule decides once every {{contract:v2.frame_skip}} frames and the newer one decides on every frame, and the seeds and episode sets play different roles. The raw scores describe what happened; they are not a fair ranking and not a win for either method.',
     comparisonFallback:
-      'Cross-contract comparison is not directly comparable because the decision cadence differs.',
+      'The two rulebooks decide at different rates, so a cross-rulebook comparison is not directly comparable.',
     notes: [
-      '<strong>One same-contract comparison exists.</strong> Under Contract v3 the DQN baseline (seed 11, 2M frames) scored {{metric:dqn_v3_2m_mean_score}} with {{metric:dqn_v3_2m_clears}} clears; the controller scored {{metric:rgb_controller_a8445df_mean_score}} with {{metric:rgb_controller_a8445df_canonical_clear_detections}} canonical clear detections. One DQN training seed with no raw episodes in main is not a fair-winner claim.',
-      '<strong>No method ranking from raw score.</strong> A higher score under one cadence does not establish a better method under another.',
-      '<strong>No post-hoc promotion.</strong> A matched comparison would have to be predeclared before looking at its results.',
+      '<strong>Only one comparison shares a rulebook.</strong> Under the newer rules the DQN baseline, one seed at two million frames, averaged {{metric:dqn_v3_2m_mean_score}} with {{metric:dqn_v3_2m_clears}} clears; the controller averaged {{metric:rgb_controller_a8445df_mean_score}} with {{metric:rgb_controller_a8445df_canonical_clear_detections}} clear detections. One training seed and no raw episodes in main is not a fair-winner claim.',
+      '<strong>No ranking from raw scores.</strong> A higher score at one decision rate does not make a method better at another.',
+      '<strong>No promotion after the fact.</strong> A matched comparison has to be agreed before anyone sees its results.',
     ],
   },
   laya: {
     index: '05',
     kicker: 'SIDE EXPERIMENT',
-    title: 'Laya Vision: real latency, a measured gameplay session, no complete evaluation.',
+    title: 'Can the Laya vision model actually play?',
     paragraphs: [
       {
-        lead: 'Motivation.',
-        body: 'Test whether a small, frozen, non-generative vision decision model can choose legal Breakout actions from pixels at a practical inference cost.',
+        lead: 'Why try it?',
+        body: 'Whether a small, frozen, non-generative vision model can pick legal Breakout actions straight from the screen, and be fast enough to use.',
       },
       {
-        lead: 'Frozen hypothesis.',
-        body: 'A {{metric:laya_parameter_count}}-parameter SmolVLM-based checkpoint can act as a frozen policy without project-specific training. It was already trained on some Breakout expert-action data, so this is <em>not</em> a zero-shot claim.',
+        lead: 'What is the assumption?',
+        body: 'A {{metric:laya_parameter_count}}-parameter SmolVLM-based checkpoint acts as a fixed policy, with no training for this project. It had already seen some Breakout expert play, so this is <em>not</em> a “plays without ever seeing the game” claim.',
       },
       {
-        lead: 'What was measured.',
-        body: 'Warm decision latency, a bounded control diagnostic, and a live browser session. Warm p50 was {{metric:laya_warm_latency_p50_ms}} ms on one fixed RGB fixture; the optimized local proxy p50 was {{metric:laya_optimized_proxy_p50_ms}} ms across repeated rounds. Immediate reversal commands went from {{metric:laya_control_diagnostic_raw_reversals}} to {{metric:laya_control_diagnostic_reversals}} in a {{seeds:laya_control_diagnostic_reversals}}-seed control diagnostic. In the browser session the Decision Model scored {{metric:laya_browser_session_score}} and lost every life after {{metric:laya_browser_session_played_s}} s of play, presenting {{metric:laya_browser_presented_fps}} frames per second.',
+        lead: 'What was measured?',
+        body: 'Warm decision latency, a bounded control diagnostic, and one live browser session. On a single fixed frame the warm median was {{metric:laya_warm_latency_p50_ms}} ms; the optimized local proxy came in at {{metric:laya_optimized_proxy_p50_ms}} ms across repeated rounds. In a {{seeds:laya_control_diagnostic_reversals}}-seed diagnostic, immediate reversals dropped from {{metric:laya_control_diagnostic_raw_reversals}} to {{metric:laya_control_diagnostic_reversals}}.',
       },
       {
-        lead: 'What is still not measured.',
-        body: 'No complete evaluator episode, per-episode artifact, or clear exists, so the browser session is not comparable with evaluated episodes. Latency does not imply gameplay quality.',
+        lead: 'How did the browser session go?',
+        body: 'It scored {{metric:laya_browser_session_score}}, ran out of lives after {{metric:laya_browser_session_played_s}} s, and presented {{metric:laya_browser_presented_fps}} frames per second. That was a real session, not an evaluated episode.',
+      },
+      {
+        lead: 'What is still missing?',
+        body: 'No complete evaluated episode, no per-episode record, and no clear, so that browser session cannot be compared with evaluated episodes. Fast is not the same as good.',
       },
     ],
     callout:
-      '<strong>Decision:</strong> keep Laya as a research lead. Draft PR #74 stays draft until a complete evaluated episode exists. #70–#72 stay open.',
+      '<strong>Decision:</strong> Laya stays a research lead. Draft PR #74 stays a draft until a complete evaluated episode exists, and #70–#72 stay open.',
     aside: {
       ariaLabel: 'Laya evidence summary',
       heading: 'Laya at freeze time',
       facts: [
-        { label: 'Complete episodes', value: '{{metric:laya_complete_episodes}}', unit: 'complete episodes' },
-        { label: 'Warm p50', value: '{{metric:laya_warm_latency_p50_ms}}', unit: 'ms/decision' },
-        { label: 'Optimized proxy p50', value: '{{metric:laya_optimized_proxy_p50_ms}}', unit: 'ms/request' },
+        { label: 'Episodes played to the end', value: '{{metric:laya_complete_episodes}}', unit: 'complete episodes' },
+        { label: 'Warm median', value: '{{metric:laya_warm_latency_p50_ms}}', unit: 'ms/decision' },
+        { label: 'Optimized proxy median', value: '{{metric:laya_optimized_proxy_p50_ms}}', unit: 'ms/request' },
         {
-          label: 'Reversals, raw → braked',
+          label: 'Immediate reversals, raw → braked',
           value:
             '{{metric:laya_control_diagnostic_raw_reversals}} → {{metric:laya_control_diagnostic_reversals}}',
         },
@@ -250,27 +254,27 @@ export const enCopy: CaseStudyCopy = {
   negative: {
     index: '06',
     kicker: 'FAILURES AND NEGATIVE RESULTS',
-    title: 'The experiments that did not promote are part of the result.',
+    title: 'Do failed experiments count as results?',
     cards: [
       {
         kicker: 'REWARD SHAPING · ISSUE #9',
         value: '{{metric:reward_shaping_mean_effect}}',
         unit: 'mean effect',
-        body: '95% interval {{metric:reward_shaping_ci_low}} to {{metric:reward_shaping_ci_high}}. {{metric:reward_shaping_positive_training_seeds}} of {{seeds:reward_shaping_mean_effect}} training seeds were positive. The promotion gate did not pass, so the longer comparison was not run.',
+        body: 'The 95% interval ran from {{metric:reward_shaping_ci_low}} to {{metric:reward_shaping_ci_high}}, and {{metric:reward_shaping_positive_training_seeds}} of {{seeds:reward_shaping_mean_effect}} training seeds came out positive. It missed the bar for adoption, so the longer comparison was never run.',
         status: 'historical_reported',
       },
       {
         kicker: 'PRIORITIZED REPLAY · ISSUE #12',
         value: '{{metric:per_500k_mean_score}}',
         unit: 'PER mean at checkpoint',
-        body: 'Uniform replay was {{metric:uniform_500k_mean_score}} at the same milestone. PER cost {{metric:per_training_time_ratio}}× training time. With {{seeds:per_500k_mean_score}} seeds, this is descriptive, not statistical superiority.',
+        body: 'Uniform replay sat at {{metric:uniform_500k_mean_score}} at the same milestone. Prioritized replay cost {{metric:per_training_time_ratio}}× the training time. With {{seeds:per_500k_mean_score}} seeds this describes a run; it does not show a statistical edge.',
         status: 'historical_reported',
       },
       {
         kicker: 'FIRST-CLEAR PROBES · #41, #43, #45, #48–#61',
         value: '0',
-        unit: 'canonical clear detections',
-        body: 'The frozen DQN probes ended without a canonical clear detection. Several were explicitly INCONCLUSIVE or BLOCKED_ENVIRONMENT. They identify failure modes; they do not prove that a method cannot clear.',
+        unit: 'clears counted by code',
+        body: 'The frozen DQN probes never produced a single clear of both walls. Several were marked INCONCLUSIVE or BLOCKED_ENVIRONMENT outright, meaning no verdict or a stuck environment. They point at failure modes; they do not prove a method can never clear.',
         status: 'historical_reported',
       },
     ],
@@ -278,9 +282,9 @@ export const enCopy: CaseStudyCopy = {
   ledger: {
     index: '07',
     kicker: 'PUBLIC EVIDENCE',
-    title: 'The ledger, not the highlight reel.',
+    title: 'What can you check besides the video?',
     intro:
-      'Every experiment family in the closeout, with its status and source. Titles, headlines, and notes are quoted verbatim from <code>summary.json</code> in the original language; the CSV and JSON are the machine-readable versions of this page.',
+      'Every experiment family in the closeout, with its status and source. Titles, headlines, and notes are quoted from <code>summary.json</code> in their original language so translation cannot shift a number; the CSV and JSON are the machine-readable version of this page.',
     downloads: [
       { href: `${GITHUB}/blob/main/docs/final-results/evidence-inventory.csv`, label: 'evidence-inventory.csv' },
       { href: `${GITHUB}/blob/main/docs/final-results/README.md`, label: 'Full results index' },
@@ -289,8 +293,8 @@ export const enCopy: CaseStudyCopy = {
   },
   cta: {
     kicker: 'DEMO + SOURCE',
-    title: 'Play the current build, then inspect the evidence behind it.',
-    body: 'The demo runs ALE WASM entirely in the browser: the ONNX DQN policy on Easy to Hard, and the pixel controller on “Unbeatable”. “Unbeatable” is a UI difficulty label: it injects no deliberate mistakes. It is not a claim that the controller cannot lose; most audited browser episodes still end before both walls are cleared.',
+    title: 'Want to play a round before you trust the numbers?',
+    body: 'The demo runs the whole game in the browser: Easy through Hard are the trained ONNX DQN, and “Unbeatable” is the screen-only controller. “Unbeatable” is a label on the difficulty menu, not a promise: it injects no deliberate mistakes, and it does not mean the controller cannot lose. Most audited browser episodes still ended before both walls came down.',
     playCta: 'Play the demo',
     githubCta: 'GitHub repository',
   },

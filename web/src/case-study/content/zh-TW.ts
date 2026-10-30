@@ -22,9 +22,9 @@ export const zhTwCopy: CaseStudyCopy = {
   hero: {
     eyebrow: '凍結證據 ·',
     titleLead: '打磚塊，',
-    titleTail: '真的非得靠訓練嗎？',
-    lede: '從 DQN 家族，到可解釋的像素追蹤器與預測控制器。不經訓練，控制器已經能在部分官方評測契約 v3 回合裡打掉兩面磚牆——以 canonical clear detection 計算，不是用眼睛看。',
-    hook: '這是一個端到端強化學習工程專案的證據式收官。真正有意思的不是高分，而是：當控制契約一改，答案會變多少；以及在說一款遊戲「被解掉」之前，你得有多小心。',
+    titleTail: '非學不可嗎？',
+    lede: '一個完全不訓練的程式，只讀畫面就能算出球會飛到哪裡，再把球拍移過去。在官方回合裡，它已經不只一次把兩面牆都打穿——這個判定是程式做的，不是人用眼睛看的。',
+    hook: '整個專案其實只在追一個問題：這款遊戲有多少部分，真的需要一個會學習的模型？比高分更值得看的，是規則一換，答案會跟著變多少。',
     playCta: '開始試玩',
     evidenceCta: '查看證據',
     summaryLoading: '正在載入機器可讀的摘要…',
@@ -54,49 +54,50 @@ export const zhTwCopy: CaseStudyCopy = {
       not_yet_evaluated: '尚未評估',
     },
     descriptions: {
-      verified: '已對照倉庫裡的產物，或可用同一道指令重跑。',
-      historical_reported: '來自已合併的 PR、issue 或封存文章；原始執行輸出不在 main。',
-      missing_raw_artifacts: '有文字描述，但稽核所需的原始回合、日誌或權重已無法取得。',
-      not_yet_evaluated: '這項說法還沒有任何完成的評估。',
+      verified: '對照過倉庫裡的檔案，或可以用同一道指令重跑一次。',
+      historical_reported: '出自已合併的 PR、issue 或封存文章；當時的執行輸出不在 main 上。',
+      missing_raw_artifacts: '有文字說明，但要重新查核所需的原始回合、日誌或權重已經拿不到。',
+      not_yet_evaluated: '這項說法還沒有任何做完的評估。',
     },
   },
   metricCards: [
     {
       metricId: 'rgb_controller_a8445df_canonical_clear_detections',
-      label: 'Canonical clear detection 次數',
-      note: '像素控制器在 {{seeds:rgb_controller_a8445df_canonical_clear_detections}} 局官方回合中打到 {{metric:clear_score_threshold}} 分的次數：native ALE、評測契約 v3、HEAD a8445df。偵測器 fail-closed；未做 artifact provenance 驗證。',
+      label: '打穿兩面牆的回合數',
+      note: '{{seeds:rgb_controller_a8445df_canonical_clear_detections}} 局官方回合裡有 {{metric:rgb_controller_a8445df_canonical_clear_detections}} 局清空兩面磚牆，也就是拿到 {{metric:clear_score_threshold}} 分。回合在 native ALE、每格都決定的那套規則（v3）、程式版本 a8445df 下跑。判定方式是程式去讀遊戲記憶體裡的計分板，不是用眼睛看；讀不出來就記「未知」，不會記成 0。這個判定沒有再往上追每一局的原始紀錄，所以不宣稱超過程式判定的通關。',
     },
     {
       metricId: 'rgb_controller_a8445df_mean_score',
-      label: 'RGB 控制器平均（a8445df）',
-      note: '不需訓練，評測契約 v3。舊的 PR #26 控制律（50ee352）是 {{metric:rgb_controller_pr26_mean_score}}，最高 {{metric:rgb_controller_pr26_max_score}}，連第一面牆的 432 分都沒到。',
+      label: '只看畫面的控制器，平均得分',
+      note: '這條路完全不用訓練。舊版規則（PR #26，50ee352）平均 {{metric:rgb_controller_pr26_mean_score}} 分、最高 {{metric:rgb_controller_pr26_max_score}} 分，連第一面牆要的 432 分都不到。',
     },
     {
       metricId: 'dqn_v3_2m_mean_score',
-      label: 'DQN 平均（同一份契約 v3）',
-      note: 'Dueling Double DQN，種子 11、2M 影格：{{metric:dqn_v3_2m_clears}} 次通關。瀏覽器 DQN 的保留集平均 {{metric:dqn_final_holdout_mean}} 屬於契約 v2，不能直接比較。',
+      label: '會學習的模型，同一套規則下的平均',
+      note: 'Dueling Double DQN 是會自己學的版本：只練一個種子、兩百萬格畫面，{{metric:dqn_v3_2m_clears}} 次清空兩面牆。瀏覽器上那個 DQN 的 {{metric:dqn_final_holdout_mean}} 分用的是舊規則（v2），不能直接拿來比。',
     },
     {
       metricId: 'laya_complete_episodes',
-      label: 'Laya 完整回合',
-      note: '凍結的 {{metric:laya_parameter_count}} 參數視覺模型；量到的是延遲，遊戲並沒有打完。',
+      label: 'Laya 打完的完整回合',
+      note: '一個凍結不動的 {{metric:laya_parameter_count}} 參數視覺模型。這次只量到反應速度，遊戲並沒有打完。',
     },
   ],
   metricsAria: '主要成果',
   readingKey: {
     ariaLabel: '證據狀態怎麼讀',
-    title: '每一條說法都要這樣讀',
+    title: '這個數字是誰驗的？',
   },
   problem: {
     index: '01',
     kicker: '問題',
-    title: '打磚塊表面上是分數，本質上是控制問題。',
+    title: '打磚塊到底難在哪裡？',
     paragraphs: [
-      '球和球拍在畫面上可以清楚分開。兩次碰撞之間，運動接近分段線性，控制器每次看到畫面都能重新規劃。所以打磚塊很適合拿來問一個簡單問題：這個任務到底有多少部分真的需要學習式策略？',
-      '麻煩的是環境契約。影格跳躍、黏性動作、FIRE 處理、失去生命怎麼算、回合上限，每一個都會改變控制問題。沒有契約的分數不是成果，只是一個等著被補註腳的數字。',
+      '球和球拍在畫面上是分開的兩團顏色，兩次碰撞之間也幾乎走直線，所以每次看到畫面都能重算一次。這讓打磚塊很適合問一個問題：這款遊戲有多少部分，真的需要一個會學習的模型？',
+      '麻煩的是規則。遊戲每走幾格才決定一次動作、動作會不會被沿用、發球鍵誰按、掉命算不算結束、一局最多幾格，每一項都會改變題目。',
+      '所以一個分數如果沒說清楚用哪套規則，就只是等著被補註腳的數字，不能算成果。',
     ],
     callout:
-      '<strong>通關條件寫得很清楚。</strong>在 ALE/Breakout-v5 單人 Game 1 打掉兩面磚牆。經稽核的上限是 {{metric:clear_score_threshold}} 分，讀自 ALE RAM 裡的 ROM 計分板，並與原始獎勵交叉比對。回合結束不代表通關。偵測器是 fail-closed：執行環境不符、或 RAM 與獎勵不一致時，狀態是 unknown，絕不記成 0。它已在真實的契約 v2 與 v3 ALE 通關軌跡上驗證過，6 個偵測器 mutant 全部被抓到。',
+      '<strong>什麼算「打穿兩面牆」？</strong>在 ALE/Breakout-v5 單人 Game 1 把兩面磚牆清空，滿分是 {{metric:clear_score_threshold}} 分。這個分數是從遊戲記憶體裡的計分板讀出來的，再跟遊戲給的獎勵對過一次；回合結束不代表打穿。判斷程式遇到不認識的環境、或兩個來源對不上時，會直接標成「未知」，不會偷偷記成 0。它拿真實打穿兩面牆的回合驗證過，也故意弄壞六個地方，六個都被抓到。',
     diagramAria: '兩條決策流程對照',
     diagrams: [
       {
@@ -115,30 +116,30 @@ export const zhTwCopy: CaseStudyCopy = {
   method: {
     index: '02',
     kicker: '方法演進',
-    title: '先把基線做出來，再拿掉沒賺回成本的零件。',
+    title: '先做一個能比的基準，再一項一項拿掉，最後剩下什麼？',
     items: [
       {
         step: '01',
-        title: '評測契約 v2 下的 DQN 家族',
-        body: 'DQN → Double DQN → Dueling Double DQN。家族篩選在早期檢查點就選定 Dueling Double DQN，之後一路沿用。最終策略總共訓練了 {{metric:dqn_training_transitions}} 次轉移。',
+        title: '第一版規則下，讓模型自己學',
+        body: 'DQN 的做法是只看畫面，自己學會每個動作大概值多少分。三種變體試下來，早期檢查點就選定 Dueling Double DQN，之後沒再換，總共練了 {{metric:dqn_training_transitions}} 次轉移。第一版規則每 {{contract:v2.frame_skip}} 格畫面才決定一次動作。',
         status: 'historical_reported',
       },
       {
         step: '02',
-        title: '沒有被採用的對照實驗',
-        body: '失去生命的獎勵塑形給出正向但不穩定的點估計；優先經驗回放最多只能算描述性結果。兩者都沒有取代基線。這些是結果，不是註腳。',
+        title: '試過、但沒有採用的兩條路',
+        body: '一條是掉命時多扣分，希望模型學會別漏球；方向對，但結果不穩定。另一條是優先回放，讓模型多練那些出乎意料的畫面；結果最多只能算描述性。兩條都沒有取代原本的做法。',
         status: 'historical_reported',
       },
       {
         step: '03',
-        title: '評測契約 v3 下的決定性像素控制器',
-        body: '偵測球與球拍、估計速度、把牆面反射算進去預測球拍平面上的攔截點，再用實際觀測到的球拍位置閉環修正。PR #26 的控制律（50ee352）平均 {{metric:rgb_controller_pr26_mean_score}}，最高 {{metric:rgb_controller_pr26_max_score}}，連第一面牆（432 分）都沒打完，所以那 {{metric:rgb_controller_pr26_canonical_clear_detections}} 次通關是正確的量測。#68 加入速度錨點與接球前提早放開球拍。在 HEAD a8445df、native ALE、官方 {{seeds:rgb_controller_a8445df_mean_score}} 組種子下，平均 {{metric:rgb_controller_a8445df_mean_score}}，canonical clear detection {{metric:rgb_controller_a8445df_canonical_clear_detections}} 次，每幀約 {{metric:rgb_controller_a8445df_latency_ms_mean}} 毫秒。',
+        title: '第二版規則：不學分數，直接把球拍算到球下面',
+        body: '這次完全不學：從畫面找出球和球拍、估出球速，把牆面反彈算進去，預測球會飛到球拍平面的哪裡，再用實際看到的球拍位置修正。舊版這條規則（PR #26，50ee352）平均 {{metric:rgb_controller_pr26_mean_score}} 分、最高 {{metric:rgb_controller_pr26_max_score}} 分，連第一面牆都打不完，所以當時記到的 {{metric:rgb_controller_pr26_canonical_clear_detections}} 次是量對的，不是漏判。#68 補上速度錨點、並讓球拍在接到球前先放開；在 a8445df、native ALE、{{seeds:rgb_controller_a8445df_mean_score}} 組官方種子下，平均 {{metric:rgb_controller_a8445df_mean_score}} 分，{{metric:rgb_controller_a8445df_canonical_clear_detections}} 次打穿兩面牆，每格約 {{metric:rgb_controller_a8445df_latency_ms_mean}} 毫秒。',
         status: 'verified',
       },
       {
         step: '04',
-        title: '凍結視覺模型：一項支線實驗',
-        body: '一個以 SmolVLM 為基礎、{{metric:laya_parameter_count}} 參數的檢查點，先前已看過一些 Breakout 專家動作資料，這次被當成凍結策略來測試。延遲的部分是真的；遊戲證據則不完整。',
+        title: '支線：拿一個凍結的視覺模型來試',
+        body: '把一個以 SmolVLM 為底、{{metric:laya_parameter_count}} 參數的模型凍結起來，直接叫它選動作。它先前看過一些 Breakout 專家操作，所以不算「沒看過也能玩」。速度的部分是真的，遊戲的證據還不完整。',
         status: 'missing_raw_artifacts',
       },
     ],
@@ -146,9 +147,9 @@ export const zhTwCopy: CaseStudyCopy = {
   results: {
     index: '03',
     kicker: '成果速覽',
-    title: '每個數字都帶著它的契約與證據狀態。',
+    title: '這些數字，各自是在什麼條件下量到的？',
     intro:
-      '表格由 <a href="/final-results/summary.json">summary.json</a> 產生，頁面不另外手抄一份數值。「歷史紀錄」表示原始執行輸出不在 <code>main</code>，不代表這個數字在這裡被重現過。',
+      '表格由 <a href="/final-results/summary.json">summary.json</a> 直接產生，頁面沒有另外手抄一份。標成「歷史紀錄」表示當時的執行輸出不在 <code>main</code> 上，不代表這個數字在這裡重跑過。',
     headers: {
       metric: '指標',
       value: '數值',
@@ -174,9 +175,9 @@ export const zhTwCopy: CaseStudyCopy = {
   fairness: {
     index: '04',
     kicker: '評測契約與公平性',
-    title: '兩個分數，回答的是不同問題。',
+    title: '兩套規則下的分數，可以放在一起比嗎？',
     intro:
-      '評測契約 v2 讓策略每 {{contract:v2.frame_skip}} 個模擬器影格做一次決策，v3 則是每個影格一次。兩者沿用相同的 {{contract:v2.max_num_frames_per_episode}} 影格 ALE 回合上限，但代理步數預算分別是 {{contract:v2.agent_step_limit}} 與 {{contract:v3.agent_step_limit}}。跨契約直接比原始分數只能描述現象，不是排名。',
+      '兩套規則最大的差別是「多久決定一次動作」：舊的（v2）每 {{contract:v2.frame_skip}} 格畫面才決定一次，新的（v3）每一格都決定一次。一局最多幾格，兩邊一樣，都是 {{contract:v2.max_num_frames_per_episode}} 格，但能做的決定次數分別是 {{contract:v2.agent_step_limit}} 與 {{contract:v3.agent_step_limit}}。所以跨規則直接比原始分數，只能描述現象，不能排名。',
     headers: {
       property: '項目',
       v2: '評測契約 v2',
@@ -204,47 +205,51 @@ export const zhTwCopy: CaseStudyCopy = {
       no: '否',
     },
     comparisonNote:
-      'DQN 的 v2 保留集與 RGB 預測控制器（v3）不能直接比較。評測契約 v2 每 {{contract:v2.frame_skip}} 個模擬器影格才做一次決策，v3 每個影格都做一次；評估種子的角色與回合集合也不同。原始分數只能描述現象，不能當作公平排名，也不能當作方法勝負。',
-    comparisonFallback: '兩份評測契約的決策頻率不同，跨契約比較不能直接視為可比。',
+      'DQN 的舊規則分數和只看畫面的控制器不能直接比。舊規則每 {{contract:v2.frame_skip}} 格畫面才決定一次，新規則每一格都決定，種子的用途和回合集合也不一樣。所以原始分數只能描述現象，不能當公平排名，也不能當成誰贏了。',
+    comparisonFallback: '兩套規則決定動作的頻率不同，跨規則比較不能直接當成可比。',
     notes: [
-      '<strong>同一份契約下的比較只有一組。</strong>在評測契約 v3 下，DQN 基線（種子 11、2M 影格）平均 {{metric:dqn_v3_2m_mean_score}}、通關 {{metric:dqn_v3_2m_clears}} 次；控制器平均 {{metric:rgb_controller_a8445df_mean_score}}、canonical clear detection {{metric:rgb_controller_a8445df_canonical_clear_detections}} 次。DQN 只有一個訓練種子、原始回合也不在 main，因此不宣稱公平勝出。',
-      '<strong>不用原始分數替方法排名。</strong>在某一種決策頻率下分數較高，不代表換一種頻率後方法更好。',
-      '<strong>不做事後升格。</strong>真正匹配的比較，必須在看到結果之前就先講好。',
+      '<strong>同一套規則下，只有一組能比。</strong>新規則下，DQN 只練一個種子、兩百萬格畫面，平均 {{metric:dqn_v3_2m_mean_score}} 分、{{metric:dqn_v3_2m_clears}} 次打穿；控制器平均 {{metric:rgb_controller_a8445df_mean_score}} 分、{{metric:rgb_controller_a8445df_canonical_clear_detections}} 次打穿。DQN 只有一個訓練種子，原始回合也不在 main，所以不宣稱誰公平勝出。',
+      '<strong>不拿原始分數替方法排名。</strong>在一種決定頻率下分數高，不代表換一種頻率還是一樣好。',
+      '<strong>不做事後改判。</strong>真正公平的比較，要在看到結果之前就講好要比什麼。',
     ],
   },
   laya: {
     index: '05',
     kicker: '支線實驗',
-    title: 'Laya Vision：延遲量到了，遊戲也真的跑過，但還沒有完整評估。',
+    title: 'Laya 這個視覺模型，真的能玩嗎？',
     paragraphs: [
       {
-        lead: '動機。',
-        body: '測試一個小型、凍結、非生成式的視覺決策模型，能不能用可接受的推論成本，直接從像素選出合法的 Breakout 動作。',
+        lead: '為什麼試這個？',
+        body: '想知道一個小型、凍結、不生成文字的視覺模型，能不能直接用畫面選出合法的動作，而且快到能實際使用。',
       },
       {
-        lead: '凍結假設。',
-        body: '一個以 SmolVLM 為基礎、{{metric:laya_parameter_count}} 參數的檢查點，可以在不做專案專屬訓練的情況下當成凍結策略。它先前已經學過一些 Breakout 專家動作資料，所以這<em>不是</em>零樣本宣稱。',
+        lead: '假設是什麼？',
+        body: '一個以 SmolVLM 為底、{{metric:laya_parameter_count}} 參數的模型，不對這個專案另外訓練，直接當成固定策略來用。它先前已經看過一些 Breakout 專家操作，所以這<em>不是</em>「沒看過也能玩」。',
       },
       {
-        lead: '量到了什麼。',
-        body: '暖機後的決策延遲、一個有界線的控制診斷，以及一次實際的瀏覽器工作階段。暖機 p50 在單一固定 RGB fixture 上是 {{metric:laya_warm_latency_p50_ms}} 毫秒；最佳化後的本機代理 p50 在多輪測試中是 {{metric:laya_optimized_proxy_p50_ms}} 毫秒。在 {{seeds:laya_control_diagnostic_reversals}} 組種子的控制診斷裡，立即反轉指令從 {{metric:laya_control_diagnostic_raw_reversals}} 次降到 {{metric:laya_control_diagnostic_reversals}} 次。瀏覽器工作階段中，決策模型拿到 {{metric:laya_browser_session_score}} 分，並在遊玩 {{metric:laya_browser_session_played_s}} 秒後失去所有生命，畫面呈現 {{metric:laya_browser_presented_fps}} fps。',
+        lead: '量到什麼？',
+        body: '暖機後每次決定的延遲、一個有上限的控制診斷，還有一次真的在瀏覽器裡玩的紀錄。單一張固定畫面上，暖機後中位數是 {{metric:laya_warm_latency_p50_ms}} 毫秒；本機最佳化過的代理，多輪測試中位數是 {{metric:laya_optimized_proxy_p50_ms}} 毫秒。{{seeds:laya_control_diagnostic_reversals}} 組種子的控制診斷裡，立刻反向的指令從 {{metric:laya_control_diagnostic_raw_reversals}} 次降到 {{metric:laya_control_diagnostic_reversals}} 次。',
       },
       {
-        lead: '還沒量到什麼。',
-        body: '沒有完整評估回合、逐回合原始產物，也沒有通關，所以這次瀏覽器工作階段不能和已評估的回合相比。延遲不代表遊戲品質。',
+        lead: '瀏覽器裡跑起來如何？',
+        body: '那次拿了 {{metric:laya_browser_session_score}} 分，玩了 {{metric:laya_browser_session_played_s}} 秒後生命耗盡，畫面每秒 {{metric:laya_browser_presented_fps}} 格。這是一次真實的工作階段，不是評估回合。',
+      },
+      {
+        lead: '還缺什麼？',
+        body: '沒有完整評估回合、沒有逐回合原始紀錄，也沒有打穿兩面牆，所以那次瀏覽器紀錄不能跟已評估的回合相比。延遲快，不代表玩得好。',
       },
     ],
     callout:
-      '<strong>決定：</strong>Laya 保留為研究方向。在出現一個完整評估回合之前，PR #74 維持草稿；#70–#72 繼續開著。',
+      '<strong>決定：</strong>Laya 保留當研究方向。在出現一個完整評估回合之前，PR #74 維持草稿，#70–#72 繼續開著。',
     aside: {
       ariaLabel: 'Laya 證據摘要',
       heading: '凍結當下的 Laya',
       facts: [
-        { label: '完整回合', value: '{{metric:laya_complete_episodes}}', unit: '個完整回合' },
-        { label: '暖機 p50', value: '{{metric:laya_warm_latency_p50_ms}}', unit: '毫秒／次決策' },
-        { label: '最佳化代理 p50', value: '{{metric:laya_optimized_proxy_p50_ms}}', unit: '毫秒／次請求' },
+        { label: '打完的完整回合', value: '{{metric:laya_complete_episodes}}', unit: '個完整回合' },
+        { label: '暖機後中位數', value: '{{metric:laya_warm_latency_p50_ms}}', unit: '毫秒／次決策' },
+        { label: '最佳化代理中位數', value: '{{metric:laya_optimized_proxy_p50_ms}}', unit: '毫秒／次請求' },
         {
-          label: '反轉次數，原始 → 煞車後',
+          label: '立刻反向次數（原始 → 煞車後）',
           value:
             '{{metric:laya_control_diagnostic_raw_reversals}} → {{metric:laya_control_diagnostic_reversals}}',
         },
@@ -257,27 +262,27 @@ export const zhTwCopy: CaseStudyCopy = {
   negative: {
     index: '06',
     kicker: '失敗與負面結果',
-    title: '沒有被採用的實驗，也是成果的一部分。',
+    title: '失敗的實驗，算不算成果？',
     cards: [
       {
         kicker: '獎勵塑形 · ISSUE #9',
         value: '{{metric:reward_shaping_mean_effect}}',
         unit: '平均效果',
-        body: '95% 區間為 {{metric:reward_shaping_ci_low}} 到 {{metric:reward_shaping_ci_high}}。{{seeds:reward_shaping_mean_effect}} 個訓練種子中有 {{metric:reward_shaping_positive_training_seeds}} 個為正。採用門檻沒有通過，因此沒有再跑更長的比較。',
+        body: '95% 區間是 {{metric:reward_shaping_ci_low}} 到 {{metric:reward_shaping_ci_high}}；{{seeds:reward_shaping_mean_effect}} 組訓練種子裡有 {{metric:reward_shaping_positive_training_seeds}} 組是正的。沒過採用門檻，所以沒有再往下跑更長的比較。',
         status: 'historical_reported',
       },
       {
         kicker: '優先經驗回放 · ISSUE #12',
         value: '{{metric:per_500k_mean_score}}',
         unit: 'PER 檢查點平均',
-        body: '同一個里程碑上，均勻回放是 {{metric:uniform_500k_mean_score}}。PER 花了 {{metric:per_training_time_ratio}} 倍的訓練時間。只有 {{seeds:per_500k_mean_score}} 組種子，這是描述性結果，不是統計上的優勢。',
+        body: '同一個進度點上，均勻回放是 {{metric:uniform_500k_mean_score}} 分。優先回放多花了 {{metric:per_training_time_ratio}} 倍的訓練時間。只有 {{seeds:per_500k_mean_score}} 組種子，這只能描述現象，算不上統計上的優勢。',
         status: 'historical_reported',
       },
       {
         kicker: '首次通關探測 · #41、#43、#45、#48–#61',
         value: '0',
-        unit: '次 canonical clear detection',
-        body: '凍結的 DQN 探測最後都沒有出現 canonical clear detection。其中幾次明確標記為 INCONCLUSIVE 或 BLOCKED_ENVIRONMENT。它們指出失敗模式，但沒有證明某個方法永遠無法通關。',
+        unit: '次由程式判定打穿',
+        body: '凍結的 DQN 一路探測，最後都沒有出現一次打穿兩面牆。其中幾次直接標成 INCONCLUSIVE 或 BLOCKED_ENVIRONMENT，也就是無法判定或環境卡住。這些結果指出失敗模式，但沒有證明某個方法永遠打不穿。',
         status: 'historical_reported',
       },
     ],
@@ -285,9 +290,9 @@ export const zhTwCopy: CaseStudyCopy = {
   ledger: {
     index: '07',
     kicker: '公開證據',
-    title: '看帳本，不看精華片段。',
+    title: '除了影片，還有什麼可以查？',
     intro:
-      '以下是收官時納入的每一個實驗家族，附上狀態與來源。標題、結論與備註直接引自 <code>summary.json</code> 原文，保留原語言以免翻譯造成數字落差；CSV 與 JSON 才是這一頁的機器可讀版本。',
+      '收官時納入的每一個實驗家族，都附上狀態和來源。標題、結論和備註是 <code>summary.json</code> 的原文，保留原語言，以免翻譯讓數字走樣；CSV 和 JSON 才是這一頁的機器可讀版本。',
     downloads: [
       { href: `${GITHUB}/blob/main/docs/final-results/evidence-inventory.csv`, label: 'evidence-inventory.csv' },
       { href: `${GITHUB}/blob/main/docs/final-results/README.md`, label: '完整成果索引' },
@@ -296,8 +301,8 @@ export const zhTwCopy: CaseStudyCopy = {
   },
   cta: {
     kicker: '展示與原始碼',
-    title: '先玩現在的版本，再回頭看它背後的證據。',
-    body: '展示頁把 ALE WASM 全部跑在瀏覽器裡：Easy 到 Hard 是 ONNX DQN 策略，「Unbeatable」是像素控制器。「Unbeatable」只是介面上的難度名稱：它不會刻意注入失誤，但也不代表控制器不會輸；稽核過的瀏覽器回合裡，多數仍在打完兩面牆之前結束。',
+    title: '想自己打一局，再回頭看證據嗎？',
+    body: '展示頁把整個遊戲跑在瀏覽器裡：Easy 到 Hard 是訓練出來的 ONNX DQN，Unbeatable 是那個只看畫面的控制器。「Unbeatable」只是難度選單上的名字，它不會故意放水，也不代表控制器不會輸；查核過的瀏覽器回合裡，多數還是在打完兩面牆之前就結束。',
     playCta: '開始試玩',
     githubCta: 'GitHub 專案',
   },
