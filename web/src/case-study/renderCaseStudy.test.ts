@@ -162,6 +162,30 @@ describe('Cross-locale parity', () => {
     expect(root.querySelector('[data-role="contract-table"] tbody')?.textContent).toContain('每 4 個影格 1 次');
   });
 
+  it('falls back to the summary text for units and seed roles the locale does not translate', () => {
+    const root = mount('zh-TW');
+    const first = summary.metrics.find((metric) => metric.id === summary.table_metric_ids[0])!;
+    const unknownUnit = 'quux per widget';
+    const unknownSeedRole = 'seeds nobody translated';
+    hydrateCaseStudy(
+      root,
+      {
+        ...summary,
+        metrics: summary.metrics.map((metric) =>
+          metric.id === first.id
+            ? { ...metric, unit: unknownUnit, seed_role: unknownSeedRole }
+            : metric,
+        ),
+      },
+      'zh-TW',
+    );
+
+    const table = root.querySelector('[data-role="results-table"]')?.textContent ?? '';
+    expect(table).toContain(unknownUnit);
+    expect(table).toContain(unknownSeedRole);
+    expect(table).not.toContain('{{');
+  });
+
   it('keeps measured values out of locale copy so both pages hydrate from summary.json', () => {
     const serialized = JSON.stringify(CASE_STUDY_COPY);
     for (const value of ['30.933', '137.47', '721.8', '6.93', '864', '2,500,000', '201M', '108,000', '27,000']) {

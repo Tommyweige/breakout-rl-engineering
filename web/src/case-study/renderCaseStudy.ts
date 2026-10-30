@@ -1,4 +1,9 @@
-import { CASE_STUDY_COPY, type CaseStudyCopy, type Locale } from './content';
+import {
+  CASE_STUDY_COPY,
+  CASE_STUDY_RESULT_LABELS,
+  type CaseStudyCopy,
+  type Locale,
+} from './content';
 
 export type VerificationStatus =
   | 'verified'
@@ -466,6 +471,14 @@ function formatContractNumber(value: number): string {
   return Number.isInteger(value) ? value.toLocaleString('en-US') : String(value);
 }
 
+function displayUnit(locale: Locale, unit: string): string {
+  return CASE_STUDY_RESULT_LABELS[locale]?.units[unit] ?? unit;
+}
+
+function displaySeedRole(locale: Locale, seedRole: string): string {
+  return CASE_STUDY_RESULT_LABELS[locale]?.seedRoles[seedRole] ?? seedRole;
+}
+
 function renderResultsTable(
   summary: FinalResultsSummary,
   copy: CaseStudyCopy,
@@ -478,7 +491,7 @@ function renderResultsTable(
       if (!metric) return '';
       const label = copy.results.metricLabels?.[id] ?? metric.label;
       const scope = metric.seed_role
-        ? `${metric.seed_count} · ${metric.seed_role}`
+        ? `${metric.seed_count} · ${displaySeedRole(locale, metric.seed_role)}`
         : String(metric.seed_count);
       return `
         <tr>
@@ -488,7 +501,7 @@ function renderResultsTable(
           </th>
           <td class="cs-table-value">
             <span data-metric-id="${escapeHtml(metric.id)}">${escapeHtml(formatMetricValue(metric, locale))}</span>
-            <small>${escapeHtml(metric.unit)}</small>
+            <small>${escapeHtml(displayUnit(locale, metric.unit))}</small>
           </td>
           <td>${escapeHtml(scope)}</td>
           <td>${statusChip(metric.verification_status, copy)}</td>

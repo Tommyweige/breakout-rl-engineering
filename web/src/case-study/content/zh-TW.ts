@@ -316,3 +316,37 @@ export const zhTwCopy: CaseStudyCopy = {
     github: 'GitHub',
   },
 };
+
+// Display-only mapping for the results table. summary.json keeps the
+// authoritative English `unit` and `seed_role` strings; these keys only decide
+// how the Chinese page shows them. A string missing here falls back to the
+// original text, so a new unit in summary.json never breaks the table.
+export interface ResultLabelOverrides {
+  units: Record<string, string>;
+  seedRoles: Record<string, string>;
+}
+
+export const zhTwResultLabelOverrides: ResultLabelOverrides = {
+  units: {
+    'canonical clear detections out of 15 episodes': '15 局中由程式判定打穿兩面牆的局數',
+    'canonical clear detections out of 120 episodes': '120 局中由程式判定打穿兩面牆的局數',
+    'raw Breakout score per episode (mean)': '每局原始分數（平均）',
+    'raw score mean difference': '原始分數的平均差',
+    'ms per controller frame (CPU mean)': '控制器每格的毫秒數（CPU 平均）',
+    'ms per decision': '每次決定的毫秒數',
+    'complete episodes': '完整回合數',
+  },
+  seedRoles: {
+    'official Contract v3 evaluation seeds, one episode each': '官方 v3 規則的評估種子，每組跑 1 局',
+    'Contract v3 evaluation seeds': 'v3 規則的評估種子',
+    'one episode per evaluation seed': '每組評估種子跑 1 局',
+    'supplementary audit seeds, one episode each': '補充稽核種子，每組跑 1 局',
+    'holdout evaluation episodes; the model was frozen before this set was opened':
+      '保留的評估回合；模型在這組打開之前就已凍結',
+    'training seeds 2022, 2023, 2024; 50 paired evaluation episodes each':
+      '訓練種子 2022、2023、2024；每組 50 局配對評估',
+    'training seeds 11, 22, 33; 15 episodes each': '訓練種子 11、22、33；每組 15 局',
+    'one fixed RGB fixture, 100 warmed predictions': '單一張固定畫面，暖機後 100 次預測',
+    'none completed': '沒有跑完任何一局',
+  },
+};
