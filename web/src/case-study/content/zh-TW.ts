@@ -1,10 +1,13 @@
 import type { CaseStudyCopy } from './types';
 
+const REPO = 'https://github.com/Tommyweige/breakout-rl-engineering';
+
 export const zhTwCopy: CaseStudyCopy = {
   header: {
     brandHomeLabel: 'Breakout RL 首頁',
-    brandMark: 'BREAKOUT',
+    brandMark: 'BREAKOUT RL',
     navLabel: '主要導覽',
+    tocLabel: '目錄',
     playDemo: '試玩',
     github: 'GitHub',
     languageSwitch: {
@@ -16,16 +19,77 @@ export const zhTwCopy: CaseStudyCopy = {
     },
   },
   hero: {
-    kicker: 'Atari 打磚塊 × AI 研究',
-    title: '打磚塊，一定要讓 AI 自己學嗎？',
-    answer: '不一定。',
-    answerBody: '一支直接算球路的程式，完全沒有訓練，打得比訓練過的神經網路好得多。',
-    scrollCta: '往下看結果',
-    summaryError: '數字載入失敗，頁面上的數字暫時是空的。',
+    kicker: '30 天工程案例研究 · Atari 打磚塊',
+    title: '從零訓練打磚塊 AI 的 30 天，以及一支不用訓練就贏過它的程式',
+    lede: '從遊戲環境、神經網路、訓練、除錯，一路做到瀏覽器裡即時對戰，每一步都留下可重跑的證據。結果出乎意料：一支直接算球路的追蹤程式，打得比練了上百萬格畫面的神經網路好得多。',
+    stats: [
+      {
+        value: '{{metric:rgb_controller_a8445df_canonical_clear_detections}}<small>／{{seeds:rgb_controller_a8445df_canonical_clear_detections}}</small>',
+        label: '追蹤程式打光兩面牆的局數',
+        tone: 'lime',
+      },
+      {
+        value: '{{metric:rgb_controller_a8445df_mean_score}}<small> 對 </small>{{metric:dqn_v3_2m_mean_score}}',
+        label: '同一套規則下的平均分：追蹤程式 vs 神經網路',
+      },
+      {
+        value: '{{metric:onnx_fixture_actions_match}}<small>／{{seeds:onnx_fixture_actions_match}}</small>',
+        label: '搬進瀏覽器後，測試畫面上動作一致',
+        tone: 'blue',
+      },
+    ],
+    playCta: '在瀏覽器裡試玩',
+    storyCta: '從頭看這個故事',
+    summaryError: '數字載入失敗，部分數字暫時是空的。',
     summaryErrorLink: '到 GitHub 看完整成果',
     videoAria: '追蹤程式在網頁版實際玩打磚塊的錄影。',
     videoFallback: '你的瀏覽器無法播放這段錄影。',
     caption: '追蹤程式實際在玩。網頁版錄影，6 倍速。',
+  },
+  timeline: {
+    nav: '30 天路線圖',
+    kicker: '路線圖',
+    title: '30 天，加上收尾',
+    items: [
+      {
+        days: 'Day 1–4',
+        title: '把遊戲接上程式',
+        text: '接上 Atari 模擬器，把畫面縮成 84×84 灰階、疊 4 張。',
+      },
+      {
+        days: 'Day 5–12',
+        title: '從零寫出 DQN',
+        text: 'Q 值、卷積網路、經驗回放、目標網路，拼成訓練迴圈。',
+      },
+      {
+        days: 'Day 13–15',
+        title: '第一次評估就抓到 bug',
+        text: '平均分贏過隨機，逐局看才發現 AI 掉命後不發球。',
+        tone: 'coral',
+      },
+      {
+        days: 'Day 16–21',
+        title: '加速、比較、長訓練',
+        text: '訓練加速 1.6 倍、比較三種 DQN、練到 500 萬步。',
+      },
+      {
+        days: 'Day 22–29',
+        title: '搬進瀏覽器',
+        text: '匯出 ONNX，在瀏覽器執行並逐張比對，做成人機對戰網頁。',
+        tone: 'blue',
+      },
+      {
+        days: 'Day 30',
+        title: '第一次總結',
+        text: '神經網路能玩，但離打光兩面牆還很遠。',
+      },
+      {
+        days: '30 天之後',
+        title: '追蹤程式與破關驗證',
+        text: '追蹤程式 15 局打光 4 局；校準判定器；試 Laya；凍結證據。',
+        tone: 'lime',
+      },
+    ],
   },
   common: {
     notRun: '未執行',
@@ -34,108 +98,407 @@ export const zhTwCopy: CaseStudyCopy = {
     unknown: '未知',
     missingMetric: '—',
   },
-  sections: [
+  chapters: [
     {
-      id: 'goal',
-      kicker: '怎樣算贏',
-      title: '把兩面磚牆全部打光',
-      stat: { value: '{{metric:clear_score_threshold}}', unit: '分' },
-      body: ['打磚塊有上下兩面牆。兩面都打光，遊戲就結束，這也是能拿到的最高分。'],
-      tone: 'lime',
-    },
-    {
-      id: 'players',
-      kicker: '兩位選手',
-      title: '一個用算的，一個用學的',
-      cards: [
+      id: 'dqn',
+      nav: '起點：訓練神經網路',
+      kicker: 'Day 1–12 · 起點',
+      title: '先讓一個神經網路自己學會打磚塊',
+      blocks: [
         {
-          name: '追蹤程式',
-          tagline: '直接算出球會飛到哪',
-          body: '從畫面找出球和球拍，算出球速，連牆壁反彈一起算進去，預測球會落在哪裡，先把球拍移過去。沒有任何訓練。',
+          kind: 'p',
+          text: 'DQN（Deep Q-Network）是 DeepMind 用來玩 Atari 遊戲的方法。它不知道遊戲規則，只會看畫面、按按鈕、看分數有沒有增加，然後慢慢學會「在這個畫面下，哪個按鈕比較值得按」。這個「值得」的程度就叫 Q 值。',
         },
         {
-          name: '神經網路',
-          tagline: '看過 200 萬格畫面後自己學會',
-          body: '沒人告訴它規則。它一邊玩，一邊記住哪個動作比較會得分。',
+          kind: 'flow',
+          caption: '神經網路從畫面到動作的流程',
+          steps: [
+            { label: '遊戲畫面', detail: '210×160 彩色' },
+            { label: '縮小並轉灰階', detail: '84×84' },
+            { label: '疊最近 4 張', detail: '看得出球的方向與速度' },
+            { label: '3 層卷積', detail: '32 → 64 → 64 個濾鏡' },
+            { label: '拆成兩支', detail: '局面好不好＋每個動作加減幾分' },
+            { label: '4 個 Q 值', detail: '不動／發球／右／左' },
+            { label: '選最大的', detail: '評估時不再隨機亂按' },
+          ],
+        },
+        {
+          kind: 'p',
+          text: '每玩一步，就把「看到什麼、按了什麼、得幾分、下一個畫面」存進記憶庫，叫經驗回放。訓練時隨機抽一批，用下面的式子算出「比較正確的 Q 值」，把網路的猜測往那邊修：',
+        },
+        {
+          kind: 'code',
+          caption: 'DQN 每一次更新在做的事',
+          code: '目標 Q = 這一步拿到的分數 + 0.99 × 下一個畫面裡最大的 Q 值\n誤差   = 目標 Q − 網路現在猜的 Q   →  讓誤差變小',
+        },
+        {
+          kind: 'p',
+          text: '式子裡的「下一個畫面的 Q 值」也是網路自己猜的，目標會跟著自己晃。所以另外保留一份隔一段時間才同步的副本專門算目標，叫目標網路。把這些零件接對、驗證，花了前 12 天；最後部署的模型有 {{metric:dqn_parameter_count}} 個參數。',
         },
       ],
-      note: '兩個都只看遊戲畫面，跟人看到的一樣。',
+    },
+    {
+      id: 'deadlock',
+      nav: '除錯：卡住的發球',
+      kicker: 'Day 13–15 · 除錯',
+      title: '平均分贏了，但它其實卡在等待發球的畫面',
+      blocks: [
+        {
+          kind: 'p',
+          text: '練到 10 萬步時，我把模型凍結、拿掉所有隨機性，和一個亂按按鈕的隨機 AI 各玩同樣的 15 局。第一眼看起來很漂亮：',
+        },
+        {
+          kind: 'stats',
+          items: [
+            { value: '{{fact:day15_dqn_mean}}', label: '神經網路平均分', tone: 'lime' },
+            { value: '{{fact:day15_random_mean}}', label: '隨機 AI 平均分', tone: 'muted' },
+          ],
+        },
+        {
+          kind: 'p',
+          text: '但另一個數字很奇怪。隨機 AI 每局平均只撐 {{fact:day15_random_steps}} 步，神經網路卻平均走了 {{fact:day15_dqn_steps}} 步。15 局裡有 {{fact:day15_timelimit_games}} 局都停在 {{fact:day15_step_limit}} 步附近，那正好是遊戲的時間上限。它不是很會活，而是遊戲根本沒在進行。',
+        },
+        {
+          kind: 'p',
+          text: '把其中一局攤開來看：第 {{fact:day15_life_lost_step}} 步掉了一條命，下一次按發球卻是第 {{fact:day15_first_fire_step}} 步，中間隔了 {{fact:day15_gap_steps}} 步。打磚塊掉命後要按發球鍵才會重新開始；模型沒按，畫面就停在等待狀態。它一直看到幾乎一樣的畫面，就一直選同一個動作，於是一路卡到時間用完。',
+        },
+        {
+          kind: 'p',
+          text: '訓練時沒發現，是因為訓練中有 5% 機率隨機按鍵，偶爾亂中發球，把卡住的局救回來。評估拿掉隨機性，缺陷才露出來。我用兩組對照確認原因：',
+        },
+        {
+          kind: 'table',
+          caption: '把發球的影響拆開來看（各 15 局）',
+          headers: ['評估方式', '誰負責發球', '平均分', '卡到時間上限', '平均每局步數'],
+          numeric: [2, 3, 4],
+          rows: [
+            ['原本的評估', '模型自己', '{{fact:day15_dqn_mean}}', '{{fact:day15_timelimit_games}}／15', '{{fact:day15_dqn_steps}}'],
+            ['環境自動發球', '遊戲環境', '{{fact:day15_assist_mean}}', '0／15', '{{fact:day15_assist_steps}}'],
+            ['保留 5% 隨機', '模型自己', '{{fact:day15_epsilon_mean}}', '0／15', '{{fact:day15_epsilon_steps}}'],
+          ],
+        },
+        {
+          kind: 'callout',
+          tone: 'coral',
+          title: '這是整個專案最重要的一課',
+          text: '從這之後，開局和掉命後的發球都交給環境，訓練和評估用同一套規則，後面所有比較都只量「打磚塊的能力」。更重要的是習慣：平均分會騙人，數字怪的時候要逐局攤開看。',
+        },
+      ],
+    },
+    {
+      id: 'training',
+      nav: '加速與選模型',
+      kicker: 'Day 16–21 · 訓練',
+      title: '練得越久越好嗎？不一定',
+      blocks: [
+        {
+          kind: 'p',
+          text: '先處理速度：同時跑 2 個遊戲，每秒經驗從 {{fact:vec_n1_throughput}} 筆提高到 {{fact:vec_n2_throughput}} 筆，約快 1.6 倍；加到 4 個反而沒更快。',
+        },
+        {
+          kind: 'p',
+          text: '接著比較三種 DQN。Double DQN 修正原版容易高估 Q 值的毛病；Dueling 再把網路最後一段拆成「這個局面本身好不好」和「每個動作加減幾分」。每種都獨立訓練三次、各練 50 萬步：',
+        },
+        {
+          kind: 'bars',
+          caption: '50 萬步時三種 DQN 的平均分（三次訓練的平均）',
+          max: 'fact:family_dueling_500k',
+          items: [
+            { label: 'DQN', value: 'fact:family_dqn_500k', tone: 'muted' },
+            { label: 'Double DQN', value: 'fact:family_double_500k', tone: 'muted' },
+            { label: 'Dueling Double DQN', value: 'fact:family_dueling_500k', tone: 'lime' },
+          ],
+        },
+        {
+          kind: 'p',
+          text: 'Dueling Double DQN 勝出，繼續練下去。下面是它一路的成績：',
+        },
+        {
+          kind: 'columns',
+          caption: 'Dueling Double DQN 的平均分隨訓練步數變化',
+          max: 'metric:dqn_selection_mean',
+          items: [
+            { label: '50 萬步', value: 'fact:family_dueling_500k' },
+            { label: '100 萬步', value: 'fact:dueling_1m' },
+            { label: '250 萬步', value: 'metric:dqn_selection_mean', tone: 'lime' },
+            { label: '500 萬步', value: 'fact:dueling_5m' },
+            { label: '250 萬步・最後驗收', value: 'metric:dqn_final_holdout_mean', tone: 'coral' },
+          ],
+          note: '50 萬、100 萬步是三次訓練的平均；250 萬、500 萬步是最後選定的那一次訓練。',
+        },
+        {
+          kind: 'p',
+          text: '500 萬步反而比 250 萬步低，所以最後部署的是 250 萬步的模型。但最有警示意義的是最後一欄：改用一組從沒拿來挑模型的局重新驗收，平均分從 {{metric:dqn_selection_mean}} 掉到 {{metric:dqn_final_holdout_mean}}。挑模型時的分數，會因為「挑」這個動作本身而偏高，不能直接當成最終成績。',
+        },
+      ],
+    },
+    {
+      id: 'deploy',
+      nav: '部署到瀏覽器',
+      kicker: 'Day 22–29 · 部署',
+      title: '把模型搬進瀏覽器，而且證明它還是同一個 AI',
+      blocks: [
+        {
+          kind: 'p',
+          text: '訓練好的模型是 PyTorch 格式，只能在 Python 裡跑。我把它匯出成 ONNX，一種通用的神經網路格式，再用 ONNX Runtime Web 在瀏覽器裡執行。這樣任何人打開網頁，就能和同一個 AI 即時對戰，不需要伺服器。',
+        },
+        {
+          kind: 'p',
+          text: '搬家最怕「看起來能跑，其實變了」。所以我固定了 {{seeds:onnx_fixture_actions_match}} 張測試畫面，讓原本的模型和搬過去的模型各算一次，逐張比對：',
+        },
+        {
+          kind: 'stats',
+          items: [
+            { value: '{{metric:onnx_fixture_actions_match}}／{{seeds:onnx_fixture_actions_match}}', label: '選到相同動作的畫面', tone: 'lime' },
+            { value: '{{metric:onnx_max_abs_q_diff}}', label: 'ONNX 與 PyTorch 的 Q 值最大差距' },
+            { value: '{{fact:browser_max_q_diff}}', label: '瀏覽器裡的 Q 值最大差距', tone: 'blue' },
+          ],
+        },
+        {
+          kind: 'p',
+          text: '速度也量了。在瀏覽器裡，CPU 版（WASM）每次決策的中位數是 {{fact:web_wasm_p50_ms}} 毫秒，GPU 版（WebGPU）反而要 {{fact:web_webgpu_p50_ms}} 毫秒。這麼小的網路，把資料搬上 GPU 的成本比計算本身還貴，所以網頁預設用 WASM。',
+        },
+        {
+          kind: 'table',
+          caption: '同一個模型、同樣的開局，在三個環境裡打出一模一樣的分數',
+          headers: ['開局', 'Python 原生', '瀏覽器 WASM', '瀏覽器 WebGPU'],
+          numeric: [1, 2, 3],
+          rows: [
+            ['開局 1', '73', '73', '73'],
+            ['開局 2', '45', '45', '45'],
+            ['開局 3', '58', '58', '58'],
+            ['開局 4', '47', '47', '47'],
+          ],
+        },
+        {
+          kind: 'p',
+          text: '分數完全一樣，代表從畫面處理到選動作，整條路在瀏覽器裡都沒走樣。首頁對戰裡的 AI 就是它。',
+        },
+      ],
+    },
+    {
+      id: 'tracker',
+      nav: '轉折：追蹤程式',
+      kicker: '30 天之後 · 轉折',
+      title: '一支不用訓練的追蹤程式，把神經網路遠遠甩開',
+      blocks: [
+        {
+          kind: 'p',
+          text: '30 天結束時，神經網路離打光兩面牆還很遠。但打磚塊的畫面很單純：球和球拍顏色分明，球在兩次反彈之間幾乎走直線。真的需要「學」嗎？',
+        },
+        {
+          kind: 'p',
+          text: '於是我寫了一支追蹤程式。它跟神經網路看同樣的遊戲畫面，但完全不學，每一格畫面都照同一套步驟計算：',
+        },
+        {
+          kind: 'flow',
+          caption: '追蹤程式從畫面到動作的流程',
+          steps: [
+            { label: '彩色畫面', detail: '和神經網路看的一樣' },
+            { label: '找出球與球拍', detail: '靠顏色與位置' },
+            { label: '估出球速', detail: '比較前後幾格畫面' },
+            { label: '預測落點', detail: '把撞牆反彈算進去' },
+            { label: '決定方向', detail: '差距夠大才動，避免抖動' },
+            { label: '左／右／不動', detail: '每格約 {{metric:rgb_controller_a8445df_latency_ms_mean}} 毫秒' },
+          ],
+        },
+        {
+          kind: 'code',
+          caption: 'breakout_rl/vision_controller.py 裡預測落點的核心兩行',
+          code: '# 球還要幾格畫面才會落到球拍的高度\nframes = (paddle_plane_y - ball_y) / ball_vy\n# 直線外推，撞到左右牆就鏡射回來\nintercept = reflect_x(ball_x + ball_vx * frames, left, right)',
+        },
+        {
+          kind: 'p',
+          text: '公平比較要用同一套規則。專案有兩套規則，差別在多久做一次決定：神經網路一路是「每 4 格畫面決定一次」，追蹤程式需要「每格都決定」。所以我在「每格都決定」的規則下另外訓練了一個神經網路，練了 200 萬格畫面，兩邊各玩同樣的 15 局：',
+        },
+        {
+          kind: 'bars',
+          caption: '同一套規則、同樣 15 局的平均分（刻度是兩面牆全清的滿分）',
+          max: 'metric:clear_score_threshold',
+          maxLabel: '滿分',
+          items: [
+            { label: '追蹤程式', value: 'metric:rgb_controller_a8445df_mean_score', tone: 'lime' },
+            { label: '神經網路', value: 'metric:dqn_v3_2m_mean_score', tone: 'coral' },
+          ],
+        },
+        {
+          kind: 'p',
+          text: '這個神經網路練到 40 萬格時平均 {{fact:dqn_v3_400k}} 分、100 萬格 {{fact:dqn_v3_1m}} 分、200 萬格 {{metric:dqn_v3_2m_mean_score}} 分，最好的一局 {{metric:dqn_v3_2m_max_score}} 分，一局都沒打光。追蹤程式的中位數是 {{metric:rgb_controller_a8445df_median_score}} 分。',
+        },
+        {
+          kind: 'callout',
+          tone: 'muted',
+          title: '這不代表神經網路學不會',
+          text: '這套規則下神經網路只完整訓練過一次，更多次、更長的訓練都可能改變結果。能說的只有：在這個規模下，算的比學的好太多。',
+        },
+      ],
     },
     {
       id: 'clears',
-      kicker: '結果一',
-      title: '追蹤程式真的把兩面牆打光了',
-      stat: {
-        value: '{{metric:rgb_controller_a8445df_canonical_clear_detections}}',
-        unit: '／{{seeds:rgb_controller_a8445df_canonical_clear_detections}} 局',
-      },
-      body: ['不是每一局都行。其他局都在打光之前，就把命用完了。'],
-      note: '怎麼算「打光」：由程式讀遊戲記憶體裡的分數，到滿分才算，不靠人看畫面。這幾局還沒有逐筆翻原始紀錄複查。',
-      tone: 'lime',
-    },
-    {
-      id: 'scores',
-      kicker: '結果二',
-      title: '平均分，差了一百多倍',
-      bars: [
-        { name: '追蹤程式', metricId: 'rgb_controller_a8445df_mean_score' },
-        { name: '神經網路', metricId: 'dqn_v3_2m_mean_score' },
-      ],
-      barMaxMetricId: 'clear_score_threshold',
-      barMaxLabel: '滿分',
-      body: ['兩邊用同一套遊戲規則，玩一樣多局。神經網路一局都沒打光。'],
-      note: '神經網路只完整訓練過一次。這是那一次的成績，不代表神經網路學不會。',
-    },
-    {
-      id: 'laya',
-      kicker: '支線',
-      title: '拿現成的大模型直接玩呢？',
-      stats: [
-        { value: '{{metric:laya_browser_session_score}}', unit: '分', label: '整局得分' },
-        { value: '{{metric:laya_browser_session_played_s}}', unit: '秒', label: '五條命全部用完' },
-      ],
-      lead: 'Laya 是一個現成的看圖模型，沒有為這個專案另外訓練。讓它看著畫面直接選動作，在瀏覽器裡玩了一局。',
-      tone: 'blue',
-    },
-    {
-      id: 'failed',
-      kicker: '沒成功的嘗試',
-      title: '兩個想讓神經網路變強的方法，都沒用',
-      cards: [
+      nav: '破關驗證',
+      kicker: '破關驗證',
+      title: '15 局裡打光 4 局，而且每一局都由程式判定',
+      blocks: [
         {
-          name: '掉命多扣分',
-          body: '掉一條命就多扣它分數，想逼它更小心。',
-          verdict: '沒有明顯改善',
-          detail:
-            '平均 +{{metric:reward_shaping_mean_effect}} 分，但誤差範圍從 {{metric:reward_shaping_ci_low}} 到 +{{metric:reward_shaping_ci_high}}，可能根本沒差',
+          kind: 'p',
+          text: '打磚塊有上下兩面磚牆。第一面打光是 {{fact:first_wall_score}} 分，兩面都打光是 {{metric:clear_score_threshold}} 分，之後沒有下一關。下面是追蹤程式 15 局的最終分數：',
         },
         {
-          name: '優先回放',
-          body: '訓練時優先重看它最常猜錯的畫面。',
-          verdict: '沒有明顯改善',
-          detail:
-            '訓練時間 ×{{metric:per_training_time_ratio}}，平均分 {{metric:per_500k_mean_score}} 對 {{metric:uniform_500k_mean_score}}',
+          kind: 'episodes',
+          caption: '追蹤程式 15 局的最終分數',
+          gameLabel: '第 {n} 局',
+          clearedLabel: '兩面牆打光',
+          firstWallLabel: '第一面牆',
+          bothWallsLabel: '兩面牆',
+        },
+        {
+          kind: 'p',
+          text: '打光的 4 局是第 6、12、14、15 局，打光當下還剩 1 到 2 條命。最快的一局在第 {{metric:rgb_controller_a8445df_best_clear_ale_frame}} 格畫面打光，大約是 6 分 18 秒的遊戲時間。沒打光的 11 局裡，最高的一局 {{fact:best_unclear_score}} 分，只差最後幾塊磚。',
+        },
+        {
+          kind: 'p',
+          text: '「打光」不能靠看畫面：打完第一面牆時畫面也會短暫全空，打光後球還會繼續彈。所以判定交給讀遊戲記憶體的判定器：記憶體裡的計分板到 {{metric:clear_score_threshold}} 分，而且和遊戲回傳的分數一致，才算打光；兩邊對不上就標成「不確定」，絕不當成 0。',
+        },
+        {
+          kind: 'p',
+          text: '判定器本身也要驗證。我錄下三種真實軌跡：完整打光、只打完第一面牆、剩最後一塊磚。判定器只能在第一種、剛好第二面牆清空的那一格說「打光」。接著故意把它改壞 {{fact:detector_mutants}} 種方式，確認測試每一種都抓得到：',
+        },
+        {
+          kind: 'table',
+          caption: '故意弄壞判定器的 6 種方式，全部被測試抓到',
+          headers: ['弄壞的方式', '會造成的錯'],
+          rows: [
+            ['打到第一面牆（432 分）就算打光', '只打完一半也算破關'],
+            ['分數到 860 就算打光', '還差一塊磚也算破關'],
+            ['失去最後一條命時把打光作廢', '打光後才結束被算失敗'],
+            ['打光的時間點晚記一格', '破關時間不準'],
+            ['用「決策次數 × 4」推算畫面格數', '時間差 4 倍'],
+            ['後面的分數覆寫第一次打光的時間', '破關時間被往後推'],
+          ],
+        },
+        {
+          kind: 'p',
+          text: '網頁版裡同一套追蹤邏輯（移植成 TypeScript）另外跑了 120 局：{{metric:browser_wasm_120_canonical_clear_detections}} 局打光，平均 {{metric:browser_wasm_120_mean_score}} 分，和正式 15 局的結果相近。',
+        },
+        {
+          kind: 'callout',
+          tone: 'muted',
+          title: '還沒做的一步',
+          text: '這 4 局是「判定器說打光」，還沒有逐局對照原始紀錄複查，所以這裡只說「15 局打光 4 局」，不說「穩定破關」。',
         },
       ],
-      tone: 'coral',
     },
     {
-      id: 'takeaway',
-      kicker: '所以',
-      title: '能直接算的，不一定要學',
-      body: [
-        '打磚塊的畫面很單純：球和球拍一眼就找得到，球在兩次反彈之間幾乎走直線。這種時候，直接算比讓 AI 自己摸索有效得多。',
-        '但這題還沒結束。追蹤程式還不能每局都打光，神經網路也只認真訓練過一次。',
+      id: 'failures',
+      nav: '沒成功的嘗試',
+      kicker: '失敗紀錄',
+      title: '三個沒成功的嘗試，也都留下了數字',
+      blocks: [
+        {
+          kind: 'p',
+          text: '失敗也寫進紀錄，「沒用」本身就是結果。',
+        },
+        {
+          kind: 'ledger',
+          items: [
+            {
+              name: '掉命多扣分',
+              idea: '每掉一條命多扣 1 分，逼它更小心。獨立訓練三次、各練 100 萬步。',
+              result: '沒有穩定改善',
+              detail: '平均 +{{metric:reward_shaping_mean_effect}} 分，但 95% 區間從 {{metric:reward_shaping_ci_low}} 到 +{{metric:reward_shaping_ci_high}}；三次裡只有 {{metric:reward_shaping_positive_training_seeds}} 次變好，沒過採用門檻。',
+            },
+            {
+              name: '優先回放',
+              idea: '優先重看「猜得最離譜」的經驗，而不是平均抽。',
+              result: '差距太小，不值得',
+              detail: '50 萬步時平均 {{metric:per_500k_mean_score}} 對 {{metric:uniform_500k_mean_score}}，訓練時間卻是 {{metric:per_training_time_ratio}} 倍。',
+            },
+            {
+              name: 'Laya 現成模型',
+              idea: '拿現成的看圖模型 Laya（{{metric:laya_parameter_count}} 參數，以 SmolVLM 為底）凍結不訓練，直接看畫面選動作。它先前看過一些打磚塊的專家操作，不算從零開始。',
+              result: '玩不起來',
+              detail: '在瀏覽器玩了一局，{{metric:laya_browser_session_score}} 分、{{metric:laya_browser_session_played_s}} 秒就用完五條命。完整的正式評估局數：{{metric:laya_complete_episodes}}。',
+            },
+          ],
+        },
+        {
+          kind: 'p',
+          text: 'Laya 的速度夠：決策間隔約 {{metric:laya_browser_decision_interval_p50_ms}} 毫秒，畫面每秒 {{metric:laya_browser_presented_fps}} 張。問題在決策品質：它常左右來回切換。調整後連續反向從 {{metric:laya_control_diagnostic_raw_reversals}} 次降到 {{metric:laya_control_diagnostic_reversals}} 次，球拍仍接不住球。',
+        },
+      ],
+    },
+    {
+      id: 'conclusion',
+      nav: '結論',
+      kicker: '結論',
+      title: '什麼需要學，什麼不需要',
+      blocks: [
+        {
+          kind: 'bars',
+          caption: '三條路線的平均分（刻度是滿分）',
+          max: 'metric:clear_score_threshold',
+          maxLabel: '滿分',
+          items: [
+            { label: '追蹤程式', value: 'metric:rgb_controller_a8445df_mean_score', tone: 'lime' },
+            { label: '神經網路', value: 'metric:dqn_v3_2m_mean_score', tone: 'coral' },
+            { label: 'Laya', value: 'metric:laya_browser_session_score', tone: 'blue', note: '規則不同、只玩過一局，僅供參考' },
+          ],
+        },
+        {
+          kind: 'table',
+          caption: '三條路線並排比較',
+          headers: ['', '追蹤程式', '神經網路', 'Laya'],
+          rows: [
+            ['需要訓練嗎', '不用', '要，200 萬格畫面', '沒有為這個專案訓練'],
+            ['平均分', '{{metric:rgb_controller_a8445df_mean_score}}', '{{metric:dqn_v3_2m_mean_score}}', '只玩過一局：{{metric:laya_browser_session_score}}'],
+            ['打光兩面牆', '{{metric:rgb_controller_a8445df_canonical_clear_detections}}／{{seeds:rgb_controller_a8445df_canonical_clear_detections}}', '{{metric:dqn_v3_2m_clears}}／{{seeds:dqn_v3_2m_clears}}', '沒有完整評估'],
+            ['每次決策', '約 {{metric:rgb_controller_a8445df_latency_ms_mean}} 毫秒', '約 {{fact:web_wasm_p50_ms}} 毫秒（瀏覽器）', '約 {{metric:laya_browser_decision_interval_p50_ms}} 毫秒'],
+            ['看得懂它在想什麼嗎', '看得懂，每一步都算得出來', '很難，只有四個 Q 值', '很難'],
+          ],
+        },
+        {
+          kind: 'p',
+          text: '需要學的，是規則說不清楚的部分。打磚塊的物理很單純：球直線飛、撞牆反彈、角度可以預測，幾行算式就能描述。這時讓神經網路花上百萬格畫面自己摸索，成本高，還不一定學得到。',
+        },
+        {
+          kind: 'p',
+          text: '不需要學、但需要大量工程的，是周邊的一切：固定發球規則、逐局看評估、驗證破關判定器、逐張比對部署結果。這個專案的時間大多花在這裡，這也是最值得帶走的部分。',
+        },
+        {
+          kind: 'p',
+          text: '還沒回答的問題：同一套規則下多次獨立訓練的神經網路能走到哪裡？追蹤程式能不能每局都打光？這些都寫在 GitHub 的交接文件裡，留給下一步。',
+        },
+      ],
+    },
+    {
+      id: 'evidence',
+      nav: '證據與重現',
+      kicker: '證據與重現',
+      title: '每個數字都查得到，也都能重跑',
+      blocks: [
+        {
+          kind: 'p',
+          text: '結果數字在載入時直接讀自倉庫裡的機器可讀摘要；過程中的數字來自當天的文章。追蹤程式的正式評估可以這樣重跑：',
+        },
+        {
+          kind: 'code',
+          caption: '在倉庫根目錄執行',
+          code: '# 重跑追蹤程式的 15 局正式評估\npython -m scripts.evaluation.evaluate_predictive_controller \\\n  --output-dir outputs/issue25-vision-controller\n\n# 網頁與這一頁的測試\ncd web && npm ci && npm test',
+        },
+        {
+          kind: 'links',
+          items: [
+            { label: '完整成果報告', detail: '數字來源、驗證狀態與限制', href: `${REPO}/blob/main/docs/final-results/README.md` },
+            { label: '破關判定與驗證', detail: '判定器如何運作與校準', href: `${REPO}/blob/main/docs/clear-semantics.md` },
+            { label: '追蹤程式 15 局紀錄', detail: '逐局分數與打光時間', href: `${REPO}/blob/main/audits/browser-clear/native-15/report.md` },
+            { label: '重現步驟', detail: '從安裝到跑出結果', href: `${REPO}/blob/main/docs/repro/README.md` },
+            { label: '30 天的完整文章', detail: '每天做了什麼、遇到什麼', href: `${REPO}/tree/docs-ironman-series/articles` },
+            { label: '線上試玩', detail: '在瀏覽器裡和 AI 對戰', href: '/' },
+          ],
+        },
       ],
     },
   ],
-  evidence: {
-    kicker: '證據',
-    title: '每個數字都查得到',
-    body: '原始紀錄、評估程式和完整報告都放在 GitHub。',
-    cta: '到 GitHub 看證據',
-    playCta: '自己玩玩看',
-  },
   footer: {
     updated: '最後更新',
   },

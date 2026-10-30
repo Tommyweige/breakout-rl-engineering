@@ -31,6 +31,29 @@ if (video) {
   }
 }
 
+// Highlight the chapter being read in the side table of contents.
+const tocLinks = new Map(
+  [...appRoot.querySelectorAll<HTMLAnchorElement>('[data-toc-target]')].map((link) => [link.dataset.tocTarget, link]),
+);
+if ('IntersectionObserver' in window && tocLinks.size > 0) {
+  const observer = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        tocLinks.forEach((link, id) => {
+          if (id === entry.target.id) link.setAttribute('aria-current', 'true');
+          else link.removeAttribute('aria-current');
+        });
+      }
+    },
+    { rootMargin: '-30% 0px -60% 0px' },
+  );
+  tocLinks.forEach((_link, id) => {
+    const section = id ? document.getElementById(id) : null;
+    if (section) observer.observe(section);
+  });
+}
+
 function showSummaryError(error: unknown): void {
   appRoot.dataset.summaryState = 'error';
   const status = appRoot.querySelector<HTMLElement>('[data-role="summary-status"]');

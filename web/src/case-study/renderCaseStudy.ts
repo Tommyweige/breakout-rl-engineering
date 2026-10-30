@@ -1,4 +1,6 @@
 import { CASE_STUDY_COPY, type CaseStudyCopy, type Locale } from './content';
+import type { Chapter, NumberRef } from './content/types';
+import { FACTS, TRACKER_EPISODES, TRACKER_EPISODE_FIRST_WALL, TRACKER_EPISODE_MAX } from './facts';
 
 export type VerificationStatus =
   | 'verified'
@@ -99,7 +101,10 @@ export interface FinalResultsSummary {
   };
 }
 
-const TOKEN_PATTERN = /\{\{(metric|seeds):([A-Za-z0-9_.-]+)\}\}/g;
+const TOKEN_PATTERN = /\{\{(metric|seeds|fact):([A-Za-z0-9_.-]+)\}\}/g;
+
+const REPOSITORY_URL = 'https://github.com/Tommyweige/breakout-rl-engineering';
+const RESULTS_URL = `${REPOSITORY_URL}/blob/main/docs/final-results/README.md`;
 
 function escapeHtml(value: string): string {
   return value
@@ -114,108 +119,245 @@ function metricSpan(id: string, fallback = '—'): string {
   return `<span data-metric-id="${escapeHtml(id)}">${escapeHtml(fallback)}</span>`;
 }
 
+function factSpan(id: string, copy: CaseStudyCopy): string {
+  const fact = FACTS[id];
+  return `<span data-fact-id="${escapeHtml(id)}"${fact ? ` title="${escapeHtml(fact.source)}"` : ''}>${escapeHtml(
+    fact?.value ?? copy.common.missingMetric,
+  )}</span>`;
+}
+
+/** Copy templates are trusted markup; only their tokens are replaced. */
 export function renderCopy(template: string, copy: CaseStudyCopy): string {
   return template.replace(TOKEN_PATTERN, (_match, kind: string, id: string) => {
     if (kind === 'metric') return metricSpan(id, copy.common.missingMetric);
+    if (kind === 'fact') return factSpan(id, copy);
     return `<span data-seed-count-id="${escapeHtml(id)}">${escapeHtml(copy.common.missingMetric)}</span>`;
   });
 }
 
-const REPOSITORY_URL = 'https://github.com/Tommyweige/breakout-rl-engineering';
-const RESULTS_URL = `${REPOSITORY_URL}/blob/main/docs/final-results/README.md`;
+function renderRef(ref: NumberRef, copy: CaseStudyCopy): string {
+  const [kind, id] = ref.split(':') as [string, string];
+  return kind === 'fact' ? factSpan(id, copy) : metricSpan(id, copy.common.missingMetric);
+}
 
-type Section = CaseStudyCopy['sections'][number];
-
-function renderSection(section: Section, index: number, copy: CaseStudyCopy): string {
-  const titleId = `${section.id}-title`;
-  const number = String(index + 1).padStart(2, '0');
-  const parts: string[] = [
-    `<p class="cs-kicker"><span class="cs-index">${number}</span>${escapeHtml(section.kicker)}</p>`,
-  ];
-
-  if (section.stat) {
-    parts.push(`
-      <p class="cs-stat">
-        <span class="cs-stat-value">${renderCopy(section.stat.value, copy)}</span>${
-          section.stat.unit ? `<span class="cs-stat-unit">${renderCopy(section.stat.unit, copy)}</span>` : ''
-        }
-      </p>`);
+function refNumber(ref: string, metrics?: Map<string, SummaryMetric>): number | null {
+  const [kind, id = ''] = ref.split(':');
+  if (kind === 'fact') {
+    const value = Number(FACTS[id]?.value.replaceAll(',', ''));
+    return Number.isFinite(value) ? value : null;
   }
+  const value = metrics?.get(id)?.value;
+  return typeof value === 'number' ? value : null;
+}
 
-  parts.push(`<h2 id="${escapeHtml(titleId)}">${escapeHtml(section.title)}</h2>`);
-  if (section.lead) {
-    parts.push(`<p class="cs-lead">${renderCopy(section.lead, copy)}</p>`);
-  }
+function share(valueRef: string, maxRef: string, metrics?: Map<string, SummaryMetric>): number | null {
+  const value = refNumber(valueRef, metrics);
+  const max = refNumber(maxRef, metrics);
+  if (value === null || max === null || max <= 0) return null;
+  return Math.min(1, Math.max(0, value / max));
+}
 
-  if (section.stats) {
-    parts.push(`
-      <dl class="cs-stats">
-        ${section.stats
-          .map(
-            (stat) => `
-          <div class="cs-stats-item">
-            <dt>${escapeHtml(stat.label)}</dt>
-            <dd><span class="cs-stats-value">${renderCopy(stat.value, copy)}</span>${
-              stat.unit ? `<span class="cs-stat-unit">${escapeHtml(stat.unit)}</span>` : ''
-            }</dd>
-          </div>`,
-          )
-          .join('')}
-      </dl>`);
-  }
+function shareStyle(valueRef: string, maxRef: string): string {
+  const value = share(valueRef, maxRef);
+  return value === null ? '' : ` style="--share: ${value}"`;
+}
 
-  if (section.bars) {
-    parts.push(`
-      <div class="cs-bars" data-role="score-bars" data-bar-max-id="${escapeHtml(section.barMaxMetricId ?? '')}">
-        ${section.bars
-          .map(
-            (bar) => `
-          <div class="cs-bar">
-            <p class="cs-bar-name">${escapeHtml(bar.name)}</p>
-            <p class="cs-bar-value">${metricSpan(bar.metricId, copy.common.missingMetric)}</p>
-            <div class="cs-bar-track" aria-hidden="true">
-              <div class="cs-bar-fill" data-bar-metric-id="${escapeHtml(bar.metricId)}"></div>
-            </div>
-          </div>`,
-          )
-          .join('')}
-        ${section.barMaxLabel ? `<p class="cs-bar-scale" aria-hidden="true">${escapeHtml(section.barMaxLabel)}</p>` : ''}
-      </div>`);
-  }
+const tone = (value?: string) => escapeHtml(value ?? 'plain');
 
-  if (section.cards) {
-    parts.push(`
-      <div class="cs-cards">
-        ${section.cards
-          .map(
-            (card) => `
-          <article class="cs-card">
-            <h3>${escapeHtml(card.name)}</h3>
-            ${card.tagline ? `<p class="cs-card-tagline">${renderCopy(card.tagline, copy)}</p>` : ''}
-            <p class="cs-card-body">${renderCopy(card.body, copy)}</p>
-            ${card.verdict ? `<p class="cs-card-verdict">${escapeHtml(card.verdict)}</p>` : ''}
-            ${card.detail ? `<p class="cs-card-detail">${renderCopy(card.detail, copy)}</p>` : ''}
-          </article>`,
-          )
-          .join('')}
-      </div>`);
-  }
+type Block = Chapter['blocks'][number];
 
-  if (section.body) {
-    parts.push(
-      `<div class="cs-body">${section.body.map((paragraph) => `<p>${renderCopy(paragraph, copy)}</p>`).join('')}</div>`,
-    );
-  }
-
-  if (section.note) {
-    parts.push(`<p class="cs-note">${renderCopy(section.note, copy)}</p>`);
-  }
-
+function figure(className: string, caption: string, body: string, copy: CaseStudyCopy): string {
   return `
-    <section class="cs-section" id="${escapeHtml(section.id)}" data-tone="${escapeHtml(section.tone ?? 'plain')}" aria-labelledby="${escapeHtml(titleId)}">
-      <div class="cs-section-inner">${parts.join('')}</div>
-    </section>
-  `;
+    <figure class="cs-figure ${className}">
+      ${body}
+      <figcaption>${renderCopy(caption, copy)}</figcaption>
+    </figure>`;
+}
+
+function renderBlock(block: Block, copy: CaseStudyCopy): string {
+  switch (block.kind) {
+    case 'p':
+      return `<p class="cs-p">${renderCopy(block.text, copy)}</p>`;
+
+    case 'callout':
+      return `
+        <aside class="cs-callout" data-tone="${tone(block.tone)}">
+          <p class="cs-callout-title">${escapeHtml(block.title)}</p>
+          <p>${renderCopy(block.text, copy)}</p>
+        </aside>`;
+
+    case 'flow':
+      return figure(
+        'cs-flow-figure',
+        block.caption,
+        `<ol class="cs-flow">${block.steps
+          .map(
+            (step, index) => `
+          <li class="cs-flow-step">
+            <span class="cs-flow-index">${index + 1}</span>
+            <span class="cs-flow-label">${escapeHtml(step.label)}</span>
+            <span class="cs-flow-detail">${renderCopy(step.detail, copy)}</span>
+          </li>`,
+          )
+          .join('')}</ol>`,
+        copy,
+      );
+
+    case 'table': {
+      const numeric = new Set(block.numeric ?? []);
+      const cell = (value: string, index: number, tag: 'td' | 'th') =>
+        `<${tag}${numeric.has(index) ? ' class="cs-num"' : ''}${tag === 'th' && index === 0 ? ' scope="row"' : ''}>${renderCopy(value, copy)}</${tag}>`;
+      return figure(
+        'cs-table-figure',
+        block.caption,
+        `<div class="cs-table-wrap"><table class="cs-table" data-cols="${block.headers.length}">
+          <thead><tr>${block.headers
+            .map((header, index) => `<th scope="col"${numeric.has(index) ? ' class="cs-num"' : ''}>${escapeHtml(header)}</th>`)
+            .join('')}</tr></thead>
+          <tbody>${block.rows
+            .map((row) => `<tr>${row.map((value, index) => cell(value, index, index === 0 ? 'th' : 'td')).join('')}</tr>`)
+            .join('')}</tbody>
+        </table></div>`,
+        copy,
+      );
+    }
+
+    case 'bars':
+      return figure(
+        'cs-bars-figure',
+        block.caption,
+        `<div class="cs-bars" data-role="bar-chart" data-max-ref="${escapeHtml(block.max)}">
+          ${block.items
+            .map(
+              (item) => `
+            <div class="cs-bar" data-tone="${tone(item.tone)}">
+              <p class="cs-bar-label">${escapeHtml(item.label)}${
+                item.note ? `<small>${escapeHtml(item.note)}</small>` : ''
+              }</p>
+              <p class="cs-bar-value">${renderRef(item.value, copy)}</p>
+              <div class="cs-bar-track" aria-hidden="true">
+                <div class="cs-bar-fill" data-value-ref="${escapeHtml(item.value)}"${shareStyle(item.value, block.max)}></div>
+              </div>
+            </div>`,
+            )
+            .join('')}
+          ${block.maxLabel ? `<p class="cs-bar-scale" aria-hidden="true">${escapeHtml(block.maxLabel)} ${renderRef(block.max, copy)}</p>` : ''}
+        </div>`,
+        copy,
+      );
+
+    case 'columns':
+      return figure(
+        'cs-columns-figure',
+        block.caption,
+        `<div class="cs-columns" data-role="column-chart" data-max-ref="${escapeHtml(block.max)}">
+          ${block.items
+            .map(
+              (item) => `
+            <div class="cs-column" data-tone="${tone(item.tone)}">
+              <div class="cs-column-track">
+                <p class="cs-column-value">${renderRef(item.value, copy)}</p>
+                <div class="cs-column-fill" aria-hidden="true" data-value-ref="${escapeHtml(item.value)}"${shareStyle(item.value, block.max)}></div>
+              </div>
+              <p class="cs-column-label">${escapeHtml(item.label)}</p>
+            </div>`,
+            )
+            .join('')}
+        </div>
+        ${block.note ? `<p class="cs-figure-note">${escapeHtml(block.note)}</p>` : ''}`,
+        copy,
+      );
+
+    case 'episodes': {
+      const firstWall = TRACKER_EPISODE_FIRST_WALL / TRACKER_EPISODE_MAX;
+      return figure(
+        'cs-episodes-figure',
+        block.caption,
+        `<div class="cs-episodes" data-role="episode-chart">
+          <div class="cs-episodes-plot">
+          <div class="cs-episodes-guide" style="--at: 1"><span>${escapeHtml(block.bothWallsLabel)} ${TRACKER_EPISODE_MAX}</span></div>
+          <div class="cs-episodes-guide" style="--at: ${firstWall}"><span>${escapeHtml(block.firstWallLabel)} ${TRACKER_EPISODE_FIRST_WALL}</span></div>
+          <ol class="cs-episodes-list">
+            ${TRACKER_EPISODES.map((episode, index) => {
+              const label = block.gameLabel.replace('{n}', String(index + 1));
+              return `
+              <li class="cs-episode" data-cleared="${episode.cleared}" style="--share: ${episode.score / TRACKER_EPISODE_MAX}">
+                <span class="cs-episode-bar" aria-hidden="true"></span>
+                <span class="cs-episode-score">${episode.score}</span>
+                <span class="cs-episode-label"><span class="cs-sr">${escapeHtml(label)}${
+                  episode.cleared ? `, ${escapeHtml(block.clearedLabel)}` : ''
+                }</span><span aria-hidden="true">${index + 1}</span></span>
+              </li>`;
+            }).join('')}
+          </ol>
+          </div>
+          <p class="cs-episodes-legend"><span class="cs-swatch" aria-hidden="true"></span>${escapeHtml(block.clearedLabel)}</p>
+        </div>`,
+        copy,
+      );
+    }
+
+    case 'stats':
+      return `
+        <dl class="cs-stats" data-count="${block.items.length}">
+          ${block.items
+            .map(
+              (item) => `
+            <div class="cs-stat" data-tone="${tone(item.tone)}">
+              <dt>${escapeHtml(item.label)}</dt>
+              <dd>${renderCopy(item.value, copy)}</dd>
+            </div>`,
+            )
+            .join('')}
+        </dl>`;
+
+    case 'code':
+      return figure('cs-code-figure', block.caption, `<pre class="cs-code"><code>${escapeHtml(block.code)}</code></pre>`, copy);
+
+    case 'ledger':
+      return `
+        <div class="cs-ledger">
+          ${block.items
+            .map(
+              (item, index) => `
+            <article class="cs-ledger-item">
+              <p class="cs-ledger-index">${String(index + 1).padStart(2, '0')}</p>
+              <h3>${escapeHtml(item.name)}</h3>
+              <p class="cs-ledger-idea">${renderCopy(item.idea, copy)}</p>
+              <p class="cs-ledger-result">${escapeHtml(item.result)}</p>
+              <p class="cs-ledger-detail">${renderCopy(item.detail, copy)}</p>
+            </article>`,
+            )
+            .join('')}
+        </div>`;
+
+    case 'links':
+      return `
+        <ul class="cs-links" data-role="evidence-links">
+          ${block.items
+            .map((item) => {
+              const external = item.href.startsWith('http');
+              return `
+            <li><a href="${escapeHtml(item.href)}"${external ? ' target="_blank" rel="noreferrer"' : ''}>
+              <span class="cs-link-label">${escapeHtml(item.label)} <span aria-hidden="true">→</span></span>
+              <span class="cs-link-detail">${escapeHtml(item.detail)}</span>
+            </a></li>`;
+            })
+            .join('')}
+        </ul>`;
+  }
+}
+
+function renderChapter(chapter: Chapter, index: number, copy: CaseStudyCopy): string {
+  const titleId = `${chapter.id}-title`;
+  return `
+    <section class="cs-chapter" id="${escapeHtml(chapter.id)}" aria-labelledby="${escapeHtml(titleId)}">
+      <header class="cs-chapter-head">
+        <p class="cs-kicker"><span class="cs-index">${String(index + 1).padStart(2, '0')}</span>${escapeHtml(chapter.kicker)}</p>
+        <h2 id="${escapeHtml(titleId)}">${escapeHtml(chapter.title)}</h2>
+      </header>
+      ${chapter.blocks.map((block) => renderBlock(block, copy)).join('')}
+    </section>`;
 }
 
 export function renderCaseStudyShell(locale: Locale): string {
@@ -229,6 +371,10 @@ export function renderCaseStudyShell(locale: Locale): string {
       lang="${escapeHtml(copy.header.languageSwitch.lang)}"
       aria-label="${escapeHtml(copy.header.languageSwitch.ariaLabel)}"
     >${escapeHtml(copy.header.languageSwitch.label)}</a>`;
+  const toc = [
+    { id: 'timeline', nav: copy.timeline.nav },
+    ...copy.chapters.map((chapter) => ({ id: chapter.id, nav: chapter.nav })),
+  ];
 
   return `
     <header class="cs-header">
@@ -243,11 +389,24 @@ export function renderCaseStudyShell(locale: Locale): string {
     <main id="main">
       <section class="cs-hero" aria-labelledby="hero-title">
         <div class="cs-hero-copy">
-          <p class="cs-kicker">${escapeHtml(copy.hero.kicker)}</p>
+          <p class="cs-kicker cs-hero-kicker">${escapeHtml(copy.hero.kicker)}</p>
           <h1 id="hero-title">${escapeHtml(copy.hero.title)}</h1>
-          <p class="cs-answer">${escapeHtml(copy.hero.answer)}</p>
-          <p class="cs-answer-body">${escapeHtml(copy.hero.answerBody)}</p>
-          <a class="cs-scroll" href="#${escapeHtml(copy.sections[0]?.id ?? 'main')}">${escapeHtml(copy.hero.scrollCta)} <span aria-hidden="true">↓</span></a>
+          <p class="cs-lede">${escapeHtml(copy.hero.lede)}</p>
+          <dl class="cs-hero-stats" data-role="hero-stats">
+            ${copy.hero.stats
+              .map(
+                (stat) => `
+              <div class="cs-hero-stat" data-tone="${tone(stat.tone)}">
+                <dt>${escapeHtml(stat.label)}</dt>
+                <dd>${renderCopy(stat.value, copy)}</dd>
+              </div>`,
+              )
+              .join('')}
+          </dl>
+          <div class="cs-actions">
+            <a class="cs-button" href="/">${escapeHtml(copy.hero.playCta)} <span aria-hidden="true">→</span></a>
+            <a class="cs-button cs-button-ghost" href="#timeline">${escapeHtml(copy.hero.storyCta)} <span aria-hidden="true">↓</span></a>
+          </div>
           <p class="cs-summary-status" data-role="summary-status" role="status" hidden></p>
         </div>
         <figure class="cs-hero-media">
@@ -268,23 +427,41 @@ export function renderCaseStudyShell(locale: Locale): string {
         </figure>
       </section>
 
-      ${copy.sections.map((section, index) => renderSection(section, index, copy)).join('')}
+      <div class="cs-layout">
+        <nav class="cs-toc" data-role="toc" aria-label="${escapeHtml(copy.header.tocLabel)}">
+          <p class="cs-toc-title">${escapeHtml(copy.header.tocLabel)}</p>
+          <ol>
+            ${toc.map((item) => `<li><a href="#${escapeHtml(item.id)}" data-toc-target="${escapeHtml(item.id)}">${escapeHtml(item.nav)}</a></li>`).join('')}
+          </ol>
+        </nav>
 
-      <section class="cs-section cs-evidence" id="evidence" aria-labelledby="evidence-title">
-        <div class="cs-section-inner">
-          <p class="cs-kicker">${escapeHtml(copy.evidence.kicker)}</p>
-          <h2 id="evidence-title">${escapeHtml(copy.evidence.title)}</h2>
-          <div class="cs-body"><p>${escapeHtml(copy.evidence.body)}</p></div>
-          <div class="cs-actions">
-            <a class="cs-button" data-role="evidence-link" href="${RESULTS_URL}" target="_blank" rel="noreferrer">${escapeHtml(copy.evidence.cta)} <span aria-hidden="true">→</span></a>
-            <a class="cs-button cs-button-ghost" href="/">${escapeHtml(copy.evidence.playCta)}</a>
-          </div>
+        <div class="cs-content">
+          <section class="cs-chapter cs-timeline-section" id="timeline" aria-labelledby="timeline-title">
+            <header class="cs-chapter-head">
+              <p class="cs-kicker">${escapeHtml(copy.timeline.kicker)}</p>
+              <h2 id="timeline-title">${escapeHtml(copy.timeline.title)}</h2>
+            </header>
+            <ol class="cs-timeline" data-role="timeline">
+              ${copy.timeline.items
+                .map(
+                  (item) => `
+                <li class="cs-milestone" data-tone="${tone(item.tone)}">
+                  <p class="cs-milestone-days">${escapeHtml(item.days)}</p>
+                  <h3>${escapeHtml(item.title)}</h3>
+                  <p>${renderCopy(item.text, copy)}</p>
+                </li>`,
+                )
+                .join('')}
+            </ol>
+          </section>
+
+          ${copy.chapters.map((chapter, index) => renderChapter(chapter, index, copy)).join('')}
         </div>
-      </section>
+      </div>
     </main>
 
     <footer class="cs-footer">
-      <p>${escapeHtml(copy.footer.updated)} <span data-role="frozen-date">—</span></p>
+      <p>${escapeHtml(copy.footer.updated)} <span data-role="frozen-date">—</span> · <a href="${RESULTS_URL}" target="_blank" rel="noreferrer">GitHub</a></p>
       ${languageSwitch}
     </footer>
   `;
@@ -328,12 +505,11 @@ export function hydrateCaseStudy(
     element.textContent = metric.seed_count.toLocaleString('en-US');
   });
 
-  root.querySelectorAll<HTMLElement>('[data-bar-max-id]').forEach((group) => {
-    const max = metrics.get(group.dataset.barMaxId ?? '')?.value;
-    group.querySelectorAll<HTMLElement>('[data-bar-metric-id]').forEach((fill) => {
-      const value = metrics.get(fill.dataset.barMetricId ?? '')?.value;
-      const share = typeof value === 'number' && typeof max === 'number' && max > 0 ? value / max : 0;
-      fill.style.setProperty('--share', String(Math.min(1, Math.max(0, share))));
+  root.querySelectorAll<HTMLElement>('[data-max-ref]').forEach((group) => {
+    const maxRef = group.dataset.maxRef ?? '';
+    group.querySelectorAll<HTMLElement>('[data-value-ref]').forEach((fill) => {
+      const value = share(fill.dataset.valueRef ?? '', maxRef, metrics);
+      fill.style.setProperty('--share', String(value ?? 0));
     });
   });
 
