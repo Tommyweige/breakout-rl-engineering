@@ -186,6 +186,40 @@ describe('Cross-locale parity', () => {
     expect(table).not.toContain('{{');
   });
 
+  it('keeps every literal `#` in the copy, so issue and PR numbers reach the DOM intact', () => {
+    // Templates are split at their hydration tokens and inline HTML tags are
+    // dropped, so what remains must appear verbatim in the rendered text. A
+    // markdown-style pass that treated `#` as a heading marker would delete
+    // these fragments, which is exactly what this test pins down.
+    const fragmentsOf = (copy: unknown): string[] => {
+      const fragments: string[] = [];
+      const walk = (value: unknown): void => {
+        if (typeof value === 'string') {
+          for (const chunk of value.replaceAll(/<[^>]+>/g, '').split(/\{\{[^}]+\}\}/)) {
+            if (chunk.includes('#')) fragments.push(chunk);
+          }
+          return;
+        }
+        if (value && typeof value === 'object') Object.values(value).forEach(walk);
+      };
+      walk(copy);
+      return fragments;
+    };
+
+    for (const locale of locales) {
+      const root = mount(locale);
+      hydrateCaseStudy(root, summary, locale);
+      const rendered = root.textContent ?? '';
+      const fragments = fragmentsOf(CASE_STUDY_COPY[locale]);
+
+      expect(fragments.length).toBeGreaterThan(0);
+      for (const fragment of fragments) {
+        expect(rendered, `${locale} lost "#" fragment: ${fragment}`).toContain(fragment);
+      }
+      expect(text(root, '.cs-negative-card:nth-of-type(3) .cs-card-kicker')).toContain('#48–#61');
+    }
+  });
+
   it('keeps measured values out of locale copy so both pages hydrate from summary.json', () => {
     const serialized = JSON.stringify(CASE_STUDY_COPY);
     for (const value of ['30.933', '137.47', '721.8', '6.93', '864', '2,500,000', '201M', '108,000', '27,000']) {
