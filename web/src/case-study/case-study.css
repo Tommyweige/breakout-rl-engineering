@@ -974,12 +974,16 @@ main {
 }
 
 .cs-footer-note {
-  max-width: 560px;
-  text-align: right;
+  max-width: 640px;
+  text-align: left;
 }
 
 .cs-footer-note strong {
   color: var(--coral);
+}
+
+.cs-footer-note p + p {
+  margin-top: 8px;
 }
 
 @media (max-width: 980px) {
@@ -1011,10 +1015,6 @@ main {
 
   .cs-footer {
     flex-direction: column;
-  }
-
-  .cs-footer-note {
-    text-align: left;
   }
 }
 

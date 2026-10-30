@@ -444,7 +444,8 @@ export function renderCaseStudyShell(locale: Locale): string {
         <p>${escapeHtml(copy.footer.updated)} <span data-role="frozen-date">—</span>.</p>
       </div>
       <div class="cs-footer-note">
-        <p><strong>${escapeHtml(copy.footer.notClaimedLabel)}</strong> ${escapeHtml(copy.footer.notClaimed)}</p>
+        <p><strong>${escapeHtml(copy.footer.limitsHeading)}</strong></p>
+        ${copy.footer.limits.map((limit) => `<p>${escapeHtml(limit)}</p>`).join('')}
         <p><a href="/">${escapeHtml(copy.footer.playDemo)}</a> · <a href="#evidence">${escapeHtml(copy.footer.evidence)}</a> · <a href="https://github.com/Tommyweige/breakout-rl-engineering" target="_blank" rel="noreferrer">${escapeHtml(copy.footer.github)}</a></p>
       </div>
     </footer>

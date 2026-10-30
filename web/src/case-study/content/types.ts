@@ -165,8 +165,9 @@ export interface CaseStudyCopy {
   footer: {
     brand: string;
     updated: string;
-    notClaimedLabel: string;
-    notClaimed: string;
+    limitsHeading: string;
+    /** Two or three plain sentences. Each limit is stated once, in prose. */
+    limits: string[];
     playDemo: string;
     evidence: string;
     github: string;
