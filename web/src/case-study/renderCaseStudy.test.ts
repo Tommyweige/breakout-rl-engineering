@@ -155,7 +155,7 @@ describe('Cross-locale parity', () => {
     const root = mount('zh-TW');
     hydrateCaseStudy(root, summary, 'zh-TW');
     expect(root.querySelector('[data-role="results-table"] tbody')?.textContent).toContain(
-      'RGB 預測控制器 canonical clear detection 次數（a8445df）',
+      '打穿兩面牆的回合數（a8445df）',
     );
     expect(root.querySelector('[data-role="results-table"]')?.textContent).toContain('30.933');
     expect(root.querySelectorAll('[data-role="contract-table"] th').length).toBeGreaterThan(0);
