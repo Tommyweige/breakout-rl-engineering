@@ -176,28 +176,43 @@ describe('dual game loop', () => {
   });
 
   it('reports policy inference separately from the Agent environment step', async () => {
-    const human = new FakeHumanEnvironment();
-    const agent = new FakeAgentEnvironment();
-    const steps: AgentLoopStep[] = [];
-    const loop = new DualGameLoop({
-      human,
-      agent,
-      agentRuntime: { outerActionRepeat: 4, stickyActionProbability: 0.25 },
-      humanCommand: () => ({ kind: 'discrete', actionIndex: 0 }),
-      infer: async () => {
-        await wait(10);
-        return policyResult(2);
-      },
-      onAgentStep: (step) => steps.push(step),
-    });
+    // A real timer would race the assertion: on a loaded parallel worker a 10 ms
+    // timeout can fire at 9.3 ms. Advance a controlled clock from inside each
+    // phase instead, so both measurements are exact and the test never sleeps.
+    let clock = 0;
+    const nowSpy = vi.spyOn(performance, 'now').mockImplementation(() => clock);
 
-    await loop.stepOnce();
+    try {
+      const human = new FakeHumanEnvironment();
+      const agent = new FakeAgentEnvironment();
+      const steps: AgentLoopStep[] = [];
+      agent.step = (action: number): EnvironmentStep => {
+        agent.actions.push(action);
+        clock += 3;
+        return fakeAgentStep(action);
+      };
+      const loop = new DualGameLoop({
+        human,
+        agent,
+        agentRuntime: { outerActionRepeat: 4, stickyActionProbability: 0.25 },
+        humanCommand: () => ({ kind: 'discrete', actionIndex: 0 }),
+        infer: async () => {
+          clock += 12.5;
+          return policyResult(2);
+        },
+        onAgentStep: (step) => steps.push(step),
+      });
 
-    const step = steps[0];
-    expect(step).toBeDefined();
-    expect(step!.inferenceMs).toBeGreaterThanOrEqual(10);
-    expect(step!.environmentStepMs).toBeGreaterThanOrEqual(0);
-    expect(step!.totalDecisionMs).toBeGreaterThanOrEqual(step!.inferenceMs + step!.environmentStepMs);
+      await loop.stepOnce();
+
+      const step = steps[0];
+      expect(step).toBeDefined();
+      expect(step!.inferenceMs).toBe(12.5);
+      expect(step!.environmentStepMs).toBe(3);
+      expect(step!.totalDecisionMs).toBe(15.5);
+    } finally {
+      nowSpy.mockRestore();
+    }
   });
 
   it('routes each display-paced inference through the interactive frame step with the trained repeat', async () => {
