@@ -250,13 +250,12 @@ export const zhTwCopy: CaseStudyCopy = {
           kind: 'stats',
           items: [
             { value: '{{metric:onnx_fixture_actions_match}}／{{seeds:onnx_fixture_actions_match}}', label: '選到相同動作的畫面', tone: 'lime' },
-            { value: '{{metric:onnx_max_abs_q_diff}}', label: 'ONNX 與 PyTorch 的 Q 值最大差距' },
-            { value: '{{fact:browser_max_q_diff}}', label: '瀏覽器裡的 Q 值最大差距', tone: 'blue' },
+            { value: '{{fact:web_wasm_p50_ms}}', label: '瀏覽器裡每次決策的中位數（WASM）', tone: 'blue' },
           ],
         },
         {
           kind: 'p',
-          text: '速度也量了。在瀏覽器裡，CPU 版（WASM）每次決策的中位數是 {{fact:web_wasm_p50_ms}} 毫秒，GPU 版（WebGPU）反而要 {{fact:web_webgpu_p50_ms}} 毫秒。這麼小的網路，把資料搬上 GPU 的成本比計算本身還貴，所以網頁預設用 WASM。',
+          text: '速度也量了：GPU 版（WebGPU）每次決策反而要 {{fact:web_webgpu_p50_ms}} 毫秒。這麼小的網路，把資料搬上 GPU 的成本比計算本身還貴，所以網頁預設用 WASM。',
         },
         {
           kind: 'table',
@@ -328,8 +327,8 @@ export const zhTwCopy: CaseStudyCopy = {
         {
           kind: 'callout',
           tone: 'muted',
-          title: '這不代表神經網路學不會',
-          text: '這套規則下神經網路只完整訓練過一次，更多次、更長的訓練都可能改變結果。能說的只有：在這個規模下，算的比學的好太多。',
+          title: '我的猜測，與下一步',
+          text: '我的猜測是規則變嚴了：每格都要決定，同一段遊戲時間裡神經網路要做四倍的決定，等於把必須記住的時間跨度拉長四倍，而這個網路只練過一次、只有 200 萬格。下一步我在同一套規則下、其他條件都不動，訓練多個各自獨立的網路並把訓練量拉長，看平均分會不會順著學習曲線繼續往上。如果會，差距就來自訓練量與單次運氣，不是這條路線學不會；如果不會，才輪到「看畫面學動作真的比直接計算貴」這個解釋。',
         },
       ],
     },
@@ -361,19 +360,12 @@ export const zhTwCopy: CaseStudyCopy = {
         },
         {
           kind: 'p',
-          text: '判定器本身也要驗證。我錄下三種真實軌跡：完整打光、只打完第一面牆、剩最後一塊磚。判定器只能在第一種、剛好第二面牆清空的那一格說「打光」。接著故意把它改壞 {{fact:detector_mutants}} 種方式，確認測試每一種都抓得到：',
+          text: '判定器本身也要驗證。我錄下三種真實軌跡：完整打光、只打完第一面牆、剩最後一塊磚。判定器只能在第一種、剛好第二面牆清空的那一格說「打光」。我也故意把它改壞 {{fact:detector_mutants}} 種方式，測試每一種都抓得到。',
         },
         {
-          kind: 'table',
-          caption: '故意弄壞判定器的 6 種方式，全部被測試抓到',
-          headers: ['弄壞的方式', '會造成的錯'],
-          rows: [
-            ['打到第一面牆（432 分）就算打光', '只打完一半也算破關'],
-            ['分數到 860 就算打光', '還差一塊磚也算破關'],
-            ['失去最後一條命時把打光作廢', '打光後才結束被算失敗'],
-            ['打光的時間點晚記一格', '破關時間不準'],
-            ['用「決策次數 × 4」推算畫面格數', '時間差 4 倍'],
-            ['後面的分數覆寫第一次打光的時間', '破關時間被往後推'],
+          kind: 'links',
+          items: [
+            { label: '判定器的六種改壞方式', detail: '每一種會造成什麼錯、由哪個測試抓到', href: `${REPO}/blob/main/docs/clear-semantics.md` },
           ],
         },
         {
@@ -423,7 +415,7 @@ export const zhTwCopy: CaseStudyCopy = {
         },
         {
           kind: 'p',
-          text: 'Laya 的速度夠：決策間隔約 {{metric:laya_browser_decision_interval_p50_ms}} 毫秒，畫面每秒 {{metric:laya_browser_presented_fps}} 張。問題在決策品質：它常左右來回切換。調整後連續反向從 {{metric:laya_control_diagnostic_raw_reversals}} 次降到 {{metric:laya_control_diagnostic_reversals}} 次，球拍仍接不住球。',
+          text: 'Laya 的速度夠：頁面每 {{metric:laya_browser_decision_interval_p50_ms}} 毫秒送出一次決策，畫面每秒 {{metric:laya_browser_presented_fps}} 張。問題在決策品質：它常左右來回切換。調整後連續反向從 {{metric:laya_control_diagnostic_raw_reversals}} 次降到 {{metric:laya_control_diagnostic_reversals}} 次，球拍仍接不住球。',
         },
       ],
     },
@@ -487,7 +479,7 @@ export const zhTwCopy: CaseStudyCopy = {
             { label: '破關判定與驗證', detail: '判定器如何運作與校準', href: `${REPO}/blob/main/docs/clear-semantics.md` },
             { label: '追蹤程式 15 局紀錄', detail: '逐局分數與打光時間', href: `${REPO}/blob/main/audits/browser-clear/native-15/report.md` },
             { label: '重現步驟', detail: '從安裝到跑出結果', href: `${REPO}/blob/main/docs/repro/README.md` },
-            { label: '30 天的完整文章', detail: '每天做了什麼、遇到什麼', href: `${REPO}/tree/docs-ironman-series/articles` },
+            { label: '30 天的完整文章', detail: '每天做了什麼、遇到什麼', href: `${REPO}/tree/docs-ironman-series` },
             { label: '線上試玩', detail: '在瀏覽器裡和 AI 對戰', href: '/' },
           ],
         },

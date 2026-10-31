@@ -250,13 +250,12 @@ export const enCopy: CaseStudyCopy = {
           kind: 'stats',
           items: [
             { value: '{{metric:onnx_fixture_actions_match}} / {{seeds:onnx_fixture_actions_match}}', label: 'frames with the same move', tone: 'lime' },
-            { value: '{{metric:onnx_max_abs_q_diff}}', label: 'largest Q-value gap, ONNX vs PyTorch' },
-            { value: '{{fact:browser_max_q_diff}}', label: 'largest Q-value gap in the browser', tone: 'blue' },
+            { value: '{{fact:web_wasm_p50_ms}}', label: 'median time per decision in the browser (WASM)', tone: 'blue' },
           ],
         },
         {
           kind: 'p',
-          text: 'Speed was measured too. In the browser the CPU build (WASM) takes a median {{fact:web_wasm_p50_ms}} ms per decision, while the GPU build (WebGPU) takes {{fact:web_webgpu_p50_ms}} ms. For a network this small, moving data to the GPU costs more than the math, so the page uses WASM by default.',
+          text: 'Speed was measured too: the GPU build (WebGPU) takes {{fact:web_webgpu_p50_ms}} ms per decision instead. For a network this small, moving data to the GPU costs more than the math, so the page uses WASM by default.',
         },
         {
           kind: 'table',
@@ -328,8 +327,8 @@ export const enCopy: CaseStudyCopy = {
         {
           kind: 'callout',
           tone: 'muted',
-          title: 'This does not mean a neural network can’t learn it',
-          text: 'Under these rules the neural network was fully trained only once; more independent runs or longer training could change the result. What can be said is narrower: at this scale, calculating beat learning by a wide margin.',
+          title: 'My guess, and the next experiment',
+          text: 'My guess is that the stricter rules did it. Deciding on every frame means four times as many decisions in the same stretch of game time, so the span the network has to hold in mind is four times longer — and this network was trained once, for 2 million frames. The next experiment changes only that: the same rules, but several independently trained networks, each trained longer, to see whether the average keeps climbing along the learning curve. If it does, the gap comes from training budget and from a single run, not from this approach being unable to learn. If it does not, then the other explanation stands: reading pixels really does cost more than calculating.',
         },
       ],
     },
@@ -361,19 +360,12 @@ export const enCopy: CaseStudyCopy = {
         },
         {
           kind: 'p',
-          text: 'The detector itself had to be tested. I recorded three real trajectories: a full clear, the first wall only, and all but the last brick. It may say “clear” only for the first, on exactly the frame the second wall empties. Then I broke it on purpose in {{fact:detector_mutants}} different ways and checked the tests caught each one:',
+          text: 'The detector itself had to be tested. I recorded three real trajectories: a full clear, the first wall only, and all but the last brick. It may say “clear” only for the first, on exactly the frame the second wall empties. I also broke it on purpose in {{fact:detector_mutants}} different ways, and the tests caught every one.',
         },
         {
-          kind: 'table',
-          caption: 'Six deliberately broken detectors, all caught by the tests',
-          headers: ['How it was broken', 'The mistake it would make'],
-          rows: [
-            ['Count a clear at the first wall (432 points)', 'Call a half-finished game a clear'],
-            ['Count a clear at 860 points', 'Call it a clear with one brick left'],
-            ['Cancel the clear when the last life is lost', 'Count a game that ended after clearing as a failure'],
-            ['Record the clear one frame late', 'Report the wrong clear time'],
-            ['Estimate frames as “decisions × 4”', 'Get the time 4× wrong under the every-frame rules'],
-            ['Let later scores overwrite the first clear time', 'Push the clear time later'],
+          kind: 'links',
+          items: [
+            { label: 'The six broken detectors', detail: 'the mistake each one makes, and the test that catches it', href: `${REPO}/blob/main/docs/clear-semantics.md` },
           ],
         },
         {
@@ -423,7 +415,7 @@ export const enCopy: CaseStudyCopy = {
         },
         {
           kind: 'p',
-          text: 'Laya was fast enough: about {{metric:laya_browser_decision_interval_p50_ms}} ms between decisions, with the screen holding {{metric:laya_browser_presented_fps}} frames a second. The problem was decision quality: it kept flipping between left and right. After tuning the controls, back-to-back reversals fell from {{metric:laya_control_diagnostic_raw_reversals}} to {{metric:laya_control_diagnostic_reversals}}, but the paddle still missed the ball.',
+          text: 'Laya was fast enough: the page delivered one decision every {{metric:laya_browser_decision_interval_p50_ms}} ms, with the screen holding {{metric:laya_browser_presented_fps}} frames a second. The problem was decision quality: it kept flipping between left and right. After tuning the controls, back-to-back reversals fell from {{metric:laya_control_diagnostic_raw_reversals}} to {{metric:laya_control_diagnostic_reversals}}, but the paddle still missed the ball.',
         },
       ],
     },
@@ -487,7 +479,7 @@ export const enCopy: CaseStudyCopy = {
             { label: 'Clear detection and its validation', detail: 'how the detector works and how it was calibrated', href: `${REPO}/blob/main/docs/clear-semantics.md` },
             { label: 'The tracker’s 15 games', detail: 'per-game score, clear time, and lives left', href: `${REPO}/blob/main/audits/browser-clear/native-15/report.md` },
             { label: 'Reproduction steps', detail: 'from installing the environment to the results', href: `${REPO}/blob/main/docs/repro/README.md` },
-            { label: 'The 30 daily articles', detail: 'what each day did and what went wrong (in Chinese)', href: `${REPO}/tree/docs-ironman-series/articles` },
+            { label: 'The 30 daily articles', detail: 'what each day did and what went wrong (in Chinese)', href: `${REPO}/tree/docs-ironman-series` },
             { label: 'Play online', detail: 'play against the AI in your browser', href: '/' },
           ],
         },
