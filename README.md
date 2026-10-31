@@ -2,6 +2,18 @@
 
 [繁體中文](README.zh-TW.md) · [Live Demo](https://breakout.tommypan.com) · [Case Study](https://breakout.tommypan.com/case-study) · [Final Results](docs/final-results/README.md) · [Reproduce](docs/repro/README.md) · [30-Day Ironman Series](https://github.com/Tommyweige/breakout-rl-engineering/tree/docs-ironman-series/docs)
 
+**A program that was never trained beats the neural network from this project.** The tracker cleared both walls in 4 of 15 official games, averaging 721.8 points. Under the same rules — one decision per frame, the same 15 games — the trained network averaged 6.93.
+
+| Both walls cleared | Tracker average score | Trained network, same rules |
+| :---: | :---: | :---: |
+| **4 of 15 games** | **721.8** | **6.93** |
+
+**[Play it in your browser](https://breakout.tommypan.com)** · **[Read the 30-day case study](https://breakout.tommypan.com/case-study)**
+
+![The Breakout demo: you play on the left, the AI plays on the right](docs/final-results/screenshots/game-page.png)
+
+## Project overview
+
 An end-to-end reinforcement learning engineering project for Atari Breakout, covering DQN training, reproducible evaluation, CUDA-accelerated workflows, ONNX inference, and browser deployment.
 
 The final application runs both the Atari environment and the trained RL policy directly in the browser, without a Python backend.
@@ -18,7 +30,7 @@ The final application runs both the Atari environment and the trained RL policy 
 - **A browser-side audit adds a distribution, not the official result.** 120 episodes of the same control law on pinned ALE WASM: 43/120 canonical clear detections, mean 731.4 ([audit](audits/browser-clear/README.md)).
 - **Negative and inconclusive results are part of the record.** Life-loss reward shaping did not pass its promotion gate; PER was descriptive only; the DQN first-clear probes ended without a canonical clear detection; the Laya Vision side experiment has latency measurements but no complete episode.
 
-“Unbeatable” in the browser UI is a **difficulty label** (no deliberate mistake injection), not an experimental result. The project makes no world-record, “solved”, stable-clear, or fair-method-winner claim.
+In the browser UI, Easy, Medium and Hard all run this DQN policy, with 30%, 15% and 5% deliberate mistake rates; **“Unbeatable” runs the pixel tracker instead** — no neural network, no injected mistakes. These are difficulty settings, not experimental results. The project makes no world-record, “solved”, stable-clear, or fair-method-winner claim.
 
 ## Highlights
 

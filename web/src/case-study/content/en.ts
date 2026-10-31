@@ -272,7 +272,7 @@ export const enCopy: CaseStudyCopy = {
         },
         {
           kind: 'p',
-          text: 'Identical scores mean the whole path, from screen processing to picking a move, survived the trip intact. This is the AI you play on the home page.',
+          text: 'Identical scores mean the whole path, from screen processing to picking a move, survived the trip intact. On the home page, Easy, Medium and Hard all run this network; Unbeatable switches to the tracker and never touches it.',
         },
       ],
     },

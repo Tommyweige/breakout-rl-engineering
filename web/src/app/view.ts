@@ -105,10 +105,10 @@ function renderAgentPanel(): string {
         <div class="panel-heading-tools">
           <label class="difficulty-picker" for="difficulty-select">AI Difficulty
             <select id="difficulty-select" data-action="difficulty" aria-label="Choose AI difficulty">
-              <option value="easy">Easy</option>
-              <option value="medium">Medium</option>
-              <option value="hard" selected>Hard</option>
-              <option value="unbeatable">Unbeatable</option>
+              <option value="easy">Easy · DQN</option>
+              <option value="medium">Medium · DQN</option>
+              <option value="hard" selected>Hard · DQN</option>
+              <option value="unbeatable">Unbeatable · Tracker</option>
             </select>
           </label>
           <span class="status-chip" data-role="agent-state">Ready</span>

@@ -18,7 +18,7 @@
 - **瀏覽器端 audit 補充分布，不是官方結果。** 同一套控制律在 pinned ALE WASM 跑 120 局：43/120 canonical clear detections、mean 731.4（[audit](audits/browser-clear/README.md)）。
 - **負面與未定論結果也是紀錄的一部分。** Life-loss reward shaping 未通過 promotion gate；PER 只有描述性結果；DQN first-clear probes 沒有 canonical clear detection；Laya Vision side experiment 有延遲量測，但沒有完整 episode。
 
-瀏覽器 UI 的「Unbeatable」是**難度名稱**（不注入刻意失誤），不是實驗結論。本專案不宣稱世界紀錄、遊戲已被解決（solved）、穩定 clear，或方法公平勝出。
+瀏覽器 UI 的 Easy、Medium、Hard 都跑這個 DQN policy，分別注入 30%、15%、5% 的刻意失誤；**「Unbeatable」改跑影像追蹤程式**，不經過神經網路、也不注入失誤。這些是難度設定，不是實驗結論。本專案不宣稱世界紀錄、遊戲已被解決（solved）、穩定 clear，或方法公平勝出。
 
 ## 專案重點
 

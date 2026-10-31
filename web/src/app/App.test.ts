@@ -115,6 +115,21 @@ describe('Day 30 Human vs AI browser product', () => {
     expect(root.querySelectorAll('canvas')).toHaveLength(2);
   });
 
+  it('names the controller each AI difficulty actually runs', () => {
+    const root = document.createElement('div');
+    document.body.append(root);
+    app = new App(root);
+    app.mount();
+
+    const options = [...root.querySelectorAll<HTMLOptionElement>('[data-action="difficulty"] option')];
+    expect(options.map((option) => option.textContent)).toEqual([
+      'Easy · DQN',
+      'Medium · DQN',
+      'Hard · DQN',
+      'Unbeatable · Tracker',
+    ]);
+  });
+
   it('switches Mouse back to Keyboard without replacing or resetting the game surface', () => {
     const root = document.createElement('div');
     document.body.append(root);

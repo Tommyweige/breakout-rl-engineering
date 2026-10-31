@@ -1,6 +1,6 @@
 # Closeout screenshots
 
-These are real captures from the built browser application, not mock frames. They were taken on 2026-10-28 with headless Chromium at 1440×1000 (desktop) and 390×844 (mobile).
+These are real captures from the built browser application, not mock frames. The closeout captures were taken on 2026-10-28 with headless Chromium at 1440×1000 (desktop) and 390×844 (mobile); `game-page.png` was re-captured on 2026-10-31 to show the labelled difficulty menu.
 
 | File | What it shows |
 | --- | --- |
@@ -8,6 +8,7 @@ These are real captures from the built browser application, not mock frames. The
 | [`after-game.png`](after-game.png) | The game page after the closeout, with the visible **Research results** link and the existing Human vs AI layout intact. |
 | [`case-study-desktop.png`](case-study-desktop.png) | The case-study first screen at 1440×1000: hook, real gameplay poster, four headline metrics, and evidence statuses. |
 | [`case-study-mobile.png`](case-study-mobile.png) | The case-study first screen at 390×844: hook, video, and the first verified metric card. |
+| [`game-page.png`](game-page.png) | The game page at 1440×1000 with the AI on **Unbeatable · Tracker** after 12 s of play, showing the controller names in the difficulty menu. |
 
 The recorded gameplay used by the case study is [`tracker.mp4`](../../../web/public/case-study/tracker.mp4), with poster [`tracker-poster.png`](../../../web/public/case-study/tracker-poster.png). It is a real capture of the web demo’s “Unbeatable” AI (the tracker, the TypeScript port of the pixel controller) played at 6× speed; it is not a scored evaluation episode. [`gameplay-poster.png`](../../../web/public/case-study/gameplay-poster.png) is an earlier full-app capture of the DQN “Hard” mode, kept as the share image.
 

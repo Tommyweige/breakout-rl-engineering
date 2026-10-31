@@ -272,7 +272,7 @@ export const zhTwCopy: CaseStudyCopy = {
         },
         {
           kind: 'p',
-          text: '分數完全一樣，代表從畫面處理到選動作，整條路在瀏覽器裡都沒走樣。首頁對戰裡的 AI 就是它。',
+          text: '分數完全一樣，代表從畫面處理到選動作，整條路在瀏覽器裡都沒走樣。首頁對戰裡的 Easy、Medium、Hard 三檔跑的就是這個神經網路；切到 Unbeatable 會換成追蹤程式，完全不經過網路。',
         },
       ],
     },
