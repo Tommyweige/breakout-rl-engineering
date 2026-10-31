@@ -6,3 +6,18 @@ web/public/fixtures/day22-reference.json text eol=lf
 web/public/web-model-manifest.json text eol=lf
 web/public/fixtures/day22-probe-observations.u8 binary
 web/public/models/final_model/model.onnx binary
+
+# Recorded SHA-256 digests cover the exact bytes of these files, so a CRLF
+# checkout would break the provenance tests. Pin LF for every hashed text file.
+configs/eval/breakout_completion_audit_v1.json text eol=lf
+configs/eval/breakout_contract_v3.json text eol=lf
+audits/browser-clear/episodes-120.csv text eol=lf
+audits/browser-clear/summary-120.json text eol=lf
+audits/browser-clear/native-15/summary.json text eol=lf
+audits/browser-clear/reproduce-137-47.py text eol=lf
+docs/final-results/evidence/laya-vision/browser-qa.mjs text eol=lf
+docs/final-results/evidence/laya-vision/laya-browser-qa-run1.json text eol=lf
+docs/final-results/evidence/laya-vision/laya-browser-qa-run2.json text eol=lf
+docs/final-results/evidence/laya-vision/service-environment.txt text eol=lf
+tests/fixtures/breakout_clear/v2_full_clear.json text eol=lf
+tests/fixtures/breakout_clear/v3_full_clear.json text eol=lf
