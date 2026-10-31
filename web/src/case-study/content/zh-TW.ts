@@ -33,7 +33,7 @@ export const zhTwCopy: CaseStudyCopy = {
         label: '同一套規則下的平均分：追蹤程式 vs 神經網路',
       },
       {
-        value: '{{metric:onnx_fixture_actions_match}}<small>／{{seeds:onnx_fixture_actions_match}}</small>',
+        value: '{{metric:browser_fixture_actions_match}}<small>／{{seeds:browser_fixture_actions_match}}</small>',
         label: '搬進瀏覽器後，測試畫面上動作一致',
         tone: 'blue',
       },
@@ -244,12 +244,12 @@ export const zhTwCopy: CaseStudyCopy = {
         },
         {
           kind: 'p',
-          text: '搬家最怕「看起來能跑，其實變了」。所以我固定了 {{seeds:onnx_fixture_actions_match}} 張測試畫面，讓原本的模型和搬過去的模型各算一次，逐張比對：',
+          text: '搬家最怕「看起來能跑，其實變了」。所以我固定了 {{seeds:browser_fixture_actions_match}} 張測試畫面，讓原本的模型和搬過去的模型各算一次，逐張比對：',
         },
         {
           kind: 'stats',
           items: [
-            { value: '{{metric:onnx_fixture_actions_match}}／{{seeds:onnx_fixture_actions_match}}', label: '選到相同動作的畫面', tone: 'lime' },
+            { value: '{{metric:browser_fixture_actions_match}}／{{seeds:browser_fixture_actions_match}}', label: '選到相同動作的畫面', tone: 'lime' },
             { value: '{{fact:web_wasm_p50_ms}}', label: '瀏覽器裡每次決策的中位數（WASM）', tone: 'blue' },
           ],
         },

@@ -54,7 +54,8 @@ Each item in this repository is labelled with one of four statuses:
 What is actually verified in this checkout:
 
 - The frozen DQN artifact: 3,292,837 parameters, 4x84x84 input, 4 actions, ONNX SHA-256 `cf90c74b...ef7f12`, source checkpoint SHA-256 `ab07c0a4...79841c48`, source model SHA-256 `6002029d...624389a`.
-- ONNX/PyTorch parity on 60 fixed probe states: 60/60 actions match, maximum absolute Q-value difference 0.0.
+- The ONNX export left the model unchanged: the same PyTorch model, run on 60 fixed probe states before and after export, gives 60/60 matching actions and a maximum Q-value difference of 0.0. This compares the model with itself, so 0 is expected; it is not the browser error.
+- Browser parity, reported in the Day 27 article and not rerun in this checkout: ONNX Runtime Web in Chrome against the PyTorch reference on the same 60 states, 60/60 matching actions and a maximum Q-value difference of 0.000162.
 - Contract v2 and v3 SHA-256 values and their differences: v2 is frame_skip=4 with a 27,000-agent-step limit; v3 is frame_skip=1 with a 108,000-agent-step limit. Both keep the same 108,000 ALE episode-frame limit, frame stack 4, sticky-action probability 0.25, FIRE reset, and 15 evaluation seeds.
 - The completion detector on genuine clears (authoritative record: [clear semantics](../clear-semantics.md)): in addition to the original synthetic RAM/reward fixture, replayable Contract v2 and v3 ALE trajectories that clear both walls are detected at the exact step the second wall empties; first-wall (432) and last-brick (860) trajectories are not; six detector mutants are all killed. The detector fails closed: an unsupported runtime or a RAM/raw-reward disagreement makes the state unknown, and unknown is never reported as 0. See [clear semantics](../clear-semantics.md).
 - The current controller's official native evaluation (`a8445df`, 15 seeds, per-episode CSV committed) and the exact reproduction of the PR #26 control law's 137.47.
@@ -249,7 +250,8 @@ The deployed ONNX policy is trained under Contract v2. Do not evaluate it under 
 | Contract v3 | SHA-256 `d97b7fcb...25c5a786` | `configs/eval/breakout_contract_v3.json` |
 | Frozen DQN | 3,292,837 parameters, 2.5M transitions, training seed 2022 | `web/public/models/final_model/model.onnx.metadata.json` |
 | ONNX runtime model | 13,175,034 bytes, SHA-256 `cf90c74b...ef7f12` | `web/public/models/final_model/model.onnx` |
-| Browser parity | 60/60 actions, max Q diff 0.0 | model metadata |
+| Export self-check | same PyTorch model before vs after ONNX export: 60/60 actions, max Q diff 0.0 | model metadata |
+| Browser parity | ONNX Runtime Web vs PyTorch reference: 60/60 actions, max Q diff 0.000162 | Day 27 article (`docs-ironman-series`) |
 
 **Missing raw artifacts.** The DQN holdout episodes, the original PR #26 controller output directory (the run is now reproducible, and the `a8445df` run is committed under `audits/browser-clear/native-15/`), the reward-shaping and PER run directories, and the earlier Laya service runs are not in `main`. The 2026-10-29 browser-session records are committed under `docs/final-results/evidence/laya-vision/`. The repository ignores `outputs/`, `experiments/`, `evaluations/`, and `assets/` by design. No archive or release currently holds them. Until one does, the corresponding numbers remain **historical reported**, not independently reproducible.
 

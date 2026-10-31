@@ -33,7 +33,7 @@ export const enCopy: CaseStudyCopy = {
         label: 'average score under the same rules: tracker vs neural network',
       },
       {
-        value: '{{metric:onnx_fixture_actions_match}}<small> of {{seeds:onnx_fixture_actions_match}}</small>',
+        value: '{{metric:browser_fixture_actions_match}}<small> of {{seeds:browser_fixture_actions_match}}</small>',
         label: 'fixed test frames where the network picks the same move after moving into the browser',
         tone: 'blue',
       },
@@ -244,12 +244,12 @@ export const enCopy: CaseStudyCopy = {
         },
         {
           kind: 'p',
-          text: 'The risk in a move like this is “it runs, but it changed”. So I fixed {{seeds:onnx_fixture_actions_match}} test frames, ran both the original and the moved model on each one, and compared them frame by frame:',
+          text: 'The risk in a move like this is “it runs, but it changed”. So I fixed {{seeds:browser_fixture_actions_match}} test frames, ran both the original and the moved model on each one, and compared them frame by frame:',
         },
         {
           kind: 'stats',
           items: [
-            { value: '{{metric:onnx_fixture_actions_match}} / {{seeds:onnx_fixture_actions_match}}', label: 'frames with the same move', tone: 'lime' },
+            { value: '{{metric:browser_fixture_actions_match}} / {{seeds:browser_fixture_actions_match}}', label: 'frames with the same move', tone: 'lime' },
             { value: '{{fact:web_wasm_p50_ms}}', label: 'median time per decision in the browser (WASM)', tone: 'blue' },
           ],
         },

@@ -272,7 +272,7 @@
     },
     {
       "id": "onnx_fixture_actions_match",
-      "label": "ONNX fixture actions matching PyTorch",
+      "label": "Export self-check: same PyTorch model before vs after ONNX export, matching actions",
       "value": 60,
       "unit": "matching actions out of 60 fixtures",
       "contract": {
@@ -286,11 +286,11 @@
       "ref": "web/public/models/final_model/model.onnx.metadata.json",
       "verification_status": "verified",
       "raw_artifact_status": "in_repo",
-      "notes": "source_model_validation.actions_match is true and max_abs_diff_before_vs_after is 0.0."
+      "notes": "source_model_validation runs the same PyTorch model on the 60 fixtures before and after the ONNX export (backend PyTorch; ONNX Runtime execution was deferred to Day 23), so it compares the model with itself and confirms the export did not alter it. It is not a browser measurement; see browser_fixture_actions_match."
     },
     {
       "id": "onnx_max_abs_q_diff",
-      "label": "Maximum PyTorch to ONNX Q-value difference",
+      "label": "Export self-check: maximum Q-value difference, same PyTorch model before vs after ONNX export",
       "value": 0.0,
       "unit": "absolute Q-value difference",
       "contract": {
@@ -304,7 +304,43 @@
       "ref": "web/public/models/final_model/model.onnx.metadata.json",
       "verification_status": "verified",
       "raw_artifact_status": "in_repo",
-      "notes": "Reported at export time; it is parity evidence, not a gameplay result."
+      "notes": "The model compared with itself, so 0 is expected; it shows the export left the model unchanged. It is not the browser error: ONNX Runtime Web in Chrome differed by at most 0.000162 (browser_max_abs_q_diff)."
+    },
+    {
+      "id": "browser_fixture_actions_match",
+      "label": "Browser ONNX Runtime Web vs PyTorch reference, matching actions",
+      "value": 60,
+      "unit": "matching actions out of 60 fixtures",
+      "contract": {
+        "id": "day22-breakout-inference-v1",
+        "path": "configs/inference/inference_spec.json",
+        "frame_skip": 4
+      },
+      "seed_count": 60,
+      "seed_role": "fixed probe states",
+      "source": "Day 27 article: the deployed ONNX model run by ONNX Runtime Web in Chrome on Cloudflare Pages, compared with the PyTorch reference Q-values",
+      "ref": "https://github.com/Tommyweige/breakout-rl-engineering/blob/docs-ironman-series/articles/day27-onnx-runtime-web.md",
+      "verification_status": "historical_reported",
+      "raw_artifact_status": "external_branch",
+      "notes": "This is the browser parity number: the model after the move into the browser picks the same action on all 60 fixtures."
+    },
+    {
+      "id": "browser_max_abs_q_diff",
+      "label": "Browser ONNX Runtime Web vs PyTorch reference, maximum Q-value difference",
+      "value": 0.000162,
+      "unit": "absolute Q-value difference",
+      "contract": {
+        "id": "day22-breakout-inference-v1",
+        "path": "configs/inference/inference_spec.json",
+        "frame_skip": 4
+      },
+      "seed_count": 60,
+      "seed_role": "fixed probe states",
+      "source": "Day 27 article: ONNX Runtime Web (WASM) in Chrome vs the PyTorch reference",
+      "ref": "https://github.com/Tommyweige/breakout-rl-engineering/blob/docs-ironman-series/articles/day27-onnx-runtime-web.md",
+      "verification_status": "historical_reported",
+      "raw_artifact_status": "external_branch",
+      "notes": "Day 27 reports 0.0001616 (mean 0.0000370); Day 28 reports 0.0001619 for the same comparison. Small float differences that never changed an action."
     },
     {
       "id": "onnx_model_sha256",
@@ -1435,11 +1471,11 @@
       "method": "PyTorch to ONNX; ONNX Runtime Web; ALE WASM",
       "contract": "v2",
       "seed_summary": "60 fixed probe states for parity; gameplay is interactive",
-      "headline": "60/60 fixture actions match; max Q difference 0.0; runtime model SHA is pinned. No 50-episode browser score is committed.",
+      "headline": "Export self-check (same PyTorch model before vs after export): 60/60, max Q difference 0.0. Browser (ONNX Runtime Web vs PyTorch reference): 60/60 actions match, max Q difference 0.000162. Runtime model SHA is pinned. No 50-episode browser score is committed.",
       "verification_status": "verified",
       "raw_artifact_status": "in_repo",
       "source": "web/public/models/final_model/model.onnx.metadata.json",
-      "notes": "Parity and artifact integrity are verified; gameplay quality is not."
+      "notes": "The export self-check and artifact integrity are verified in this repository; the browser parity numbers come from the Day 27 article. Gameplay quality is not verified."
     },
     {
       "id": "issue-74-laya-browser-session",

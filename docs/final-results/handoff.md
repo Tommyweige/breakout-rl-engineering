@@ -32,7 +32,7 @@
 | Issues closed by this closeout | none |
 | Deployment / tag / Release | none |
 
-**Verified vs reported.** The model hashes, ONNX parity, contract hashes, completion-detector configuration and its validation on genuine clears, the `a8445df` controller's native 15-seed run (4/15 canonical clear detections, mean 721.8), the exact reproduction of the PR #26 law's 137.47, the 120-episode WASM audit, and the 2026-10-29 Laya browser session in [`laya-vision.md`](laya-vision.md) are audited in this repository. The DQN 30.933 (v2) holdout, the DQN 6.93 (v3) baseline, the reward-shaping and PER results, and the earlier Laya latency, memory, and control-diagnostic numbers are **historical reported** or **missing raw artifacts**; they are not independently reproducible from `main`.
+**Verified vs reported.** The model hashes, the ONNX export self-check (the same PyTorch model before vs after export, so 0.0 difference by construction), contract hashes, completion-detector configuration and its validation on genuine clears, the `a8445df` controller's native 15-seed run (4/15 canonical clear detections, mean 721.8), the exact reproduction of the PR #26 law's 137.47, the 120-episode WASM audit, and the 2026-10-29 Laya browser session in [`laya-vision.md`](laya-vision.md) are audited in this repository. The DQN 30.933 (v2) holdout, the DQN 6.93 (v3) baseline, the reward-shaping and PER results, the browser parity (60/60, max Q difference 0.000162, Day 27 article), and the earlier Laya latency, memory, and control-diagnostic numbers are **historical reported** or **missing raw artifacts**; they are not independently reproducible from `main`.
 
 ## 3. Implementation status vs measurement status
 
