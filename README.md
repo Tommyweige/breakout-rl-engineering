@@ -1,6 +1,6 @@
 # Breakout RL Engineering
 
-[繁體中文](README.zh-TW.md) · [Live Demo](https://breakout.tommypan.com) · [Case Study](https://breakout.tommypan.com/case-study) · [Final Results](docs/final-results/README.md) · [Reproduce](docs/repro/README.md) · [30-Day Ironman Series](https://github.com/Tommyweige/breakout-rl-engineering/tree/docs-ironman-series/docs)
+[繁體中文](README.zh-TW.md) · [Live Demo](https://breakout.tommypan.com) · [Case Study](https://breakout.tommypan.com/case-study) · [Final Results](docs/final-results/README.md) · [Reproduce](docs/repro/README.md) · [30-Day Ironman Series](https://github.com/Tommyweige/breakout-rl-engineering/tree/docs-ironman-series)
 
 **A program that was never trained beats the neural network from this project.** The tracker cleared both walls in 4 of 15 official games, averaging 721.8 points. Under the same rules — one decision per frame, the same 15 games — the trained network averaged 6.93.
 
@@ -86,7 +86,7 @@ tests/         Core correctness and regression tests
 web/           Browser application and runtime model assets
 ```
 
-The `main` branch contains the maintained implementation and product code. The 30-day article series and its documentation assets are maintained separately on the [`docs-ironman-series`](https://github.com/Tommyweige/breakout-rl-engineering/tree/docs-ironman-series) branch.
+The `main` branch contains the maintained implementation and product code. The 30-day article series is maintained separately on the [`docs-ironman-series`](https://github.com/Tommyweige/breakout-rl-engineering/tree/docs-ironman-series) branch: its `README.md` is the index, and each day is a Markdown file in `articles/`.
 
 ## Environment Contract
 
@@ -211,13 +211,13 @@ Runtime model assets are stored under `web/public/` because they are required by
 ## Reproducibility
 
 The full clean-clone walkthrough, with the actual install output and the
-known pre-existing failures, is in [`docs/repro/`](docs/repro/README.md).
+remaining operational caveats, is in [`docs/repro/`](docs/repro/README.md).
 
 - [Clean-clone setup, system dependencies, ALE ROM source, web build](docs/repro/setup.md)
 - [One-command smoke path](docs/repro/smoke.md)
 - [GitHub Actions CI](docs/repro/ci.md)
 - [Version tags and provenance](docs/repro/versioning.md)
-- [Known test failures on `main`](docs/repro/known-test-failures.md)
+- [Unit-test status and what the `main` cleanup removed](docs/repro/known-test-failures.md)
 
 ## Quick Start
 
@@ -262,10 +262,10 @@ python -m scripts.smoke.run_smoke --output-dir outputs/smoke
 ```
 
 A passing run takes about two minutes and ends with `Smoke: PASS`. The unit
-suite currently reports 294 passed, 8 CUDA skips, and 13 known pre-existing
-failures; see
-[`docs/repro/known-test-failures.md`](docs/repro/known-test-failures.md) before
-treating the suite as green.
+suite now runs 340 tests with no failures — only hardware-dependent skips — so
+`Smoke: PASS` means the tests really passed; see
+[`docs/repro/known-test-failures.md`](docs/repro/known-test-failures.md) for what
+the `main` cleanup removed to get there.
 
 ### Web
 
@@ -334,13 +334,13 @@ The frozen pack was added in commit `77a0c7b`. Tag the commit that produced any 
 - The DQN holdout is one model and 15 episodes; the Contract v3 DQN baseline is one training seed; the controller result is one 15-seed run (the 120-episode WASM audit is supplementary).
 - Laya has latency measurements but no complete episode, and its draft PR #74 still needs real browser QA. Issues #70–#72 remain open.
 - No 50-episode browser evaluation or world-record/human-timed attempt was completed in this closeout.
-- A clean checkout has 13 pre-existing unit-test failures from the `main` cleanup; they are listed in [`docs/repro/known-test-failures.md`](docs/repro/known-test-failures.md). The smoke classifies them instead of hiding them.
+- A clean checkout's unit suite is green: 340 tests, no failures, only hardware-dependent skips (four ONNX policy tests need the untracked Day 22 model). [`docs/repro/known-test-failures.md`](docs/repro/known-test-failures.md) records which tests the `main` cleanup removed and how the recorded contract hashes are kept LF-stable.
 
 ## Documentation
 
-The development notes and 30-day Ironman series are available on the documentation branch:
+The 30-day Ironman series lives on the `docs-ironman-series` branch. Its `README.md` is the index of all 30 articles, and each day is a Markdown file in `articles/`:
 
-[**Browse the 30-Day Ironman Series →**](https://github.com/Tommyweige/breakout-rl-engineering/tree/docs-ironman-series/docs)
+[**Browse the 30-Day Ironman Series →**](https://github.com/Tommyweige/breakout-rl-engineering/tree/docs-ironman-series)
 
 The frozen closeout is on `main`:
 

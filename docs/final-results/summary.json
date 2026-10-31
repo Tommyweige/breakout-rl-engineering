@@ -757,42 +757,6 @@
       "notes": "About 26% more cumulative training time; quality gain was +0.67 raw score."
     },
     {
-      "id": "laya_warm_latency_p50_ms",
-      "label": "Laya warm decision latency p50",
-      "value": 72.56,
-      "unit": "ms per decision",
-      "contract": {
-        "id": "day15-breakout-evaluation-v2-fire-reset",
-        "path": "configs/eval/breakout_contract_v2.json",
-        "frame_skip": 4
-      },
-      "seed_count": 1,
-      "seed_role": "one fixed RGB fixture, 100 warmed predictions",
-      "source": "Issue #70 measured baseline",
-      "ref": "https://github.com/Tommyweige/breakout-rl-engineering/issues/70",
-      "verification_status": "missing_raw_artifacts",
-      "raw_artifact_status": "missing",
-      "notes": "Latency only. It is not a gameplay score and must not be used to infer one."
-    },
-    {
-      "id": "laya_optimized_proxy_p50_ms",
-      "label": "Laya optimized proxy p50 range",
-      "value": "68.36-69.48",
-      "unit": "ms per request (three rounds)",
-      "contract": {
-        "id": "day15-breakout-evaluation-v2-fire-reset",
-        "path": "configs/eval/breakout_contract_v2.json",
-        "frame_skip": 4
-      },
-      "seed_count": 30,
-      "seed_role": "fixed RGB fixtures; 100 requests per round",
-      "source": "Draft PR #74 and Issue #71 measurements",
-      "ref": "https://github.com/Tommyweige/breakout-rl-engineering/pull/74",
-      "verification_status": "missing_raw_artifacts",
-      "raw_artifact_status": "missing",
-      "notes": "Endpoint measurement on a local RTX 4060; raw benchmark output remains local and ignored."
-    },
-    {
       "id": "laya_parameter_count",
       "label": "Laya Vision parameter count",
       "value": "201M",
@@ -1217,7 +1181,6 @@
     "rgb_controller_a8445df_latency_ms_mean",
     "reward_shaping_mean_effect",
     "per_500k_mean_score",
-    "laya_warm_latency_p50_ms",
     "laya_complete_episodes"
   ],
   "comparisons": [
@@ -1460,11 +1423,11 @@
       "method": "Frozen 201M SmolVLM-based vision decision model, FP32 CUDA, one RGB image per decision",
       "contract": "v2 primary; v3 optional and separate",
       "seed_summary": "no complete seeded evaluation; 3-seed x 80-decision control diagnostic only",
-      "headline": "Warm latency p50 72.56 ms; optimized proxy p50 68.36-69.48 ms; immediate reversals 76 -> 10 in the control diagnostic. No complete episode or score.",
+      "headline": "No complete episode or score. Immediate reversals fell from 76 to 10 in the control diagnostic; the only quoted latency is the verified browser decision interval in the interactive session.",
       "verification_status": "missing_raw_artifacts",
       "raw_artifact_status": "missing",
       "source": "https://github.com/Tommyweige/breakout-rl-engineering/pull/74",
-      "notes": "Pretrained on some Breakout expert data; not zero-shot. Weights are CC BY-NC-SA 4.0 and are not in the repo. PR #74 is draft."
+      "notes": "Pretrained on some Breakout expert data; not zero-shot. Weights are CC BY-NC-SA 4.0 and are not in the repo. PR #74 is draft. Earlier service-side warm-latency figures (issue #70, draft PR #74) are no longer quoted: their raw records were not kept, so they cannot be checked against the committed browser session."
     },
     {
       "id": "day22-to-30-onnx-browser",

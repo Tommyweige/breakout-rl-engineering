@@ -140,7 +140,7 @@ describe.each(locales)('Case study (%s)', (locale) => {
     expect(formatMetricValue({ ...metric, value: true }, locale)).toBe(copy.common.yes);
     expect(formatMetricValue({ ...metric, value: false }, locale)).toBe(copy.common.no);
     expect(formatMetricValue({ ...metric, value: 1234567 }, locale)).toBe('1,234,567');
-    expect(formatMetricValue({ ...metric, value: '68.36-69.48' }, locale)).toBe('68.36-69.48');
+    expect(formatMetricValue({ ...metric, value: '50.36-51.30' }, locale)).toBe('50.36-51.30');
   });
 });
 

@@ -1,6 +1,6 @@
 # Breakout RL Engineering
 
-[English](README.md) · [線上 Demo](https://breakout.tommypan.com) · [Case Study](https://breakout.tommypan.com/case-study) · [最終結果](docs/final-results/README.md) · [重現路徑](docs/repro/README.md) · [30 天鐵人賽文章](https://github.com/Tommyweige/breakout-rl-engineering/tree/docs-ironman-series/docs)
+[English](README.md) · [線上 Demo](https://breakout.tommypan.com) · [Case Study](https://breakout.tommypan.com/case-study) · [最終結果](docs/final-results/README.md) · [重現路徑](docs/repro/README.md) · [30 天鐵人賽文章](https://github.com/Tommyweige/breakout-rl-engineering/tree/docs-ironman-series)
 
 **一支從沒訓練過的程式，打贏了這個專案訓練出來的神經網路。** 追蹤程式在 15 場正式對局中打光兩面牆 4 次，平均 721.8 分；同一套規則下（每格畫面做一次決定、同樣那 15 局），訓練過的神經網路平均 6.93 分。
 
@@ -86,7 +86,7 @@ tests/         核心 correctness 與 regression tests
 web/           瀏覽器應用與 runtime model assets
 ```
 
-`main` 分支只保留目前維護中的實作與產品程式碼。30 天鐵人賽文章與對應文件資產放在 [`docs-ironman-series`](https://github.com/Tommyweige/breakout-rl-engineering/tree/docs-ironman-series) 分支。
+`main` 分支只保留目前維護中的實作與產品程式碼。30 天鐵人賽文章放在 [`docs-ironman-series`](https://github.com/Tommyweige/breakout-rl-engineering/tree/docs-ironman-series) 分支：分支的 `README.md` 是總目錄，每一天是一篇放在 `articles/` 的 Markdown。
 
 ## Environment Contract
 
@@ -245,7 +245,7 @@ runtime 依賴。
 python -m scripts.smoke.run_smoke --output-dir outputs/smoke
 ```
 
-通過時約兩分鐘，最後一行是 `Smoke: PASS`。目前單元測試是 294 passed、8 個 CUDA skip、13 個既有失敗；詳見 [`docs/repro/known-test-failures.md`](docs/repro/known-test-failures.md)。
+通過時約兩分鐘，最後一行是 `Smoke: PASS`。單元測試現在是 340 個、沒有失敗，只有依硬體而定的 skip，所以 `Smoke: PASS` 代表測試真的過了；詳見 [`docs/repro/known-test-failures.md`](docs/repro/known-test-failures.md)。
 
 ### Web
 
@@ -311,13 +311,13 @@ npm run build
 - DQN holdout 是單一模型、15 局；Contract v3 DQN baseline 只有一個 training seed；controller 結果是單一 15-seed run（120 局 WASM audit 是補充）。
 - Laya 有延遲量測，但沒有完整 episode；draft PR #74 仍需真實瀏覽器 QA，#70–#72 維持 open。
 - 本次收尾沒有完成 50-episode browser evaluation，也沒有世界紀錄或 human-timed 挑戰。
-- 乾淨 checkout 有 13 個既有單元測試失敗（來自 `main` 清理）；清單在 [`docs/repro/known-test-failures.md`](docs/repro/known-test-failures.md)，smoke 會分類而不是隱藏。
+- 乾淨 checkout 的單元測試是綠的：340 個測試、沒有失敗，只有依硬體而定的 skip（4 個 ONNX policy 測試需要沒進 repo 的 Day 22 模型）。[`docs/repro/known-test-failures.md`](docs/repro/known-test-failures.md) 記錄了 `main` 清理刪掉哪些測試，以及記錄下來的 contract 雜湊如何固定成 LF。
 
 ## 文件
 
-開發筆記與 30 天鐵人賽文章放在文件分支：
+開發筆記與 30 天鐵人賽文章放在 `docs-ironman-series` 分支：分支的 `README.md` 是 30 篇文章的總目錄，每一天是一篇放在 `articles/` 的 Markdown：
 
-[**瀏覽 30 天鐵人賽文章 →**](https://github.com/Tommyweige/breakout-rl-engineering/tree/docs-ironman-series/docs)
+[**瀏覽 30 天鐵人賽文章 →**](https://github.com/Tommyweige/breakout-rl-engineering/tree/docs-ironman-series)
 
 凍結收尾文件在 `main`：
 

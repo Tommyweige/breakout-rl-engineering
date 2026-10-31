@@ -38,8 +38,7 @@ The project built both. Under native ALE, the official Contract v3 15 seeds and 
 | Reward shaping mean effect | +3.26, 95% interval [-1.74, 9.48] | v2, frame_skip=4 | issue #9 / #10 | **historical reported; not promoted** |
 | PER vs Uniform at 500K | 19.98 vs 19.31 (+0.67) at 1.26x time | v2, frame_skip=4 | merged PR #16 | **historical reported; descriptive** |
 | Laya complete episodes | 0 | v2 primary | draft PR #74 | **not yet evaluated** |
-| Laya browser session | 4 at 22.7 s (lives 0) | v2, frame_skip=4 | [live browser session](laya-vision.md) | **verified session** |
-| Laya warm latency p50 | 72.56 ms/decision | v2 primary | issue #70 | **missing raw artifacts** |
+| Laya browser session | score 4, lives 0 at 22.7 s; one decision every 67.0 ms | v2, frame_skip=4 | [live browser session](laya-vision.md) | **verified session** |
 
 **Do not read across the Contract column.** The v2 DQN rows and the v3 controller rows use different control cadences. The only same-contract comparison is DQN v3 (6.93, 0 clears) against the controller (721.8, 4/15). See [Contracts and fairness](#contracts-and-fairness).
 
@@ -140,11 +139,13 @@ The controller was built because Breakout's perception problem is explicit: dete
 
 **Important context.** The model was already trained on some Breakout expert-action data. This is **not** a zero-shot transfer claim, and its upstream normalized score of 0.20 is not a 20% clear rate and may not use this repository's ALE contract.
 
-**What was measured.** Warm decision latency, not gameplay quality:
+**What was measured.** The delivered decision interval in the browser, not gameplay quality:
 
-- 72.56 ms p50 over 100 warmed predictions on one fixed RGB fixture (issue #70).
-- Optimized local proxy p50 68.36-69.48 ms across three rounds, with 30/30 action agreement on fixed fixtures (draft PR #74).
+- One decision every 67.0 ms (p95 68.2 ms) in the interactive session, of which 50-51 ms is model inference. This is the one latency number this repository quotes: it comes from the two records committed with this closeout.
+- 30/30 action agreement on fixed fixtures between the checkpoint and its optimized local proxy (draft PR #74).
 - A 3-seed x 80-decision control diagnostic reduced immediate reversal commands from 76 to 10. Both runs totalled 2 reward; lives were [3,3,4] raw and [4,4,3] filtered. That is 320 native frames per seed, not a complete episode.
+
+Earlier service-side warm-latency figures from issue #70 and draft PR #74 are no longer quoted. Their raw benchmark output was never committed, so they could not be checked against the session records above.
 
 **Live browser session (verified, 2026-10-29).** The Decision Model controller ran in headed
 Chrome on Windows against the local CUDA bridge, on the shipped page and the v2 contract's
@@ -168,7 +169,7 @@ on game frames that include Breakout. Latency still does not imply gameplay qual
 | Pretraining domain | Some Breakout expert-action data; **not zero-shot** |
 | Contract / cadence | Contract v2 primary; four native ALE frames per decision; contracts unchanged |
 | Device / precision | RTX 4060 Laptop, CUDA, FP32, GPU preprocessing |
-| Warm latency | 72.56 ms p50 over 100 predictions on one fixed RGB fixture |
+| Decision interval | 67.0 ms p50 / 68.2 ms p95 between decisions in the browser session; 50-51 ms of that is model inference |
 | Cold start | Process RSS baseline 517.72 MiB; sampled loading peak 2,176.45 MiB; first inference +664 MiB |
 | Warm memory | RSS +0.44 MiB over 100 predictions; optimized 1,000-request run RSS +0.074 MiB |
 | Peak VRAM | **Not reported** in the reviewed records |
@@ -272,4 +273,4 @@ This is a limitation of the closeout, not a reason to fabricate logs. The expect
 - Reward shaping: [#9](https://github.com/Tommyweige/breakout-rl-engineering/issues/9), [#10](https://github.com/Tommyweige/breakout-rl-engineering/issues/10).
 - PER: [#12](https://github.com/Tommyweige/breakout-rl-engineering/issues/12), [PR #16](https://github.com/Tommyweige/breakout-rl-engineering/pull/16).
 - Laya: [#69](https://github.com/Tommyweige/breakout-rl-engineering/issues/69), [#70](https://github.com/Tommyweige/breakout-rl-engineering/issues/70), [#71](https://github.com/Tommyweige/breakout-rl-engineering/issues/71), [#72](https://github.com/Tommyweige/breakout-rl-engineering/issues/72), [draft PR #74](https://github.com/Tommyweige/breakout-rl-engineering/pull/74).
-- Development articles: [`docs-ironman-series`](https://github.com/Tommyweige/breakout-rl-engineering/tree/docs-ironman-series/docs).
+- Development articles: [`docs-ironman-series`](https://github.com/Tommyweige/breakout-rl-engineering/tree/docs-ironman-series) — the branch README is the index of all 30 articles, and each day is a Markdown file in `articles/`.
