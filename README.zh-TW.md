@@ -326,3 +326,7 @@ npm run build
 重現路徑在 `main`：
 
 [**乾淨 clone 安裝 →**](docs/repro/setup.md) · [**Smoke 路徑 →**](docs/repro/smoke.md) · [**CI →**](docs/repro/ci.md) · [**版本標記 →**](docs/repro/versioning.md)
+
+## 授權 / License
+
+本專案以 **GNU General Public License v2.0** 釋出，完整條文見 [`LICENSE`](LICENSE)。第三方元件（例如 `web/vendor/ale-wasm`）與它隨附的 Atari `breakout.bin` ROM 見 [`NOTICE`](NOTICE)；該 ROM 著作權屬 Atari，不在本專案的授權範圍內。

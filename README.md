@@ -349,3 +349,7 @@ The frozen closeout is on `main`:
 The reproducibility path is on `main`:
 
 [**Clean-clone setup →**](docs/repro/setup.md) · [**Smoke path →**](docs/repro/smoke.md) · [**CI →**](docs/repro/ci.md) · [**Versioning →**](docs/repro/versioning.md)
+
+## License
+
+This project is released under the **GNU General Public License v2.0**; the full text is in [`LICENSE`](LICENSE). Third-party components such as the vendored `web/vendor/ale-wasm` runtime, and the Atari `breakout.bin` ROM it ships with, are documented in [`NOTICE`](NOTICE) — the ROM belongs to Atari and is not covered by this project's license.

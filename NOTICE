@@ -1,0 +1,38 @@
+NOTICE
+======
+
+本專案（breakout-rl-engineering）整體以 GNU General Public License v2.0 釋出，完整條文見根目錄 LICENSE。
+This project (breakout-rl-engineering) is released in its entirety under the GNU General Public License v2.0; the full text is in LICENSE at the repository root.
+
+以下說明第三方元件、Atari ROM 與本專案產出物的授權歸屬。
+The sections below record the licensing of third-party components, of the Atari ROM, and of the artifacts this project produces.
+
+
+1. web/vendor/ale-wasm — Arcade Learning Environment
+----------------------------------------------------
+
+繁體中文：
+web/vendor/ale-wasm/ 是 Arcade Learning Environment（ALE，Farama Foundation 專案）的 WebAssembly 建置，隨本專案以 GPL-2.0 散布。該元件的著作權屬 ALE 原專案作者，本專案不主張任何權利。隨附的授權全文在 web/vendor/ale-wasm/LICENSE；pin 住的上游 commit、建置工具鏈與 patch 來源見同目錄的 README.md 與 BUILD.md。
+
+English:
+web/vendor/ale-wasm/ is a WebAssembly build of the Arcade Learning Environment (ALE, a Farama Foundation project), distributed with this project under the GPL-2.0. Copyright in that component belongs to the original ALE authors; this project claims none of it. The license text shipped with the build is web/vendor/ale-wasm/LICENSE, and the pinned upstream commit, toolchain, and patch provenance are in README.md and BUILD.md in the same directory.
+
+
+2. web/vendor/ale-wasm/roms/breakout.bin — Atari ROM
+----------------------------------------------------
+
+繁體中文：
+web/vendor/ale-wasm/roms/breakout.bin 是 Atari 的 Breakout ROM，著作權屬 Atari 及相關權利人。它不在本專案 GPL-2.0 的授權範圍內，本專案沒有取得、也不授予這個 ROM 的任何權利，只是為了讓線上 Demo 能在瀏覽器直接執行才隨 repo 提供。若要把它用在其他用途，請自行確認你有合法權利。此目錄目前只有這一個 ROM 檔。
+
+English:
+web/vendor/ale-wasm/roms/breakout.bin is Atari's Breakout ROM, whose copyright belongs to Atari and its rights holders. It is not covered by this project's GPL-2.0 license; this project holds no rights in the ROM and grants none. The file is included only so the online demo can run directly in a browser. If you want to use the ROM for any other purpose, confirm that you have the legal right to do so. This directory currently holds this one ROM file and no others.
+
+
+3. 本專案的模型權重與評估資料 / Trained weights and evaluation data
+-------------------------------------------------------------------
+
+繁體中文：
+本專案自行訓練產出的模型權重（例如 web/public/models/final_model/model.onnx 及其 metadata）與評估資料（例如 docs/final-results/、audits/ 底下的紀錄與指標）由本專案的 GPL-2.0 涵蓋，可依 GPL-2.0 的條款使用、修改與再散布。上述第 2 節對 Atari ROM 的排除不適用於這些產出物。
+
+English:
+The model weights this project trained itself (for example web/public/models/final_model/model.onnx and its metadata) and the evaluation data it produced (for example the records and metrics under docs/final-results/ and audits/) are covered by this project's GPL-2.0 and may be used, modified, and redistributed under its terms. The exclusion of the Atari ROM in section 2 does not apply to these artifacts.
