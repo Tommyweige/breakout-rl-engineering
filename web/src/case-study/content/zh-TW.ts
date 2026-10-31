@@ -240,7 +240,7 @@ export const zhTwCopy: CaseStudyCopy = {
       blocks: [
         {
           kind: 'p',
-          text: '訓練好的模型是 PyTorch 格式，只能在 Python 裡跑。我把它匯出成 ONNX，一種通用的神經網路格式，再用 ONNX Runtime Web 在瀏覽器裡執行。這樣任何人打開網頁，就能和同一個 AI 即時對戰，不需要伺服器。',
+          text: '訓練好的模型是 PyTorch 格式，只能在 Python 裡跑。我把它匯出成 ONNX，一種通用的神經網路格式，再直接在瀏覽器裡執行。這樣任何人打開網頁，就能和同一個 AI 即時對戰，不需要伺服器。',
         },
         {
           kind: 'p',
@@ -304,7 +304,7 @@ export const zhTwCopy: CaseStudyCopy = {
         },
         {
           kind: 'code',
-          caption: 'breakout_rl/vision_controller.py 裡預測落點的核心兩行',
+          caption: '預測落點的核心兩行',
           code: '# 球還要幾格畫面才會落到球拍的高度\nframes = (paddle_plane_y - ball_y) / ball_vy\n# 直線外推，撞到左右牆就鏡射回來\nintercept = reflect_x(ball_x + ball_vx * frames, left, right)',
         },
         {
@@ -478,12 +478,7 @@ export const zhTwCopy: CaseStudyCopy = {
       blocks: [
         {
           kind: 'p',
-          text: '結果數字在載入時直接讀自倉庫裡的機器可讀摘要；過程中的數字來自當天的文章。追蹤程式的正式評估可以這樣重跑：',
-        },
-        {
-          kind: 'code',
-          caption: '在倉庫根目錄執行',
-          code: '# 重跑追蹤程式的 15 局正式評估\npython -m scripts.evaluation.evaluate_predictive_controller \\\n  --output-dir outputs/issue25-vision-controller\n\n# 網頁與這一頁的測試\ncd web && npm ci && npm test',
+          text: '結果數字在載入時直接讀自倉庫裡的機器可讀摘要；過程中的數字來自當天的文章。追蹤程式的正式評估也能重跑，步驟寫在下方的「重現步驟」裡：',
         },
         {
           kind: 'links',

@@ -240,7 +240,7 @@ export const enCopy: CaseStudyCopy = {
       blocks: [
         {
           kind: 'p',
-          text: 'The trained model was in PyTorch format, which only runs in Python. I exported it to ONNX, a general format for neural networks, and ran it in the browser with ONNX Runtime Web. Anyone who opens the page can play against the same AI live, with no server.',
+          text: 'The trained model was in PyTorch format, which only runs in Python. I exported it to ONNX, a general format for neural networks, and ran it directly in the browser. Anyone who opens the page can play against the same AI live, with no server.',
         },
         {
           kind: 'p',
@@ -304,7 +304,7 @@ export const enCopy: CaseStudyCopy = {
         },
         {
           kind: 'code',
-          caption: 'The two core lines that predict the landing spot, from breakout_rl/vision_controller.py',
+          caption: 'The two core lines that predict the landing spot',
           code: '# how many frames until the ball reaches paddle height\nframes = (paddle_plane_y - ball_y) / ball_vy\n# extend in a straight line, mirroring off the side walls\nintercept = reflect_x(ball_x + ball_vx * frames, left, right)',
         },
         {
@@ -478,12 +478,7 @@ export const enCopy: CaseStudyCopy = {
       blocks: [
         {
           kind: 'p',
-          text: 'The result numbers on this page are read, as it loads, from a single machine-readable summary in the repository; the numbers from the 30 days come from that day’s article. The tracker’s official evaluation reruns with one command:',
-        },
-        {
-          kind: 'code',
-          caption: 'Run from the repository root',
-          code: '# rerun the tracker’s official 15-game evaluation\npython -m scripts.evaluation.evaluate_predictive_controller \\\n  --output-dir outputs/issue25-vision-controller\n\n# tests for the web app and this page\ncd web && npm ci && npm test',
+          text: 'The result numbers on this page are read, as it loads, from a single machine-readable summary in the repository; the numbers from the 30 days come from that day’s article. The tracker’s official evaluation can be rerun too; the steps are under “Reproduction steps” below:',
         },
         {
           kind: 'links',

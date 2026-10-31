@@ -116,7 +116,7 @@ describe.each(locales)('Case study (%s)', (locale) => {
     hydrateCaseStudy(root, summary, locale);
     const rendered = (root.textContent ?? '').toLowerCase();
 
-    for (const banned of ['137', '50ee352', 'a8445df', 'canonical', 'seed', 'frame_skip', 'contract', '契約', '種子', 'summary.json']) {
+    for (const banned of ['137', '50ee352', 'a8445df', 'canonical', 'seed', 'frame_skip', 'contract', '契約', '種子', 'summary.json', '.py', 'python -m', 'npm ', 'onnx runtime web']) {
       expect(rendered, `${locale} mentions ${banned}`).not.toContain(banned);
     }
     for (const contract of [summary.contracts.v2, summary.contracts.v3]) {
