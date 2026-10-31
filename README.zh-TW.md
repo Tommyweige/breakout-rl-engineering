@@ -2,6 +2,18 @@
 
 [English](README.md) · [線上 Demo](https://breakout.tommypan.com) · [Case Study](https://breakout.tommypan.com/case-study) · [最終結果](docs/final-results/README.md) · [重現路徑](docs/repro/README.md) · [30 天鐵人賽文章](https://github.com/Tommyweige/breakout-rl-engineering/tree/docs-ironman-series/docs)
 
+**一支從沒訓練過的程式，打贏了這個專案訓練出來的神經網路。** 追蹤程式在 15 場正式對局中打光兩面牆 4 次，平均 721.8 分；同一套規則下（每格畫面做一次決定、同樣那 15 局），訓練過的神經網路平均 6.93 分。
+
+| 打光兩面牆 | 追蹤程式平均分 | 同規則的神經網路平均分 |
+| :---: | :---: | :---: |
+| **4／15 局** | **721.8** | **6.93** |
+
+**[在瀏覽器裡試玩](https://breakout.tommypan.com)** · **[讀 30 天案例研究](https://breakout.tommypan.com/case-study)**
+
+![打磚塊網頁版：左邊你自己玩，右邊 AI 自己玩](docs/final-results/screenshots/game-page.png)
+
+## 專案概述
+
 這是一個以 Atari Breakout 為主題的端到端強化學習工程專案，涵蓋 DQN 訓練、可重現評估、CUDA 加速、ONNX 推論，以及瀏覽器部署。
 
 最終應用會直接在瀏覽器中執行 Atari 環境與訓練完成的 RL policy，不需要 Python backend。
