@@ -20,6 +20,11 @@ jobs:
     steps:
       - name: Check out the repository
         uses: actions/checkout@v4
+        with:
+          # The PER baseline audit reads the pinned Day 20 manifest out of git
+          # (`git show <commit>:experiments/...`) and checks that commit is an
+          # ancestor of HEAD. The default depth-1 clone has neither.
+          fetch-depth: 0
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v5

@@ -23,12 +23,16 @@ opencv-python==5.0.0.93
 
 Steps:
 
-1. install the OpenCV X/GL runtime libraries (`libxcb1`, `libgl1`,
+1. check out with `fetch-depth: 0`. The PER baseline audit reads the pinned Day 20
+   manifest straight out of git (`git show <commit>:experiments/...`) and asserts
+   that commit is an ancestor of `HEAD`, so a shallow clone fails that test. A
+   normal `git clone` has the history; CI has to ask for it;
+2. install the OpenCV X/GL runtime libraries (`libxcb1`, `libgl1`,
    `libglib2.0-0`, `libxext6`, `libsm6`, `libice6`);
-2. verify that `ale_py/roms/breakout.bin` exists and is 2,048 bytes;
-3. `python -m scripts.smoke.run_smoke --units-only`;
-4. `python -m scripts.smoke.run_smoke --e2e-only --output-dir outputs/smoke`;
-5. upload `outputs/smoke` as an artifact (even on failure).
+3. verify that `ale_py/roms/breakout.bin` exists and is 2,048 bytes;
+4. `python -m scripts.smoke.run_smoke --units-only`;
+5. `python -m scripts.smoke.run_smoke --e2e-only --output-dir outputs/smoke`;
+6. upload `outputs/smoke` as an artifact (even on failure).
 
 CI deliberately does not use `environment.yml`: that file installs CUDA 13
 wheels and produces a 6.3 GB environment, and hosted runners have no GPU. The

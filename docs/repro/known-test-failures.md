@@ -24,6 +24,16 @@ On a CPU-only host the CUDA-dependency tests skip instead. The allowlist in
 [`../../scripts/smoke/known_failures.json`](../../scripts/smoke/known_failures.json)
 is empty: any failure now fails the smoke.
 
+## One test needs the git history
+
+`test_per_experiment.test_day20_staged_replay_reset_is_rejected_as_primary_control`
+audits the Day 20 baseline, and the audit reads the pinned manifest from commit
+`aa2231a2` with `git show` and asserts that commit is an ancestor of `HEAD`. A
+normal `git clone` has both; a `git clone --depth 1` has neither, so that one
+test errors with `fatal: path 'experiments/day20-dqn-family/manifest.json' does
+not exist`. The CI job checks out with `fetch-depth: 0` for this reason
+([`ci.md`](ci.md)), and a shallow clone is the only checkout shape that fails.
+
 ## What the 13 failures were, and what happened to them
 
 ### 1. Tests imported scripts that `1e50f4b` deleted (10 failures)
