@@ -69,29 +69,40 @@ now carries a second `skipUnless` on that path, next to the existing
 `onnxruntime` guard. When the asset is present the four tests run unchanged;
 `MODEL` is no longer re-declared per test.
 
-### 3. A recorded contract hash came from a CRLF checkout (1 failure)
+### 3. Two recorded hashes came from a CRLF checkout (1 failure, now 0)
 
 `tests/test_per_experiment.py` asserts the number of failed checks reported by
-`audit_baseline(configs/per_experiment.json)`. One of those checks compares the
-Contract v2 SHA-256 recorded in `configs/per_experiment.json` with the file. The
-recorded value was the hash of the contract **as written by a Windows checkout
-with `core.autocrlf=true`**, so it never matched the LF file. The value is now
-the LF hash, and `.gitattributes` pins LF for every file whose hash is recorded
-(see below). The audit now reports 19 failed checks: 18 staged-resume checks,
-plus one historical record that is meant to fail.
+`audit_baseline(configs/per_experiment.json)`. Two of those checks compared
+recorded SHA-256 values with the current files: the frozen contract hash in
+`configs/per_experiment.json`, and the contract and evaluation-config hashes the
+Day 20 manifest read from commit `aa2231a2` froze. Every one of those values was
+taken on a Windows checkout with `core.autocrlf=true`, so it only matched a CRLF
+worktree and never matched the LF bytes CI checks out. That is why this test
+failed on Linux CI and passed locally.
 
-The historical one is the Day 20 manifest, read from commit `aa2231a2`. It froze
-the CRLF hash of that era, and no change to this checkout can make that record
-match, so the assertion expects all 19 and the comment next to it says why.
+Two changes remove the platform dependence:
+
+- the recorded hashes are now the LF hashes, and `.gitattributes` pins LF for
+  every file whose hash is recorded (see below), so every checkout hashes the
+  same bytes;
+- the two `source hash` checks in `scripts/analysis/audit_per_baseline.py`
+  accept the LF **or** the Windows CRLF form of the file, the same way the Day 16
+  backend manifest check in that file already did. Line endings are not part of
+  what those historical records vouch for; a content edit still changes both
+  forms and still fails the check.
+
+The audit now reports 18 failed checks, all of them staged-resume checks. The 19
+this test expected before was 18 plus one historical record that no checkout
+could match.
 
 ## Hash-recorded files are pinned to LF
 
 [`.gitattributes`](../../.gitattributes) sets `text eol=lf` for every text file
 whose SHA-256 is recorded in an audit, a contract, a fixture, or
-`configs/per_experiment.json`: the two eval contracts, the completion audit, the
-browser-clear audit CSV and summaries, the Laya browser-QA records, and the
-completion fixtures. `git checkout` then writes LF on every platform, so a
-Windows worktree hashes the same bytes as CI.
+`configs/per_experiment.json`: the two eval contracts, the evaluation config,
+the completion audit, the browser-clear audit CSV and summaries, the Laya
+browser-QA records, and the completion fixtures. `git checkout` then writes LF
+on every platform, so a Windows worktree hashes the same bytes as CI.
 
 A worktree that predates the change keeps the bytes it already has. The index
 already holds LF, so deleting those paths and checking them out again

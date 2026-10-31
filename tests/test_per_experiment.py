@@ -30,10 +30,10 @@ class PERExperimentAnalysisTests(unittest.TestCase):
         self.assertEqual(audit["status"], "incompatible")
         self.assertFalse(audit["reuse_allowed"])
         self.assertEqual(audit["decision"], "rerun_uniform_baseline")
-        # 18 staged-resume checks plus one historical record: the Day 20 manifest read
-        # from the baseline commit froze the CRLF-derived contract hash e9947fc3 instead
-        # of the LF hash 7eca5ae5, so that provenance check cannot pass on this checkout.
-        self.assertEqual(len(audit["failed_checks"]), 19)
+        # Only the staged-resume checks fail now: both recorded hashes below are
+        # compared against the LF or Windows CRLF form of the file, so a check that
+        # used to depend on core.autocrlf no longer differs between platforms.
+        self.assertEqual(len(audit["failed_checks"]), 18)
         self.assertEqual(len(audit["checkpoints"]), 9)
         self.assertEqual(audit["protocol"]["training_seeds"], [11, 22, 33])
         self.assertEqual(audit["protocol"]["milestones"], [100_000, 250_000, 500_000])

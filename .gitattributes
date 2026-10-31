@@ -11,6 +11,7 @@ web/public/models/final_model/model.onnx binary
 # checkout would break the provenance tests. Pin LF for every hashed text file.
 configs/eval/breakout_completion_audit_v1.json text eol=lf
 configs/eval/breakout_contract_v3.json text eol=lf
+configs/eval/breakout_eval.json text eol=lf
 audits/browser-clear/episodes-120.csv text eol=lf
 audits/browser-clear/summary-120.json text eol=lf
 audits/browser-clear/native-15/summary.json text eol=lf

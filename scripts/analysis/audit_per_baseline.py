@@ -64,6 +64,22 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _line_ending_hashes(path: Path) -> set[str]:
+    """Return the SHA-256 of the file with LF and with CRLF line endings.
+
+    The Day 20 records were written on a Windows checkout, so they froze the CRLF
+    hash of the files they name. Which of the two a worktree produces depends on
+    core.autocrlf, not on the content, so provenance accepts either form exactly
+    like the Day 16 backend manifest check below. Any content edit changes both.
+    """
+
+    lf_bytes = path.read_bytes().replace(b"\r\n", b"\n")
+    return {
+        hashlib.sha256(lf_bytes).hexdigest(),
+        hashlib.sha256(lf_bytes.replace(b"\n", b"\r\n")).hexdigest(),
+    }
+
+
 def _check(
     checks: list[dict[str, Any]],
     name: str,
@@ -196,9 +212,9 @@ def audit_baseline(config_path: Path) -> dict[str, Any]:
         source_entry = source_truth[label]
         _check(
             checks,
-            f"{label} source hash",
-            source_entry["sha256"],
-            _sha256(local_path),
+            f"{label} source hash (LF or Windows CRLF)",
+            True,
+            str(source_entry["sha256"]) in _line_ending_hashes(local_path),
         )
     baseline_contract = source_truth["contract"]
     current_contract = json.loads(contract_path.read_text(encoding="utf-8"))

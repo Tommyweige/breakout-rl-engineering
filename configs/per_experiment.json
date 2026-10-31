@@ -70,7 +70,7 @@
     "config": "configs/eval/breakout_eval.json",
     "contract": "configs/eval/breakout_contract_v2.json",
     "contract_sha256": "7eca5ae5262a28aeabf3be658f8275a68f3d2ae40cc74379400be2890dc31a2a",
-    "config_sha256": "4db7c72c44b74d00c0ab933d3b2ebc25d67e92f82b90f24e53525d33f795a6b2",
+    "config_sha256": "84e2bd94af29a4bee700327fcc30e25eb27d09ef33e5424628baf83c0594c333",
     "seeds": [
       101,
       202,
