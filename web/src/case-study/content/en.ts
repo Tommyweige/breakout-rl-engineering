@@ -21,7 +21,7 @@ export const enCopy: CaseStudyCopy = {
   hero: {
     kicker: '30-day engineering case study · Atari Breakout',
     title: '30 days of training a Breakout AI from scratch, and the untrained program that beat it',
-    lede: 'This project went from the game environment to a neural network, training, debugging, and finally live play in the browser, leaving rerunnable evidence at every step. The ending was a surprise: a tracker that simply calculates the ball’s path plays far better than a neural network trained on millions of frames.',
+    lede: 'This project went from the game environment to a neural network, training, debugging, and finally live play in the browser, leaving a record you can check at every step. The ending was a surprise: a tracker that simply calculates the ball’s path plays far better than a neural network trained on millions of frames.',
     stats: [
       {
         value: '{{metric:rgb_controller_a8445df_canonical_clear_detections}}<small> of {{seeds:rgb_controller_a8445df_canonical_clear_detections}}</small>',
@@ -228,7 +228,7 @@ export const enCopy: CaseStudyCopy = {
         },
         {
           kind: 'p',
-          text: '5 million steps scored lower than 2.5 million, so the 2.5 million step model is the one deployed. The last column is the real warning: checked again on games never used to pick the model, its average fell from {{metric:dqn_selection_mean}} to {{metric:dqn_final_holdout_mean}}. A score used to choose a model is inflated by the choosing itself, and cannot be reported as the final result.',
+          text: 'Doubling the training to 5 million steps did not raise the score, and the difference sits inside the normal swing between evaluations. Since the extra training bought no progress, the 2.5 million step model is the one deployed. The last column is the real warning: checked again on games never used to pick the model, its average fell from {{metric:dqn_selection_mean}} to {{metric:dqn_final_holdout_mean}}. A score used to choose a model is inflated by the choosing itself, and cannot be reported as the final result.',
         },
       ],
     },
@@ -303,12 +303,12 @@ export const enCopy: CaseStudyCopy = {
         },
         {
           kind: 'code',
-          caption: 'The two core lines that predict the landing spot',
-          code: '# how many frames until the ball reaches paddle height\nframes = (paddle_plane_y - ball_y) / ball_vy\n# extend in a straight line, mirroring off the side walls\nintercept = reflect_x(ball_x + ball_vx * frames, left, right)',
+          caption: 'The two sums that predict the landing spot',
+          code: 'frames to paddle = (paddle height − ball height) ÷ falling speed\nlanding spot     = ball now + sideways speed × frames  →  fold back at walls',
         },
         {
           kind: 'p',
-          text: 'A fair comparison needs the same rules. The project has two rule sets that differ in how often a decision is made: the neural network always decided once every 4 frames, while the tracker needs to decide on every frame. So I trained another neural network under the every-frame rules, for 2 million frames, and both played the same 15 games:',
+          text: 'A fair comparison needs the same rules. The project has two rule sets that differ in how often a decision is made: the neural network always decided once every 4 frames. The tracker has to stop the paddle exactly on the landing spot, which takes a small correction on every frame, so it decides on every frame. To keep it fair, I trained another neural network under the every-frame rules, for 2 million frames, and both played the same 15 games:',
         },
         {
           kind: 'bars',
@@ -328,7 +328,7 @@ export const enCopy: CaseStudyCopy = {
           kind: 'callout',
           tone: 'muted',
           title: 'My guess, and the next experiment',
-          text: 'My guess is that the stricter rules did it. Deciding on every frame means four times as many decisions in the same stretch of game time, so the span the network has to hold in mind is four times longer — and this network was trained once, for 2 million frames. The next experiment changes only that: the same rules, but several independently trained networks, each trained longer, to see whether the average keeps climbing along the learning curve. If it does, the gap comes from training budget and from a single run, not from this approach being unable to learn. If it does not, then the other explanation stands: reading pixels really does cost more than calculating.',
+          text: 'I have two guesses. One is that the rules got harder: deciding on every frame means four times as many decisions in the same stretch of game time, so a button press and the points it earns sit further apart, and the network struggles to credit the right move. The other is too little training: this network was trained once, for only 2 million frames. The next step pulls the two apart. First, put the same network back under the once-every-4-frames rules and play the same 15 games, to see whether the score comes back; that separates a rules problem from a model problem. Then train three independent networks under the every-frame rules, 5 million frames each, so no single run decides the answer.',
         },
       ],
     },
@@ -370,13 +370,13 @@ export const enCopy: CaseStudyCopy = {
         },
         {
           kind: 'p',
-          text: 'The same tracking logic in the web version (ported to TypeScript) also played 120 games: {{metric:browser_wasm_120_canonical_clear_detections}} cleared both walls, with an average of {{metric:browser_wasm_120_mean_score}}, close to the official 15 games.',
+          text: 'The same tracking logic in the web version (ported to TypeScript) also played 120 games: {{metric:browser_wasm_120_canonical_clear_detections}} cleared both walls, with an average of {{metric:browser_wasm_120_mean_score}}.',
         },
         {
           kind: 'callout',
           tone: 'muted',
-          title: 'One step not yet done',
-          text: 'These 4 are “the detector says clear”; they have not yet been rechecked one by one against their raw records, so this page says “4 of 15 cleared”, not “it clears reliably”.',
+          title: 'What the clear rate means',
+          text: '{{metric:rgb_controller_a8445df_canonical_clear_detections}} of the {{seeds:rgb_controller_a8445df_canonical_clear_detections}} official games and {{metric:browser_wasm_120_canonical_clear_detections}} of the {{seeds:browser_wasm_120_canonical_clear_detections}} web games were cleared, and the two rates fall in the same range: the tracker clears roughly one game in three or four. It proves both walls can be cleared without any training, but it does not clear every game yet.',
         },
       ],
     },
@@ -409,13 +409,13 @@ export const enCopy: CaseStudyCopy = {
               name: 'Laya, an off-the-shelf model',
               idea: 'Take the existing image model Laya ({{metric:laya_parameter_count}} parameters, built on SmolVLM), keep it frozen, and let it pick moves from the screen. It had already seen some expert Breakout play, so it did not start from nothing.',
               result: 'Couldn’t play',
-              detail: 'In one browser game it scored {{metric:laya_browser_session_score}} and lost all five lives in {{metric:laya_browser_session_played_s}} s. Complete official evaluation games: {{metric:laya_complete_episodes}}.',
+              detail: 'It played the same opening twice in the browser, scored {{metric:laya_browser_session_score}} both times, and lost all five lives in about {{metric:laya_browser_session_played_s}} s. Complete official evaluation games: {{metric:laya_complete_episodes}}.',
             },
           ],
         },
         {
           kind: 'p',
-          text: 'Laya was fast enough: the page delivered one decision every {{metric:laya_browser_decision_interval_p50_ms}} ms, with the screen holding {{metric:laya_browser_presented_fps}} frames a second. The problem was decision quality: it kept flipping between left and right. After tuning the controls, back-to-back reversals fell from {{metric:laya_control_diagnostic_raw_reversals}} to {{metric:laya_control_diagnostic_reversals}}, but the paddle still missed the ball.',
+          text: 'Speed was not the problem: the page delivered one decision every {{metric:laya_browser_decision_interval_p50_ms}} ms, almost exactly the pace 60 frames a second needs, and the screen showed {{metric:laya_browser_presented_fps}} frames a second. The problem was decision quality: it went left one moment and right the next, so the paddle jittered in place. In a separate short test I added a brake: when it wanted to reverse straight away, it waited one more decision first. Back-to-back reversals fell from {{metric:laya_control_diagnostic_raw_reversals}} to {{metric:laya_control_diagnostic_reversals}}, and the paddle still missed the ball. Less jitter, same score, so jitter was not the cause; what it lacked was a sense of where the ball would land.',
         },
       ],
     },
@@ -433,7 +433,7 @@ export const enCopy: CaseStudyCopy = {
           items: [
             { label: 'The tracker', value: 'metric:rgb_controller_a8445df_mean_score', tone: 'lime' },
             { label: 'The neural network', value: 'metric:dqn_v3_2m_mean_score', tone: 'coral' },
-            { label: 'Laya', value: 'metric:laya_browser_session_score', tone: 'blue', note: 'different rules and a single game, for reference only' },
+            { label: 'Laya', value: 'metric:laya_browser_session_score', tone: 'blue', note: 'different rules; only the same opening, played in the browser' },
           ],
         },
         {
@@ -442,7 +442,7 @@ export const enCopy: CaseStudyCopy = {
           headers: ['', 'The tracker', 'The neural network', 'Laya'],
           rows: [
             ['Needs training?', 'No', 'Yes, 2 million frames', 'Not trained for this project'],
-            ['Average score', '{{metric:rgb_controller_a8445df_mean_score}}', '{{metric:dqn_v3_2m_mean_score}}', 'One game only: {{metric:laya_browser_session_score}}'],
+            ['Average score', '{{metric:rgb_controller_a8445df_mean_score}}', '{{metric:dqn_v3_2m_mean_score}}', 'Same opening twice: {{metric:laya_browser_session_score}} both times'],
             ['Both walls cleared', '{{metric:rgb_controller_a8445df_canonical_clear_detections}} of {{seeds:rgb_controller_a8445df_canonical_clear_detections}}', '{{metric:dqn_v3_2m_clears}} of {{seeds:dqn_v3_2m_clears}}', 'Not fully evaluated'],
             ['Per decision', 'about {{metric:rgb_controller_a8445df_latency_ms_mean}} ms', 'about {{fact:web_wasm_p50_ms}} ms (browser)', 'about {{metric:laya_browser_decision_interval_p50_ms}} ms'],
             ['Can you see why it moves?', 'Yes, every step can be worked out by hand', 'Hardly; you only see four Q-values', 'Hardly'],
@@ -466,11 +466,11 @@ export const enCopy: CaseStudyCopy = {
       id: 'evidence',
       nav: 'Evidence and reruns',
       kicker: 'Evidence and reruns',
-      title: 'Every number can be traced, and rerun',
+      title: 'Every number has a source you can check',
       blocks: [
         {
           kind: 'p',
-          text: 'The result numbers on this page are read, as it loads, from a single machine-readable summary in the repository; the numbers from the 30 days come from that day’s article. The tracker’s official evaluation can be rerun too; the steps are under “Reproduction steps” below:',
+          text: 'The results on this page are not copied by hand: as it loads, the page reads the project’s results file, the same file published with the results report on GitHub, so the two always match. The numbers from the 30 days come from that day’s article. You can rerun the tracker’s 15 games yourself; the steps are under “Reproduction steps” below:',
         },
         {
           kind: 'links',

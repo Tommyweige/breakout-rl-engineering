@@ -21,7 +21,7 @@ export const zhTwCopy: CaseStudyCopy = {
   hero: {
     kicker: '30 天工程案例研究 · Atari 打磚塊',
     title: '從零訓練打磚塊 AI 的 30 天，以及一支不用訓練就贏過它的程式',
-    lede: '從遊戲環境、神經網路、訓練、除錯，一路做到瀏覽器裡即時對戰，每一步都留下可重跑的證據。結果出乎意料：一支直接算球路的追蹤程式，打得比練了上百萬格畫面的神經網路好得多。',
+    lede: '從遊戲環境、神經網路、訓練、除錯，一路做到瀏覽器裡即時對戰，每一步都留下查得到的紀錄。結果出乎意料：一支直接算球路的追蹤程式，打得比練了上百萬格畫面的神經網路好得多。',
     stats: [
       {
         value: '{{metric:rgb_controller_a8445df_canonical_clear_detections}}<small>／{{seeds:rgb_controller_a8445df_canonical_clear_detections}}</small>',
@@ -228,7 +228,7 @@ export const zhTwCopy: CaseStudyCopy = {
         },
         {
           kind: 'p',
-          text: '500 萬步反而比 250 萬步低，所以最後部署的是 250 萬步的模型。但最有警示意義的是最後一欄：改用一組從沒拿來挑模型的局重新驗收，平均分從 {{metric:dqn_selection_mean}} 掉到 {{metric:dqn_final_holdout_mean}}。挑模型時的分數，會因為「挑」這個動作本身而偏高，不能直接當成最終成績。',
+          text: '多練一倍到 500 萬步，分數沒有更高，差距也在每次評估的正常起伏之內；既然多花的訓練換不到進步，最後部署的是 250 萬步的模型。但最有警示意義的是最後一欄：改用一組從沒拿來挑模型的局重新驗收，平均分從 {{metric:dqn_selection_mean}} 掉到 {{metric:dqn_final_holdout_mean}}。挑模型時的分數，會因為「挑」這個動作本身而偏高，不能直接當成最終成績。',
         },
       ],
     },
@@ -303,12 +303,12 @@ export const zhTwCopy: CaseStudyCopy = {
         },
         {
           kind: 'code',
-          caption: '預測落點的核心兩行',
-          code: '# 球還要幾格畫面才會落到球拍的高度\nframes = (paddle_plane_y - ball_y) / ball_vy\n# 直線外推，撞到左右牆就鏡射回來\nintercept = reflect_x(ball_x + ball_vx * frames, left, right)',
+          caption: '預測落點的兩個算式',
+          code: '還要幾格才落到球拍 = (球拍的高度 − 球的高度) ÷ 球往下的速度\n落點               = 球現在的位置 + 橫向速度 × 格數   →  撞到左右牆就折回來',
         },
         {
           kind: 'p',
-          text: '公平比較要用同一套規則。專案有兩套規則，差別在多久做一次決定：神經網路一路是「每 4 格畫面決定一次」，追蹤程式需要「每格都決定」。所以我在「每格都決定」的規則下另外訓練了一個神經網路，練了 200 萬格畫面，兩邊各玩同樣的 15 局：',
+          text: '公平比較要用同一套規則。專案有兩套規則，差別在多久做一次決定：神經網路一路是「每 4 格畫面決定一次」；追蹤程式要把球拍精準停在落點上，需要每一格都能微調位置，所以用的是「每格都決定」。為了公平，我在「每格都決定」的規則下另外訓練了一個神經網路，練了 200 萬格畫面，兩邊各玩同樣的 15 局：',
         },
         {
           kind: 'bars',
@@ -328,7 +328,7 @@ export const zhTwCopy: CaseStudyCopy = {
           kind: 'callout',
           tone: 'muted',
           title: '我的猜測，與下一步',
-          text: '我的猜測是規則變嚴了：每格都要決定，同一段遊戲時間裡神經網路要做四倍的決定，等於把必須記住的時間跨度拉長四倍，而這個網路只練過一次、只有 200 萬格。下一步我在同一套規則下、其他條件都不動，訓練多個各自獨立的網路並把訓練量拉長，看平均分會不會順著學習曲線繼續往上。如果會，差距就來自訓練量與單次運氣，不是這條路線學不會；如果不會，才輪到「看畫面學動作真的比直接計算貴」這個解釋。',
+          text: '我的猜測有兩個。一是規則變難了：每格都要決定，同一段遊戲時間裡要做四倍的決定，按下按鈕到看見得分之間隔得更遠，神經網路更難把功勞算到對的那一步。二是練得不夠：這個網路只練過一次、只有 200 萬格。下一步把兩者拆開：先把同樣的網路放回「每 4 格決定一次」的規則、玩同樣 15 局，看分數回不回得來，分清是規則的問題還是模型的問題；再在「每格都決定」的規則下獨立訓練三次、各練 500 萬格，不讓一次訓練的運氣定生死。',
         },
       ],
     },
@@ -370,13 +370,13 @@ export const zhTwCopy: CaseStudyCopy = {
         },
         {
           kind: 'p',
-          text: '網頁版裡同一套追蹤邏輯（移植成 TypeScript）另外跑了 120 局：{{metric:browser_wasm_120_canonical_clear_detections}} 局打光，平均 {{metric:browser_wasm_120_mean_score}} 分，和正式 15 局的結果相近。',
+          text: '網頁版裡同一套追蹤邏輯（移植成 TypeScript）另外跑了 120 局：{{metric:browser_wasm_120_canonical_clear_detections}} 局打光，平均 {{metric:browser_wasm_120_mean_score}} 分。',
         },
         {
           kind: 'callout',
           tone: 'muted',
-          title: '還沒做的一步',
-          text: '這 4 局是「判定器說打光」，還沒有逐局對照原始紀錄複查，所以這裡只說「15 局打光 4 局」，不說「穩定破關」。',
+          title: '這個打光比例代表什麼',
+          text: '正式 {{seeds:rgb_controller_a8445df_canonical_clear_detections}} 局打光 {{metric:rgb_controller_a8445df_canonical_clear_detections}} 局，網頁版 {{seeds:browser_wasm_120_canonical_clear_detections}} 局打光 {{metric:browser_wasm_120_canonical_clear_detections}} 局，兩個比例落在同一個範圍：這支程式大約每三、四局能打光一局。它證明了不用訓練也打得光兩面牆，但還不是每局都打得光。',
         },
       ],
     },
@@ -409,13 +409,13 @@ export const zhTwCopy: CaseStudyCopy = {
               name: 'Laya 現成模型',
               idea: '拿現成的看圖模型 Laya（{{metric:laya_parameter_count}} 參數，以 SmolVLM 為底）凍結不訓練，直接看畫面選動作。它先前看過一些打磚塊的專家操作，不算從零開始。',
               result: '玩不起來',
-              detail: '在瀏覽器玩了一局，{{metric:laya_browser_session_score}} 分、{{metric:laya_browser_session_played_s}} 秒就用完五條命。完整的正式評估局數：{{metric:laya_complete_episodes}}。',
+              detail: '在瀏覽器用同一個開局玩了兩次，兩次都只拿 {{metric:laya_browser_session_score}} 分，約 {{metric:laya_browser_session_played_s}} 秒就用完五條命。完整的正式評估局數：{{metric:laya_complete_episodes}}。',
             },
           ],
         },
         {
           kind: 'p',
-          text: 'Laya 的速度夠：頁面每 {{metric:laya_browser_decision_interval_p50_ms}} 毫秒送出一次決策，畫面每秒 {{metric:laya_browser_presented_fps}} 張。問題在決策品質：它常左右來回切換。調整後連續反向從 {{metric:laya_control_diagnostic_raw_reversals}} 次降到 {{metric:laya_control_diagnostic_reversals}} 次，球拍仍接不住球。',
+          text: '問題不在速度：頁面每 {{metric:laya_browser_decision_interval_p50_ms}} 毫秒送出一次決策，幾乎剛好跟上每秒 60 格畫面的節奏，畫面每秒實際呈現 {{metric:laya_browser_presented_fps}} 張。問題在決策品質：它常常前一刻往左、下一刻往右，球拍在原地抖動。我在另一組短測試裡加了一道煞車，它想立刻反向時先多等一次決策；連續反向從 {{metric:laya_control_diagnostic_raw_reversals}} 次降到 {{metric:laya_control_diagnostic_reversals}} 次，球拍還是接不住球。抖動少了、分數沒變，所以抖動不是主因，它真正缺的是判斷球會落在哪。',
         },
       ],
     },
@@ -433,7 +433,7 @@ export const zhTwCopy: CaseStudyCopy = {
           items: [
             { label: '追蹤程式', value: 'metric:rgb_controller_a8445df_mean_score', tone: 'lime' },
             { label: '神經網路', value: 'metric:dqn_v3_2m_mean_score', tone: 'coral' },
-            { label: 'Laya', value: 'metric:laya_browser_session_score', tone: 'blue', note: '規則不同、只玩過一局，僅供參考' },
+            { label: 'Laya', value: 'metric:laya_browser_session_score', tone: 'blue', note: '規則不同，只在瀏覽器玩過同一個開局' },
           ],
         },
         {
@@ -442,7 +442,7 @@ export const zhTwCopy: CaseStudyCopy = {
           headers: ['', '追蹤程式', '神經網路', 'Laya'],
           rows: [
             ['需要訓練嗎', '不用', '要，200 萬格畫面', '沒有為這個專案訓練'],
-            ['平均分', '{{metric:rgb_controller_a8445df_mean_score}}', '{{metric:dqn_v3_2m_mean_score}}', '只玩過一局：{{metric:laya_browser_session_score}}'],
+            ['平均分', '{{metric:rgb_controller_a8445df_mean_score}}', '{{metric:dqn_v3_2m_mean_score}}', '同一個開局玩兩次：都是 {{metric:laya_browser_session_score}}'],
             ['打光兩面牆', '{{metric:rgb_controller_a8445df_canonical_clear_detections}}／{{seeds:rgb_controller_a8445df_canonical_clear_detections}}', '{{metric:dqn_v3_2m_clears}}／{{seeds:dqn_v3_2m_clears}}', '沒有完整評估'],
             ['每次決策', '約 {{metric:rgb_controller_a8445df_latency_ms_mean}} 毫秒', '約 {{fact:web_wasm_p50_ms}} 毫秒（瀏覽器）', '約 {{metric:laya_browser_decision_interval_p50_ms}} 毫秒'],
             ['看得懂它在想什麼嗎', '看得懂，每一步都算得出來', '很難，只有四個 Q 值', '很難'],
@@ -466,11 +466,11 @@ export const zhTwCopy: CaseStudyCopy = {
       id: 'evidence',
       nav: '證據與重現',
       kicker: '證據與重現',
-      title: '每個數字都查得到，也都能重跑',
+      title: '每個數字都查得到出處',
       blocks: [
         {
           kind: 'p',
-          text: '結果數字在載入時直接讀自倉庫裡的機器可讀摘要；過程中的數字來自當天的文章。追蹤程式的正式評估也能重跑，步驟寫在下方的「重現步驟」裡：',
+          text: '這頁的結果數字不是手抄的：頁面打開時直接讀取專案的成果檔，和 GitHub 上的成果報告用的是同一份，所以兩邊永遠一致；30 天過程中的數字則來自當天的文章。追蹤程式的 15 局可以自己重跑一遍，步驟在下方的「重現步驟」：',
         },
         {
           kind: 'links',

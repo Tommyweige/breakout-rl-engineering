@@ -267,7 +267,7 @@ This is a limitation of the closeout, not a reason to fabricate logs. The expect
 
 ## Related records
 
-- Roadmap: [#14](https://github.com/Tommyweige/breakout-rl-engineering/issues/14) — Phase 1 incomplete; Phase 2/3 deferred.
+- Roadmap: [#14](https://github.com/Tommyweige/breakout-rl-engineering/issues/14) — closed 2026-10-31; Phase 1 reached by canonical clear detection, Phase 2/3 not run.
 - Closeout: [#73](https://github.com/Tommyweige/breakout-rl-engineering/issues/73).
 - Controller: [#25](https://github.com/Tommyweige/breakout-rl-engineering/issues/25), [PR #26](https://github.com/Tommyweige/breakout-rl-engineering/pull/26).
 - Reward shaping: [#9](https://github.com/Tommyweige/breakout-rl-engineering/issues/9), [#10](https://github.com/Tommyweige/breakout-rl-engineering/issues/10).

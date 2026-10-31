@@ -18,7 +18,7 @@ An end-to-end reinforcement learning engineering project for Atari Breakout, cov
 
 The final application runs both the Atari environment and the trained RL policy directly in the browser, without a Python backend.
 
-> **Project status: frozen evidence closeout (2026-10-29).** This repository is a completed engineering case study, not an active training campaign. **The current RGB predictive controller reaches the 864-point two-wall clear in 4/15 episodes by canonical clear detection** (native ALE, official Contract v3 15 seeds, HEAD `a8445df`; mean 721.8). Contracts, metrics, provenance, and limitations are indexed in [`docs/final-results/`](docs/final-results/README.md); the public narrative is the [interactive case study](https://breakout.tommypan.com/case-study).
+> **Project status: finished; evidence frozen on 2026-10-29.** This is a completed engineering project, not ongoing training. The final result: the tracker reached 864 points, clearing both brick walls, in 4 of 15 official games, with a mean of 721.8. The full story for general readers is the [case study](https://breakout.tommypan.com/case-study); where every number comes from, which rules it was measured under, and its limits are in [`docs/final-results/`](docs/final-results/README.md).
 
 ## Key Findings
 

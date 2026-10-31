@@ -72,7 +72,7 @@ PR #74 is **draft** and must remain draft until the missing acceptance evidence 
 2. **Most raw artifacts are still absent.** The CUDA service benchmarks, fixed fixtures, and 1,000-request memory run were local and ignored. The browser-session records are now committed, but the service-side numbers a reviewer would need for the latency and memory claims are not.
 3. **Browser QA is partial.** Two 2026-10-29 sessions record rendered presentation cadence, decision latency, controller switching, and pause/resume without JavaScript errors. The required 60-second continuous desktop run and 390x844 play QA are still outstanding.
 4. **The 60 native frames/s budget is not met.** The measured decision interval is 67.0 ms against a 66.7 ms budget for 60 native frames/s at four frames per decision, and the panel presents 58.5 frames/s. That is close, but no 60 FPS claim is made, and the bounded display lag added by presentation pacing is still unmeasured.
-5. **Cold start is separate and open.** Issue #70 documents a host-RAM/CPU spike from the upstream loader; no production fix is merged. Issue #70 must not be folded into #71/#72.
+5. **Cold start is separate and unfixed.** Issue #70 (closed 2026-10-31 with the project) documents a host-RAM/CPU spike from the upstream loader; no production fix is merged. Issue #70 must not be folded into #71/#72.
 6. **Source scope is not settled.** #71/#72 are implementation/performance tickets. Their acceptance criteria include fresh benchmarks, 30+ varied RGB states, 300+ requests, parity evidence, and a 60-second browser session. None of that is complete.
 
 **What would unblock it**
@@ -83,13 +83,13 @@ PR #74 is **draft** and must remain draft until the missing acceptance evidence 
 - Record the cold-start measurements for #70 on the same machine and make the readiness gate fail visibly.
 - Run the matched DQN comparison under v2 (or explicitly declare not comparable), separate from any v3 controller comparison.
 
-**Do not**: fix, merge, close, or retag #70/#71/#72; do not merge PR #74; do not infer a Laya score from its latency; do not call it zero-shot; do not describe the control diagnostic as a quality improvement.
+**Do not**: reopen or retag #70/#71/#72 as fixed; do not merge PR #74; do not infer a Laya score from its latency; do not call it zero-shot; do not describe the control diagnostic as a quality improvement.
 
 ### #14 roadmap — Phase 2/3 deferred
 
 - Phase 1 (First Clear): the `a8445df` controller has 4/15 **canonical clear detections** under native ALE and the official Contract v3 seeds. The controller evaluator does not perform artifact provenance validation, so this closeout does not declare Phase 1 complete; that decision belongs in #14.
 - Phase 2 (reliable clear) and Phase 3 (timed challenge / human record) were **not started**. They are deferred, not blockers for this closeout.
-- #14 stays **open**. Do not close it or reinterpret its criteria.
+- #14 was closed on 2026-10-31 by the owner: the project is frozen, Phase 1 was reached by the tracker (4 of 15), and Phase 2/3 were not run. Do not reinterpret its criteria.
 
 ### World record / human timed challenge
 
@@ -164,8 +164,8 @@ Do not upload model weights without confirming the license and distribution righ
 
 No issue was closed, reopened, relabeled, or modified. In particular:
 
-- #14 remains open; Phase 2/3 are deferred.
-- #70, #71, #72 remain open.
+- #14 is closed; Phase 2/3 were not run.
+- #70, #71, #72 were closed with the project on 2026-10-31; the cold-start issue in #70 is not fixed.
 - PR #74 remains draft.
 - No tag, Release, or deployment was created.
 

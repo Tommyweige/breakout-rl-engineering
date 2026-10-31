@@ -1,6 +1,6 @@
 # Breakout RL Engineering
 
-[English](README.md) · [線上 Demo](https://breakout.tommypan.com) · [Case Study](https://breakout.tommypan.com/case-study) · [最終結果](docs/final-results/README.md) · [重現路徑](docs/repro/README.md) · [30 天鐵人賽文章](https://github.com/Tommyweige/breakout-rl-engineering/tree/docs-ironman-series)
+[English](README.md) · [線上 Demo](https://breakout.tommypan.com) · [案例研究](https://breakout.tommypan.com/case-study.zh-TW) · [最終結果](docs/final-results/README.md) · [重現路徑](docs/repro/README.md) · [30 天鐵人賽文章](https://github.com/Tommyweige/breakout-rl-engineering/tree/docs-ironman-series)
 
 **一支從沒訓練過的程式，打贏了這個專案訓練出來的神經網路。** 追蹤程式在 15 場正式對局中打光兩面牆 4 次，平均 721.8 分；同一套規則下（每格畫面做一次決定、同樣那 15 局），訓練過的神經網路平均 6.93 分。
 
@@ -8,7 +8,7 @@
 | :---: | :---: | :---: |
 | **4／15 局** | **721.8** | **6.93** |
 
-**[在瀏覽器裡試玩](https://breakout.tommypan.com)** · **[讀 30 天案例研究](https://breakout.tommypan.com/case-study)**
+**[在瀏覽器裡試玩](https://breakout.tommypan.com)** · **[讀 30 天案例研究](https://breakout.tommypan.com/case-study.zh-TW)**
 
 ![打磚塊網頁版：左邊你自己玩，右邊 AI 自己玩](docs/final-results/screenshots/game-page.png)
 
@@ -18,7 +18,7 @@
 
 最終應用會直接在瀏覽器中執行 Atari 環境與訓練完成的 RL policy，不需要 Python backend。
 
-> **專案狀態：證據收尾凍結（2026-10-29）。** 這是一個已完成的工程案例，不是持續進行的訓練計畫。**現行 RGB predictive controller 在 15 局中有 4 局以 canonical clear detection 達到 864 分（兩面牆全清）**（native ALE、官方 Contract v3 15 seeds、HEAD `a8445df`；mean 721.8）。 Contract、指標、provenance 與限制都整理在 [`docs/final-results/`](docs/final-results/README.md)；對外敘事入口是 [互動式 case study](https://breakout.tommypan.com/case-study)。
+> **專案狀態：已完成，證據在 2026-10-29 凍結。** 這是一個做完的工程案例，不再繼續訓練。最後的結果是：追蹤程式在 15 局正式對局中有 4 局打到 864 分、打光兩面牆，平均 721.8 分。給一般讀者的完整故事在 [案例研究](https://breakout.tommypan.com/case-study.zh-TW)；每個數字的來源、規則版本與限制整理在 [`docs/final-results/`](docs/final-results/README.md)。
 
 ## 重點發現
 
