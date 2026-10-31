@@ -25,6 +25,8 @@ from breakout_rl.inference import (
 )
 from breakout_rl.onnx_parity import compare_q_values
 
+DAY22_MODEL_PATH = Path("assets/day22/models/final_model/model.onnx")
+
 
 class FixedQNetwork(nn.Module):
     def __init__(self) -> None:
@@ -145,8 +147,12 @@ class InferenceContractTests(unittest.TestCase):
     importlib.util.find_spec("onnxruntime") is not None,
     "onnxruntime is required for ONNX policy tests",
 )
+@unittest.skipUnless(
+    DAY22_MODEL_PATH.is_file(),
+    "the Day 22 ONNX model lives under the gitignored assets/ tree and is not in main",
+)
 class ONNXRuntimePolicyTests(unittest.TestCase):
-    MODEL = Path("assets/day22/models/final_model/model.onnx")
+    MODEL = DAY22_MODEL_PATH
 
     def setUp(self) -> None:
         self.observation = np.zeros((4, 84, 84), dtype=np.uint8)

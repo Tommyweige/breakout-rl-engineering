@@ -32,46 +32,45 @@ frames across 15 episodes in the verified run).
 
 ## Verified output
 
-From a clean clone at commit `b39294d` (the review-branch commit used for this
-run; later documentation-only commits do not change the smoke behavior, and
-the merge commit will have a different SHA):
+Verified on 2026-10-31 in this repository's Windows checkout (`b7a5c76` plus the
+uncommitted review changes), Python 3.12.13, no `CUDA_VISIBLE_DEVICES` tricks:
 
 ```text
 $ python -m scripts.smoke.run_smoke --output-dir outputs/smoke
 
 Breakout RL reproducibility smoke
-  repository: /tmp/breakout-accept
-  commit:     b39294d6c6c4efad0c5d822d26df5b1c7f08847a
-  describe:   day9-217-gb39294d
-  python:     3.12.15 (Linux-...-aarch64-with-glibc2.34)
+  repository: E:\...\breakout-rl-engineering
+  commit:     b7a5c76
+  describe:   day18-103-gb7a5c76-dirty
+  python:     3.12.13 (Windows-11-10.0.26300-SP0)
 
 [1/2] Unit tests
-Discovered 315 tests under /tmp/breakout-accept/tests
+Discovered 340 tests under E:\...\breakout-rl-engineering\tests
 ...
-Ran 315 tests in 24.9s
+Ran 340 tests in 112.275s
 
-FAILED (failures=1, errors=12, skipped=8)
+OK (skipped=5)
 
-Known pre-existing failures on main: 13
-  - test_evaluation: ImportError: scripts.analysis.generate_dqn_milestone_report ...
-  ...
-Unit tests: PASSED (294 passed, 8 skipped, 13 failed in 24.9s)
+Unit tests: PASSED (335 passed, 5 skipped, 0 failed in 112.3s)
 
 [2/2] End-to-end smoke: 400 training steps + one 15-episode evaluation
 ...
-Training:   PASS in 38.2s (400 agent steps, 1597 emulator frames)
-Evaluation: PASS in 44.6s (15 episodes, mean return 0.733, 8421 emulator frames)
-Artifacts:  /tmp/breakout-accept/outputs/smoke/smoke-20261029T075301Z
-Manifest:   /tmp/breakout-accept/outputs/smoke/smoke-20261029T075301Z/smoke-manifest.json
+Training:   PASS in 17.2s (400 agent steps, 1597 emulator frames)
+Evaluation: PASS in 17.8s (15 episodes, mean return 0.733, 8421 emulator frames)
+Artifacts:  ...\outputs\smoke\smoke-20261031T125436Z
+Manifest:   ...\outputs\smoke\smoke-20261031T125436Z\smoke-manifest.json
 
-Smoke: PASS in 109.9s
+Smoke: PASS in 152.4s
 ```
 
-The total was 109.9 seconds on a 4-vCPU ARM host. Earlier runs on the same host
-took 116.6 and 143.5 seconds while the machine was busier. A final clean-clone
-run at `49c5f9a` took 80.1 seconds (20.1 s unit tests, 28.5 s training, 29.3 s
-evaluation); timings vary with host load. Allow about five minutes on a slow
-CI runner.
+There is no "known pre-existing failures" block any more: the allowlist is empty
+and the unit stage passes. The five skips are hardware- and asset-dependent (four
+ONNX policy tests need the untracked Day 22 model; one CPU-only tensor test skips
+when CUDA is present), so a CPU-only CI runner skips a different set.
+
+Timings vary with host load: the same suite took 133.6 s in a separate run on
+this machine, and a 2026-10-29 run on a 4-vCPU ARM host took 80-143 s in total.
+Allow about five minutes on a slow CI runner.
 
 ## What it asserts
 
@@ -99,14 +98,14 @@ assertion mismatch fails the smoke with a non-zero exit code.
 
 ## Unit-test classification
 
-The full suite is executed, not a curated subset. On `main`, 13 tests fail for
-reasons that predate this smoke path. Each failure is matched by module name
-(for import errors) or full test id against
+The full suite is executed, not a curated subset. Each failure is matched by
+module name (for import errors) or full test id against
 [`../../scripts/smoke/known_failures.json`](../../scripts/smoke/known_failures.json),
-printed with its reason, and counted. A failure outside the allowlist fails
-the smoke.
+printed with its reason, and counted. That allowlist is now empty, so any
+failure at all fails the smoke, with or without `--strict-units`.
 
-The eight skipped tests are CUDA-only and skip on a CPU host:
+Which tests skip depends on the host, not on `main`. A CPU-only CI runner skips
+the CUDA-dependency tests, for example:
 
 ```text
 test_gpu_replay ... skipped 'CUDA is required for storage integration'
@@ -119,20 +118,20 @@ test_vectorized_training ... skipped 'CUDA is required for PER training integrat
 test_inference ... skipped 'CUDA is required for CUDA EP test'
 ```
 
-Once the 13 known failures are fixed, run:
+A machine with CUDA runs those and instead skips the four
+`ONNXRuntimePolicyTests` tests, whose Day 22 model is not in `main`, plus one
+CPU-only tensor test. To check locally that nothing is being tolerated:
 
 ```bash
 python -m scripts.smoke.run_smoke --units-only --strict-units
 ```
-
-and remove the fixed entries from `known_failures.json`.
 
 ## Flags
 
 ```text
 --units-only     run the unit tests and stop
 --e2e-only       skip the unit tests and run training + evaluation
---strict-units   fail if a known pre-existing failure is still present
+--strict-units   fail if a known pre-existing failure is still present (the allowlist is empty)
 --output-dir     parent directory for artifacts (default: a fresh temp dir)
 ```
 

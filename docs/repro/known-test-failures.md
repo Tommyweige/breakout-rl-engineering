@@ -1,104 +1,91 @@
-# Known failures on `main`
+# Unit tests on `main`
 
-These are pre-existing problems in the checkout, not regressions introduced by
-the smoke path or CI. They are documented here so the smoke can classify them
-explicitly instead of silently skipping tests. The machine-readable allowlist is
-[`../../scripts/smoke/known_failures.json`](../../scripts/smoke/known_failures.json).
-
-The short version: a clean checkout runs 315 discoverable tests. 294 pass, 8
-skip because CUDA is unavailable, and 13 fail for the reasons below. A few
-test modules fail at import time, so their individual test methods are never
-counted.
-
-## Unit-test failures
-
-Command:
+The suite is green. Up to the `main` cleanup this page listed 13 failures; they
+are gone, and this page now records what was removed to get there, so the next
+reader can tell a deliberate deletion from an accidental one.
 
 ```bash
 python -m unittest discover -s tests -v
 ```
 
-Result:
-
 ```text
-Ran 315 tests in 23.911s
+Ran 340 tests in 133.641s
 
-FAILED (failures=1, errors=12, skipped=8)
+OK (skipped=5)
 ```
 
-### 1. Tests import scripts deleted by the `main` cleanup (10 failures)
+Five tests skip here, and the skip set depends on the machine, not on `main`:
+
+- four `test_inference.ONNXRuntimePolicyTests` tests need the Day 22 ONNX model,
+  which lives under the gitignored `assets/` tree;
+- `test_tensors` keeps one negative test that skips when CUDA is present.
+
+On a CPU-only host the CUDA-dependency tests skip instead. The allowlist in
+[`../../scripts/smoke/known_failures.json`](../../scripts/smoke/known_failures.json)
+is empty: any failure now fails the smoke.
+
+## What the 13 failures were, and what happened to them
+
+### 1. Tests imported scripts that `1e50f4b` deleted (10 failures)
 
 Commit `1e50f4b` (`chore: slim main branch to maintained code`) removed
-diagnostic, deployment, and visualization scripts from `main`. The tests that
-import them were left behind.
+diagnostic, deployment, and visualization scripts from `main`, and left the
+tests that imported them behind. Restoring the scripts was not an option — they
+were deleted on purpose — so each test module was either deleted with its
+subject or trimmed to the part that still tests maintained code.
 
-| Test module | Exact error |
-| --- | --- |
-| `test_evaluation` | `ModuleNotFoundError: No module named 'scripts.analysis.generate_dqn_milestone_report'` |
-| `test_inspect_cnn_dimensions` | `ModuleNotFoundError: No module named 'scripts.analysis.inspect_cnn_dimensions'` |
-| `test_inspect_dqn_network` | `ModuleNotFoundError: No module named 'scripts.analysis.inspect_dqn_network'` |
-| `test_inspect_dueling_network` | `ModuleNotFoundError: No module named 'scripts.analysis.inspect_dueling_network'` |
-| `test_onnx_artifacts` | `ModuleNotFoundError: No module named 'scripts.deployment'` |
-| `test_precision` | `ModuleNotFoundError: No module named 'scripts.deployment'` |
-| `test_runtime_scores` | `ModuleNotFoundError: No module named 'scripts.visualization.visualize_runtime_score_distribution'` |
-| `test_tensorrt` (method 1) | `ModuleNotFoundError: No module named 'scripts.deployment.build_tensorrt_engine'` |
-| `test_tensorrt` (method 2) | `ModuleNotFoundError: No module named 'scripts.analysis.compare_tensorrt'` |
+| Test module | What it imported | Action |
+| --- | --- | --- |
+| `test_inspect_cnn_dimensions` | `scripts.analysis.inspect_cnn_dimensions` | deleted: the inspector is gone and nothing in `main` calls it |
+| `test_inspect_dqn_network` | `scripts.analysis.inspect_dqn_network` | deleted, same reason |
+| `test_inspect_dueling_network` | `scripts.analysis.inspect_dueling_network` | deleted, same reason |
+| `test_onnx_artifacts` | `scripts.deployment` | deleted: the deployment package is gone, and this module also needs the untracked `assets/day22` model |
+| `test_evaluation` | `scripts.analysis.generate_dqn_milestone_report` | trimmed: dropped the report and visualization test and the Day 14 manifest provenance test; the evaluator tests remain |
+| `test_precision` | `scripts.deployment` | trimmed: dropped the fp16-conversion test; the precision audit tests remain |
+| `test_runtime_scores` | `scripts.visualization.visualize_runtime_score_distribution` | trimmed: dropped the four tests that read the deleted `configs/eval/day26_runtime_score_evaluation.json` and the visualization test; the aggregation, statistics, and duplicate-seed tests remain |
+| `test_tensorrt` | `scripts.deployment.build_tensorrt_engine`, `scripts.analysis.compare_tensorrt` | trimmed: dropped the two tests that build or compare engines; the build-seam and status tests remain |
 
-`test_evaluation` fails while `unittest` imports the module, so none of its
-individual tests run. The same applies to the three `inspect_*` modules,
-`test_onnx_artifacts`, `test_precision`, and `test_runtime_scores`. This is why
-the 315-test count is lower than the historical suite.
+The three `inspect_*` modules and `test_onnx_artifacts` had no maintained
+subject left: `breakout_rl/` has no counterpart for those inspectors, and the
+Day 22 assets they read are not in `main`. Keeping the tests would have meant
+re-creating deleted scripts, so they were deleted with a note in the commit
+message.
 
-### 2. ONNX inference tests need an untracked asset (3 failures)
-
-```text
-FileNotFoundError: /.../assets/day22/models/final_model/model.onnx
-```
+### 2. ONNX inference tests needed an untracked asset (3 failures, now skips)
 
 `tests/test_inference.py` points at `assets/day22/models/final_model/model.onnx`.
-`assets/` is gitignored and is not part of `main`. A same-shaped model exists at
-`web/public/models/final_model/model.onnx`, but the test has its own path and
-its own expected metadata; copying the web model into `assets/` would change
-test semantics and is not part of this change.
+`assets/` is gitignored and is not part of `main`, so `ONNXRuntimePolicyTests`
+now carries a second `skipUnless` on that path, next to the existing
+`onnxruntime` guard. When the asset is present the four tests run unchanged;
+`MODEL` is no longer re-declared per test.
 
-Affected tests:
+### 3. A recorded contract hash came from a CRLF checkout (1 failure)
 
-```text
-test_inference.ONNXRuntimePolicyTests.test_cpu_policy_accepts_a_prepared_model_input
-test_inference.ONNXRuntimePolicyTests.test_cpu_policy_validates_dynamic_batch_and_returns_contract_shapes
-test_inference.ONNXRuntimePolicyTests.test_requested_cuda_provider_never_silently_falls_back_when_unavailable
-```
+`tests/test_per_experiment.py` asserts the number of failed checks reported by
+`audit_baseline(configs/per_experiment.json)`. One of those checks compares the
+Contract v2 SHA-256 recorded in `configs/per_experiment.json` with the file. The
+recorded value was the hash of the contract **as written by a Windows checkout
+with `core.autocrlf=true`**, so it never matched the LF file. The value is now
+the LF hash, and `.gitattributes` pins LF for every file whose hash is recorded
+(see below). The audit now reports 19 failed checks: 18 staged-resume checks,
+plus one historical record that is meant to fail.
 
-### 3. PER audit count drifted (1 failure)
+The historical one is the Day 20 manifest, read from commit `aa2231a2`. It froze
+the CRLF hash of that era, and no change to this checkout can make that record
+match, so the assertion expects all 19 and the comment next to it says why.
 
-```text
-FAIL: test_day20_staged_replay_reset_is_rejected_as_primary_control
-  self.assertEqual(len(audit["failed_checks"]), 18)
-AssertionError: 22 != 18
-```
+## Hash-recorded files are pinned to LF
 
-`audit_baseline(Path("configs/per_experiment.json"))` reports 22 failed checks;
-the test expects 18. The failure occurs at the first count assertion, so the
-remaining assertions in that test are not reached. The cause was not
-investigated because `tests/` and `configs/` are outside this task's edit
-scope.
+[`.gitattributes`](../../.gitattributes) sets `text eol=lf` for every text file
+whose SHA-256 is recorded in an audit, a contract, a fixture, or
+`configs/per_experiment.json`: the two eval contracts, the completion audit, the
+browser-clear audit CSV and summaries, the Laya browser-QA records, and the
+completion fixtures. `git checkout` then writes LF on every platform, so a
+Windows worktree hashes the same bytes as CI.
 
-## Why these were not fixed here
-
-The requested change was limited to `.github/`, `docs/`, the README, and new
-smoke scripts. Fixing the failures requires either restoring scripts that
-`main` intentionally removed, or editing/deleting tests, or adding the missing
-model asset. Those are owner decisions, not documentation tasks. The smoke
-therefore runs every test, reports these 13 as known, and fails on anything
-else.
-
-To make them blocking again after a fix:
-
-```bash
-python -m scripts.smoke.run_smoke --units-only --strict-units
-```
-
-and remove the fixed entry from `scripts/smoke/known_failures.json`.
+A worktree that predates the change keeps the bytes it already has. The index
+already holds LF, so deleting those paths and checking them out again
+(`git checkout -- <path>`) rewrites them with LF and the provenance tests pass.
 
 ## Evaluation-config mismatch (not a unit test)
 
@@ -149,8 +136,7 @@ Exit code: `2`.
 The smoke works around this by generating an equivalent config with the 15
 concrete seeds and `episodes_per_seed: 1`. It evaluates exactly the same 15
 episode seeds. This is a workaround, not a fix: either the checked-in config or
-the evaluator's seed expansion needs to change. `configs/eval/` is owned by
-another change and was not modified here.
+the evaluator's seed expansion needs to change.
 
 ## `evaluate_dqn` cannot run from a clean checkout
 
@@ -177,9 +163,3 @@ the CPU pip set, not the lockfile.
 default temporary directory), the field is `"unavailable"`. The smoke manifest
 records the actual commit either way; the documented `--output-dir
 outputs/smoke` path also gives the training summary the commit.
-
-## Gitignore exception for this directory
-
-`.gitignore` ignored `docs/*` except `docs/final-results/`. This change adds
-`!docs/repro/` so these documents can be committed. It does not unignore the
-other historical material under `docs/`.

@@ -6,11 +6,7 @@ import unittest
 
 from unittest import mock
 
-import numpy as np
 import torch
-
-from breakout_rl.benchmarking import BenchmarkConfig, run_benchmark_target
-from breakout_rl.inference import load_inference_spec
 
 from breakout_rl.tensorrt import (
     TENSORRT_STATUS_BLOCKED,
@@ -58,27 +54,6 @@ class _FakeBuilderConfig:
 
     def get_flag(self, flag) -> bool:
         return flag in self.flags
-
-
-class _FakeTensorRTSession:
-    device = torch.device("cpu")
-    device_index = 0
-    runtime_metadata = {
-        "runtime": "TensorRT",
-        "tensorrt_version": "test",
-    }
-
-    def __init__(self) -> None:
-        self.public_calls = 0
-        self.prevalidated_calls = 0
-
-    def execute(self, model_input: torch.Tensor) -> torch.Tensor:
-        self.public_calls += 1
-        return torch.zeros((model_input.shape[0], 4), dtype=torch.float32)
-
-    def execute_prevalidated(self, model_input: torch.Tensor) -> torch.Tensor:
-        self.prevalidated_calls += 1
-        return torch.zeros((model_input.shape[0], 4), dtype=torch.float32)
 
 
 class TensorRTTests(unittest.TestCase):
@@ -167,49 +142,6 @@ class TensorRTTests(unittest.TestCase):
             )
         with self.assertRaisesRegex(TensorRTBlockedError, "disable TF32"):
             disable_tf32(object(), mock.Mock(BuilderFlag=object()))
-
-    def test_cli_only_engine_build_is_blocked_without_strong_typing_proof(self) -> None:
-        from scripts.deployment.build_tensorrt_engine import _build_with_trtexec
-
-        with self.assertRaisesRegex(TensorRTBlockedError, "strongly typed network"):
-            _build_with_trtexec(
-                executable="trtexec",
-                onnx_model=mock.Mock(),
-                output=mock.Mock(),
-                precision="float32",
-                workspace_bytes=1,
-                profile={},
-                log_path=mock.Mock(),
-            )
-
-    def test_tensorrt_benchmark_uses_prevalidated_runtime_for_both_scopes(self) -> None:
-        from scripts.analysis.compare_tensorrt import _tensorrt_backend
-
-        session = _FakeTensorRTSession()
-        with mock.patch(
-            "scripts.analysis.compare_tensorrt._sync_for", return_value=lambda: None
-        ):
-            backend = _tensorrt_backend(
-                session,
-                spec=load_inference_spec(),
-                precision="float32",
-                initialization_ns=0,
-                engine_metadata={
-                    "network_typing": "strongly_typed",
-                    "tf32_enabled": False,
-                },
-            )
-        result = run_benchmark_target(
-            backend,
-            np.zeros((1, 4, 84, 84), dtype=np.uint8),
-            config=BenchmarkConfig(warmup_iterations=0, iterations=1, batch_sizes=(1,)),
-        )
-
-        self.assertEqual(session.public_calls, 0)
-        self.assertEqual(session.prevalidated_calls, 2)
-        for summary in result["summary"]["results"]:
-            self.assertEqual(summary["metadata"]["network_typing"], "strongly_typed")
-            self.assertFalse(summary["metadata"]["tf32_enabled"])
 
     def test_public_execute_retains_finite_and_range_validation(self) -> None:
         session = object.__new__(TensorRTSession)

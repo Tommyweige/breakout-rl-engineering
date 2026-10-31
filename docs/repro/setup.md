@@ -43,7 +43,8 @@ The above exception was the direct cause of the following exception:
 
 In that container 54 tests failed and the smoke stopped. After installing
 `libxcb1 libgl1 libglib2.0-0 libxext6 libsm6 libice6`, the same container ran
-the full smoke successfully:
+the full smoke successfully. This output is from 2026-10-29, before the `main`
+cleanup, so it still shows 13 failures:
 
 ```text
 Ran 315 tests in 15.615s
@@ -55,8 +56,10 @@ Evaluation: PASS in 20.8s (15 episodes, mean return 0.733, 8421 emulator frames)
 Smoke: PASS in 56.9s
 ```
 
-The 13 failures are the known ones documented in
-[`known-test-failures.md`](known-test-failures.md), not OpenCV failures.
+Those 13 failures were the test-side ones documented in
+[`known-test-failures.md`](known-test-failures.md), not OpenCV failures; that
+page also records how they were cleared, so the same install now runs a green
+suite.
 
 A conda environment may already satisfy some of these through conda-forge
 (`tk` pulls X libraries), but do not rely on it on a minimal image. If OpenCV
@@ -74,7 +77,7 @@ python -m pip install --upgrade pip
 ```
 
 > The verification run on 2026-10-29 cloned `--branch repro-path` because this
-> smoke path was still under review. Once it is on `main`, the plain clone
+> smoke path was still under review. It is on `main` now, so the plain clone
 > above is the correct command.
 
 Output:
@@ -157,7 +160,9 @@ $ micromamba run -n breakout-rl-engineering python -c \
 2.13.0+cu130 False
 ```
 
-The full smoke also passed in this conda environment on the same host:
+The full smoke also passed in this conda environment on the same host. The
+output below is from 2026-10-29, before the `main` cleanup, so it still shows
+the 13 test-side failures that were later removed:
 
 ```text
 Python 3.12.16, torch 2.13.0+cu130 (CPU execution)

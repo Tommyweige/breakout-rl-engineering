@@ -1,9 +1,9 @@
 """Run the repository's reproducibility smoke path.
 
-The default mode runs the full unit-test suite, classifies the pre-existing
-failures documented in ``known_failures.json``, then trains a tiny DQN policy
-for 400 agent steps and evaluates the resulting checkpoint on the 15 concrete
-seeds pinned by Breakout Contract v2.
+The default mode runs the full unit-test suite, classifies any failures against
+``known_failures.json`` (empty on ``main``: the suite passes), then trains a tiny
+DQN policy for 400 agent steps and evaluates the resulting checkpoint on the 15
+concrete seeds pinned by Breakout Contract v2.
 
 Every step is a real CLI invocation in a subprocess, so the smoke path checks
 the same entry points a reader uses, not private helper functions.

@@ -87,23 +87,15 @@ npm run build
 - The exact `web` job commands were executed in the same clone; `npm ci` and
   `npm run build` passed (see [`setup.md`](setup.md)).
 
-## Why this pass did not trigger a real GitHub Actions run
+## Where the real runs are
 
-GitHub Actions only executes workflows from a commit that exists on GitHub.
-This work was done in a local checkout and no push was authorized, so the
-workflow has not run on GitHub yet. Once the branch is pushed (or a pull
-request is opened), the workflow runs automatically. If Actions is disabled
-for the repository, enable it under **Settings → Actions → General**.
+The workflow runs on GitHub for every push, pull request, and manual dispatch, so
+`main` is checked by CI and not only by local runs. The push that carries the
+current state of this file is the latest run; if Actions is disabled for the
+repository, enable it under **Settings → Actions → General**.
 
-To trigger it directly after pushing:
-
-```bash
-git push origin repro-path
-```
-
-or use **Actions → CI → Run workflow** (`workflow_dispatch`). The first real
-run is the remaining verification step for CI; nothing in the workflow depends
-on local state.
+To run it by hand, use **Actions → CI → Run workflow** (`workflow_dispatch`), or
+push a commit. Nothing in the workflow depends on local state.
 
 ## Expected runtime
 

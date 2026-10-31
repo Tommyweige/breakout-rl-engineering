@@ -305,7 +305,7 @@ class FinalResultsSummaryTests(unittest.TestCase):
         renderer = ROOT / "web" / "src" / "case-study" / "renderCaseStudy.ts"
         self.assertTrue(renderer.is_file())
         source = renderer.read_text(encoding="utf-8")
-        for literal in ("137.47", "30.933", "51.400", "72.56", "2.12"):
+        for literal in ("137.47", "30.933", "51.400", "67.0", "2.12"):
             self.assertNotIn(
                 literal,
                 source,

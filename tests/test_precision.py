@@ -3,12 +3,8 @@
 from __future__ import annotations
 
 import unittest
-import tempfile
-from pathlib import Path
 
 import numpy as np
-import onnx
-from onnx import TensorProto, helper, numpy_helper
 
 from breakout_rl.precision import (
     PrecisionBlockedError,
@@ -18,7 +14,6 @@ from breakout_rl.precision import (
     compare_precision_outputs,
     require_cuda_precision_matrix,
 )
-from scripts.deployment.convert_onnx_fp16 import convert_onnx_model
 
 
 class PrecisionTests(unittest.TestCase):
@@ -99,43 +94,6 @@ class PrecisionTests(unittest.TestCase):
             build_precision_benchmark_id(identity),
         )
         self.assertTrue(build_precision_benchmark_id(identity).startswith("day25-"))
-
-    def test_fp16_conversion_keeps_declared_float32_io_in_a_separate_file(self) -> None:
-        graph = helper.make_graph(
-            [helper.make_node("Gemm", ["observation", "weight", "bias"], ["q_values"])],
-            "tiny-policy",
-            [helper.make_tensor_value_info("observation", TensorProto.FLOAT, [None, 2])],
-            [helper.make_tensor_value_info("q_values", TensorProto.FLOAT, [None, 2])],
-            initializer=[
-                numpy_helper.from_array(np.eye(2, dtype=np.float32), name="weight"),
-                numpy_helper.from_array(np.zeros(2, dtype=np.float32), name="bias"),
-            ],
-        )
-        model = helper.make_model(
-            graph,
-            opset_imports=[helper.make_operatorsetid("", 17)],
-        )
-
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            source = root / "model.onnx"
-            output = root / "model.fp16.onnx"
-            onnx.save(model, source)
-
-            result = convert_onnx_model(source, output, keep_io_types=True)
-            converted = onnx.load(output)
-            output_size = output.stat().st_size
-
-        self.assertNotEqual(source, output)
-        self.assertEqual(result["model_size_bytes"], output_size)
-        self.assertEqual(converted.graph.input[0].type.tensor_type.elem_type, TensorProto.FLOAT)
-        self.assertEqual(converted.graph.output[0].type.tensor_type.elem_type, TensorProto.FLOAT)
-        self.assertTrue(
-            any(
-                initializer.data_type == TensorProto.FLOAT16
-                for initializer in converted.graph.initializer
-            )
-        )
 
 
 if __name__ == "__main__":

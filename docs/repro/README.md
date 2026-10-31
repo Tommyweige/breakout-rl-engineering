@@ -2,7 +2,7 @@
 
 This directory is the entry point for going from a clean clone to a passing
 smoke run. It records what was actually executed on 2026-10-29, including the
-parts that still fail on `main`.
+parts that are still not fixed.
 
 The verified host for this pass was:
 
@@ -30,26 +30,23 @@ python -m pip install \
 python -m scripts.smoke.run_smoke --output-dir outputs/smoke
 ```
 
-> While this work is under review it lives on `repro-path`, not `main`. Use
-> `git clone --branch repro-path ...` until it is merged; the command above is
-> the final path.
-
-The last command takes about two minutes on the verified host. It runs 315
+The last command takes about two minutes on the verified host. It runs 340
 unit tests, trains for 400 agent steps, and evaluates the checkpoint on the 15
 concrete seeds pinned by Breakout Contract v2. A passing run ends with:
 
 ```text
-Unit tests: PASSED (294 passed, 8 skipped, 13 failed in 24.9s)
+Unit tests: PASSED (335 passed, 5 skipped, 0 failed in 133.6s)
 Training:   PASS in 38.2s (400 agent steps, 1597 emulator frames)
 Evaluation: PASS in 44.6s (15 episodes, mean return 0.733, 8421 emulator frames)
-Smoke: PASS in 109.9s
+Smoke: PASS in 140.7s
 ```
 
-The 13 failures are pre-existing on `main`, not caused by the smoke run. They
-are listed with exact errors in
-[`known-test-failures.md`](known-test-failures.md) and classified in
-[`../../scripts/smoke/known_failures.json`](../../scripts/smoke/known_failures.json).
-`--strict-units` turns them into a smoke failure once they are fixed.
+There are no known failures on `main`: the tests that imported scripts deleted
+by the `main` cleanup are gone, the CRLF-derived contract hash is corrected, and
+the ONNX policy tests skip when their untracked asset is absent
+([`known-test-failures.md`](known-test-failures.md)). The allowlist in
+[`../../scripts/smoke/known_failures.json`](../../scripts/smoke/known_failures.json)
+is empty, so `--strict-units` and the default mode now agree.
 
 ## Documents
 
@@ -59,15 +56,15 @@ are listed with exact errors in
 | [`smoke.md`](smoke.md) | What the smoke command runs, what it asserts, artifacts, timing |
 | [`ci.md`](ci.md) | GitHub Actions workflow, local equivalent, how to trigger it |
 | [`versioning.md`](versioning.md) | Tag scheme that maps reported numbers to a commit |
-| [`known-test-failures.md`](known-test-failures.md) | The 13 unit-test failures and the evaluation-config mismatch on `main` |
+| [`known-test-failures.md`](known-test-failures.md) | The green unit suite, what the `main` cleanup removed, and the evaluation-config mismatch |
 
 ## What "pass" means here
 
 The smoke does not hide failures:
 
-- Every discovered unit test is executed. The 13 known failures are printed
-  with their tracebacks, counted, and matched against an explicit allowlist.
-  Any failure outside that allowlist fails the smoke.
+- Every discovered unit test is executed. The smoke still prints and counts any
+  failure, and matches it against an explicit allowlist, which is now empty: any
+  failure at all fails the smoke.
 - The end-to-end stage uses the real training and evaluation CLIs against the
   real ALE environment. It validates the checkpoint, the contract runtime
   binding, the episode count, the native emulator-frame count, and the

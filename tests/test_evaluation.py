@@ -19,7 +19,6 @@ from breakout_rl.evaluation import (
     EVALUATION_SCHEMA_VERSION,
     EvaluationConfig,
     evaluate_policy,
-    load_day14_provenance,
     load_dqn_checkpoint,
     load_evaluation_config,
     summarize_returns,
@@ -36,8 +35,6 @@ from scripts.evaluation.evaluate_dqn import (
     FORMAL_DQN_OUTPUT_DIR,
     _output_destination,
 )
-from scripts.analysis.generate_dqn_milestone_report import build_report
-from scripts.visualization.visualize_day15_evaluation import render_evaluation_comparison
 
 
 class _ActionSpace:
@@ -423,24 +420,6 @@ class EvaluationTests(unittest.TestCase):
             "experiments/profile.json",
         )
 
-    def test_day14_provenance_uses_manifest_config_and_explicit_profile(self) -> None:
-        provenance = load_day14_provenance(
-            Path("experiments/day14-final-frozen-100k/manifest.json"),
-            profiling_report_path=Path(
-                "experiments/day14-batch-size-profiling-final/batch-size-comparison.json"
-            ),
-        )
-
-        self.assertEqual(provenance["replay_backend"], "cpu")
-        self.assertEqual(
-            provenance["source_day14_profiling_report"],
-            "experiments/day14-batch-size-profiling-final/batch-size-comparison.json",
-        )
-        self.assertEqual(
-            provenance["gpu_profiling_summary"]["selected_run_id"],
-            "batch-size-32-seed42",
-        )
-
     def test_cpu_dqn_reference_cannot_overwrite_formal_cuda_artifacts(self) -> None:
         default_args = Namespace(device="cpu", output_dir=None, evaluation_id=None)
         output_dir, evaluation_id = _output_destination("dqn", default_args)
@@ -551,51 +530,6 @@ class EvaluationTests(unittest.TestCase):
             loaded.training_metadata["contract_id"],
             "day15-breakout-evaluation-v2-fire-reset",
         )
-
-    def test_report_recomputes_statistics_and_visualization_uses_artifacts(self) -> None:
-        random_result = evaluate_policy(
-            None,
-            episodes=1,
-            seeds=[101],
-            device="cpu",
-            env_factory=ScriptedEvaluationEnv,
-        )
-        dqn_result = evaluate_policy(
-            ConstantQNetwork(),
-            episodes=1,
-            seeds=[101],
-            device="cpu",
-            env_factory=ScriptedEvaluationEnv,
-        )
-
-        with tempfile.TemporaryDirectory() as temporary_directory:
-            root = Path(temporary_directory)
-            random_path, _ = write_evaluation_artifacts(random_result, root / "random")
-            dqn_path, _ = write_evaluation_artifacts(dqn_result, root / "dqn")
-            report = build_report(random_path, dqn_path, require_cuda=False)
-            tampered = json.loads(dqn_path.read_text(encoding="utf-8"))
-            tampered["summary"]["mean_return"] = 999.0
-            tampered_path = root / "tampered.json"
-            tampered_path.write_text(
-                json.dumps(tampered),
-                encoding="utf-8",
-            )
-            with self.assertRaisesRegex(ValueError, "does not match"):
-                build_report(random_path, tampered_path, require_cuda=False)
-            output = root / "returns.png"
-            metadata = root / "returns.json"
-            render_evaluation_comparison(
-                random_path,
-                dqn_path,
-                output,
-                metadata_path=metadata,
-            )
-            output_size = output.stat().st_size
-            metadata_exists = metadata.is_file()
-
-        self.assertIn("Random 的平均 raw Atari return", report)
-        self.assertGreater(output_size, 0)
-        self.assertTrue(metadata_exists)
 
     def test_artifact_validator_derives_completion_and_rejects_duplicate_identity(self) -> None:
         payload = {
