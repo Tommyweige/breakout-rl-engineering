@@ -37,6 +37,20 @@ python -m scripts.evaluation.evaluate_dqn --help
 
 Do not use machine-specific `sys.path` hacks.
 
+## Skill selection
+
+At the start of each task, check the currently available Skills and their descriptions. Automatically use a Skill when its description clearly matches the task; choose the most specific fit, combine Skills when they cover separate required steps, and load only the Skills needed for this task. If none fits, proceed without a Skill.
+
+Route Ponytail Skills by task:
+
+- `ponytail`: coding, implementation, bug fixes, and refactoring.
+- `ponytail-review`: review completed changes, diffs, pull requests, and possible over-engineering.
+- `ponytail-audit`: repository-wide cleanup or complexity audits only.
+- `ponytail-debt`: organize deferred shortcuts or technical debt marked `ponytail:`.
+- `ponytail-gain` and `ponytail-help`: use only when explicitly needed.
+
+When implementing an Issue, select the applicable Skill, complete the implementation, and run the relevant tests. For a substantial change, also use `ponytail-review` to look for unnecessary abstractions, dependencies, boilerplate, or duplicated implementations. Keep correctness, security, validation, error handling, and test coverage intact when simplifying.
+
 ## Versioned Breakout contracts
 
 Use the historical benchmark contract for reproducibility with prior experiments:
