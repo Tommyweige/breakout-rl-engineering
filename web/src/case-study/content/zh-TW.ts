@@ -17,6 +17,7 @@ export const zhTwCopy: CaseStudyCopy = {
       label: 'EN',
       ariaLabel: '切換至英文版',
     },
+    themeToggle: '深色模式',
   },
   hero: {
     kicker: '30 天工程案例研究 · Atari 打磚塊',

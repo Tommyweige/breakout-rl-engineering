@@ -4,8 +4,26 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Play Breakout on the left while the AI plays on the right, entirely in your browser." />
+    <meta name="theme-color" content="#f2efe6" data-light="#f2efe6" data-dark="#0e1523" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <title>Breakout — Human vs AI</title>
+    <script>
+      // Apply the saved theme before the first paint so a reload never flashes the other one.
+      (() => {
+        let saved = null;
+        try {
+          saved = localStorage.getItem('breakout-theme');
+        } catch {
+          saved = null;
+        }
+        const choice = saved === 'light' || saved === 'dark' ? saved : null;
+        const theme =
+          choice ?? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.dataset.theme = theme;
+        const meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.content = theme === 'dark' ? meta.dataset.dark : meta.dataset.light;
+      })();
+    </script>
   </head>
   <body>
     <div id="app"></div>

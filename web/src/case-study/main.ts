@@ -6,6 +6,7 @@ import {
   renderCaseStudyShell,
   type FinalResultsSummary,
 } from './renderCaseStudy';
+import { initThemeToggle } from '../theme';
 
 const locale = resolveLocale(document.documentElement.lang);
 const copy = CASE_STUDY_COPY[locale];
@@ -17,6 +18,7 @@ if (!root) {
 
 const appRoot: HTMLElement = root;
 appRoot.innerHTML = renderCaseStudyShell(locale);
+initThemeToggle();
 
 const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)');
 const video = appRoot.querySelector<HTMLVideoElement>('[data-role="gameplay-video"]');

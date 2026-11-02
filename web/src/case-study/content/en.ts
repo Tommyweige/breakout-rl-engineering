@@ -17,6 +17,7 @@ export const enCopy: CaseStudyCopy = {
       label: '中文',
       ariaLabel: 'Switch to Chinese',
     },
+    themeToggle: 'Dark theme',
   },
   hero: {
     kicker: '30-day engineering case study · Atari Breakout',

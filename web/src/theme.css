@@ -1,0 +1,26 @@
+/**
+ * Structure of the shared dark/light switch: the icon geometry and which of the two
+ * icons is visible for the current theme. Each page styles the button itself, so the
+ * game keeps its mono arcade chrome and the case-study pages keep their pill.
+ */
+
+.theme-icon {
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.theme-icon-moon {
+  display: none;
+}
+
+:root[data-theme='dark'] .theme-icon-sun {
+  display: none;
+}
+
+:root[data-theme='dark'] .theme-icon-moon {
+  display: block;
+}

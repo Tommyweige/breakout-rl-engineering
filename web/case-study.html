@@ -7,7 +7,7 @@
       name="description"
       content="A 30-day project training a Breakout AI from scratch: DQN, a stuck-serve bug, moving the model into the browser, and an untrained tracker that cleared both walls in 4 of 15 games, averaging 721.8 against the network’s 6.93."
     />
-    <meta name="theme-color" content="#ffffff" />
+    <meta name="theme-color" content="#ffffff" data-light="#ffffff" data-dark="#15171c" />
     <meta name="robots" content="index,follow" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="canonical" href="https://breakout.tommypan.com/case-study" />
@@ -37,6 +37,23 @@
     />
     <meta name="twitter:image" content="https://breakout.tommypan.com/case-study/gameplay-poster.png" />
     <title>30 days of training a Breakout AI from scratch — Breakout RL case study</title>
+    <script>
+      // Apply the saved theme before the first paint so a reload never flashes the other one.
+      (() => {
+        let saved = null;
+        try {
+          saved = localStorage.getItem('breakout-theme');
+        } catch {
+          saved = null;
+        }
+        const choice = saved === 'light' || saved === 'dark' ? saved : null;
+        const theme =
+          choice ?? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.dataset.theme = theme;
+        const meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.content = theme === 'dark' ? meta.dataset.dark : meta.dataset.light;
+      })();
+    </script>
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to results</a>

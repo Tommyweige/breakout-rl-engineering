@@ -1,6 +1,7 @@
 import { CASE_STUDY_COPY, type CaseStudyCopy, type Locale } from './content';
 import type { Chapter, NumberRef } from './content/types';
 import { FACTS, TRACKER_EPISODES, TRACKER_EPISODE_FIRST_WALL, TRACKER_EPISODE_MAX } from './facts';
+import { THEME_TOGGLE_ICONS } from '../theme';
 
 export type VerificationStatus =
   | 'verified'
@@ -371,6 +372,13 @@ export function renderCaseStudyShell(locale: Locale): string {
       lang="${escapeHtml(copy.header.languageSwitch.lang)}"
       aria-label="${escapeHtml(copy.header.languageSwitch.ariaLabel)}"
     >${escapeHtml(copy.header.languageSwitch.label)}</a>`;
+  const themeToggle = `
+    <button
+      type="button"
+      class="cs-theme"
+      data-role="theme-toggle"
+      aria-label="${escapeHtml(copy.header.themeToggle)}"
+    >${THEME_TOGGLE_ICONS}</button>`;
   const toc = [
     { id: 'timeline', nav: copy.timeline.nav },
     ...copy.chapters.map((chapter) => ({ id: chapter.id, nav: chapter.nav })),
@@ -385,6 +393,7 @@ export function renderCaseStudyShell(locale: Locale): string {
           <a href="${REPOSITORY_URL}" target="_blank" rel="noreferrer">${escapeHtml(copy.header.github)}</a>
         </span>
         ${languageSwitch}
+        ${themeToggle}
       </nav>
     </header>
 

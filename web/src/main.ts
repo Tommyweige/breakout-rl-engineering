@@ -1,6 +1,7 @@
 import './styles.css';
 
 import { App } from './app/App';
+import { initThemeToggle } from './theme';
 
 const root = document.querySelector<HTMLElement>('#app');
 if (!root) {
@@ -8,3 +9,4 @@ if (!root) {
 }
 
 new App(root).mount();
+initThemeToggle();

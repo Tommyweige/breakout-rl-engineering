@@ -1,4 +1,5 @@
 import { ACTION_MEANINGS, type ActionMeaning, type FixtureValidationResult } from '../inference/types';
+import { THEME_TOGGLE_ICONS } from '../theme';
 
 export function renderAppShell(debug = false): string {
   return [
@@ -25,7 +26,10 @@ function renderMasthead(): string {
             <span aria-hidden="true">→</span>
           </a>
         </div>
-        <p class="subtitle">YOU vs AI</p>
+        <div class="hero-tools">
+          <p class="subtitle">YOU vs AI</p>
+          <button type="button" class="theme-toggle" data-role="theme-toggle" aria-label="Dark theme">${THEME_TOGGLE_ICONS}</button>
+        </div>
       </div>
     </header>
   `;

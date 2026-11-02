@@ -70,6 +70,8 @@ export interface CaseStudyCopy {
       label: string;
       ariaLabel: string;
     };
+    /** Names the dark/light switch for screen readers; the pressed state carries the value. */
+    themeToggle: string;
   };
   hero: {
     kicker: string;

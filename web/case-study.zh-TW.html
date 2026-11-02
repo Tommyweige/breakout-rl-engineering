@@ -7,7 +7,7 @@
       name="description"
       content="30 天從零訓練打磚塊 AI：DQN 訓練、抓到不發球的 bug、搬進瀏覽器，最後一支不用訓練的追蹤程式 15 局打光 4 局，平均 721.8 分對神經網路的 6.93 分。"
     />
-    <meta name="theme-color" content="#ffffff" />
+    <meta name="theme-color" content="#ffffff" data-light="#ffffff" data-dark="#15171c" />
     <meta name="robots" content="index,follow" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="canonical" href="https://breakout.tommypan.com/case-study.zh-TW" />
@@ -43,6 +43,23 @@
       content="https://breakout.tommypan.com/case-study/gameplay-poster.zh-TW.png"
     />
     <title>從零訓練打磚塊 AI 的 30 天 — Breakout RL 工程案例研究</title>
+    <script>
+      // Apply the saved theme before the first paint so a reload never flashes the other one.
+      (() => {
+        let saved = null;
+        try {
+          saved = localStorage.getItem('breakout-theme');
+        } catch {
+          saved = null;
+        }
+        const choice = saved === 'light' || saved === 'dark' ? saved : null;
+        const theme =
+          choice ?? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.dataset.theme = theme;
+        const meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.content = theme === 'dark' ? meta.dataset.dark : meta.dataset.light;
+      })();
+    </script>
   </head>
   <body>
     <a class="skip-link" href="#main">跳到成果</a>
