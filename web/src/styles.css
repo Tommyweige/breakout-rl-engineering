@@ -94,6 +94,9 @@ body {
   background-color: var(--bg);
   background-image: var(--page-pattern);
   background-size: auto, 28px 28px, 28px 28px;
+  /* Pinned to the viewport so the sticky header, painting the same layers, lines up
+     with the page behind it at any scroll position. */
+  background-attachment: fixed;
 }
 
 button, a, select { font: inherit; }
@@ -375,9 +378,23 @@ button:disabled { cursor: wait; opacity: 0.5; }
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr);
   gap: 8px;
-  overflow: hidden;
+  /* clip, not hidden: a scroll container here would stop the sticky header. */
+  overflow: clip;
 }
-.app-shell:not(.is-debug) .site-header { border-bottom: 0; }
+.app-shell:not(.is-debug) .site-header {
+  position: sticky;
+  z-index: 50;
+  top: 0;
+  /* Breathing room above the title once pinned; the negative margin keeps the resting layout. */
+  margin-top: -10px;
+  padding-top: 10px;
+  border-bottom: 0;
+  /* Opaque, and the same glow and grid as the page, so scrolled content never shows through. */
+  background-color: var(--bg);
+  background-image: var(--page-pattern);
+  background-size: auto, 28px 28px, 28px 28px;
+  background-attachment: fixed;
+}
 .app-shell:not(.is-debug) .hero { align-items: center; min-height: 42px; padding: 0 0 6px; border-bottom: 1px solid var(--line); }
 .app-shell:not(.is-debug) h1 { margin: 0; font-size: clamp(2.2rem, 4.5vw, 4.5rem); line-height: 0.84; }
 .app-shell:not(.is-debug) .subtitle { margin: 0; color: var(--muted); font-size: 0.82rem; line-height: 1; }
@@ -459,7 +476,8 @@ button:disabled { cursor: wait; opacity: 0.5; }
 .mobile-views, .score-row .mobile-ai-score { display: none; }
 .panel-human canvas[data-input-mode="mouse"] { touch-action: none; }
 @media (max-width: 700px), (max-width: 1024px) and (max-height: 600px) and (orientation: landscape) {
-  .app-shell:not(.is-debug) { width: calc(100% - 16px); height: 100dvh; min-height: 420px; padding: max(8px, env(safe-area-inset-top)) 0 max(8px, env(safe-area-inset-bottom)); display: grid; grid-template-rows: auto auto auto minmax(0, 1fr); gap: 6px; overflow: hidden; }
+  .app-shell:not(.is-debug) { width: calc(100% - 16px); height: 100dvh; min-height: 420px; padding: max(8px, env(safe-area-inset-top)) 0 max(8px, env(safe-area-inset-bottom)); display: grid; grid-template-rows: auto auto auto minmax(0, 1fr); gap: 6px; overflow: clip; }
+  .app-shell:not(.is-debug) .site-header { margin-top: 0; padding-top: 0; }
   .app-shell:not(.is-debug) .hero { flex-direction: row; align-items: center; min-height: 24px; padding: 0; border: 0; }
   .app-shell:not(.is-debug) h1 { font-size: 1.2rem; letter-spacing: -0.03em; }
   .app-shell:not(.is-debug) .subtitle { display: none; }

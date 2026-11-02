@@ -85,7 +85,8 @@
 
 html {
   scroll-behavior: smooth;
-  scroll-padding-top: 24px;
+  /* Anchor jumps land below the sticky site bar; main.ts keeps its height current. */
+  scroll-padding-top: calc(var(--cs-header-height, 64px) + 24px);
 }
 
 body {
@@ -187,13 +188,18 @@ video:focus-visible {
   border-radius: 4px;
 }
 
-/* Site bar: wordmark left, pill navigation right, one hairline below. */
+/* Site bar: wordmark left, pill navigation right, one hairline below. It stays
+   pinned to the top on an opaque page background, so nothing shows through. */
 
 .cs-header {
+  position: sticky;
+  z-index: 50;
+  top: 0;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 8px 16px;
   min-height: 64px;
   padding: 0 max(var(--gutter), calc((100% - var(--page-width)) / 2 + var(--gutter)));
   background: var(--bg);
@@ -1250,9 +1256,9 @@ video:focus-visible {
   .cs-toc {
     order: 2;
     position: sticky;
-    top: 24px;
+    top: calc(var(--cs-header-height, 64px) + 24px);
     align-self: start;
-    max-height: calc(100vh - 48px);
+    max-height: calc(100vh - var(--cs-header-height, 64px) - 48px);
     margin: 0.25rem 0 0;
     padding-left: 1rem;
     overflow: auto;

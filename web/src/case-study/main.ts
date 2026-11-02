@@ -20,6 +20,16 @@ const appRoot: HTMLElement = root;
 appRoot.innerHTML = renderCaseStudyShell(locale);
 initThemeToggle();
 
+// The site bar is sticky and wraps taller on narrow screens; the CSS offsets anchor
+// jumps and the side table of contents by its current height.
+const siteHeader = appRoot.querySelector<HTMLElement>('.cs-header');
+if (siteHeader) {
+  const syncHeaderHeight = () =>
+    document.documentElement.style.setProperty('--cs-header-height', `${siteHeader.offsetHeight}px`);
+  syncHeaderHeight();
+  if ('ResizeObserver' in window) new ResizeObserver(syncHeaderHeight).observe(siteHeader);
+}
+
 const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)');
 const video = appRoot.querySelector<HTMLVideoElement>('[data-role="gameplay-video"]');
 if (video) {
