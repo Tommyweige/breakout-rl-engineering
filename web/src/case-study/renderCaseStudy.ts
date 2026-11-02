@@ -312,8 +312,20 @@ function renderBlock(block: Block, copy: CaseStudyCopy): string {
             .join('')}
         </dl>`;
 
-    case 'code':
-      return figure('cs-code-figure', block.caption, `<pre class="cs-code"><code>${escapeHtml(block.code)}</code></pre>`, copy);
+    case 'code': {
+      // Each line splits before its "=" so phones can wrap the right side in its own
+      // column; on wider screens the spans read exactly like the plain text.
+      const lines = block.code.split('\n').map((line) => {
+        const at = Math.max(0, line.indexOf('='));
+        return `<span class="cs-code-lhs">${escapeHtml(line.slice(0, at))}</span><span class="cs-code-rhs">${escapeHtml(line.slice(at))}</span>`;
+      });
+      return figure(
+        'cs-code-figure',
+        block.caption,
+        `<pre class="cs-code"><code>${lines.join('<span class="cs-code-break">\n</span>')}</code></pre>`,
+        copy,
+      );
+    }
 
     case 'ledger':
       return `

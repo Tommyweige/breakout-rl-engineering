@@ -993,6 +993,64 @@ video:focus-visible {
   white-space: pre;
 }
 
+/*
+ * Phones: wrap instead of scrolling sideways. Code lines become two columns split
+ * at "=", so every "=" stays in one column and a wrapped right side hangs under
+ * its own first word; table cells shrink and break inside their own column.
+ */
+@media (max-width: 639.98px) {
+  .cs-code {
+    overflow-x: visible;
+    padding: 14px;
+    font-size: 14px;
+  }
+
+  .cs-code code {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+  }
+
+  .cs-code-rhs {
+    padding-left: 2ch;
+    text-indent: -2ch;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .cs-code-break {
+    display: none;
+  }
+
+  .cs-table {
+    width: 100%;
+    min-width: 0;
+    margin: -2px 0;
+    font-size: 13.5px;
+    line-height: 1.5;
+  }
+
+  .cs-table th,
+  .cs-table td {
+    min-width: 0;
+    padding: 0.5rem 0.45rem;
+    hyphens: auto;
+  }
+
+  /* Headers wrap too; numbers in the body stay on one line. */
+  .cs-table thead th,
+  .cs-table thead .cs-num {
+    white-space: normal;
+  }
+}
+
+/* The narrowest phones cannot fit five columns of whole words; break inside words there. */
+@media (max-width: 359.98px) {
+  .cs-table th,
+  .cs-table td {
+    overflow-wrap: anywhere;
+  }
+}
+
 /* Failed attempts */
 
 .cs-ledger {
