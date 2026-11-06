@@ -358,6 +358,14 @@ function renderBlock(block: Block, copy: CaseStudyCopy): string {
             })
             .join('')}
         </ul>`;
+
+    case 'linkcard':
+      return `
+        <a class="cs-linkcard" href="${escapeHtml(block.href)}" target="_blank" rel="noreferrer" data-role="link-card">
+          <span class="cs-linkcard-title">${escapeHtml(block.title)}</span>
+          <span class="cs-linkcard-description">${escapeHtml(block.description)}</span>
+          <span class="cs-linkcard-domain">${escapeHtml(block.domain)} <span aria-hidden="true">↗</span></span>
+        </a>`;
   }
 }
 

@@ -53,6 +53,15 @@ describe.each(locales)('Case study (%s)', (locale) => {
     }
   });
 
+  it('renders the model download as an external link card', () => {
+    const root = mount(locale);
+    const card = root.querySelector<HTMLAnchorElement>('section#deploy [data-role="link-card"]');
+    expect(card?.getAttribute('href')).toBe('https://huggingface.co/TommyPanLab/breakout-dueling-double-dqn');
+    expect(card?.getAttribute('target')).toBe('_blank');
+    expect(card?.getAttribute('rel')).toBe('noreferrer');
+    expect(text(card!, '.cs-linkcard-domain')).toContain('huggingface.co');
+  });
+
   it('links to the other locale in the top-right switcher', () => {
     const root = mount(locale);
     const switcher = root.querySelector<HTMLAnchorElement>('[data-role="language-switch"]');
