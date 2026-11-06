@@ -274,6 +274,12 @@ export const zhTwCopy: CaseStudyCopy = {
           kind: 'p',
           text: '分數完全一樣，代表從畫面處理到選動作，整條路在瀏覽器裡都沒走樣。首頁對戰裡的 Easy、Medium、Hard 三檔跑的就是這個神經網路；切到 Unbeatable 會換成追蹤程式，完全不經過網路。',
         },
+        {
+          kind: 'callout',
+          tone: 'blue',
+          title: '模型放在哪裡',
+          text: '這個神經網路是整個專案唯一開放下載的模型，放在 Hugging Face 的 huggingface.co/TommyPanLab/breakout-dueling-double-dqn，內容是原始的 PyTorch checkpoint（model.pt）和瀏覽器實際執行的 ONNX 檔（model.onnx）。過程中訓練的其他網路，以及從這個模型轉出的加速格式，都沒有公開。',
+        },
       ],
     },
     {
@@ -481,6 +487,7 @@ export const zhTwCopy: CaseStudyCopy = {
             { label: '追蹤程式 15 局紀錄', detail: '逐局分數與打光時間', href: `${REPO}/blob/main/audits/browser-clear/native-15/report.md` },
             { label: '重現步驟', detail: '從安裝到跑出結果', href: `${REPO}/blob/main/docs/repro/README.md` },
             { label: '30 天的完整文章', detail: '每天做了什麼、遇到什麼', href: `${REPO}/tree/docs-ironman-series` },
+            { label: '下載模型', detail: '部署中的神經網路，也是唯一公開的模型（Hugging Face）', href: 'https://huggingface.co/TommyPanLab/breakout-dueling-double-dqn' },
             { label: '線上試玩', detail: '在瀏覽器裡和 AI 對戰', href: '/' },
           ],
         },
