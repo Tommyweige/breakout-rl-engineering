@@ -606,6 +606,47 @@ video:focus-visible {
   color: var(--text);
 }
 
+/* External link card */
+
+.cs-linkcard {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-block: 16px;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  color: var(--text);
+  line-height: 1.5;
+  text-decoration: none;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.cs-linkcard:hover,
+.cs-linkcard:focus-visible {
+  border-color: var(--link);
+  transform: translateY(-1px);
+}
+
+.cs-linkcard-title {
+  font-weight: 700;
+}
+
+.cs-linkcard:hover .cs-linkcard-title {
+  color: var(--link);
+}
+
+.cs-linkcard-description {
+  color: var(--text-secondary);
+}
+
+.cs-linkcard-domain {
+  color: var(--text-secondary);
+  font-size: 0.875em;
+  overflow-wrap: anywhere;
+}
+
 /* Flow diagrams */
 
 .cs-flow {

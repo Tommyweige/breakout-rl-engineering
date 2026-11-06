@@ -44,7 +44,8 @@ export type Block =
   | { kind: 'stats'; items: Array<{ value: string; label: string; tone?: Tone }> }
   | { kind: 'code'; caption: string; code: string }
   | { kind: 'ledger'; items: Array<{ name: string; idea: string; result: string; detail: string }> }
-  | { kind: 'links'; items: Array<{ label: string; detail: string; href: string }> };
+  | { kind: 'links'; items: Array<{ label: string; detail: string; href: string }> }
+  | { kind: 'linkcard'; title: string; description: string; href: string; domain: string };
 
 export interface Chapter {
   id: string;
