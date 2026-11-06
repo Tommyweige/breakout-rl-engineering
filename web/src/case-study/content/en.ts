@@ -274,6 +274,12 @@ export const enCopy: CaseStudyCopy = {
           kind: 'p',
           text: 'Identical scores mean the whole path, from screen processing to picking a move, survived the trip intact. On the home page, Easy, Medium and Hard all run this network; Unbeatable switches to the tracker and never touches it.',
         },
+        {
+          kind: 'callout',
+          tone: 'blue',
+          title: 'Where the model is',
+          text: 'This network is the only model from the project published for download, on Hugging Face at huggingface.co/TommyPanLab/breakout-dueling-double-dqn: the original PyTorch checkpoint (model.pt) and the ONNX file the browser runs (model.onnx). The other networks trained along the way, and the faster formats converted from this one, are not published.',
+        },
       ],
     },
     {
@@ -481,6 +487,7 @@ export const enCopy: CaseStudyCopy = {
             { label: 'The tracker’s 15 games', detail: 'per-game score, clear time, and lives left', href: `${REPO}/blob/main/audits/browser-clear/native-15/report.md` },
             { label: 'Reproduction steps', detail: 'from installing the environment to the results', href: `${REPO}/blob/main/docs/repro/README.md` },
             { label: 'The 30 daily articles', detail: 'what each day did and what went wrong (in Chinese)', href: `${REPO}/tree/docs-ironman-series` },
+            { label: 'Download the model', detail: 'the deployed network on Hugging Face, the only model released', href: 'https://huggingface.co/TommyPanLab/breakout-dueling-double-dqn' },
             { label: 'Play online', detail: 'play against the AI in your browser', href: '/' },
           ],
         },

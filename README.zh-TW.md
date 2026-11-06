@@ -200,7 +200,16 @@ Web application 使用：
 - TypeScript + Vite：瀏覽器應用。
 - WebGPU / WASM：依照瀏覽器能力選擇推論執行路徑。
 
-部署所需的 runtime model assets 保留在 `web/public/`。
+### 模型檔案
+
+**整個專案只公開一個模型可供下載：** 也就是部署中的 Dueling Double DQN（2.5M transitions、seed 2022、Contract v2 holdout mean 30.933），放在 Hugging Face 的 [huggingface.co/TommyPanLab/breakout-dueling-double-dqn](https://huggingface.co/TommyPanLab/breakout-dueling-double-dqn)。
+
+| 檔案 | 位置 |
+|---|---|
+| `model.pt`：原始 PyTorch checkpoint，附 `metadata.json`（訓練設定、selection 與 holdout 評估） | 只在 Hugging Face |
+| `model.onnx`：瀏覽器執行的 fp32 ONNX，附 `model.onnx.metadata.json` | Hugging Face，以及本 repo 的 [`web/public/models/final_model/`](web/public/models/final_model/) |
+
+過程中訓練的其他 checkpoint（family screen、reward shaping、PER、Contract v3 baseline），以及從這個模型轉出的 fp16 ONNX / TensorRT engine 都沒有公開。“Unbeatable” 背後的確定性像素控制器是程式碼，不是模型。
 
 ## 快速開始
 

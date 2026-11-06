@@ -206,7 +206,16 @@ The web application uses:
 - TypeScript and Vite for the browser application.
 - WebGPU or WASM execution paths depending on browser capability.
 
-Runtime model assets are stored under `web/public/` because they are required by the deployed application.
+### Model files
+
+**Only one model is published for download:** the deployed Dueling Double DQN (2.5M transitions, seed 2022, Contract v2 holdout mean 30.933), on Hugging Face at [huggingface.co/TommyPanLab/breakout-dueling-double-dqn](https://huggingface.co/TommyPanLab/breakout-dueling-double-dqn).
+
+| File | Where |
+|---|---|
+| `model.pt` — original PyTorch checkpoint, with `metadata.json` (training config, selection and holdout evaluation) | Hugging Face only |
+| `model.onnx` — fp32 ONNX export the browser runs, with `model.onnx.metadata.json` | Hugging Face, and in this repo at [`web/public/models/final_model/`](web/public/models/final_model/) |
+
+The other checkpoints trained along the way (family screens, reward shaping, PER, the Contract v3 baseline) and the fp16 ONNX / TensorRT engines converted from this model are not published. The deterministic pixel controller behind “Unbeatable” is code, not a model.
 
 ## Reproducibility
 
