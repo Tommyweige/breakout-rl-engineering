@@ -362,9 +362,12 @@ function renderBlock(block: Block, copy: CaseStudyCopy): string {
     case 'linkcard':
       return `
         <a class="cs-linkcard" href="${escapeHtml(block.href)}" target="_blank" rel="noreferrer" data-role="link-card">
-          <span class="cs-linkcard-title">${escapeHtml(block.title)}</span>
-          <span class="cs-linkcard-description">${escapeHtml(block.description)}</span>
-          <span class="cs-linkcard-domain">${escapeHtml(block.domain)} <span aria-hidden="true">↗</span></span>
+          <span class="cs-linkcard-text">
+            <span class="cs-linkcard-domain">${escapeHtml(block.domain)}</span>
+            <span class="cs-linkcard-title">${escapeHtml(block.title)}</span>
+            <span class="cs-linkcard-description">${escapeHtml(block.description)}</span>
+          </span>
+          <svg class="cs-linkcard-arrow" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg>
         </a>`;
   }
 }
