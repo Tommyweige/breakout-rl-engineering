@@ -22,15 +22,15 @@
 
 ## 重點發現
 
-- **DQN family 產出了可用的瀏覽器 policy，但沒有破關。** 500K/1M family screen 後選用 Dueling Double DQN。凍結的 2.5M-transition checkpoint 在 Contract v2 下回報 holdout mean **30.933**（15 局，historical reported）。原始 holdout 逐局紀錄不在 `main`。
-- **Deterministic pixel controller 在官方 15 局中破關 4 局。** 在 native ALE、官方 Contract v3 15 seeds、HEAD `a8445df` 下，mean **721.8**（median 810、max 864），**4/15 canonical clear detections**（[報告](audits/browser-clear/native-15/report.md)）。這個 evaluator 沒有做 artifact provenance 驗證，所以只能稱為 canonical clear detection。
-- **137.47 是舊控制律。** 先前的 mean **137.47**（0/15）是 PR #26 `50ee352` 的 controller，可一字不差重現（[腳本](audits/browser-clear/reproduce-137-47.py)）。它的最高分 341 低於第一面牆的 432 分，所以 0 次是正確量測，不是偵測器判錯。#68 只改了控制律。
-- **在同一個 Contract v3 下，唯一的 DQN baseline 遠遠落後。** Dueling Double DQN（training seed 11、2M frames）在 Contract v3 回報 mean **6.93**、max 12、**0 clears**（historical reported，issue #23）。瀏覽器 DQN 的 30.933 holdout 是 Contract v2 數字，與兩者都**不能直接比較**。
-- **偵測器在真實破關軌跡上驗證過，而且 fail-closed。** 除了原本的 synthetic RAM/reward fixture，兩條兩面牆全清的 ALE 重播軌跡（契約 v2 與 v3）在第二面牆清空的同一步被判定 clear，432/860 反例不會，6 個偵測器 mutant 全被殺。權威紀錄是 [`docs/clear-semantics.md`](docs/clear-semantics.md)；`configs/eval/breakout_completion_audit_v1.json` 裡「只有 synthetic fixture」的舊限制文字早於這次驗證。偵測器狀態 unknown 時報 unknown，不會報成 0。
-- **瀏覽器端 audit 補充分布，不是官方結果。** 同一套控制律在 pinned ALE WASM 跑 120 局：43/120 canonical clear detections、mean 731.4（[audit](audits/browser-clear/README.md)）。
-- **負面與未定論結果也是紀錄的一部分。** Life-loss reward shaping 未通過 promotion gate；PER 只有描述性結果；DQN first-clear probes 沒有 canonical clear detection；Laya Vision side experiment 有延遲量測，但沒有完整 episode。
+- **沒有訓練的像素追蹤程式，在官方 15 局中打光兩面牆 4 局。** 在 Contract v3（每格畫面決策一次）下平均 **721.8** 分（median 810、max 864）（[報告](audits/browser-clear/native-15/report.md)）。
+- **同一套規則下，訓練過的 DQN 平均 6.93 分。** Dueling Double DQN 在 Contract v3 訓練 2M frames，最好的一局 12 分，一面牆都沒有打光（issue #23）。
+- **部署的 DQN 能在瀏覽器裡玩。** Dueling Double DQN 在 DQN / Double DQN / Dueling 的比較中勝出；2.5M-transition 模型在 Contract v2 下 holdout mean **30.933**，透過 ONNX Runtime Web 在瀏覽器執行。
+- **先前的 137.47 來自還沒修完的控制器，不是方法的上限。** 那次評估（15 局 0 次打光）可一字不差重現（[腳本](audits/browser-clear/reproduce-137-47.py)）；最高分 341 沒有到第一面牆的 432 分。修正速度估計與球拍放開時機之後，同一套評估得到 721.8。
+- **破關偵測器在真實的兩面牆全清軌跡上測過。** 兩條可重播的 ALE 破關軌跡在第二面牆清空的那一步被判定打光，只清一部分的軌跡不會；故意改壞的 6 種偵測器全部被抓到。偵測器狀態 unknown 時報 unknown，不會報成 0（[`docs/clear-semantics.md`](docs/clear-semantics.md)）。
+- **搬進瀏覽器的版本結果一致。** 同一套控制律改寫成 TypeScript，在 ALE WASM 上跑 120 局，43 局打光兩面牆，平均 731.4（[audit](audits/browser-clear/README.md)）。
+- **負面結果也留在紀錄裡。** Life-loss reward shaping 未通過 promotion gate；優先回放（PER）的小幅進步不值得多花的訓練時間；DQN first-clear probes 沒有打光；Laya Vision side experiment 在瀏覽器裡跑起來了，但沒有做正式評估。
 
-瀏覽器 UI 的 Easy、Medium、Hard 都跑這個 DQN policy，分別注入 30%、15%、5% 的刻意失誤；**「Unbeatable」改跑影像追蹤程式**，不經過神經網路、也不注入失誤。這些是難度設定，不是實驗結論。本專案不宣稱世界紀錄、遊戲已被解決（solved）、穩定 clear，或方法公平勝出。
+瀏覽器 UI 的 Easy、Medium、Hard 都跑這個 DQN policy，分別注入 30%、15%、5% 的刻意失誤；**「Unbeatable」改跑影像追蹤程式**，不經過神經網路、也不注入失誤。
 
 ## 專案重點
 
@@ -179,8 +179,7 @@ python -m scripts.evaluation.evaluate_predictive_controller \
 
 執行後會保存每局分數與 canonical clear detections、感知/控制診斷、第一局 ALE 逐步軌跡，
 以及精簡比較報告。控制器只讀取畫面；FIRE handling 和 canonical clear detection
-仍由外部環境與評估流程負責。Clear 計數是 audited `BreakoutCompletionDetector` 的
-canonical clear detections；這個 evaluator 不做 artifact provenance 驗證。
+仍由外部環境與評估流程負責。Clear 計數來自 audited `BreakoutCompletionDetector`。
 軌跡與動作分布區分 `requested_action`（controller 原始決策）與 `ale_input_action`
 （FIRE wrapper 覆寫後送進 ALE 的動作）。ALE sticky actions 可能重複上一個動作；
 目前無法觀察 ALE 決定後真正執行的 physical action。
@@ -308,7 +307,7 @@ npm run build
 - [`artifact-manifest.json`](docs/final-results/artifact-manifest.json)：預期 raw artifact 路徑、producer、hash，以及 missing/not-created 狀態。
 - [`handoff.md`](docs/final-results/handoff.md)：deferred work、Laya blockers、release/deploy/rollback 與 `tommypan.com` 交接。
 
-引用任何分數前，先確認它所屬的 contract 與 commit。DQN holdout（30.933）是 Contract v2，與 controller **不能直接比較**；Contract v3 的對照是 DQN 6.93 / 0 clears 對 controller 721.8 / 4 of 15（`a8445df`）。
+每個分數都屬於某個 contract 與 commit。同一份 contract 的對照是 Contract v3：DQN 6.93 / 0 clears 對 controller 721.8 / 4 of 15，在 `a8445df` 量測，controller 來自 #68。部署的 DQN 的 30.933 holdout 是 Contract v2 數字；先前的 137.47 是 PR #26 `50ee352` 的 controller。
 
 凍結證據包由 commit `77a0c7b` 加入。任何新數字都應標記產生它的 commit（tag + 完整 SHA），方式見 [`docs/repro/versioning.md`](docs/repro/versioning.md)。
 
@@ -316,9 +315,9 @@ npm run build
 
 - DQN、reward shaping、PER 與 Laya 的原始 run outputs 不在 `main`；對應數字屬於 historical reported，無法只靠這個 checkout 獨立重現。Controller 結果（`a8445df` native 15 局、137.47 重現、120 局 WASM audit）在 [`audits/browser-clear/`](audits/browser-clear/README.md)。
 - Clear 計數都是 canonical clear detections；沒有任何 controller run 通過 artifact provenance 驗證。4/15 是單一 deterministic controller、單一 seed 清單，不是 reliable-clear rate。
-- Contract v2 與 v3 改變決策頻率。沒有執行 matched cross-contract 對照，本 repo 不宣稱方法公平勝出。
-- DQN holdout 是單一模型、15 局；Contract v3 DQN baseline 只有一個 training seed；controller 結果是單一 15-seed run（120 局 WASM audit 是補充）。
-- Laya 有延遲量測，但沒有完整 episode；draft PR #74 仍需真實瀏覽器 QA，#70–#72 維持 open。
+- Contract v2 與 v3 改變決策頻率，所以 DQN 的 30.933 holdout 與 controller 不能直接比較。沒有執行 matched cross-contract 對照，因此這些結果不能拿來替方法排名。
+- DQN holdout 是單一模型、15 局；Contract v3 DQN baseline 只有一個 training seed（seed 11）；controller 結果是單一 15-seed run（120 局 WASM audit 是補充）。
+- Laya 有延遲量測，但沒有正式評估過的 episode。PR #74 已關閉、沒有合併，封存為 tag `archive/issue69-laya-vision`；issue #69–#72 都已關閉。
 - 本次收尾沒有完成 50-episode browser evaluation，也沒有世界紀錄或 human-timed 挑戰。
 - 乾淨 checkout 的單元測試是綠的：340 個測試、沒有失敗，只有依硬體而定的 skip（4 個 ONNX policy 測試需要沒進 repo 的 Day 22 模型）。[`docs/repro/known-test-failures.md`](docs/repro/known-test-failures.md) 記錄了 `main` 清理刪掉哪些測試，以及記錄下來的 contract 雜湊如何固定成 LF。
 
