@@ -18,11 +18,12 @@ runs/
 outputs/
 
 # Historical material belongs on docs/archive branches, not main.
-# Exception: the audited closeout index required by issue #73.
+# Exceptions: the audited closeout index (issue #73) and published writing drafts.
 docs/*
 !docs/final-results/
 !docs/clear-semantics.md
 !docs/repro/
+!docs/writing/
 assets/
 experiments/
 evaluations/
