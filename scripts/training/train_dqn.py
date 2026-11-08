@@ -10,10 +10,9 @@ from typing import Any
 
 import torch
 
-from breakout_env import make_breakout_env
+from breakout_env import make_breakout_env, make_contract_env
 from breakout_rl.evaluation_contract import (
     BreakoutEvaluationContractV2,
-    breakout_environment_kwargs,
     load_evaluation_contract,
     validate_breakout_runtime_contract,
 )
@@ -199,9 +198,7 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     env = (
-        make_breakout_env(
-            **breakout_environment_kwargs(contract, allow_contract_v3=True)
-        )
+        make_contract_env(contract, allow_contract_v3=True)
         if contract is not None
         else make_breakout_env(fire_reset=args.fire_reset)
     )

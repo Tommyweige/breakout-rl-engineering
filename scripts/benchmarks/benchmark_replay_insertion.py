@@ -14,10 +14,9 @@ from typing import Any, Sequence
 import numpy as np
 import torch
 
-from breakout_env import make_breakout_env
+from breakout_env import make_contract_env
 from breakout_rl.evaluation_contract import (
     BreakoutEvaluationContractV2,
-    breakout_environment_kwargs,
     load_evaluation_contract,
     validate_breakout_runtime_contract,
 )
@@ -46,7 +45,7 @@ def _batch_from_real_observations(
     seed: int,
     contract: BreakoutEvaluationContractV2,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    env = make_breakout_env(**breakout_environment_kwargs(contract))
+    env = make_contract_env(contract)
     try:
         state, _ = env.reset(seed=seed)
         next_state, reward, terminated, truncated, info = env.step(0)

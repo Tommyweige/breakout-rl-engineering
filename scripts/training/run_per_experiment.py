@@ -15,9 +15,8 @@ from typing import Any, Mapping, Sequence
 
 import torch
 
-from breakout_env import make_breakout_vector_env
+from breakout_env import make_contract_vector_env
 from breakout_rl.evaluation_contract import (
-    breakout_environment_kwargs,
     load_evaluation_contract,
     validate_breakout_runtime_contract,
 )
@@ -648,10 +647,7 @@ def run_experiment(
                 raise FileExistsError(
                     f"{run_dir} has partial contents without a completed summary"
                 )
-            environment = make_breakout_vector_env(
-                config_for_seed.num_envs,
-                **breakout_environment_kwargs(contract),
-            )
+            environment = make_contract_vector_env(contract, config_for_seed.num_envs)
             trainer: VectorizedDQNTrainer | None = None
             progress_interval_seconds = 30.0
             last_reported_at = time.perf_counter()
