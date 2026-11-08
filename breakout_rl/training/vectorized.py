@@ -9,7 +9,6 @@ iterations.
 from __future__ import annotations
 
 import copy
-import hashlib
 import operator
 import time
 import warnings
@@ -21,6 +20,7 @@ import numpy as np
 import torch
 from torch import nn
 
+from breakout_rl.artifacts import sha256_file
 from breakout_rl.completion import ALETransitionFrameCounter
 from breakout_rl.exploration import (
     LinearEpsilonSchedule,
@@ -99,14 +99,6 @@ STAGE_COUNTER_NAMES: tuple[str, ...] = (
     "replay_insertion_calls",
     "replay_insertion_transitions",
 )
-
-
-def _sha256_file(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as stream:
-        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
 
 
 @dataclass(frozen=True)
@@ -1646,7 +1638,7 @@ class VectorizedDQNTrainer:
         saved_resume = payload.get("resume_provenance")
         self._resume_provenance = {
             "source_checkpoint": str(checkpoint_path),
-            "source_checkpoint_sha256": _sha256_file(checkpoint_path),
+            "source_checkpoint_sha256": sha256_file(checkpoint_path),
             "source_step": self.global_step,
             "replay_saved": replay_saved,
             "replay_resume_semantics": (
