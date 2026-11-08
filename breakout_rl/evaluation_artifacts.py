@@ -7,14 +7,15 @@ import json
 import math
 import re
 from collections import Counter
+from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 from statistics import fmean, median, pstdev
-from typing import TYPE_CHECKING, Any, Mapping, Sequence
+from typing import Any, Mapping, Sequence
 
 import numpy as np
 
-if TYPE_CHECKING:
-    from breakout_rl.evaluation import EvaluationResult
+from breakout_rl.completion import CompletionState
 
 
 TIME_LIMIT_SUMMARY_FIELDS = (
@@ -970,6 +971,413 @@ def validate_embedded_summary(
             )
 
 
+def _first_present(mapping: Mapping[str, Any], *names: str) -> Any:
+    for name in names:
+        value = mapping.get(name)
+        if value is not None:
+            return value
+    return None
+
+
+@dataclass(frozen=True)
+class EpisodeResult:
+    """Raw result for one environment episode."""
+
+    evaluation_seed: int
+    episode_seed: int
+    seed_index: int
+    episode_index: int
+    episode_return: float
+    episode_length: int
+    terminated: bool
+    truncated: bool
+    action_distribution: Mapping[str, int]
+    time_limit: bool = False
+    time_limit_source: str | None = None
+    requested_action_distribution: Mapping[str, int] | None = None
+    executed_action_distribution: Mapping[str, int] | None = None
+    auto_fire_count: int = 0
+    auto_fire_reason_counts: Mapping[str, int] | None = None
+    life_loss_count: int = 0
+    score_per_life: float = 0.0
+    frames_between_life_losses: float | None = None
+    time_to_first_life_loss: int | None = None
+    life_losses_per_1000_steps: float = 0.0
+    total_emulator_frames: int | None = None
+    completion_state: CompletionState = CompletionState(cleared=None)
+
+    @property
+    def complete(self) -> bool:
+        return self.terminated or self.truncated
+
+    @property
+    def stop_reason(self) -> str:
+        if self.time_limit:
+            return "time_limit"
+        if self.terminated:
+            return "terminated"
+        if self.truncated:
+            return "truncated"
+        return "incomplete"
+
+    @property
+    def cleared(self) -> bool | None:
+        return self.completion_state.cleared
+
+    @property
+    def clear_agent_step(self) -> int | None:
+        return self.completion_state.clear_agent_step
+
+    @property
+    def clear_emulator_frame(self) -> int | None:
+        return self.completion_state.clear_emulator_frame
+
+    @property
+    def clear_score(self) -> float | None:
+        return self.completion_state.clear_score
+
+    @property
+    def lives_remaining_at_clear(self) -> int | None:
+        return self.completion_state.lives_remaining_at_clear
+
+    @property
+    def completion_detection_source(self) -> str | None:
+        return self.completion_state.completion_detection_source
+
+    @property
+    def completion_detection_reason(self) -> str | None:
+        return self.completion_state.unavailable_reason
+
+    @property
+    def completion_outcome(self) -> str:
+        if self.cleared is True:
+            return "cleared"
+        if self.cleared is None:
+            return "clear_status_unavailable"
+        if self.time_limit:
+            return "time_limit"
+        if self.truncated:
+            return "truncated"
+        if self.terminated:
+            return (
+                "game_over"
+                if self.completion_detection_source is not None
+                else "terminated"
+            )
+        return "incomplete"
+
+    def to_dict(self) -> dict[str, Any]:
+        executed_distribution = dict(
+            self.executed_action_distribution or self.action_distribution
+        )
+        requested_distribution = dict(
+            self.requested_action_distribution or executed_distribution
+        )
+        return {
+            "evaluation_seed": self.evaluation_seed,
+            "seed": self.episode_seed,
+            "episode_seed": self.episode_seed,
+            "seed_index": self.seed_index,
+            "episode_index": self.episode_index,
+            "episode_return": self.episode_return,
+            "return": self.episode_return,
+            "episode_length": self.episode_length,
+            "total_agent_steps": self.episode_length,
+            "total_emulator_frames": self.total_emulator_frames,
+            "terminated": self.terminated,
+            "truncated": self.truncated,
+            "time_limit": self.time_limit,
+            "time_limit_source": self.time_limit_source,
+            "complete": self.complete,
+            "stop_reason": self.stop_reason,
+            "completion_outcome": self.completion_outcome,
+            "cleared": self.completion_state.cleared,
+            "clear_agent_step": self.completion_state.clear_agent_step,
+            "clear_emulator_frame": self.completion_state.clear_emulator_frame,
+            "clear_score": self.completion_state.clear_score,
+            "lives_remaining_at_clear": (
+                self.completion_state.lives_remaining_at_clear
+            ),
+            "completion_detection_source": (
+                self.completion_state.completion_detection_source
+            ),
+            "completion_detection_reason": (
+                self.completion_state.unavailable_reason
+            ),
+            # Keep the historical field, but define it explicitly as the
+            # action sent to the wrapped environment.
+            "action_distribution": executed_distribution,
+            "action_distribution_semantics": ACTION_DISTRIBUTION_SEMANTICS,
+            "requested_action_distribution": requested_distribution,
+            "executed_action_distribution": executed_distribution,
+            "auto_fire_count": int(self.auto_fire_count),
+            "auto_fire_reason_counts": dict(self.auto_fire_reason_counts or {}),
+            "life_loss_count": int(self.life_loss_count),
+            "score_per_life": float(self.score_per_life),
+            "frames_between_life_losses": self.frames_between_life_losses,
+            "time_to_first_life_loss": self.time_to_first_life_loss,
+            "life_losses_per_1000_steps": float(self.life_losses_per_1000_steps),
+        }
+
+
+@dataclass(frozen=True)
+class EvaluationResult:
+    """One policy's machine-readable result under a fixed protocol."""
+
+    policy_type: str
+    model_id: str | None
+    environment_id: str
+    observation_shape: tuple[int, ...]
+    action_count: int
+    action_names: tuple[str, ...]
+    evaluation_seeds: tuple[int, ...]
+    episodes_per_seed: int
+    evaluation_epsilon: float
+    requested_device: str
+    resolved_device: str
+    runtime: Mapping[str, Any]
+    episodes: tuple[EpisodeResult, ...]
+    training: Mapping[str, Any] | None = None
+    checkpoint: Mapping[str, Any] | None = None
+    evaluation_id: str | None = None
+    metadata: Mapping[str, Any] | None = None
+    completion_detector: Mapping[str, Any] | None = None
+    source_provenance: Mapping[str, Any] | None = None
+    contract_provenance: Mapping[str, Any] | None = None
+
+    @property
+    def total_steps(self) -> int:
+        return sum(episode.episode_length for episode in self.episodes)
+
+    @property
+    def total_emulator_frames(self) -> int | None:
+        values = [episode.total_emulator_frames for episode in self.episodes]
+        if not values or any(value is None for value in values):
+            return None
+        return sum(int(value) for value in values)
+
+    @property
+    def action_distribution(self) -> dict[str, int]:
+        counts = {name: 0 for name in self.action_names}
+        for episode in self.episodes:
+            for name, count in episode.action_distribution.items():
+                counts[name] = counts.get(name, 0) + int(count)
+        return counts
+
+    @property
+    def requested_action_distribution(self) -> dict[str, int]:
+        counts = {name: 0 for name in self.action_names}
+        for episode in self.episodes:
+            values = episode.requested_action_distribution or episode.action_distribution
+            for name, count in values.items():
+                counts[name] = counts.get(name, 0) + int(count)
+        return counts
+
+    @property
+    def executed_action_distribution(self) -> dict[str, int]:
+        return self.action_distribution
+
+    @property
+    def auto_fire_count(self) -> int:
+        return sum(int(episode.auto_fire_count) for episode in self.episodes)
+
+    @property
+    def auto_fire_reason_counts(self) -> dict[str, int]:
+        counts: Counter[str] = Counter()
+        for episode in self.episodes:
+            counts.update(
+                {
+                    str(name): int(count)
+                    for name, count in (episode.auto_fire_reason_counts or {}).items()
+                }
+            )
+        return dict(sorted(counts.items()))
+
+    @property
+    def life_loss_count(self) -> int:
+        """Return the number of wrapper-reported life losses."""
+
+        return sum(int(episode.life_loss_count) for episode in self.episodes)
+
+    def to_dict(self) -> dict[str, Any]:
+        returns = [episode.episode_return for episode in self.episodes]
+        lengths = [episode.episode_length for episode in self.episodes]
+        per_episode: list[dict[str, Any]] = []
+        verified_clears: list[dict[str, Any]] = []
+        for episode in self.episodes:
+            row = episode.to_dict()
+            if episode.cleared is True:
+                training = dict(self.training or {})
+                checkpoint = dict(self.checkpoint or {})
+                contract = dict(self.contract_provenance or {})
+                source = dict(self.source_provenance or {})
+                detector = dict(self.completion_detector or {})
+                training_config = training.get("training_config")
+                if not isinstance(training_config, Mapping):
+                    training_config = {}
+                training_seed = _first_present(training, "training_seed", "seed")
+                if training_seed is None:
+                    training_seed = training_config.get("seed")
+                training_transition_count = _first_present(
+                    training,
+                    "training_steps",
+                    "training_transitions",
+                    "global_step",
+                    "training_budget",
+                )
+                if training_transition_count is None:
+                    training_transition_count = training_config.get("total_steps")
+                clear_provenance = {
+                    "model_id": self.model_id,
+                    "checkpoint_id": _first_present(
+                        checkpoint, "sha256", "path", "step"
+                    ),
+                    "checkpoint": checkpoint,
+                    "training_seed": training_seed,
+                    "training_transition_count": training_transition_count,
+                    "training": training,
+                    "evaluation_seed": episode.evaluation_seed,
+                    "episode_seed": episode.episode_seed,
+                    "episode_index": episode.episode_index,
+                    "contract_id": contract.get("contract_id"),
+                    "contract_sha256": contract.get("contract_sha256"),
+                    "contract_hash_semantics": contract.get("hash_semantics"),
+                    "source_commit": source.get("source_commit"),
+                    "source_working_tree_dirty": source.get(
+                        "working_tree_dirty"
+                    ),
+                    "completion_source_sha256": source.get(
+                        "completion_source_sha256"
+                    ),
+                    "raw_score": episode.episode_return,
+                    "clear_score": episode.clear_score,
+                    "clear_agent_step": episode.clear_agent_step,
+                    "clear_emulator_frame": episode.clear_emulator_frame,
+                    "lives_remaining_at_clear": episode.lives_remaining_at_clear,
+                    "completion_detection_source": (
+                        episode.completion_detection_source
+                    ),
+                    "completion_detector_id": detector.get("detector_id"),
+                    "contract_validation_status": contract.get(
+                        "validation_status"
+                    ),
+                }
+                missing_provenance_fields = [
+                    field
+                    for field in VERIFIED_CLEAR_PROVENANCE_FIELDS
+                    if clear_provenance.get(field) is None
+                ]
+                if contract.get("validation_status") not in {
+                    "canonical_contract_v2",
+                    "canonical_contract_v3",
+                }:
+                    missing_provenance_fields.append(
+                        "validated canonical Breakout contract runtime binding"
+                    )
+                clear_provenance["provenance_status"] = (
+                    "complete" if not missing_provenance_fields else "incomplete"
+                )
+                clear_provenance["missing_provenance_fields"] = (
+                    missing_provenance_fields
+                )
+                row["completion_provenance"] = clear_provenance
+                if clear_provenance["provenance_status"] == "complete":
+                    verified_clears.append(clear_provenance)
+            per_episode.append(row)
+        summary = summary_from_episode_rows(
+            per_episode
+        )
+        return {
+            "schema_version": EVALUATION_ARTIFACT_SCHEMA_VERSION,
+            "evaluation_status": "completed",
+            "created_at_utc": datetime.now(timezone.utc).isoformat().replace(
+                "+00:00", "Z"
+            ),
+            "evaluation_id": self.evaluation_id,
+            "policy_type": self.policy_type,
+            "model_id": self.model_id,
+            "environment_id": self.environment_id,
+            "environment": {
+                "id": self.environment_id,
+                "observation_shape": list(self.observation_shape),
+                "action_count": self.action_count,
+                "action_names": list(self.action_names),
+            },
+            "observation_shape": list(self.observation_shape),
+            "action_count": self.action_count,
+            "action_names": list(self.action_names),
+            "evaluation_seeds": list(self.evaluation_seeds),
+            "episodes_per_seed": self.episodes_per_seed,
+            "total_episodes": len(self.episodes),
+            "total_agent_steps": self.total_steps,
+            "total_emulator_frames": self.total_emulator_frames,
+            "emulator_frame_count_source": (
+                "ALEInterface.getEpisodeFrameNumber"
+                if self.total_emulator_frames is not None
+                else None
+            ),
+            "emulator_frame_count_scope": (
+                "native ALE frame delta from post-reset baseline through episode termination"
+            ),
+            "evaluation_epsilon": self.evaluation_epsilon,
+            "requested_device": self.requested_device,
+            "resolved_device": self.resolved_device,
+            "runtime": dict(self.runtime),
+            "training": dict(self.training or {}),
+            "checkpoint": dict(self.checkpoint or {}),
+            "per_episode": per_episode,
+            "per_episode_returns": returns,
+            "per_episode_lengths": lengths,
+            "action_distribution": self.executed_action_distribution,
+            "action_distribution_semantics": ACTION_DISTRIBUTION_SEMANTICS,
+            "requested_action_distribution": self.requested_action_distribution,
+            "executed_action_distribution": self.executed_action_distribution,
+            "auto_fire_count": self.auto_fire_count,
+            "auto_fire_reason_counts": self.auto_fire_reason_counts,
+            "life_loss_count": self.life_loss_count,
+            "mean_score_per_life": float(
+                fmean(episode.score_per_life for episode in self.episodes)
+            ),
+            "mean_frames_between_life_losses": (
+                float(
+                    fmean(
+                        episode.frames_between_life_losses
+                        for episode in self.episodes
+                        if episode.frames_between_life_losses is not None
+                    )
+                )
+                if any(
+                    episode.frames_between_life_losses is not None
+                    for episode in self.episodes
+                )
+                else None
+            ),
+            "mean_time_to_first_life_loss": (
+                float(
+                    fmean(
+                        episode.time_to_first_life_loss
+                        for episode in self.episodes
+                        if episode.time_to_first_life_loss is not None
+                    )
+                )
+                if any(
+                    episode.time_to_first_life_loss is not None
+                    for episode in self.episodes
+                )
+                else None
+            ),
+            "life_losses_per_1000_steps": float(
+                self.life_loss_count / max(1, self.total_steps) * 1000.0
+            ),
+            "completion_detector": dict(self.completion_detector or {}),
+            "source_provenance": dict(self.source_provenance or {}),
+            "contract_provenance": dict(self.contract_provenance or {}),
+            "verified_clears": verified_clears,
+            "summary": summary,
+            "metadata": dict(self.metadata or {}),
+        }
+
+
 def _json_default(value: Any) -> Any:
     if isinstance(value, np.ndarray):
         return value.tolist()
@@ -986,12 +1394,10 @@ def _csv_column_name(action_name: str) -> str:
 
 
 def write_evaluation_artifacts(
-    result: "EvaluationResult",
+    result: EvaluationResult,
     output_dir: str | Path,
 ) -> tuple[Path, Path]:
     """Write result JSON and the raw per-episode CSV."""
-
-    from breakout_rl.evaluation import EvaluationResult  # evaluation imports this module
 
     if not isinstance(result, EvaluationResult):
         raise TypeError("result must be an EvaluationResult")
@@ -1152,6 +1558,8 @@ def write_evaluation_artifacts(
 __all__ = [
     "ACTION_DISTRIBUTION_SEMANTICS",
     "EVALUATION_ARTIFACT_SCHEMA_VERSION",
+    "EpisodeResult",
+    "EvaluationResult",
     "read_evaluation_results",
     "summarize_returns",
     "summary_from_episode_rows",
