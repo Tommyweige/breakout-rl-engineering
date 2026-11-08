@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
 
-from breakout_env import make_breakout_env
+from breakout_env import contract_env_factory
 from breakout_rl.evaluation import (
     evaluate_policy,
     load_dqn_checkpoint,
@@ -20,7 +20,6 @@ from breakout_rl.evaluation import (
 )
 from breakout_rl.evaluation_contract import (
     BreakoutEvaluationContractV2,
-    breakout_environment_kwargs,
     load_evaluation_contract,
     validate_breakout_runtime_contract,
 )
@@ -60,10 +59,6 @@ def build_parser() -> argparse.ArgumentParser:
         help="repeat for explicit checkpoints; defaults to the training manifest",
     )
     return parser
-
-
-def _environment_factory(contract: BreakoutEvaluationContractV2) -> Callable[[], Any]:
-    return lambda: make_breakout_env(**breakout_environment_kwargs(contract))
 
 
 def _validate_eval_config(evaluation_config: Any, contract: BreakoutEvaluationContractV2) -> None:
@@ -330,7 +325,7 @@ def run_sweep(args: argparse.Namespace) -> dict[str, Any]:
     )
     if baseline_variant is None:
         raise ValueError("Stage 2 sweep is missing the penalty=0.0 baseline")
-    env_factory = _environment_factory(contract)
+    env_factory = contract_env_factory(contract)
     payloads: dict[str, dict[int, dict[str, Any]]] = {}
     training_summaries: dict[str, Any] = {}
     for variant in variants:

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import operator
-from typing import Any, Sequence
+from typing import Any, Callable, Sequence
 
 import ale_py
 import gymnasium as gym
@@ -16,6 +16,8 @@ from breakout_rl.evaluation_contract import (
     FIRE_RESET_CONFIRMATION_SIGNALS,
     FIRE_RESET_MAX_ATTEMPTS,
     FIRE_RESET_MIN_OBSERVATION_CHANGE_FRACTION,
+    BreakoutEvaluationContractV2,
+    breakout_environment_kwargs,
 )
 
 
@@ -418,3 +420,42 @@ def make_breakout_vector_env(
         [make_one for _ in range(parsed_num_envs)],
         autoreset_mode=gym.vector.AutoresetMode.DISABLED,
     )
+
+
+def make_contract_env(
+    contract: BreakoutEvaluationContractV2,
+    *,
+    allow_contract_v3: bool = False,
+    render_mode: str | None = None,
+) -> gym.Env:
+    """Create one Breakout environment whose semantics come only from ``contract``."""
+
+    return make_breakout_env(
+        render_mode=render_mode,
+        **breakout_environment_kwargs(contract, allow_contract_v3=allow_contract_v3),
+    )
+
+
+def make_contract_vector_env(
+    contract: BreakoutEvaluationContractV2,
+    num_envs: int,
+    *,
+    allow_contract_v3: bool = False,
+) -> gym.vector.SyncVectorEnv:
+    """Create a manual-reset vector env whose semantics come only from ``contract``."""
+
+    return make_breakout_vector_env(
+        num_envs,
+        **breakout_environment_kwargs(contract, allow_contract_v3=allow_contract_v3),
+    )
+
+
+def contract_env_factory(
+    contract: BreakoutEvaluationContractV2,
+    *,
+    allow_contract_v3: bool = False,
+) -> Callable[[], gym.Env]:
+    """Validate ``contract`` now and return a zero-argument environment factory."""
+
+    kwargs = breakout_environment_kwargs(contract, allow_contract_v3=allow_contract_v3)
+    return lambda: make_breakout_env(**kwargs)

@@ -9,13 +9,13 @@ from typing import Any, Mapping
 import numpy as np
 import torch
 
-from breakout_env import make_breakout_env
+from breakout_env import make_contract_env
 from breakout_rl.evaluation_contract import (
     BreakoutEvaluationContractV2,
-    breakout_environment_kwargs,
     load_evaluation_contract,
     validate_breakout_runtime_contract,
 )
+from breakout_rl.checkpoint import read_checkpoint
 from breakout_rl.models import DuelingDQNNetwork, build_q_network, checkpoint_architecture
 from breakout_rl.tensors import observation_to_tensor
 from breakout_rl.training.dqn_trainer import resolve_device, seed_everything
@@ -47,13 +47,7 @@ class DuelingInspection:
 
 
 def _load_payload(path: Path) -> dict[str, Any]:
-    try:
-        payload = torch.load(path, map_location="cpu", weights_only=False)
-    except TypeError:
-        payload = torch.load(path, map_location="cpu")
-    if not isinstance(payload, dict):
-        raise ValueError("checkpoint must contain a mapping")
-    return payload
+    return read_checkpoint(path)
 
 
 def _model_for_inspection(
@@ -134,7 +128,7 @@ def collect_dueling_inspection(
     contract = load_evaluation_contract(contract_path)
     validate_breakout_runtime_contract(contract)
 
-    environment = make_breakout_env(**breakout_environment_kwargs(contract))
+    environment = make_contract_env(contract)
     try:
         observation, _ = environment.reset(seed=seed)
         observation = np.asarray(observation).copy()

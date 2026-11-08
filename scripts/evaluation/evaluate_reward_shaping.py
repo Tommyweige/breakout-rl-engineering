@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
 
-from breakout_env import make_breakout_env
+from breakout_env import contract_env_factory
 from breakout_rl.evaluation import (
     evaluate_policy,
     load_dqn_checkpoint,
@@ -17,7 +17,6 @@ from breakout_rl.evaluation import (
 )
 from breakout_rl.evaluation_contract import (
     BreakoutEvaluationContractV2,
-    breakout_environment_kwargs,
     load_evaluation_contract,
     validate_breakout_runtime_contract,
 )
@@ -49,10 +48,6 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--recent-window", type=int, default=20)
     return parser
-
-
-def _environment_factory(contract: BreakoutEvaluationContractV2) -> Callable[[], Any]:
-    return lambda: make_breakout_env(**breakout_environment_kwargs(contract))
 
 
 def _validate_experiment_config(
@@ -129,7 +124,7 @@ def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
     _validate_experiment_config(evaluation_config, contract)
     if args.recent_window < 1:
         raise ValueError("recent-window must be positive")
-    env_factory = _environment_factory(contract)
+    env_factory = contract_env_factory(contract)
     output_dir = args.output_dir
     baseline_results, baseline_episodes, baseline_payload = _evaluate_checkpoint(
         args.baseline_checkpoint,

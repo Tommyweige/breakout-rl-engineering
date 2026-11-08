@@ -8,10 +8,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping
 
-from breakout_env import make_breakout_vector_env
+from breakout_env import make_contract_vector_env
 from breakout_rl.evaluation_contract import (
     BreakoutEvaluationContractV2,
-    breakout_environment_kwargs,
     load_evaluation_contract,
     validate_breakout_runtime_contract,
 )
@@ -237,10 +236,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Invalid vectorized training configuration: {error}")
         return 2
 
-    env = make_breakout_vector_env(
-        config.num_envs,
-        **breakout_environment_kwargs(contract, allow_contract_v3=True),
-    )
+    env = make_contract_vector_env(contract, config.num_envs, allow_contract_v3=True)
     try:
         trainer = VectorizedDQNTrainer(
             env,

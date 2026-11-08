@@ -14,7 +14,8 @@ from breakout_rl.analysis.q_values import (
     analyze_q_values as analyze_model_q_values,
     load_probe_states,
 )
-from breakout_rl.models.factory import build_q_network, checkpoint_architecture
+from breakout_rl.checkpoint import read_checkpoint, restore_q_network
+from breakout_rl.models.factory import checkpoint_architecture
 
 
 def _sha256(path: Path) -> str:
@@ -23,16 +24,6 @@ def _sha256(path: Path) -> str:
         for chunk in iter(lambda: stream.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
-
-
-def _load_payload(path: Path) -> dict[str, Any]:
-    try:
-        payload = torch.load(path, map_location="cpu", weights_only=False)
-    except TypeError:
-        payload = torch.load(path, map_location="cpu")
-    if not isinstance(payload, dict):
-        raise ValueError("checkpoint must contain a mapping")
-    return payload
 
 
 def load_checkpoint_model(
@@ -45,7 +36,7 @@ def load_checkpoint_model(
     source = Path(path)
     if not source.is_file():
         raise FileNotFoundError(source)
-    payload = _load_payload(source)
+    payload = read_checkpoint(source)
     state_dict = payload.get("online_network")
     if not isinstance(state_dict, Mapping):
         raise ValueError("checkpoint does not contain online_network")
@@ -63,19 +54,19 @@ def load_checkpoint_model(
     hidden_dim_value = model_config.get("hidden_dim", 512)
     hidden_dim = 512 if hidden_dim_value is None else int(hidden_dim_value)
     architecture = checkpoint_architecture(payload)
-    model = build_q_network(
-        architecture,
-        num_actions=num_actions,
-        input_shape=input_shape,  # type: ignore[arg-type]
-        hidden_dim=hidden_dim,
-    ).to(device)
     try:
-        model.load_state_dict(state_dict, strict=True)
+        model = restore_q_network(
+            state_dict,
+            architecture=architecture,
+            num_actions=num_actions,
+            input_shape=input_shape,
+            hidden_dim=hidden_dim,
+            device=device,
+        )
     except RuntimeError as error:
         raise ValueError(
             "checkpoint does not match the recorded DQN architecture"
         ) from error
-    model.eval()
     metadata = {
         "path": source.as_posix(),
         "sha256": _sha256(source),

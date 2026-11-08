@@ -14,7 +14,12 @@ from unittest.mock import patch
 
 import numpy as np
 
-from breakout_env import make_breakout_env
+from breakout_env import (
+    contract_env_factory,
+    make_breakout_env,
+    make_contract_env,
+    make_contract_vector_env,
+)
 from breakout_rl.completion import read_ale_episode_frame
 from breakout_rl.evaluation import load_evaluation_config
 from breakout_rl.evaluation_contract import (
@@ -90,6 +95,34 @@ class Day15ContractTests(unittest.TestCase):
                 replace(contract, frame_skip=4),
                 allow_contract_v3=True,
             )
+
+    def test_contract_env_factories_take_semantics_only_from_the_contract(self) -> None:
+        v3 = load_evaluation_contract("configs/eval/breakout_contract_v3.json")
+        with self.assertRaisesRegex(ValueError, "allow_contract_v3"):
+            contract_env_factory(v3)
+        with self.assertRaisesRegex(ValueError, "allow_contract_v3"):
+            make_contract_vector_env(v3, 2)
+
+        for env in (
+            contract_env_factory(v3, allow_contract_v3=True)(),
+            make_contract_env(v3, allow_contract_v3=True),
+        ):
+            try:
+                env.reset(seed=123)
+                before = read_ale_episode_frame(env)
+                env.step(0)
+                self.assertEqual(read_ale_episode_frame(env) - before, 1)
+            finally:
+                env.close()
+
+        vector_env = make_contract_vector_env(
+            load_evaluation_contract("configs/eval/breakout_contract_v2.json"), 2
+        )
+        try:
+            self.assertEqual(vector_env.num_envs, 2)
+            self.assertEqual(vector_env.observation_space.shape[1:], (4, 84, 84))
+        finally:
+            vector_env.close()
 
     def test_contract_v2_keeps_four_native_frames_per_policy_decision(self) -> None:
         contract = load_evaluation_contract("configs/eval/breakout_contract_v2.json")

@@ -14,7 +14,8 @@ from breakout_rl.evaluation_contract import (
     validate_breakout_runtime_contract,
 )
 from breakout_rl.inference import InferenceSpec
-from breakout_rl.models.factory import build_q_network, checkpoint_architecture
+from breakout_rl.checkpoint import read_checkpoint, restore_q_network
+from breakout_rl.models.factory import checkpoint_architecture
 
 
 def _json_object(path: str | Path) -> dict[str, Any]:
@@ -117,9 +118,7 @@ def load_deployment_model(
 ) -> tuple[torch.nn.Module, dict[str, Any], dict[str, Any]]:
     """Load the canonical model and validate its architecture/provenance contract."""
 
-    payload = torch.load(source_model, map_location=device, weights_only=False)
-    if not isinstance(payload, Mapping):
-        raise ValueError("Day 21 model checkpoint must contain a mapping")
+    payload = read_checkpoint(source_model, map_location=device)
     architecture = checkpoint_architecture(payload)
     model_config = payload.get("model_config")
     if not isinstance(model_config, Mapping):
@@ -158,14 +157,14 @@ def load_deployment_model(
     state_dict = payload.get("online_network")
     if not isinstance(state_dict, Mapping):
         raise ValueError("Day 21 model checkpoint is missing online_network")
-    model = build_q_network(
-        architecture,
+    model = restore_q_network(
+        state_dict,
+        architecture=architecture,
         num_actions=num_actions,
-        input_shape=input_shape,  # type: ignore[arg-type]
+        input_shape=input_shape,
         hidden_dim=hidden_dim,
-    ).to(device)
-    model.load_state_dict(state_dict, strict=True)
-    model.eval()
+        device=device,
+    )
     observed_parameters = sum(parameter.numel() for parameter in model.parameters())
     if observed_parameters != int(identity["parameter_count"]):
         raise ValueError(

@@ -6,9 +6,9 @@ import argparse
 import json
 import sys
 from pathlib import Path
-from typing import Any, Callable, Mapping, Sequence
+from typing import Any, Mapping, Sequence
 
-from breakout_env import make_breakout_env
+from breakout_env import contract_env_factory
 from breakout_rl.evaluation import (
     evaluate_policy,
     load_dqn_checkpoint,
@@ -18,8 +18,6 @@ from breakout_rl.evaluation import (
 from breakout_rl.evaluation_contract import (
     BREAKOUT_CONTRACT_V2_ID,
     BREAKOUT_CONTRACT_V3_ID,
-    BreakoutEvaluationContractV2,
-    breakout_environment_kwargs,
     load_evaluation_contract,
     validate_breakout_runtime_contract,
 )
@@ -51,14 +49,6 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--evaluation-id", default=None)
     return parser
-
-
-def _environment_factory(
-    contract: BreakoutEvaluationContractV2,
-) -> Callable[[], Any]:
-    return lambda: make_breakout_env(
-        **breakout_environment_kwargs(contract, allow_contract_v3=True)
-    )
 
 
 def run_evaluation(args: argparse.Namespace) -> tuple[Path, Path, dict[str, Any]]:
@@ -96,7 +86,7 @@ def run_evaluation(args: argparse.Namespace) -> tuple[Path, Path, dict[str, Any]
         raise ValueError("evaluation id belongs to another contract")
     evaluation_config = load_evaluation_config(args.config)
     _validate_contract_for_config(contract, evaluation_config)
-    env_factory = _environment_factory(contract)
+    env_factory = contract_env_factory(contract, allow_contract_v3=True)
     loaded = load_dqn_checkpoint(
         args.checkpoint,
         device=args.device,

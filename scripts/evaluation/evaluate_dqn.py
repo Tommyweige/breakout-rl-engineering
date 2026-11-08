@@ -6,9 +6,9 @@ import argparse
 import json
 import sys
 from pathlib import Path
-from typing import Any, Callable, Literal, Mapping, Sequence
+from typing import Any, Literal, Mapping, Sequence
 
-from breakout_env import make_breakout_env
+from breakout_env import contract_env_factory, make_breakout_env
 from breakout_rl.evaluation import (
     EvaluationConfig,
     evaluate_policy,
@@ -22,7 +22,6 @@ from breakout_rl.evaluation_contract import (
     BREAKOUT_CONTRACT_V2_ID,
     BREAKOUT_CONTRACT_V3_ID,
     BreakoutEvaluationContractV2,
-    breakout_environment_kwargs,
     expand_concrete_episode_seeds,
     load_evaluation_contract,
     validate_breakout_runtime_contract,
@@ -226,14 +225,6 @@ def _validate_contract_for_config(
         )
 
 
-def _contract_environment_factory(
-    contract: BreakoutEvaluationContractV2,
-) -> Callable[[], Any]:
-    return lambda: make_breakout_env(
-        **breakout_environment_kwargs(contract, allow_contract_v3=True)
-    )
-
-
 def _portable_command(
     args: argparse.Namespace,
     *,
@@ -352,7 +343,7 @@ def run_evaluation(args: argparse.Namespace) -> tuple[Path, Path, dict[str, Any]
             loaded = load_dqn_checkpoint(
                 args.checkpoint,
                 device=requested_device,
-                env_factory=_contract_environment_factory(contract),
+                env_factory=contract_env_factory(contract, allow_contract_v3=True),
             )
             checkpoint_contract_id = loaded.training_metadata.get("contract_id")
             checkpoint_contract_path = loaded.training_metadata.get("contract_path")
@@ -394,7 +385,7 @@ def run_evaluation(args: argparse.Namespace) -> tuple[Path, Path, dict[str, Any]
     if contract is not None:
         metadata["evaluation_contract_path"] = Path(contract_path).as_posix()
         metadata["evaluation_contract"] = contract.to_dict()
-        env_factory = _contract_environment_factory(contract)
+        env_factory = contract_env_factory(contract, allow_contract_v3=True)
 
     result = evaluate_policy(
         model,

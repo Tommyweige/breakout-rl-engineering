@@ -46,4 +46,17 @@ def sha256_file(path: str | Path, *, normalize_text: bool = False) -> str:
     return digest.hexdigest()
 
 
-__all__ = ["repository_relative_path", "repository_root", "sha256_file"]
+def portable_artifact_path(path: str | Path) -> str:
+    """Keep provenance portable when a checkpoint came from another worktree."""
+
+    path = Path(path)
+    parts = path.resolve().parts
+    markers = {"assets", "configs", "evaluations", "experiments", "reports"}
+    for index, part in enumerate(parts):
+        if part.lower() in markers:
+            return Path(*parts[index:]).as_posix()
+    return path.as_posix()
+
+
+__all__ = ["portable_artifact_path",
+    "repository_relative_path", "repository_root", "sha256_file"]
