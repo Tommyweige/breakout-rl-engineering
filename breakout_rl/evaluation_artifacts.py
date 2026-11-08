@@ -1,13 +1,20 @@
-"""Validation and aggregation helpers for evaluation JSON artifacts."""
+"""One owner for the evaluation result format: write, read, validate, and summarize results.json / episodes.csv."""
 
 from __future__ import annotations
 
+import csv
 import json
 import math
+import re
 from collections import Counter
 from pathlib import Path
 from statistics import fmean, median, pstdev
-from typing import Any, Mapping, Sequence
+from typing import TYPE_CHECKING, Any, Mapping, Sequence
+
+import numpy as np
+
+if TYPE_CHECKING:
+    from breakout_rl.evaluation import EvaluationResult
 
 
 TIME_LIMIT_SUMMARY_FIELDS = (
@@ -963,6 +970,185 @@ def validate_embedded_summary(
             )
 
 
+def _json_default(value: Any) -> Any:
+    if isinstance(value, np.ndarray):
+        return value.tolist()
+    if isinstance(value, (np.integer, np.floating)):
+        return value.item()
+    if isinstance(value, Path):
+        return value.as_posix()
+    raise TypeError(f"cannot serialize {type(value).__name__}")
+
+
+def _csv_column_name(action_name: str) -> str:
+    normalized = re.sub(r"[^a-z0-9]+", "_", action_name.lower()).strip("_")
+    return f"action_{normalized or 'unknown'}"
+
+
+def write_evaluation_artifacts(
+    result: "EvaluationResult",
+    output_dir: str | Path,
+) -> tuple[Path, Path]:
+    """Write result JSON and the raw per-episode CSV."""
+
+    from breakout_rl.evaluation import EvaluationResult  # evaluation imports this module
+
+    if not isinstance(result, EvaluationResult):
+        raise TypeError("result must be an EvaluationResult")
+    destination = Path(output_dir)
+    destination.mkdir(parents=True, exist_ok=True)
+    results_path = destination / "results.json"
+    episodes_path = destination / "episodes.csv"
+    payload = result.to_dict()
+    payload["artifacts"] = {
+        "results_json": results_path.name,
+        "episodes_csv": episodes_path.name,
+    }
+    results_path.write_text(
+        json.dumps(payload, indent=2, ensure_ascii=False, default=_json_default),
+        encoding="utf-8",
+    )
+
+    action_columns = [_csv_column_name(name) for name in result.action_names]
+    requested_action_columns = [
+        f"requested_{column}" for column in action_columns
+    ]
+    executed_action_columns = [
+        f"executed_{column}" for column in action_columns
+    ]
+    fieldnames = [
+        "schema_version",
+        "policy_type",
+        "action_distribution_semantics",
+        "evaluation_seed",
+        "seed_index",
+        "episode_index",
+        "episode_seed",
+        "episode_return",
+        "episode_length",
+        "total_agent_steps",
+        "total_emulator_frames",
+        "terminated",
+        "truncated",
+        "time_limit",
+        "time_limit_source",
+        "complete",
+        "stop_reason",
+        "completion_outcome",
+        "cleared",
+        "clear_agent_step",
+        "clear_emulator_frame",
+        "clear_score",
+        "lives_remaining_at_clear",
+        "completion_detection_source",
+        "completion_detection_reason",
+        "completion_provenance_json",
+        *action_columns,
+        "action_distribution_json",
+        *requested_action_columns,
+        *executed_action_columns,
+        "requested_action_distribution_json",
+        "executed_action_distribution_json",
+        "auto_fire_count",
+        "auto_fire_reason_counts_json",
+        "life_loss_count",
+        "score_per_life",
+        "frames_between_life_losses",
+        "time_to_first_life_loss",
+        "life_losses_per_1000_steps",
+    ]
+    with episodes_path.open("w", newline="", encoding="utf-8") as stream:
+        writer = csv.DictWriter(stream, fieldnames=fieldnames)
+        writer.writeheader()
+        for episode, episode_payload in zip(
+            result.episodes,
+            payload["per_episode"],
+            strict=True,
+        ):
+            executed_distribution = dict(
+                episode.executed_action_distribution or episode.action_distribution
+            )
+            requested_distribution = dict(
+                episode.requested_action_distribution or executed_distribution
+            )
+            row: dict[str, Any] = {
+                "schema_version": EVALUATION_ARTIFACT_SCHEMA_VERSION,
+                "policy_type": result.policy_type,
+                "action_distribution_semantics": ACTION_DISTRIBUTION_SEMANTICS,
+                "evaluation_seed": episode.evaluation_seed,
+                "seed_index": episode.seed_index,
+                "episode_index": episode.episode_index,
+                "episode_seed": episode.episode_seed,
+                "episode_return": episode.episode_return,
+                "episode_length": episode.episode_length,
+                "total_agent_steps": episode.episode_length,
+                "total_emulator_frames": episode.total_emulator_frames,
+                "terminated": episode.terminated,
+                "truncated": episode.truncated,
+                "time_limit": episode.time_limit,
+                "time_limit_source": episode.time_limit_source,
+                "complete": episode.complete,
+                "stop_reason": episode.stop_reason,
+                "completion_outcome": episode.completion_outcome,
+                "cleared": json.dumps(episode.cleared),
+                "clear_agent_step": episode.clear_agent_step,
+                "clear_emulator_frame": episode.clear_emulator_frame,
+                "clear_score": episode.clear_score,
+                "lives_remaining_at_clear": episode.lives_remaining_at_clear,
+                "completion_detection_source": episode.completion_detection_source,
+                "completion_detection_reason": episode.completion_detection_reason,
+                "completion_provenance_json": json.dumps(
+                    episode_payload.get("completion_provenance"),
+                    ensure_ascii=False,
+                    sort_keys=True,
+                    default=_json_default,
+                ),
+                "action_distribution_json": json.dumps(
+                    executed_distribution,
+                    ensure_ascii=False,
+                    sort_keys=True,
+                ),
+                "requested_action_distribution_json": json.dumps(
+                    requested_distribution,
+                    ensure_ascii=False,
+                    sort_keys=True,
+                ),
+                "executed_action_distribution_json": json.dumps(
+                    executed_distribution,
+                    ensure_ascii=False,
+                    sort_keys=True,
+                ),
+                "auto_fire_count": int(episode.auto_fire_count),
+                "auto_fire_reason_counts_json": json.dumps(
+                    dict(episode.auto_fire_reason_counts or {}),
+                    ensure_ascii=False,
+                    sort_keys=True,
+                ),
+                "life_loss_count": int(episode.life_loss_count),
+                "score_per_life": float(episode.score_per_life),
+                "frames_between_life_losses": episode.frames_between_life_losses,
+                "time_to_first_life_loss": episode.time_to_first_life_loss,
+                "life_losses_per_1000_steps": float(
+                    episode.life_losses_per_1000_steps
+                ),
+            }
+            for action_name, column, requested_column, executed_column in zip(
+                result.action_names,
+                action_columns,
+                requested_action_columns,
+                executed_action_columns,
+            ):
+                row[column] = int(executed_distribution.get(action_name, 0))
+                row[requested_column] = int(
+                    requested_distribution.get(action_name, 0)
+                )
+                row[executed_column] = int(
+                    executed_distribution.get(action_name, 0)
+                )
+            writer.writerow(row)
+    return results_path, episodes_path
+
+
 __all__ = [
     "ACTION_DISTRIBUTION_SEMANTICS",
     "EVALUATION_ARTIFACT_SCHEMA_VERSION",
@@ -974,4 +1160,5 @@ __all__ = [
     "VERIFIED_CLEAR_PROVENANCE_FIELDS",
     "validate_embedded_summary",
     "validate_episode_rows",
+    "write_evaluation_artifacts",
 ]
