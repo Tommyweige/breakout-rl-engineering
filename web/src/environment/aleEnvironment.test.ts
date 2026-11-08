@@ -317,4 +317,19 @@ describe('ALE Browser environment contract', () => {
     ]);
     expect(ale.paddlePositions).toEqual([0.2, 0.2, 0.2, 0.2, 0.2, 0.2]);
   });
+
+  it('throws on an unconfirmed Agent serve but releases an unconfirmed Human serve', () => {
+    class FrozenAle extends FakeAle {
+      getScreenRGB(): Uint8ClampedArray { return new Uint8ClampedArray(160 * 210 * 3); }
+      getScreenGrayscale(): Uint8ClampedArray { return new Uint8ClampedArray(160 * 210); }
+    }
+    const agent = createBrowserBreakoutEnvironmentForTest(new FrozenAle() as unknown as AleLike, contract, 101);
+    for (let attempt = 1; attempt < 8; attempt += 1) expect(agent.step(0).autoFire).toBe(true);
+    expect(() => agent.step(0)).toThrow('FIRE serve was not confirmed after 8 attempts for initial_serve');
+
+    const human = createHumanBreakoutEnvironmentForTest(new FrozenAle() as unknown as AleLike, contract, 101);
+    const serves = Array.from({ length: 9 }, () => human.step(2));
+    expect(serves.slice(0, 8).every(step => step.autoFire)).toBe(true);
+    expect(serves[8]).toMatchObject({ autoFire: false, executedDirection: 'RIGHT' });
+  });
 });

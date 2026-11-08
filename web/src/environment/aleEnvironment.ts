@@ -151,6 +151,99 @@ interface NativeSeedConfig {
 let nativeNoopManifestPromise: Promise<ReadonlyMap<number, NativeSeedConfig>> | null = null;
 let nextAleInstanceId = 1;
 
+interface FireResetRules {
+  min_observation_change_fraction: number;
+  confirmation_steps: number;
+  max_fire_attempts: number;
+}
+
+/**
+ * Owns mandatory FIRE serve state and life-loss detection for both the Agent
+ * and Human runtimes, so the confirmation rules live in one place.
+ */
+class ServeTracker {
+  needsFire = false;
+  pendingFireReason: EnvironmentStep['autoFireReason'] = null;
+  lives = 0;
+  private attempts = 0;
+  private activityStreak = 0;
+
+  begin(lives: number): void {
+    this.lives = lives;
+    this.needsFire = true;
+    this.pendingFireReason = 'initial_serve';
+    this.attempts = 0;
+    this.activityStreak = 0;
+  }
+
+  /**
+   * Scores one completed decision. `isFinished` is called only when the serve
+   * is still unconfirmed, matching the original ALE call order.
+   * `onExhausted: 'release'` gives up instead of throwing (Human input loop).
+   */
+  confirm(
+    autoFire: boolean,
+    reward: number,
+    changeFraction: number,
+    rules: FireResetRules,
+    isFinished: () => boolean,
+    onExhausted: 'throw' | 'release' = 'throw',
+  ): EnvironmentStep['fireConfirmation'] {
+    if (!autoFire) {
+      this.activityStreak = 0;
+      return null;
+    }
+    this.attempts += 1;
+    let confirmation: EnvironmentStep['fireConfirmation'] = reward !== 0 ? 'reward' : null;
+    this.activityStreak = changeFraction >= rules.min_observation_change_fraction ? this.activityStreak + 1 : 0;
+    if (!confirmation && this.activityStreak >= rules.confirmation_steps) confirmation = 'observation_activity_streak';
+    if (confirmation || isFinished()) {
+      this.clear();
+    } else if (this.attempts >= rules.max_fire_attempts) {
+      if (onExhausted === 'throw') {
+        throw new Error(`FIRE serve was not confirmed after ${this.attempts} attempts for ${this.pendingFireReason}`);
+      }
+      this.clear();
+    }
+    return confirmation;
+  }
+
+  noteLives(lives: number): void {
+    if (lives < this.lives) {
+      this.needsFire = true;
+      this.pendingFireReason = 'after_life_loss';
+      this.attempts = 0;
+      this.activityStreak = 0;
+    }
+    this.lives = lives;
+  }
+
+  private clear(): void {
+    this.needsFire = false;
+    this.pendingFireReason = null;
+    this.attempts = 0;
+    this.activityStreak = 0;
+  }
+}
+
+interface PendingPolicyStep {
+  startedAt: number;
+  requested: MappedAction;
+  executed: MappedAction;
+  autoFire: boolean;
+  autoFireReason: EnvironmentStep['autoFireReason'];
+  beforeObservation: Uint8Array;
+  beforeFrameNumber: number;
+  aleStartedAt: number;
+  reward: number;
+  secondLastFrame: Uint8Array | null;
+  lastFrame: Uint8Array | null;
+  secondLastGrayscale: Uint8Array | null;
+  lastGrayscale: Uint8Array | null;
+  sampledGrayscaleFrames: Uint8Array[];
+  actualRawSteps: number;
+}
+
 export class BrowserBreakoutEnvironment {
   readonly instanceId = nextAleInstanceId++;
   private rawFrameRepeat = 4;
@@ -159,11 +252,7 @@ export class BrowserBreakoutEnvironment {
   private lastRawRgb: Uint8Array;
   private lastProcessedFrame: Uint8Array;
   private lastObservation: Uint8Array;
-  private lastLives = 0;
-  private needsFire = false;
-  private pendingFireReason: EnvironmentStep['autoFireReason'] = null;
-  private fireAttempts = 0;
-  private fireActivityStreak = 0;
+  private readonly serve = new ServeTracker();
   private episodeReturn = 0;
   private agentStep = 0;
   private interactiveFramesInDecision = 0;
@@ -248,7 +337,7 @@ export class BrowserBreakoutEnvironment {
   }
 
   get currentLives(): number {
-    return this.lastLives;
+    return this.serve.lives;
   }
 
   get currentAgentStep(): number {
@@ -326,11 +415,7 @@ export class BrowserBreakoutEnvironment {
     const resetGrayscale = copyBytes(this.ale.getScreenGrayscale());
     this.lastProcessedFrame = preprocessGrayscaleFrame(resetGrayscale);
     this.lastObservation = this.frameStack.reset(this.lastProcessedFrame);
-    this.lastLives = this.ale.lives();
-    this.needsFire = true;
-    this.pendingFireReason = 'initial_serve';
-    this.fireAttempts = 0;
-    this.fireActivityStreak = 0;
+    this.serve.begin(this.ale.lives());
     this.episodeReturn = 0;
     this.agentStep = 0;
     this.resetInteractiveDecision();
@@ -347,170 +432,73 @@ export class BrowserBreakoutEnvironment {
   }
 
   step(modelActionIndex: number): EnvironmentStep {
-    this.assertActive();
-    if (this.isFinished) throw new Error('cannot step a finished Breakout episode; reset first');
-    const startedAt = now();
-    const requested = mapModelActionToAle(modelActionIndex);
-    const autoFire = this.needsFire;
-    const autoFireReason = autoFire ? this.pendingFireReason : null;
-    const executed = autoFire ? mapModelActionToAle(1) : requested;
-    const beforeObservation = this.lastObservation;
-    const beforeFrameNumber = this.ale.getFrameNumber();
-    const aleStartedAt = now();
-    let reward = 0;
-    let secondLastFrame: Uint8Array | null = null;
-    let lastFrame: Uint8Array | null = null;
-    let secondLastGrayscale: Uint8Array | null = null;
-    let lastGrayscale: Uint8Array | null = null;
-    const sampledGrayscaleFrames: Uint8Array[] = [];
-    let actualRawSteps = 0;
-
+    const pending = this.beginPolicyStep(modelActionIndex, null);
     for (let repeat = 0; repeat < this.contract.frame_skip; repeat += 1) {
-      reward += this.ale.act(executed.aleAction);
-      const frame = copyBytes(this.ale.getScreenRGB());
-      const grayscale = copyBytes(this.ale.getScreenGrayscale());
-      actualRawSteps += 1;
-      secondLastFrame = lastFrame;
-      lastFrame = frame;
-      secondLastGrayscale = lastGrayscale;
-      lastGrayscale = grayscale;
-      sampledGrayscaleFrames.push(grayscale);
-      if (this.ale.gameOver() || this.ale.gameTruncated()) break;
+      if (this.actPolicyFrame(pending)) break;
     }
-    const aleStepMs = now() - aleStartedAt;
-    const rawFrame = secondLastFrame && lastFrame ? maxPoolRgbFramesForRender(secondLastFrame, lastFrame) : lastFrame;
-    if (!rawFrame) throw new Error('ALE returned no frame after act()');
-    const pooledGrayscale = secondLastGrayscale && lastGrayscale
-      ? maxPoolGrayscaleFrames(secondLastGrayscale, lastGrayscale)
-      : lastGrayscale;
-    if (!pooledGrayscale) throw new Error('ALE returned no grayscale frame after act()');
-    const preprocessingStartedAt = now();
-    const processedFrame = preprocessGrayscaleFrame(pooledGrayscale);
-    const observation = this.frameStack.push(processedFrame);
-    const preprocessingMs = now() - preprocessingStartedAt;
-    const observationChangedFraction = changedFraction(beforeObservation, observation);
-
-    let fireConfirmation: EnvironmentStep['fireConfirmation'] = null;
-    if (autoFire) {
-      this.fireAttempts += 1;
-      if (reward !== 0) fireConfirmation = 'reward';
-      if (observationChangedFraction >= this.contract.fire_reset_confirmation.min_observation_change_fraction) {
-        this.fireActivityStreak += 1;
-      } else {
-        this.fireActivityStreak = 0;
-      }
-      if (!fireConfirmation && this.fireActivityStreak >= this.contract.fire_reset_confirmation.confirmation_steps) {
-        fireConfirmation = 'observation_activity_streak';
-      }
-      if (fireConfirmation || this.ale.gameOver() || this.ale.gameTruncated()) {
-        this.needsFire = false;
-        this.pendingFireReason = null;
-        this.fireAttempts = 0;
-        this.fireActivityStreak = 0;
-      } else if (this.fireAttempts >= this.contract.fire_reset_confirmation.max_fire_attempts) {
-        throw new Error(`FIRE serve was not confirmed after ${this.fireAttempts} attempts for ${autoFireReason}`);
-      }
-    } else {
-      this.fireActivityStreak = 0;
-    }
-
-    const lives = this.ale.lives();
-    const lifeLoss = lives < this.lastLives;
-    if (lifeLoss) {
-      this.needsFire = true;
-      this.pendingFireReason = 'after_life_loss';
-      this.fireAttempts = 0;
-      this.fireActivityStreak = 0;
-    }
-    this.lastLives = lives;
-    this.lastRawRgb = new Uint8Array(rawFrame);
-    this.lastProcessedFrame = new Uint8Array(processedFrame);
-    this.lastObservation = new Uint8Array(observation);
-    this.episodeReturn += reward;
-    this.agentStep += 1;
-    this.terminated = this.ale.gameOver();
-    this.truncated = this.ale.gameTruncated();
-    const totalMs = now() - startedAt;
-
-    if (this.preprocessingTraceEnabled) {
-      this.traceSteps.push({
-        rawGrayscaleFrames: sampledGrayscaleFrames.map((frame) => Array.from(frame)),
-        pooledGrayscale: Array.from(pooledGrayscale),
-        processedFrame: Array.from(processedFrame),
-        observation: Array.from(observation),
-        requestedModelAction: requested.modelIndex,
-        executedModelAction: executed.modelIndex,
-        autoFire,
-        autoFireReason,
-      });
-    }
-
-    return {
-      observation: new Uint8Array(observation),
-      processedFrame: new Uint8Array(processedFrame),
-      rawRgb: new Uint8Array(rawFrame),
-      requestedModelAction: requested.modelIndex,
-      requestedAction: requested.meaning,
-      requestedAleAction: requested.aleAction,
-      executedModelAction: executed.modelIndex,
-      executedAction: executed.meaning,
-      executedAleAction: executed.aleAction,
-      autoFire,
-      autoFireReason,
-      fireConfirmation,
-      observationChangedFraction,
-      reward,
-      episodeReturn: this.episodeReturn,
-      lives,
-      frameNumber: this.ale.getFrameNumber(),
-      agentStep: this.agentStep,
-      actualEmulatorFrames: this.ale.getFrameNumber() - beforeFrameNumber || actualRawSteps,
-      rawFrameSkip: this.ale.getInt('frame_skip'),
-      outerActionRepeat: this.contract.frame_skip,
-      terminated: this.terminated,
-      truncated: this.truncated,
-      gameOverReason: this.truncated ? 'time_limit' : this.terminated ? 'terminated' : null,
-      timing: { aleStepMs: aleStepMs, preprocessingMs, totalMs },
-    };
+    return this.finishPolicyStep(pending, this.contract.frame_skip);
   }
 
   /** Completes one action repeat while yielding between raw frames. */
   async stepAsync(modelActionIndex: number, rawFrameRepeat: number = this.contract.frame_skip): Promise<EnvironmentStep> {
+    const pending = this.beginPolicyStep(modelActionIndex, rawFrameRepeat);
+    for (let repeat = 0; repeat < rawFrameRepeat; repeat += 1) {
+      if (repeat > 0 && rawFrameRepeat > 1) await yieldToEventLoop();
+      if (this.actPolicyFrame(pending)) break;
+    }
+    return this.finishPolicyStep(pending, rawFrameRepeat);
+  }
+
+  /** `rawFrameRepeat: null` is the synchronous contract cadence and skips range validation. */
+  private beginPolicyStep(modelActionIndex: number, rawFrameRepeat: number | null): PendingPolicyStep {
     this.assertActive();
     if (this.isFinished) throw new Error('cannot step a finished Breakout episode; reset first');
-    if (!Number.isInteger(rawFrameRepeat) || rawFrameRepeat < 1 || rawFrameRepeat > this.contract.frame_skip) {
+    if (
+      rawFrameRepeat !== null
+      && (!Number.isInteger(rawFrameRepeat) || rawFrameRepeat < 1 || rawFrameRepeat > this.contract.frame_skip)
+    ) {
       throw new Error(`gameplay raw frame repeat must be between 1 and ${this.contract.frame_skip}`);
     }
     const startedAt = now();
     const requested = mapModelActionToAle(modelActionIndex);
-    const autoFire = this.needsFire;
-    const autoFireReason = autoFire ? this.pendingFireReason : null;
-    const executed = autoFire ? mapModelActionToAle(1) : requested;
-    const beforeObservation = this.lastObservation;
-    const beforeFrameNumber = this.ale.getFrameNumber();
-    const aleStartedAt = now();
-    let reward = 0;
-    let secondLastFrame: Uint8Array | null = null;
-    let lastFrame: Uint8Array | null = null;
-    let secondLastGrayscale: Uint8Array | null = null;
-    let lastGrayscale: Uint8Array | null = null;
-    const sampledGrayscaleFrames: Uint8Array[] = [];
-    let actualRawSteps = 0;
+    const autoFire = this.serve.needsFire;
+    return {
+      startedAt,
+      requested,
+      autoFire,
+      autoFireReason: autoFire ? this.serve.pendingFireReason : null,
+      executed: autoFire ? mapModelActionToAle(1) : requested,
+      beforeObservation: this.lastObservation,
+      beforeFrameNumber: this.ale.getFrameNumber(),
+      aleStartedAt: now(),
+      reward: 0,
+      secondLastFrame: null,
+      lastFrame: null,
+      secondLastGrayscale: null,
+      lastGrayscale: null,
+      sampledGrayscaleFrames: [],
+      actualRawSteps: 0,
+    };
+  }
 
-    for (let repeat = 0; repeat < rawFrameRepeat; repeat += 1) {
-      if (repeat > 0 && rawFrameRepeat > 1) await yieldToEventLoop();
-      reward += this.ale.act(executed.aleAction);
-      const frame = copyBytes(this.ale.getScreenRGB());
-      const grayscale = copyBytes(this.ale.getScreenGrayscale());
-      actualRawSteps += 1;
-      secondLastFrame = lastFrame;
-      lastFrame = frame;
-      secondLastGrayscale = lastGrayscale;
-      lastGrayscale = grayscale;
-      sampledGrayscaleFrames.push(grayscale);
-      if (this.ale.gameOver() || this.ale.gameTruncated()) break;
-    }
-    const aleStepMs = now() - aleStartedAt;
+  /** Acts one raw frame; returns true when the episode ended. */
+  private actPolicyFrame(pending: PendingPolicyStep): boolean {
+    pending.reward += this.ale.act(pending.executed.aleAction);
+    const frame = copyBytes(this.ale.getScreenRGB());
+    const grayscale = copyBytes(this.ale.getScreenGrayscale());
+    pending.actualRawSteps += 1;
+    pending.secondLastFrame = pending.lastFrame;
+    pending.lastFrame = frame;
+    pending.secondLastGrayscale = pending.lastGrayscale;
+    pending.lastGrayscale = grayscale;
+    pending.sampledGrayscaleFrames.push(grayscale);
+    return this.ale.gameOver() || this.ale.gameTruncated();
+  }
+
+  private finishPolicyStep(pending: PendingPolicyStep, outerActionRepeat: number): EnvironmentStep {
+    const { requested, executed, autoFire, autoFireReason, reward } = pending;
+    const { secondLastFrame, lastFrame, secondLastGrayscale, lastGrayscale } = pending;
+    const aleStepMs = now() - pending.aleStartedAt;
     const rawFrame = secondLastFrame && lastFrame ? maxPoolRgbFramesForRender(secondLastFrame, lastFrame) : lastFrame;
     if (!rawFrame) throw new Error('ALE returned no frame after act()');
     const pooledGrayscale = secondLastGrayscale && lastGrayscale
@@ -521,40 +509,17 @@ export class BrowserBreakoutEnvironment {
     const processedFrame = preprocessGrayscaleFrame(pooledGrayscale);
     const observation = this.frameStack.push(processedFrame);
     const preprocessingMs = now() - preprocessingStartedAt;
-    const observationChangedFraction = changedFraction(beforeObservation, observation);
+    const observationChangedFraction = changedFraction(pending.beforeObservation, observation);
 
-    let fireConfirmation: EnvironmentStep['fireConfirmation'] = null;
-    if (autoFire) {
-      this.fireAttempts += 1;
-      if (reward !== 0) fireConfirmation = 'reward';
-      if (observationChangedFraction >= this.contract.fire_reset_confirmation.min_observation_change_fraction) {
-        this.fireActivityStreak += 1;
-      } else {
-        this.fireActivityStreak = 0;
-      }
-      if (!fireConfirmation && this.fireActivityStreak >= this.contract.fire_reset_confirmation.confirmation_steps) {
-        fireConfirmation = 'observation_activity_streak';
-      }
-      if (fireConfirmation || this.ale.gameOver() || this.ale.gameTruncated()) {
-        this.needsFire = false;
-        this.pendingFireReason = null;
-        this.fireAttempts = 0;
-        this.fireActivityStreak = 0;
-      } else if (this.fireAttempts >= this.contract.fire_reset_confirmation.max_fire_attempts) {
-        throw new Error(`FIRE serve was not confirmed after ${this.fireAttempts} attempts for ${autoFireReason}`);
-      }
-    } else {
-      this.fireActivityStreak = 0;
-    }
-
+    const fireConfirmation = this.serve.confirm(
+      autoFire,
+      reward,
+      observationChangedFraction,
+      this.contract.fire_reset_confirmation,
+      () => this.ale.gameOver() || this.ale.gameTruncated(),
+    );
     const lives = this.ale.lives();
-    if (lives < this.lastLives) {
-      this.needsFire = true;
-      this.pendingFireReason = 'after_life_loss';
-      this.fireAttempts = 0;
-      this.fireActivityStreak = 0;
-    }
-    this.lastLives = lives;
+    this.serve.noteLives(lives);
     this.lastRawRgb = new Uint8Array(rawFrame);
     this.lastProcessedFrame = new Uint8Array(processedFrame);
     this.lastObservation = new Uint8Array(observation);
@@ -562,11 +527,11 @@ export class BrowserBreakoutEnvironment {
     this.agentStep += 1;
     this.terminated = this.ale.gameOver();
     this.truncated = this.ale.gameTruncated();
-    const totalMs = now() - startedAt;
+    const totalMs = now() - pending.startedAt;
 
     if (this.preprocessingTraceEnabled) {
       this.traceSteps.push({
-        rawGrayscaleFrames: sampledGrayscaleFrames.map((frame) => Array.from(frame)),
+        rawGrayscaleFrames: pending.sampledGrayscaleFrames.map((frame) => Array.from(frame)),
         pooledGrayscale: Array.from(pooledGrayscale),
         processedFrame: Array.from(processedFrame),
         observation: Array.from(observation),
@@ -596,9 +561,9 @@ export class BrowserBreakoutEnvironment {
       lives,
       frameNumber: this.ale.getFrameNumber(),
       agentStep: this.agentStep,
-      actualEmulatorFrames: this.ale.getFrameNumber() - beforeFrameNumber || actualRawSteps,
+      actualEmulatorFrames: this.ale.getFrameNumber() - pending.beforeFrameNumber || pending.actualRawSteps,
       rawFrameSkip: this.ale.getInt('frame_skip'),
-      outerActionRepeat: rawFrameRepeat,
+      outerActionRepeat,
       terminated: this.terminated,
       truncated: this.truncated,
       gameOverReason: this.truncated ? 'time_limit' : this.terminated ? 'terminated' : null,
@@ -634,8 +599,8 @@ export class BrowserBreakoutEnvironment {
     }
 
     const latchedAction = this.interactiveAction ?? requested;
-    const autoFire = this.needsFire;
-    const autoFireReason = autoFire ? this.pendingFireReason : null;
+    const autoFire = this.serve.needsFire;
+    const autoFireReason = autoFire ? this.serve.pendingFireReason : null;
     const executed = autoFire ? mapModelActionToAle(1) : latchedAction;
     const beforeFrameNumber = this.ale.getFrameNumber();
     const beforeRawRgb = this.lastRawRgb;
@@ -687,36 +652,14 @@ export class BrowserBreakoutEnvironment {
       this.lastProcessedFrame = new Uint8Array(processedFrame);
       this.lastObservation = new Uint8Array(observation);
 
-      if (autoFire) {
-        this.fireAttempts += 1;
-        if (this.interactiveDecisionReward !== 0) fireConfirmation = 'reward';
-        if (observationChangedFraction >= controlContract.fire_reset_confirmation.min_observation_change_fraction) {
-          this.fireActivityStreak += 1;
-        } else {
-          this.fireActivityStreak = 0;
-        }
-        if (!fireConfirmation && this.fireActivityStreak >= controlContract.fire_reset_confirmation.confirmation_steps) {
-          fireConfirmation = 'observation_activity_streak';
-        }
-        if (fireConfirmation || this.terminated || this.truncated) {
-          this.needsFire = false;
-          this.pendingFireReason = null;
-          this.fireAttempts = 0;
-          this.fireActivityStreak = 0;
-        } else if (this.fireAttempts >= controlContract.fire_reset_confirmation.max_fire_attempts) {
-          throw new Error(`FIRE serve was not confirmed after ${this.fireAttempts} attempts for ${autoFireReason}`);
-        }
-      } else {
-        this.fireActivityStreak = 0;
-      }
-
-      if (lives < this.lastLives) {
-        this.needsFire = true;
-        this.pendingFireReason = 'after_life_loss';
-        this.fireAttempts = 0;
-        this.fireActivityStreak = 0;
-      }
-      this.lastLives = lives;
+      fireConfirmation = this.serve.confirm(
+        autoFire,
+        this.interactiveDecisionReward,
+        observationChangedFraction,
+        controlContract.fire_reset_confirmation,
+        () => this.terminated || this.truncated,
+      );
+      this.serve.noteLives(lives);
       this.agentStep += 1;
 
       if (this.preprocessingTraceEnabled) {
@@ -820,12 +763,12 @@ export class BrowserBreakoutEnvironment {
       rawRgb: new Uint8Array(this.lastRawRgb),
       seed: this.seed,
       episodeReturn: this.episodeReturn,
-      lives: this.lastLives,
+      lives: this.serve.lives,
       frameNumber: this.ale.getFrameNumber(),
       agentStep: this.agentStep,
       terminated: this.terminated,
       truncated: this.truncated,
-      needsFire: this.needsFire,
+      needsFire: this.serve.needsFire,
     };
   }
 
@@ -853,11 +796,7 @@ export class HumanBreakoutEnvironment {
   readonly instanceId = nextAleInstanceId++;
   private seed: number;
   private lastRawRgb: Uint8Array;
-  private lastLives = 0;
-  private needsFire = false;
-  private pendingFireReason: EnvironmentStep['autoFireReason'] = null;
-  private fireAttempts = 0;
-  private fireActivityStreak = 0;
+  private readonly serve = new ServeTracker();
   private episodeReturn = 0;
   private humanStep = 0;
   private terminated = false;
@@ -907,7 +846,7 @@ export class HumanBreakoutEnvironment {
   }
 
   get currentLives(): number {
-    return this.lastLives;
+    return this.serve.lives;
   }
 
   get currentHumanStep(): number {
@@ -945,11 +884,7 @@ export class HumanBreakoutEnvironment {
     }
     this.ale.resetGame();
     this.lastRawRgb = copyBytes(this.ale.getScreenRGB());
-    this.lastLives = this.ale.lives();
-    this.needsFire = true;
-    this.pendingFireReason = 'initial_serve';
-    this.fireAttempts = 0;
-    this.fireActivityStreak = 0;
+    this.serve.begin(this.ale.lives());
     this.episodeReturn = 0;
     this.humanStep = 0;
     this.terminated = false;
@@ -979,8 +914,8 @@ export class HumanBreakoutEnvironment {
     this.assertActive();
     if (this.isFinished) throw new Error('cannot step a finished Breakout episode; reset first');
     const startedAt = now();
-    const autoFire = this.needsFire;
-    const autoFireReason = autoFire ? this.pendingFireReason : null;
+    const autoFire = this.serve.needsFire;
+    const autoFireReason = autoFire ? this.serve.pendingFireReason : null;
     const executed = autoFire ? mapModelActionToAle(1) : requested;
     if (requestedPaddlePositionX !== null) this.ale.setBreakoutPaddlePosition(requestedPaddlePositionX);
     const appliedPaddleTargetX = requestedPaddlePositionX;
@@ -992,37 +927,18 @@ export class HumanBreakoutEnvironment {
     const aleStepMs = now() - aleStartedAt;
     const rawChange = changedFraction(beforeRawRgb, rawRgb);
 
-    let fireConfirmation: EnvironmentStep['fireConfirmation'] = null;
-    if (autoFire) {
-      this.fireAttempts += 1;
-      if (reward !== 0) fireConfirmation = 'reward';
-      if (rawChange >= this.contract.fire_reset_confirmation.min_observation_change_fraction) {
-        this.fireActivityStreak += 1;
-      } else {
-        this.fireActivityStreak = 0;
-      }
-      if (!fireConfirmation && this.fireActivityStreak >= this.contract.fire_reset_confirmation.confirmation_steps) {
-        fireConfirmation = 'observation_activity_streak';
-      }
-      if (fireConfirmation || this.ale.gameOver() || this.ale.gameTruncated()) {
-        this.clearFireState();
-      } else if (this.fireAttempts >= this.contract.fire_reset_confirmation.max_fire_attempts) {
-        // A human input loop must never freeze for an unconfirmed serve. The
-        // next raw tick returns to the player's requested action.
-        this.clearFireState();
-      }
-    } else {
-      this.fireActivityStreak = 0;
-    }
-
+    // A human input loop must never freeze for an unconfirmed serve: on
+    // exhaustion the next raw tick returns to the player's requested action.
+    const fireConfirmation = this.serve.confirm(
+      autoFire,
+      reward,
+      rawChange,
+      this.contract.fire_reset_confirmation,
+      () => this.ale.gameOver() || this.ale.gameTruncated(),
+      'release',
+    );
     const lives = this.ale.lives();
-    if (lives < this.lastLives) {
-      this.needsFire = true;
-      this.pendingFireReason = 'after_life_loss';
-      this.fireAttempts = 0;
-      this.fireActivityStreak = 0;
-    }
-    this.lastLives = lives;
+    this.serve.noteLives(lives);
     this.lastRawRgb = new Uint8Array(rawRgb);
     this.episodeReturn += reward;
     this.humanStep += 1;
@@ -1081,20 +997,13 @@ export class HumanBreakoutEnvironment {
       rawRgb: new Uint8Array(this.lastRawRgb),
       seed: this.seed,
       episodeReturn: this.episodeReturn,
-      lives: this.lastLives,
+      lives: this.serve.lives,
       frameNumber: this.ale.getFrameNumber(),
       humanStep: this.humanStep,
       terminated: this.terminated,
       truncated: this.truncated,
-      needsFire: this.needsFire,
+      needsFire: this.serve.needsFire,
     };
-  }
-
-  private clearFireState(): void {
-    this.needsFire = false;
-    this.pendingFireReason = null;
-    this.fireAttempts = 0;
-    this.fireActivityStreak = 0;
   }
 
   private assertActive(): void {
