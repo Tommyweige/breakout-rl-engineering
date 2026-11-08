@@ -18,7 +18,6 @@ from breakout_rl.evaluation import (
 from breakout_rl.evaluation_contract import (
     BREAKOUT_CONTRACT_V2_ID,
     BREAKOUT_CONTRACT_V3_ID,
-    BreakoutEvaluationContractV2,
     load_evaluation_contract,
     validate_breakout_runtime_contract,
 )

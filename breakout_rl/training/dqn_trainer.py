@@ -5,7 +5,6 @@ from __future__ import annotations
 import copy
 import math
 import operator
-import os
 import random
 import time
 from dataclasses import dataclass
@@ -18,7 +17,14 @@ from torch import nn
 
 from breakout_rl.completion import ALETransitionFrameCounter
 from breakout_rl.exploration import LinearEpsilonSchedule, select_epsilon_greedy_action
-from breakout_rl.models.factory import build_q_network, checkpoint_architecture
+from breakout_rl.checkpoint import (
+    capture_rng_state,
+    check_resume_identity,
+    read_checkpoint,
+    restore_rng_state,
+    write_checkpoint,
+)
+from breakout_rl.models.factory import build_q_network
 from breakout_rl.prioritized_replay import beta_for_transition
 from breakout_rl.replay import ReplayBuffer
 from breakout_rl.replay_gpu import GPUReplayBuffer
@@ -1285,36 +1291,10 @@ class DQNTrainer:
         return summary
 
     def _rng_state(self) -> dict[str, Any]:
-        return {
-            "python": random.getstate(),
-            "numpy_global": np.random.get_state(),
-            "torch_cpu": torch.get_rng_state(),
-            "torch_cuda": torch.cuda.get_rng_state_all()
-            if torch.cuda.is_available()
-            else None,
-            "action_rng": self.rng.bit_generator.state,
-        }
+        return capture_rng_state(self.rng)
 
-    def _restore_rng_state(self, state: dict[str, Any]) -> None:
-        if "python" in state:
-            random.setstate(state["python"])
-        if "numpy_global" in state:
-            np.random.set_state(state["numpy_global"])
-        if "torch_cpu" in state:
-            torch_cpu_state = state["torch_cpu"]
-            if isinstance(torch_cpu_state, torch.Tensor):
-                torch_cpu_state = torch_cpu_state.detach().cpu()
-            torch.set_rng_state(torch_cpu_state)
-        if torch.cuda.is_available() and state.get("torch_cuda") is not None:
-            torch_cuda_states = state["torch_cuda"]
-            if isinstance(torch_cuda_states, (list, tuple)):
-                torch_cuda_states = [
-                    value.detach().cpu() if isinstance(value, torch.Tensor) else value
-                    for value in torch_cuda_states
-                ]
-            torch.cuda.set_rng_state_all(torch_cuda_states)
-        if "action_rng" in state:
-            self.rng.bit_generator.state = state["action_rng"]
+    def _restore_rng_state(self, state: Mapping[str, Any]) -> None:
+        restore_rng_state(state, self.rng)
 
     def save_checkpoint(self, *, suffix: str | None = None) -> Path:
         """Save model/optimizer/RNG state without serializing the replay arrays."""
@@ -1325,7 +1305,6 @@ class DQNTrainer:
         if suffix:
             filename += f"-{suffix}"
         path = self.checkpoint_dir / f"{filename}.pt"
-        temporary_path = path.with_suffix(".tmp")
         payload = {
             "format_version": 2,
             "trainer": "dqn",
@@ -1390,8 +1369,7 @@ class DQNTrainer:
             "replay_saved": False,
             "replay_rewarm_steps_remaining": self._resume_rewarm_steps_remaining,
         }
-        torch.save(payload, temporary_path)
-        os.replace(temporary_path, path)
+        write_checkpoint(payload, path)
         self._last_checkpoint = path
         return path
 
@@ -1401,50 +1379,13 @@ class DQNTrainer:
         checkpoint_path = Path(path)
         if not checkpoint_path.is_file():
             raise FileNotFoundError(checkpoint_path)
-        try:
-            payload = torch.load(
-                checkpoint_path,
-                map_location=self.device,
-                weights_only=False,
-            )
-        except TypeError:
-            # Keep compatibility with older PyTorch builds without the keyword.
-            payload = torch.load(checkpoint_path, map_location=self.device)
-        if not isinstance(payload, dict):
-            raise ValueError("checkpoint must contain a mapping")
-        checkpoint_advertises_replay = bool(payload.get("replay_saved", False))
-        if checkpoint_advertises_replay and not self.allow_replay_rewarm:
-            raise ValueError(
-                "checkpoint advertises replay state, but this trainer does not "
-                "restore replay contents or environment/ALE state; exact "
-                "continuation is unavailable. Pass allow_replay_rewarm=True only "
-                "for an explicit non-equivalent warm-start."
-            )
-        if not checkpoint_advertises_replay and not self.allow_replay_rewarm:
-            raise ValueError(
-                "checkpoint does not contain replay state; exact continuation is "
-                "unavailable. Pass allow_replay_rewarm=True only for an explicit "
-                "non-equivalent warm-start."
-            )
-
-        saved_algorithm = payload.get("algorithm")
-        if saved_algorithm is None and isinstance(payload.get("config"), Mapping):
-            saved_algorithm = payload["config"].get("algorithm", "dqn")
-        if (
-            saved_algorithm is not None
-            and normalize_algorithm(str(saved_algorithm)) != self.config.algorithm
-        ):
-            raise ValueError(
-                "checkpoint algorithm does not match trainer config: "
-                f"checkpoint={saved_algorithm!r}, config={self.config.algorithm!r}"
-            )
-
-        saved_architecture = checkpoint_architecture(payload)
-        if saved_architecture != self.config.architecture:
-            raise ValueError(
-                "checkpoint architecture does not match trainer config: "
-                f"checkpoint={saved_architecture!r}, config={self.config.architecture!r}"
-            )
+        payload = read_checkpoint(checkpoint_path, map_location=self.device)
+        check_resume_identity(
+            payload,
+            algorithm=self.config.algorithm,
+            architecture=self.config.architecture,
+            allow_replay_rewarm=self.allow_replay_rewarm,
+        )
 
         self.online_network.load_state_dict(payload["online_network"])
         self.target_network.load_state_dict(payload["target_network"])

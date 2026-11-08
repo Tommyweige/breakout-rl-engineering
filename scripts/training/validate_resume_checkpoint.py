@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
-import torch
+from breakout_rl.checkpoint import read_checkpoint
 
 
 RESUME_CONTRACT_VERSION = 1
@@ -23,13 +23,7 @@ EXACT_RESUME_LOADER_SUPPORTED = False
 def _load(path: Path) -> dict[str, Any]:
     if not path.is_file():
         raise FileNotFoundError(path)
-    try:
-        payload = torch.load(path, map_location="cpu", weights_only=False)
-    except TypeError:
-        payload = torch.load(path, map_location="cpu")
-    if not isinstance(payload, dict):
-        raise ValueError(f"{path}: checkpoint must contain a mapping")
-    return payload
+    return read_checkpoint(path)
 
 
 def inspect_checkpoint(path: Path) -> dict[str, Any]:

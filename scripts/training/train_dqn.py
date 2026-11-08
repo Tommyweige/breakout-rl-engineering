@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-import torch
+from breakout_rl.checkpoint import read_checkpoint
 
 from breakout_env import make_breakout_env, make_contract_env
 from breakout_rl.evaluation_contract import (
@@ -95,11 +95,8 @@ def build_parser() -> argparse.ArgumentParser:
 def _load_checkpoint_config(path: Path) -> DQNConfig:
     if not path.is_file():
         raise FileNotFoundError(path)
-    try:
-        payload = torch.load(path, map_location="cpu", weights_only=False)
-    except TypeError:
-        payload = torch.load(path, map_location="cpu")
-    if not isinstance(payload, dict) or not isinstance(payload.get("config"), dict):
+    payload = read_checkpoint(path)
+    if not isinstance(payload.get("config"), dict):
         raise ValueError("checkpoint does not contain a DQN config")
     return DQNConfig.from_dict(payload["config"])
 

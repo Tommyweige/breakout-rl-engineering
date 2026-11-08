@@ -11,8 +11,6 @@ from __future__ import annotations
 import copy
 import hashlib
 import operator
-import os
-import random
 import time
 import warnings
 from dataclasses import dataclass
@@ -28,7 +26,14 @@ from breakout_rl.exploration import (
     LinearEpsilonSchedule,
     select_epsilon_greedy_actions,
 )
-from breakout_rl.models.factory import build_q_network, checkpoint_architecture
+from breakout_rl.checkpoint import (
+    capture_rng_state,
+    check_resume_identity,
+    read_checkpoint,
+    restore_rng_state,
+    write_checkpoint,
+)
+from breakout_rl.models.factory import build_q_network
 from breakout_rl.prioritized_replay import beta_for_transition
 from breakout_rl.replay import ReplayBuffer
 from breakout_rl.replay_gpu import GPUReplayBuffer
@@ -1412,41 +1417,10 @@ class VectorizedDQNTrainer:
         return summary
 
     def _rng_state(self) -> dict[str, Any]:
-        return {
-            "python": random.getstate(),
-            "numpy_global": np.random.get_state(),
-            "torch_cpu": torch.get_rng_state(),
-            "torch_cuda": torch.cuda.get_rng_state_all()
-            if torch.cuda.is_available()
-            else None,
-            "action_rng": self.rng.bit_generator.state,
-        }
+        return capture_rng_state(self.rng)
 
     def _restore_rng_state(self, state: Mapping[str, Any]) -> None:
-        if "python" in state:
-            random.setstate(state["python"])
-        if "numpy_global" in state:
-            np.random.set_state(state["numpy_global"])
-        if "torch_cpu" in state:
-            cpu_state = state["torch_cpu"]
-            if not isinstance(cpu_state, torch.Tensor):
-                raise ValueError("checkpoint torch_cpu RNG state must be a tensor")
-            torch.set_rng_state(cpu_state.detach().to(device="cpu", dtype=torch.uint8))
-        if torch.cuda.is_available() and state.get("torch_cuda") is not None:
-            raw_cuda_states = state["torch_cuda"]
-            if not isinstance(raw_cuda_states, (list, tuple)):
-                raise ValueError("checkpoint torch_cuda RNG state must be a sequence")
-            cuda_states = [
-                value.detach().to(device="cpu", dtype=torch.uint8)
-                if isinstance(value, torch.Tensor)
-                else value
-                for value in raw_cuda_states
-            ]
-            if not all(isinstance(value, torch.Tensor) for value in cuda_states):
-                raise ValueError("checkpoint torch_cuda RNG state must contain tensors")
-            torch.cuda.set_rng_state_all(cuda_states)
-        if "action_rng" in state:
-            self.rng.bit_generator.state = state["action_rng"]
+        restore_rng_state(state, self.rng)
 
     def save_checkpoint(self, *, suffix: str | None = None) -> Path:
         """Save model, optimizer, schedule, and per-environment counters."""
@@ -1457,7 +1431,6 @@ class VectorizedDQNTrainer:
         if suffix:
             filename += f"-{suffix}"
         path = self.checkpoint_dir / f"{filename}.pt"
-        temporary_path = path.with_suffix(".tmp")
         payload = {
             "format_version": 2,
             "trainer": "vectorized_dqn",
@@ -1545,8 +1518,7 @@ class VectorizedDQNTrainer:
             "replay_rewarm_steps_remaining": self._resume_rewarm_steps_remaining,
             "resume_provenance": self._resume_provenance,
         }
-        torch.save(payload, temporary_path)
-        os.replace(temporary_path, path)
+        write_checkpoint(payload, path)
         self._last_checkpoint = path
         return path
 
@@ -1556,49 +1528,14 @@ class VectorizedDQNTrainer:
         checkpoint_path = Path(path)
         if not checkpoint_path.is_file():
             raise FileNotFoundError(checkpoint_path)
-        try:
-            payload = torch.load(
-                checkpoint_path,
-                map_location=self.device,
-                weights_only=False,
-            )
-        except TypeError:
-            payload = torch.load(checkpoint_path, map_location=self.device)
-        if not isinstance(payload, dict):
-            raise ValueError("checkpoint must contain a mapping")
-        checkpoint_advertises_replay = bool(payload.get("replay_saved", False))
-        if checkpoint_advertises_replay and not self.allow_replay_rewarm:
-            raise ValueError(
-                "checkpoint advertises replay state, but this trainer does not "
-                "restore replay contents or environment/ALE state; exact "
-                "continuation is unavailable. Pass allow_replay_rewarm=True only "
-                "for an explicit non-equivalent warm-start."
-            )
-        if not checkpoint_advertises_replay and not self.allow_replay_rewarm:
-            raise ValueError(
-                "checkpoint does not contain replay state; exact continuation is "
-                "unavailable. Pass allow_replay_rewarm=True only for an explicit "
-                "non-equivalent warm-start."
-            )
-        saved_algorithm = payload.get("algorithm")
+        payload = read_checkpoint(checkpoint_path, map_location=self.device)
+        check_resume_identity(
+            payload,
+            algorithm=self.config.algorithm,
+            architecture=self.config.architecture,
+            allow_replay_rewarm=self.allow_replay_rewarm,
+        )
         config_payload = payload.get("config")
-        if saved_algorithm is None and isinstance(config_payload, Mapping):
-            saved_algorithm = config_payload.get("algorithm", "dqn")
-        if (
-            saved_algorithm is not None
-            and str(saved_algorithm).strip().lower() != self.config.algorithm
-        ):
-            raise ValueError(
-                "checkpoint algorithm does not match trainer config: "
-                f"checkpoint={saved_algorithm!r}, config={self.config.algorithm!r}"
-            )
-
-        saved_architecture = checkpoint_architecture(payload)
-        if saved_architecture != self.config.architecture:
-            raise ValueError(
-                "checkpoint architecture does not match trainer config: "
-                f"checkpoint={saved_architecture!r}, config={self.config.architecture!r}"
-            )
         saved_num_envs = payload.get("num_envs")
         if saved_num_envs is None and isinstance(config_payload, Mapping):
             saved_num_envs = config_payload.get("num_envs")

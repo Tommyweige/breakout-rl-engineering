@@ -35,7 +35,8 @@ from breakout_rl.completion import (
     read_ale_lives,
     read_breakout_score,
 )
-from breakout_rl.models.factory import build_q_network, checkpoint_architecture
+from breakout_rl.checkpoint import read_checkpoint, restore_q_network
+from breakout_rl.models.factory import checkpoint_architecture
 from breakout_rl.tensors import observation_to_tensor
 from breakout_rl.experiments import load_experiment_config
 from breakout_rl.evaluation_artifacts import (
@@ -1675,13 +1676,7 @@ def _checkpoint_step(payload: Mapping[str, Any], path: Path) -> int:
 
 
 def _load_torch_payload(path: Path) -> dict[str, Any]:
-    try:
-        payload = torch.load(path, map_location="cpu", weights_only=False)
-    except TypeError:
-        payload = torch.load(path, map_location="cpu")
-    if not isinstance(payload, dict):
-        raise ValueError("checkpoint must contain a mapping")
-    return payload
+    return read_checkpoint(path)
 
 
 @dataclass(frozen=True)
@@ -1762,18 +1757,18 @@ def load_dqn_checkpoint(
     )
     architecture = checkpoint_architecture(payload)
     try:
-        model = build_q_network(
-            architecture,
+        model = restore_q_network(
+            state_dict,
+            architecture=architecture,
             num_actions=action_count,
-            input_shape=saved_input_shape,  # type: ignore[arg-type]
+            input_shape=saved_input_shape,
             hidden_dim=hidden_dim,
-        ).to(resolved_device)
-        model.load_state_dict(state_dict, strict=True)
+            device=resolved_device,
+        )
     except (RuntimeError, ValueError, TypeError) as error:
         raise ValueError(
             "checkpoint architecture/action count does not match the evaluation environment"
         ) from error
-    model.eval()
 
     step = _checkpoint_step(payload, checkpoint_path)
     source_run_id = str(payload.get("run_id") or checkpoint_path.parent.parent.name)
